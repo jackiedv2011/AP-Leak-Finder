@@ -24,7 +24,7 @@ export function LetterDialog({ finding, onClose }: LetterDialogProps) {
   const preRef = useRef<HTMLPreElement>(null)
 
   const letter = useMemo(() => (finding ? generateLetter(finding) : null), [finding])
-  const isInternal = finding?.class !== 'recoverable' && (finding?.type === 'bank_account_change' || finding?.type === 'amount_outlier' || finding?.type === 'missed_discount')
+  const isInternal = finding?.class !== 'recoverable'
 
   function flashCopied() {
     setCopyState('copied')

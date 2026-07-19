@@ -21,7 +21,7 @@ export function StatCards({ findings, recoverableTotal, reviewTotal, opportunity
         <CardContent className="flex flex-col gap-2 p-6">
           <div className="flex items-center gap-2 text-recoverable">
             <CheckCircle2 className="h-4 w-4" />
-            <span className="text-sm font-medium">Recoverable</span>
+            <span className="text-sm font-medium">Potential recovery</span>
           </div>
           <span className="text-3xl font-semibold tabular-nums text-ink">{formatCurrency(recoverableTotal)}</span>
           <span className="text-xs text-muted-foreground">

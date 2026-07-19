@@ -28,8 +28,13 @@ describe('sample ledger sanity check', () => {
     expect(records.length).toBeGreaterThanOrEqual(65)
     expect(records.length).toBeLessThanOrEqual(80)
     expect(vendors.size).toBe(12)
-    expect(result.recoverableTotal).toBeGreaterThanOrEqual(14000)
-    expect(result.recoverableTotal).toBeLessThanOrEqual(20000)
+    expect(result.recoverableTotal).toBe(11684)
+    expect(result.reviewTotal).toBeCloseTo(9794.4, 2)
+    expect(result.opportunityTotal).toBe(200)
+    expect(result.findings.filter((finding) => finding.class === 'recoverable')).toHaveLength(6)
+    expect(result.findings.filter((finding) => finding.class === 'review')).toHaveLength(7)
+    expect(result.findings.filter((finding) => finding.class === 'opportunity')).toHaveLength(3)
+    expect(result.findings.some((finding) => finding.type === 'exact_duplicate' && finding.dollarImpact === 6800)).toBe(true)
 
     for (const type of [
       'exact_duplicate',

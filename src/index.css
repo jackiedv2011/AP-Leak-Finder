@@ -1,3 +1,5 @@
+@import "@fontsource-variable/manrope/index.css";
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -31,10 +33,84 @@
   }
   body {
     @apply bg-paper text-foreground antialiased;
-    font-family: Inter, ui-sans-serif, system-ui, -apple-system, sans-serif;
+    min-width: 320px;
+    margin: 0;
+    font-family: "Manrope Variable", "Segoe UI Variable", ui-sans-serif, system-ui, sans-serif;
+    font-optical-sizing: auto;
+  }
+}
+
+html {
+  scroll-behavior: smooth;
+  color-scheme: light;
+}
+
+html:has(.reclaim-page),
+html:has(.route-dark) {
+  color-scheme: dark;
+  background: #090b0c;
+}
+
+html:has(.reclaim-page) body,
+html:has(.route-dark) body {
+  background: #090b0c;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
   }
 }
 
 .tabular-nums {
   font-variant-numeric: tabular-nums;
+}
+
+.reclaim-mark {
+  color: hsl(var(--foreground));
+  overflow: visible;
+}
+
+.reclaim-wordmark {
+  color: hsl(var(--foreground));
+  cursor: default;
+  transition: color 440ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.reclaim-wordmark-period {
+  color: #79d99b;
+  transition: color 440ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.reclaim-wordmark[data-active='true'],
+.reclaim-wordmark[data-active='true'] .reclaim-wordmark-period {
+  color: #79d99b;
+}
+
+.reclaim-recovery {
+  transition: filter 240ms ease;
+}
+
+.reclaim-spread {
+  transform-box: fill-box;
+  transform-origin: center;
+  transform: scale(0.14);
+  transition: transform 440ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.reclaim-mark[data-active='true'] .reclaim-spread {
+  transform: scale(1.12);
+}
+
+.reclaim-mark[data-active='true'] .reclaim-recovery {
+  filter: brightness(1.08);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reclaim-recovery,
+  .reclaim-spread,
+  .reclaim-wordmark,
+  .reclaim-wordmark-period {
+    transition: none;
+  }
 }

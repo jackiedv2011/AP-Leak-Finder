@@ -11,7 +11,7 @@ export const FINDING_TYPE_LABELS: Record<FindingType, string> = {
 }
 
 export const CLASS_LABELS: Record<FindingClass, string> = {
-  recoverable: 'Recoverable',
+  recoverable: 'Likely recoverable',
   review: 'Review',
   opportunity: 'Opportunity',
 }

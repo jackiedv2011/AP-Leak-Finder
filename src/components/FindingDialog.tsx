@@ -21,6 +21,8 @@ interface FindingDialogProps {
 }
 
 export function FindingDialog({ finding, onClose, onGenerateLetter }: FindingDialogProps) {
+  const actionLabel = finding?.class === 'recoverable' ? 'Draft recovery request' : 'Create internal review note'
+
   return (
     <Dialog open={finding !== null} onOpenChange={(open) => !open && onClose()}>
       {finding && (
@@ -35,7 +37,7 @@ export function FindingDialog({ finding, onClose, onGenerateLetter }: FindingDia
           </DialogHeader>
 
           <div className="flex items-baseline justify-between rounded-md bg-secondary px-4 py-3">
-            <span className="text-sm text-muted-foreground">Dollar impact</span>
+            <span className="text-sm text-muted-foreground">Potential impact</span>
             <span className="text-xl font-semibold tabular-nums text-ink">
               {formatCurrency(finding.dollarImpact)}
             </span>
@@ -78,7 +80,7 @@ export function FindingDialog({ finding, onClose, onGenerateLetter }: FindingDia
           <DialogFooter>
             <Button onClick={() => onGenerateLetter(finding)}>
               <FileText className="h-4 w-4" />
-              Generate recovery letter
+              {actionLabel}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -3,6 +3,10 @@ import { normalizeVendor, daysBetween, parseTerms, formatCurrency, formatDate } 
 
 const EPSILON = 0.01
 
+function normalizeInvoiceNumber(invoiceNumber: string): string {
+  return invoiceNumber.toLowerCase().trim().replace(/\s+/g, ' ')
+}
+
 interface FindingWithImpactRows {
   finding: Finding
   impactRowIndexes: number[]
@@ -42,36 +46,60 @@ function detectExactDuplicates(records: APRecord[]): {
   const allGroupedRowIndexes = new Set<number>()
 
   const withInvoice = records.filter((r) => r.invoiceNumber !== null)
-  const groups = groupBy(withInvoice, (r) => `${normalizeVendor(r.vendor)}|${r.invoiceNumber}`)
+  const groups = groupBy(withInvoice, (r) => `${normalizeVendor(r.vendor)}|${normalizeInvoiceNumber(r.invoiceNumber!)}`)
 
   for (const group of groups.values()) {
     if (group.length < 2) continue
     const sorted = [...group].sort((a, b) => a.paymentDate.getTime() - b.paymentDate.getTime())
     sorted.forEach((r) => allGroupedRowIndexes.add(r.rowIndex))
 
-    const duplicateRows = sorted.slice(1)
-    const dollarImpact = sorted[0].amountPaid * (sorted.length - 1)
     const invoiceNumber = sorted[0].invoiceNumber
     const vendor = sorted[0].vendor
+    const amountClusters = Array.from(groupBy(sorted, (r) => Math.round(r.amountPaid * 100).toString()).values())
+    const duplicateClusters = amountClusters.filter((cluster) => cluster.length > 1)
+    const singlePaymentRows = amountClusters.filter((cluster) => cluster.length === 1).flat()
 
-    findings.push({
-      finding: makeFinding({
-        id: `exact_duplicate-${sorted.map((r) => r.rowIndex).join('-')}`,
-        type: 'exact_duplicate',
-        class: 'recoverable',
-        severity: 'high',
-        vendor,
-        dollarImpact,
-        title: `Duplicate payment of invoice ${invoiceNumber}`,
-        explanation: `Invoice ${invoiceNumber} from ${vendor} was paid ${sorted.length} times, totaling ${formatCurrency(
-          sorted.reduce((sum, r) => sum + r.amountPaid, 0)
-        )}. Only one payment of ${formatCurrency(sorted[0].amountPaid)} was owed, so ${formatCurrency(
-          dollarImpact
-        )} across ${duplicateRows.length} extra payment(s) is a likely recoverable duplicate.`,
-        relatedRecords: sorted,
-      }),
-      impactRowIndexes: duplicateRows.map((r) => r.rowIndex),
-    })
+    for (const cluster of duplicateClusters) {
+      const duplicateRows = cluster.slice(1)
+      const dollarImpact = duplicateRows.reduce((sum, r) => sum + r.amountPaid, 0)
+      findings.push({
+        finding: makeFinding({
+          id: `exact_duplicate-${cluster.map((r) => r.rowIndex).join('-')}`,
+          type: 'exact_duplicate',
+          class: 'recoverable',
+          severity: 'high',
+          vendor,
+          dollarImpact,
+          title: `Duplicate payment of invoice ${invoiceNumber}`,
+          explanation: `Invoice ${invoiceNumber} from ${vendor} was paid ${cluster.length} times at ${formatCurrency(
+            cluster[0].amountPaid
+          )}. ${formatCurrency(dollarImpact)} across ${duplicateRows.length} extra payment(s) is likely recoverable.`,
+          relatedRecords: cluster,
+        }),
+        impactRowIndexes: duplicateRows.map((r) => r.rowIndex),
+      })
+    }
+
+    if (singlePaymentRows.length > 0) {
+      const reviewRows = duplicateClusters.length > 0 ? singlePaymentRows : sorted.slice(1)
+      const dollarImpact = reviewRows.reduce((sum, r) => sum + r.amountPaid, 0)
+      findings.push({
+        finding: makeFinding({
+          id: `repeated_invoice_review-${sorted.map((r) => r.rowIndex).join('-')}`,
+          type: 'exact_duplicate',
+          class: 'review',
+          severity: 'medium',
+          vendor,
+          dollarImpact,
+          title: `Repeated payments for invoice ${invoiceNumber}`,
+          explanation: `Invoice ${invoiceNumber} from ${vendor} appears in payments with different amounts. Review ${formatCurrency(
+            dollarImpact
+          )} of additional payment activity before treating it as a potential duplicate.`,
+          relatedRecords: sorted,
+        }),
+        impactRowIndexes: reviewRows.map((r) => r.rowIndex),
+      })
+    }
   }
 
   return { findings, allGroupedRowIndexes }
@@ -119,8 +147,8 @@ function detectNearDuplicates(
           finding: makeFinding({
             id: `near_duplicate-${bestMatch.rowIndex}-${later.rowIndex}`,
             type: 'near_duplicate',
-            class: 'recoverable',
-            severity: 'high',
+            class: 'review',
+            severity: 'medium',
             vendor: later.vendor,
             dollarImpact: later.amountPaid,
             title: `Suspected duplicate payment to ${later.vendor}`,
@@ -355,18 +383,23 @@ export function detectFindings(records: APRecord[]): DetectionResult {
   const overpayments = detectOverpayments(records)
   const unclaimedDiscounts = detectUnclaimedDiscounts(records)
 
-  const recoverableFindings = dedupeRecoverable([
-    ...exactDuplicates,
-    ...nearDuplicates,
-    ...overpayments,
-    ...unclaimedDiscounts,
-  ])
+  const recoveryCandidates = [...exactDuplicates, ...overpayments, ...unclaimedDiscounts].filter(
+    (candidate) => candidate.finding.class === 'recoverable'
+  )
+  const reviewCandidates = [...exactDuplicates, ...nearDuplicates].filter((candidate) => candidate.finding.class === 'review')
+  const recoverableFindings = dedupeRecoverable(recoveryCandidates)
 
   const missedDiscounts = detectMissedDiscounts(records)
   const bankAccountChanges = detectBankAccountChanges(records)
   const amountOutliers = detectAmountOutliers(records)
 
-  const findings = [...recoverableFindings, ...missedDiscounts, ...bankAccountChanges, ...amountOutliers].sort(
+  const findings = [
+    ...recoverableFindings,
+    ...reviewCandidates.map((candidate) => candidate.finding),
+    ...missedDiscounts,
+    ...bankAccountChanges,
+    ...amountOutliers,
+  ].sort(
     (a, b) => {
       const severityDiff = SEVERITY_RANK[a.severity] - SEVERITY_RANK[b.severity]
       if (severityDiff !== 0) return severityDiff

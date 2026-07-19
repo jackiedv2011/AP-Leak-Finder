@@ -16,13 +16,14 @@ export function normalizeVendor(vendor: string): string {
   return words.join(' ').trim()
 }
 
-/** Strip currency symbols/commas and parse a number. Returns null for blank/na. */
+/** Strip currency symbols/commas and parse a complete number. Returns null for blank/na. */
 export function parseCurrency(raw: string | null | undefined): number | null {
   if (raw === null || raw === undefined) return null
   const trimmed = raw.trim()
   if (trimmed === '' || trimmed.toLowerCase() === 'na' || trimmed.toLowerCase() === 'n/a') return null
   const cleaned = trimmed.replace(/[$,]/g, '')
-  const value = parseFloat(cleaned)
+  if (!/^-?(?:\d+(?:\.\d+)?|\.\d+)$/.test(cleaned)) return null
+  const value = Number(cleaned)
   return Number.isFinite(value) ? value : null
 }
 
@@ -31,11 +32,14 @@ export function parseDate(raw: string | null | undefined): Date | null {
   if (raw === null || raw === undefined) return null
   const trimmed = raw.trim()
   if (trimmed === '' || trimmed.toLowerCase() === 'na' || trimmed.toLowerCase() === 'n/a') return null
-  const match = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})/)
+  const match = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})$/)
   if (!match) return null
   const [, y, m, d] = match
   const date = new Date(Number(y), Number(m) - 1, Number(d))
-  return Number.isNaN(date.getTime()) ? null : date
+  if (Number.isNaN(date.getTime())) return null
+  return date.getFullYear() === Number(y) && date.getMonth() === Number(m) - 1 && date.getDate() === Number(d)
+    ? date
+    : null
 }
 
 export function daysBetween(a: Date, b: Date): number {

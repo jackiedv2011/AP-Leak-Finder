@@ -32,16 +32,21 @@ export function FindingsTable({ findings, onSelect }: FindingsTableProps) {
         </TableHeader>
         <TableBody>
           {findings.map((finding) => (
-            <TableRow
-              key={finding.id}
-              className="cursor-pointer"
-              onClick={() => onSelect(finding)}
-            >
+            <TableRow key={finding.id}>
               <TableCell>
                 <Badge variant={finding.severity}>{SEVERITY_LABELS[finding.severity]}</Badge>
               </TableCell>
               <TableCell className="font-medium text-ink">{finding.vendor}</TableCell>
-              <TableCell className="text-sm text-muted-foreground">{finding.title}</TableCell>
+              <TableCell className="text-sm text-muted-foreground">
+                <button
+                  type="button"
+                  className="rounded-sm text-left underline-offset-4 transition-colors hover:text-ink hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  onClick={() => onSelect(finding)}
+                  aria-label={`View evidence for ${finding.title}`}
+                >
+                  {finding.title}
+                </button>
+              </TableCell>
               <TableCell>
                 <Badge variant={finding.class}>{CLASS_LABELS[finding.class]}</Badge>
               </TableCell>

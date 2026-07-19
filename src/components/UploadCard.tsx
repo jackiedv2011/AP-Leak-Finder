@@ -2,6 +2,7 @@ import { useRef, useState } from 'react'
 import { Upload, Sparkles, Download, HelpCircle, ShieldCheck } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+import { ReclaimLogo } from '@/components/ReclaimLogo'
 import {
   Dialog,
   DialogContent,
@@ -52,9 +53,9 @@ export function UploadCard({ onFileSelected, onLoadSample, error }: UploadCardPr
       <Card className="w-full max-w-xl border-hairline shadow-sm">
         <CardContent className="flex flex-col items-center gap-6 p-10 text-center">
           <div className="space-y-2">
-            <h1 className="text-3xl font-semibold tracking-tight text-ink">AP Leak Finder</h1>
+            <ReclaimLogo size={42} interactive className="justify-center" />
             <p className="text-muted-foreground">
-              Find the money your business lost to payment errors.
+              Identify potential payment errors and review the evidence behind them.
             </p>
           </div>
 
@@ -120,7 +121,7 @@ export function UploadCard({ onFileSelected, onLoadSample, error }: UploadCardPr
 
           <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
             <ShieldCheck className="h-3.5 w-3.5" />
-            Runs entirely in your browser. Your data never leaves your device.
+            This prototype runs entirely in your browser. Your uploaded data stays on your device until you refresh.
           </p>
         </CardContent>
       </Card>
