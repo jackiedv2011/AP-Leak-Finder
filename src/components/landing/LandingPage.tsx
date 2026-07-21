@@ -117,7 +117,7 @@ function LandingNav() {
           <a href="/audit?upload=1">Use your ledger</a>
         </div>
 
-        <MagneticLink className="reclaim-nav-action" href="/audit?sample=1">Run sample audit</MagneticLink>
+        <MagneticLink className="reclaim-nav-action" href="/audit?sample=1" pendingLabel="Opening…">Run sample audit</MagneticLink>
 
         <button
           className="reclaim-menu-button"
@@ -203,7 +203,7 @@ function Hero({ heroRef }: { heroRef: RefObject<HTMLElement | null> }) {
             Reclaim finds suspicious vendor payments, shows the exact records behind each flag, and keeps every decision human.
           </p>
           <div className="reclaim-actions">
-            <MagneticLink className="reclaim-button reclaim-button-primary" href="/audit?sample=1">Run sample audit</MagneticLink>
+            <MagneticLink className="reclaim-button reclaim-button-primary" href="/audit?sample=1" pendingLabel="Opening sample audit…">Run sample audit</MagneticLink>
             <a className="reclaim-text-action" href="/audit?upload=1">Use your ledger</a>
           </div>
         </div>
@@ -585,7 +585,7 @@ function Closing() {
       <h2 id="closing-title">Start with the ledger you already have.</h2>
       <p>See the full path from upload to evidence, review, and recovery request.</p>
       <div className="reclaim-actions">
-        <MagneticLink className="reclaim-button reclaim-button-primary" href="/audit?sample=1">Run sample audit</MagneticLink>
+        <MagneticLink className="reclaim-button reclaim-button-primary" href="/audit?sample=1" pendingLabel="Opening sample audit…">Run sample audit</MagneticLink>
         <a className="reclaim-text-action" href="/audit?upload=1">Use your ledger</a>
       </div>
     </section>

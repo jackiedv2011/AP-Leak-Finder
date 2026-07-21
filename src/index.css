@@ -46,13 +46,15 @@ html {
 }
 
 html:has(.reclaim-page),
-html:has(.route-dark) {
+html:has(.route-dark),
+html:has(.reclaim-audit) {
   color-scheme: dark;
   background: #090b0c;
 }
 
 html:has(.reclaim-page) body,
-html:has(.route-dark) body {
+html:has(.route-dark) body,
+html:has(.reclaim-audit) body {
   background: #090b0c;
 }
 

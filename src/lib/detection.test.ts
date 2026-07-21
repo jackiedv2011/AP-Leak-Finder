@@ -4,7 +4,10 @@ import type { APRecord } from '@/types'
 
 let nextRowIndex = 0
 function makeRecord(overrides: Partial<APRecord> & { vendor: string; amountPaid: number }): APRecord {
+  const rowIndex = overrides.rowIndex ?? nextRowIndex++
   return {
+    id: overrides.id ?? `r${rowIndex}`,
+    importBatchId: overrides.importBatchId ?? 'test-batch',
     vendor: overrides.vendor,
     invoiceNumber: overrides.invoiceNumber ?? null,
     invoiceDate: overrides.invoiceDate ?? null,
@@ -14,7 +17,7 @@ function makeRecord(overrides: Partial<APRecord> & { vendor: string; amountPaid:
     terms: overrides.terms ?? null,
     bankAccountLast4: overrides.bankAccountLast4 ?? null,
     category: overrides.category ?? null,
-    rowIndex: overrides.rowIndex ?? nextRowIndex++,
+    rowIndex,
   }
 }
 

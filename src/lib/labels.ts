@@ -1,4 +1,4 @@
-import type { FindingType, FindingClass, Severity } from '@/types'
+import type { FindingType, FindingClass } from '@/types'
 
 export const FINDING_TYPE_LABELS: Record<FindingType, string> = {
   exact_duplicate: 'Exact duplicate payment',
@@ -14,10 +14,4 @@ export const CLASS_LABELS: Record<FindingClass, string> = {
   recoverable: 'Likely recoverable',
   review: 'Review',
   opportunity: 'Opportunity',
-}
-
-export const SEVERITY_LABELS: Record<Severity, string> = {
-  high: 'High',
-  medium: 'Medium',
-  low: 'Low',
 }

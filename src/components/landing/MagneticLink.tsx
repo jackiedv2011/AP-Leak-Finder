@@ -1,9 +1,16 @@
 import { ArrowUpRight } from 'lucide-react'
 import { motion, useMotionTemplate, useMotionValue, useReducedMotion, useSpring, type HTMLMotionProps } from 'motion/react'
-import { useRef, type ReactNode } from 'react'
+import { useRef, useState, type ReactNode, type MouseEvent } from 'react'
 
 type MagneticLinkProps = Omit<HTMLMotionProps<'a'>, 'children' | 'style'> & {
   children: ReactNode
+  /**
+   * When set, a plain left-click briefly swaps the label to this text and
+   * registers the press (so the destination feels entered, not teleported
+   * to) before following `href`. Full page navigations still happen — this
+   * only smooths the moment right before they do.
+   */
+  pendingLabel?: string
 }
 
 const magneticSpring = {
@@ -12,9 +19,21 @@ const magneticSpring = {
   stiffness: 360,
 }
 
-export function MagneticLink({ children, className = '', onPointerLeave, onPointerMove, ...props }: MagneticLinkProps) {
+const PENDING_NAVIGATE_DELAY_MS = 260
+
+export function MagneticLink({
+  children,
+  className = '',
+  pendingLabel,
+  href,
+  onClick,
+  onPointerLeave,
+  onPointerMove,
+  ...props
+}: MagneticLinkProps) {
   const linkRef = useRef<HTMLAnchorElement>(null)
   const reduceMotion = useReducedMotion()
+  const [isPending, setIsPending] = useState(false)
   const x = useMotionValue(0)
   const y = useMotionValue(0)
   const springX = useSpring(x, magneticSpring)
@@ -26,12 +45,30 @@ export function MagneticLink({ children, className = '', onPointerLeave, onPoint
     y.set(0)
   }
 
+  function handleClick(event: MouseEvent<HTMLAnchorElement>) {
+    onClick?.(event)
+    if (event.defaultPrevented || !pendingLabel || !href) return
+    if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
+    if (isPending) {
+      event.preventDefault()
+      return
+    }
+    event.preventDefault()
+    setIsPending(true)
+    window.setTimeout(() => {
+      window.location.href = href
+    }, PENDING_NAVIGATE_DELAY_MS)
+  }
+
   return (
     <motion.a
       {...props}
+      href={href}
       ref={linkRef}
       className={`magnetic-control ${className}`}
       style={reduceMotion ? undefined : { transform }}
+      aria-disabled={isPending || undefined}
+      onClick={handleClick}
       onPointerMove={(event) => {
         onPointerMove?.(event)
         if (reduceMotion || event.pointerType !== 'mouse') return
@@ -48,7 +85,7 @@ export function MagneticLink({ children, className = '', onPointerLeave, onPoint
       }}
     >
       <span className="magnetic-control-surface">
-        <span>{children}</span>
+        <span>{isPending && pendingLabel ? pendingLabel : children}</span>
         <span className="magnetic-control-icon" aria-hidden="true"><ArrowUpRight size={15} strokeWidth={1.8} /></span>
       </span>
     </motion.a>

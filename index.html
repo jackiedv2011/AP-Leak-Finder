@@ -6,6 +6,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#090b0c" />
     <meta name="color-scheme" content="dark light" />
+    <style>
+      /* Reclaim is dark-themed end to end (landing through the audit product).
+         Setting this before hydration avoids a white flash on full navigations
+         such as the "Run sample audit" CTA. */
+      html, body { background: #090b0c; }
+    </style>
     <meta name="description" content="Reclaim finds suspicious vendor payments and keeps the exact records, review, and recovery action connected." />
     <meta property="og:title" content="Reclaim. | Explainable payment recovery" />
     <meta property="og:description" content="Find suspicious vendor payments and review the evidence behind every flag." />
