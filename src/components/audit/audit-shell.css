@@ -1615,6 +1615,12 @@
   pointer-events: auto;
 }
 
+.audit-topbar-right {
+  position: relative;
+  z-index: 2;
+  pointer-events: auto;
+}
+
 .audit-scene {
   min-height: 100dvh;
   padding-top: 5.25rem;

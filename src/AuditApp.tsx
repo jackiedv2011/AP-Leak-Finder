@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { LayoutGroup } from 'motion/react'
+import { ArrowLeft } from 'lucide-react'
 import { AuditShell } from '@/components/audit/AuditShell'
 import { AuditEntry } from '@/components/audit/AuditEntry'
 import { IngestStatus } from '@/components/audit/IngestStatus'
@@ -226,7 +227,15 @@ export function AuditApp() {
     : null
 
   return (
-    <AuditShell variant="full">
+    <AuditShell
+      variant="full"
+      topBarRight={
+        <a className="audit-btn" data-variant="ghost" data-size="sm" href="/">
+          <ArrowLeft aria-hidden="true" />
+          Back to home
+        </a>
+      }
+    >
       <LayoutGroup id="audit-scene">
         {activeCase ? (
           <LivingCapsule
