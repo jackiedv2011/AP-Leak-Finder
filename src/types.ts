@@ -1,4 +1,14 @@
 export interface APRecord {
+  /**
+   * Stable identity, unique for the life of the record in the ledger.
+   * Assigned by the ledger store when a parsed record is merged into the
+   * persistent environment — detection and grouping logic must key off this,
+   * never off array position, since records from different imports coexist.
+   * A freshly parsed record (before it's been merged) carries a placeholder.
+   */
+  id: string
+  /** Which import batch this record entered the ledger through. Empty until merged. */
+  importBatchId: string
   vendor: string
   invoiceNumber: string | null
   invoiceDate: Date | null
@@ -8,6 +18,7 @@ export interface APRecord {
   terms: string | null
   bankAccountLast4: string | null
   category: string | null
+  /** Position within its own source file — display only ("Source row N"), not a stable identity. */
   rowIndex: number
 }
 
@@ -46,4 +57,8 @@ export interface DetectionResult {
 export interface ParseResult {
   records: APRecord[]
   skippedCount: number
+  /** Canonical column names Reclaim recognized in the header row (regardless of per-row validity). */
+  detectedColumns: string[]
+  /** Header cells present in the file that didn't match any recognized column. */
+  unrecognizedHeaders: string[]
 }

@@ -54,8 +54,14 @@ function internalNote(f: Finding, subject: string, bodyLines: string[]): { subje
 
 export function generateLetter(finding: Finding): { subject: string; body: string } {
   switch (finding.type) {
-    case 'exact_duplicate':
-    case 'near_duplicate': {
+    case 'exact_duplicate': {
+      if (finding.class !== 'recoverable') {
+        return internalNote(finding, `Review repeated payments before contacting ${finding.vendor}`, [
+          finding.explanation,
+          '',
+          'Action required: confirm the invoice schedule and payment approvals before requesting a refund or credit from the vendor.',
+        ])
+      }
       const invoices = invoiceList(finding)
       return vendorLetter(finding, `Request for refund — duplicate payment on ${invoices}`, [
         `Our records show ${finding.vendor} was paid more than once for ${invoices}, for a combined duplicate amount of ${formatCurrency(
@@ -63,6 +69,14 @@ export function generateLetter(finding: Finding): { subject: string; body: strin
         )}.`,
         `${finding.explanation}`,
         `We request a refund or account credit for the duplicate payment of ${formatCurrency(finding.dollarImpact)}.`,
+      ])
+    }
+
+    case 'near_duplicate': {
+      return internalNote(finding, `Review suspected duplicate payment to ${finding.vendor}`, [
+        finding.explanation,
+        '',
+        'Action required: compare the invoice descriptions, purchase orders, and payment approvals before contacting the vendor.',
       ])
     }
 

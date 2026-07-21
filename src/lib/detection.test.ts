@@ -4,7 +4,10 @@ import type { APRecord } from '@/types'
 
 let nextRowIndex = 0
 function makeRecord(overrides: Partial<APRecord> & { vendor: string; amountPaid: number }): APRecord {
+  const rowIndex = overrides.rowIndex ?? nextRowIndex++
   return {
+    id: overrides.id ?? `r${rowIndex}`,
+    importBatchId: overrides.importBatchId ?? 'test-batch',
     vendor: overrides.vendor,
     invoiceNumber: overrides.invoiceNumber ?? null,
     invoiceDate: overrides.invoiceDate ?? null,
@@ -14,7 +17,7 @@ function makeRecord(overrides: Partial<APRecord> & { vendor: string; amountPaid:
     terms: overrides.terms ?? null,
     bankAccountLast4: overrides.bankAccountLast4 ?? null,
     category: overrides.category ?? null,
-    rowIndex: overrides.rowIndex ?? nextRowIndex++,
+    rowIndex,
   }
 }
 
@@ -48,6 +51,31 @@ describe('Rule 1 — exact duplicate payment', () => {
     expect(finding!.dollarImpact).toBe(600) // 300 * (3-1)
     expect(finding!.relatedRecords).toHaveLength(3)
   })
+
+  it('sends repeated invoices with different payment values to review', () => {
+    const records = [
+      makeRecord({ vendor: 'Acme Roasters', invoiceNumber: 'INV-201', amountPaid: 300, paymentDate: d(2025, 1, 1) }),
+      makeRecord({ vendor: 'Acme Roasters', invoiceNumber: 'INV-201', amountPaid: 125, paymentDate: d(2025, 1, 5) }),
+    ]
+    const result = detectFindings(records)
+    const finding = result.findings.find((f) => f.type === 'exact_duplicate')
+    expect(finding).toBeDefined()
+    expect(finding!.class).toBe('review')
+    expect(finding!.dollarImpact).toBe(125)
+  })
+
+  it('keeps an equal-value duplicate recoverable when another payment amount needs review', () => {
+    const records = [
+      makeRecord({ vendor: 'Acme Roasters', invoiceNumber: 'INV-202', amountPaid: 500, paymentDate: d(2025, 1, 1) }),
+      makeRecord({ vendor: 'Acme Roasters', invoiceNumber: 'INV-202', amountPaid: 500, paymentDate: d(2025, 1, 5) }),
+      makeRecord({ vendor: 'Acme Roasters', invoiceNumber: 'INV-202', amountPaid: 125, paymentDate: d(2025, 1, 9) }),
+    ]
+    const result = detectFindings(records)
+    const recoverable = result.findings.find((f) => f.type === 'exact_duplicate' && f.class === 'recoverable')
+    const review = result.findings.find((f) => f.type === 'exact_duplicate' && f.class === 'review')
+    expect(recoverable?.dollarImpact).toBe(500)
+    expect(review?.dollarImpact).toBe(125)
+  })
 })
 
 describe('Rule 2 — near-duplicate payment', () => {
@@ -60,7 +88,7 @@ describe('Rule 2 — near-duplicate payment', () => {
     const finding = result.findings.find((f) => f.type === 'near_duplicate')
     expect(finding).toBeDefined()
     expect(finding!.dollarImpact).toBe(812.5)
-    expect(finding!.class).toBe('recoverable')
+    expect(finding!.class).toBe('review')
   })
 
   it('ignores pairs more than 45 days apart', () => {

@@ -20,6 +20,8 @@ const COLUMN_ALIASES: Record<string, string> = {
   category: 'category',
 }
 
+const CANONICAL_COLUMNS = new Set(Object.values(COLUMN_ALIASES))
+
 function normalizeHeader(header: string): string | null {
   const key = header.trim().toLowerCase().replace(/\s+/g, '_')
   return COLUMN_ALIASES[key] ?? null
@@ -56,6 +58,10 @@ export function parseCsv(csvText: string): ParseResult {
     }
 
     records.push({
+      // Placeholder identity — the ledger store assigns the real global id
+      // and importBatchId when this record is merged into the environment.
+      id: `pending:${index}`,
+      importBatchId: '',
       vendor,
       invoiceNumber: cellOrNull(row.invoice_number),
       invoiceDate: parseDate(cellOrNull(row.invoice_date)),
@@ -69,5 +75,9 @@ export function parseCsv(csvText: string): ParseResult {
     })
   })
 
-  return { records, skippedCount }
+  const fields = parsed.meta.fields ?? []
+  const detectedColumns = fields.filter((f) => CANONICAL_COLUMNS.has(f))
+  const unrecognizedHeaders = fields.filter((f) => !CANONICAL_COLUMNS.has(f))
+
+  return { records, skippedCount, detectedColumns, unrecognizedHeaders }
 }

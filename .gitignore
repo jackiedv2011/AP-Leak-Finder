@@ -12,6 +12,9 @@ dist
 dist-ssr
 *.local
 
+# Editor-sync backups of deleted files, not project source
+.sync_removed/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
