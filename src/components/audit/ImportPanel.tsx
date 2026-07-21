@@ -112,7 +112,7 @@ export function ImportPanel({ allowSample, autoFocusUpload, error, onImport, onR
   if (pending) {
     const readiness = assessDataReadiness(pending.parsed)
     return (
-      <div className="audit-entry-card">
+      <div className="audit-entry-card" data-motion-state="confirmed">
         <div className="audit-entry-body">
           <div className="audit-entry-intro">
             <h2 className="sr-only">Confirm before adding to the ledger</h2>
@@ -154,13 +154,15 @@ export function ImportPanel({ allowSample, autoFocusUpload, error, onImport, onR
           )}
 
           <div className="audit-confirm-actions">
-            <button type="button" className="audit-btn" onClick={() => setPending(null)}>
+            <button type="button" className="audit-btn" data-motion="pressable" data-motion-ray="true" onClick={() => setPending(null)}>
               <X className="h-4 w-4" aria-hidden="true" />
               Choose a different file
             </button>
             <button
               type="button"
               className="audit-btn"
+              data-motion="pressable"
+              data-motion-ray="true"
               data-variant="primary"
               onClick={() =>
                 onImport({ file: pending.file, parsed: pending.parsed, sourceLabel: pending.file.name, mode: 'upload' })
@@ -210,6 +212,8 @@ export function ImportPanel({ allowSample, autoFocusUpload, error, onImport, onR
           <button
             type="button"
             className="audit-btn"
+            data-motion="pressable"
+            data-motion-ray="true"
             data-variant="primary"
             autoFocus={autoFocusUpload}
             onClick={() => fileInputRef.current?.click()}
@@ -222,7 +226,7 @@ export function ImportPanel({ allowSample, autoFocusUpload, error, onImport, onR
         {allowSample && onRunSample && (
           <>
             <div className="audit-divider">or</div>
-            <button type="button" className="audit-link" style={{ width: '100%', justifyContent: 'center' }} onClick={onRunSample}>
+            <button type="button" className="audit-link" data-motion="pressable" style={{ width: '100%', justifyContent: 'center' }} onClick={onRunSample}>
               <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
               See how this works with sample data
             </button>
@@ -234,12 +238,12 @@ export function ImportPanel({ allowSample, autoFocusUpload, error, onImport, onR
             <p>{error ?? parseError}</p>
             <ul>
               <li>
-                <button type="button" className="audit-link" onClick={() => setFormatOpen(true)}>
+                <button type="button" className="audit-link" data-motion="pressable" onClick={() => setFormatOpen(true)}>
                   View required format
                 </button>
               </li>
               <li>
-                <a className="audit-link" href="/sample-ledger.csv" download>
+                <a className="audit-link" data-motion="pressable" href="/sample-ledger.csv" download>
                   Download sample CSV
                 </a>
               </li>
@@ -248,11 +252,11 @@ export function ImportPanel({ allowSample, autoFocusUpload, error, onImport, onR
         )}
 
         <div className="audit-entry-links">
-          <a className="audit-link" href="/sample-ledger.csv" download>
+          <a className="audit-link" data-motion="pressable" href="/sample-ledger.csv" download>
             <Download className="h-3.5 w-3.5" aria-hidden="true" />
             Download sample CSV
           </a>
-          <button type="button" className="audit-link" onClick={() => setFormatOpen(true)}>
+          <button type="button" className="audit-link" data-motion="pressable" onClick={() => setFormatOpen(true)}>
             <HelpCircle className="h-3.5 w-3.5" aria-hidden="true" />
             See required format
           </button>

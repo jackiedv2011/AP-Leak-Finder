@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Copy, Download, Check, ArrowRight } from 'lucide-react'
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import type { Finding } from '@/types'
 import { generateLetter } from '@/lib/letters'
 import { RECOVERY_STAGE_LABEL, type CaseState, type RecoveryStage } from '@/ledger/caseState'
 import type { EvidenceFieldKey } from '@/components/audit/EvidenceComparison'
+import { MOTION_TRANSITION } from '@/motion/system'
 
 interface RecoveryDraftPanelProps {
   finding: Finding
@@ -33,6 +35,7 @@ export function RecoveryDraftPanel({ finding, state, onHighlightField, onAdvance
   const [statusMessage, setStatusMessage] = useState<string | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const statusTimeoutRef = useRef<number | null>(null)
+  const reduceMotion = useReducedMotion()
 
   useEffect(() => {
     setText(state.recoveryDraft ?? letter.body)
@@ -92,6 +95,8 @@ export function RecoveryDraftPanel({ finding, state, onHighlightField, onAdvance
           <button
             type="button"
             className="audit-linked-chip"
+            data-motion="pressable"
+            data-motion-ray="true"
             key={chip.field}
             onMouseEnter={() => onHighlightField(chip.field)}
             onMouseLeave={() => onHighlightField(null)}
@@ -118,20 +123,28 @@ export function RecoveryDraftPanel({ finding, state, onHighlightField, onAdvance
       />
 
       <div className="audit-draft-status" role="status" aria-live="polite">
-        {statusMessage && (
-          <>
+        <AnimatePresence initial={false}>
+          {statusMessage && (
+            <motion.span
+              key={statusMessage}
+              initial={reduceMotion ? { opacity: 0 } : { opacity: 0, transform: 'translate3d(0, 4px, 0)' }}
+              animate={{ opacity: 1, transform: 'translate3d(0, 0, 0)' }}
+              exit={{ opacity: 0 }}
+              transition={reduceMotion ? { duration: 0.08 } : MOTION_TRANSITION.state}
+            >
             <Check className="h-3.5 w-3.5" aria-hidden="true" />
             {statusMessage}
-          </>
-        )}
+            </motion.span>
+          )}
+        </AnimatePresence>
       </div>
 
       <div className="audit-case-actions">
-        <button type="button" className="audit-btn" onClick={handleCopy}>
+        <button type="button" className="audit-btn" data-motion="pressable" data-motion-ray="true" onClick={handleCopy}>
           <Copy className="h-4 w-4" aria-hidden="true" />
           Copy
         </button>
-        <button type="button" className="audit-btn" onClick={handleDownload}>
+        <button type="button" className="audit-btn" data-motion="pressable" data-motion-ray="true" onClick={handleDownload}>
           <Download className="h-4 w-4" aria-hidden="true" />
           Download
         </button>
@@ -141,10 +154,23 @@ export function RecoveryDraftPanel({ finding, state, onHighlightField, onAdvance
         <div className="audit-recovery-stage">
           <p className="audit-panel-hint">Currently: {RECOVERY_STAGE_LABEL[state.recoveryStage]}</p>
           {advanceLabel && (
-            <button type="button" className="audit-btn" data-variant="primary" onClick={onAdvanceStage}>
+            <motion.button
+              type="button"
+              className="audit-btn"
+              data-motion="pressable"
+              data-motion-ray="true"
+              data-motion-arrow="true"
+              data-motion-state="confirmed"
+              data-variant="primary"
+              key={state.recoveryStage}
+              initial={reduceMotion ? { opacity: 0 } : { opacity: 0, transform: 'translate3d(0, 5px, 0)' }}
+              animate={{ opacity: 1, transform: 'translate3d(0, 0, 0)' }}
+              transition={reduceMotion ? { duration: 0.08 } : MOTION_TRANSITION.state}
+              onClick={onAdvanceStage}
+            >
               {advanceLabel}
               <ArrowRight className="h-4 w-4" aria-hidden="true" />
-            </button>
+            </motion.button>
           )}
         </div>
       ) : (

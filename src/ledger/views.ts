@@ -52,8 +52,13 @@ export interface OverviewSummary {
   readyToVerifyCount: number
   needsContextCount: number
   worthNotingCount: number
+  /** Open workload and exposure, grouped by the decision readiness shown on Overview. */
+  statusMix: Array<{ group: QueueGroup; count: number; dollarImpact: number }>
+  /** Highest-value signal types still waiting on a human decision. */
+  exposureByType: Array<{ type: Finding['type']; count: number; dollarImpact: number }>
   /** Confirmed cases still moving through recovery (not yet resolved). */
   recoveryActiveCount: number
+  recoveryActiveValue: number
   newSinceLastVisitCount: number
   nextRecommendedCase: CaseView | null
 }
@@ -66,13 +71,23 @@ export function overviewSummary(env: LedgerEnvironment): OverviewSummary {
 
   const active = findings.filter((f) => isInFindingsQueue(getCaseState(env, f.id)))
   const groupCounts: Record<QueueGroup, number> = { ready_to_verify: 0, needs_context: 0, worth_noting: 0 }
-  for (const f of active) groupCounts[queueGroupFor(f, getCaseState(env, f.id))] += 1
+  const groupValue: Record<QueueGroup, number> = { ready_to_verify: 0, needs_context: 0, worth_noting: 0 }
+  const exposureByType = new Map<Finding['type'], { count: number; dollarImpact: number }>()
+  for (const f of active) {
+    const group = queueGroupFor(f, getCaseState(env, f.id))
+    groupCounts[group] += 1
+    groupValue[group] += f.dollarImpact
+    const current = exposureByType.get(f.type) ?? { count: 0, dollarImpact: 0 }
+    exposureByType.set(f.type, { count: current.count + 1, dollarImpact: current.dollarImpact + f.dollarImpact })
+  }
 
   const worthInvestigatingTotal = active.reduce((sum, f) => sum + f.dollarImpact, 0)
-  const recoveryActiveCount = findings.filter((f) => {
+  const recoveryActive = findings.filter((f) => {
     const state = getCaseState(env, f.id)
     return isInRecoveryQueue(state) && state.recoveryStage !== 'resolved'
-  }).length
+  })
+  const recoveryActiveCount = recoveryActive.length
+  const recoveryActiveValue = recoveryActive.reduce((sum, finding) => sum + finding.dollarImpact, 0)
 
   const nextRecommended = pickNextRecommended(active)
 
@@ -88,7 +103,17 @@ export function overviewSummary(env: LedgerEnvironment): OverviewSummary {
     readyToVerifyCount: groupCounts.ready_to_verify,
     needsContextCount: groupCounts.needs_context,
     worthNotingCount: groupCounts.worth_noting,
+    statusMix: [
+      { group: 'ready_to_verify', count: groupCounts.ready_to_verify, dollarImpact: groupValue.ready_to_verify },
+      { group: 'needs_context', count: groupCounts.needs_context, dollarImpact: groupValue.needs_context },
+      { group: 'worth_noting', count: groupCounts.worth_noting, dollarImpact: groupValue.worth_noting },
+    ],
+    exposureByType: [...exposureByType.entries()]
+      .map(([type, value]) => ({ type, ...value }))
+      .sort((a, b) => b.dollarImpact - a.dollarImpact || b.count - a.count)
+      .slice(0, 4),
     recoveryActiveCount,
+    recoveryActiveValue,
     newSinceLastVisitCount: env.newFindingIds.length,
     nextRecommendedCase: nextRecommended ? toCaseView(env, nextRecommended) : null,
   }

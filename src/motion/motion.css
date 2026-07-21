@@ -1,0 +1,139 @@
+:root {
+  --motion-press: 110ms;
+  --motion-hover: 170ms;
+  --motion-state: 220ms;
+  --motion-enter: 280ms;
+  --motion-scene: 380ms;
+  --motion-ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --motion-ease-move: cubic-bezier(0.77, 0, 0.175, 1);
+  --motion-ray: linear-gradient(
+    112deg,
+    transparent 27%,
+    rgb(255 255 255 / 0.03) 39%,
+    rgb(255 255 255 / 0.2) 47%,
+    rgb(121 217 155 / 0.1) 52%,
+    transparent 64%
+  );
+}
+
+[data-motion='pressable'] {
+  scale: 1;
+  transition: scale var(--motion-press) var(--motion-ease-out);
+}
+
+[data-motion='pressable']:active {
+  scale: 0.975;
+}
+
+[data-motion-ray='true'] {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+}
+
+[data-motion-ray='true']::after {
+  position: absolute;
+  z-index: 2;
+  inset: -55% -35%;
+  background: var(--motion-ray);
+  content: '';
+  opacity: 0;
+  pointer-events: none;
+  transform: translate3d(-58%, 0, 0);
+  transition:
+    transform 280ms var(--motion-ease-out),
+    opacity 140ms ease;
+}
+
+[data-motion-arrow='true'] svg,
+[data-motion-arrow='true'] .motion-arrow {
+  transition: transform var(--motion-hover) var(--motion-ease-out);
+}
+
+[data-motion-state='confirmed'] {
+  animation: motion-confirm-settle 260ms var(--motion-ease-out) both;
+}
+
+[data-motion-section] {
+  opacity: 0;
+  transform: translate3d(0, 1rem, 0);
+  transition:
+    transform 540ms var(--motion-ease-out),
+    opacity 380ms var(--motion-ease-out);
+}
+
+[data-motion-section][data-motion-visible='true'] {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  [data-motion-ray='true']:hover::after,
+  [data-motion-ray='true'][data-motion-state='confirmed']::after {
+    opacity: 0.82;
+    transform: translate3d(58%, 0, 0);
+  }
+
+  [data-motion-arrow='true']:hover svg,
+  [data-motion-arrow='true']:hover .motion-arrow {
+    transform: translate3d(0.2rem, 0, 0);
+  }
+}
+
+@keyframes motion-confirm-settle {
+  0% { scale: 0.985; }
+  52% { scale: 1.012; }
+  100% { scale: 1; }
+}
+
+.motion-dialog-overlay {
+  opacity: 0;
+  transition: opacity 180ms ease;
+}
+
+.motion-dialog-overlay[data-state='open'] {
+  opacity: 1;
+}
+
+.motion-dialog-content {
+  opacity: 0;
+  scale: 0.97;
+  translate: -50% -48%;
+  transition:
+    translate 240ms var(--motion-ease-out),
+    scale 240ms var(--motion-ease-out),
+    opacity 180ms var(--motion-ease-out);
+  transform-origin: center;
+}
+
+.motion-dialog-content[data-state='open'] {
+  opacity: 1;
+  scale: 1;
+  translate: -50% -50%;
+}
+
+.motion-dialog-content[data-state='closed'] {
+  transition-duration: 160ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-motion='pressable'],
+  [data-motion-section],
+  .motion-dialog-content {
+    scale: 1 !important;
+    transform: none !important;
+    translate: -50% -50%;
+  }
+
+  [data-motion-ray='true']::after {
+    display: none;
+  }
+
+  [data-motion-section] {
+    opacity: 1;
+  }
+
+  [data-motion-state='confirmed'] {
+    animation: none;
+  }
+}

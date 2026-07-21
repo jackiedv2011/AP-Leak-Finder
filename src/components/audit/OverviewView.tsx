@@ -1,10 +1,59 @@
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { ArrowRight, Plus, Trash2 } from 'lucide-react'
+import type { CSSProperties } from 'react'
 import type { OverviewSummary, CaseView } from '@/ledger/views'
 import type { DecisionValue } from '@/ledger/caseState'
 import { formatCurrency, formatDate } from '@/lib/format'
 import { QUEUE_GROUP_LABEL, queueGroupFor } from '@/ledger/caseState'
+import { FINDING_TYPE_LABELS } from '@/lib/labels'
 import { FindingCase } from '@/components/audit/FindingCase'
+import { MOTION_SPRING } from '@/motion/system'
+import { useMeaningfulReveal } from '@/motion/useMeaningfulReveal'
+
+const DONUT_CIRCUMFERENCE = 2 * Math.PI * 42
+
+function CaseMixDonut({ summary }: { summary: OverviewSummary }) {
+  const total = summary.statusMix.reduce((sum, item) => sum + item.count, 0)
+  let offset = 0
+
+  return (
+    <div
+      className="audit-summary-donut"
+      aria-label={`Open case mix: ${summary.readyToVerifyCount} ready to verify, ${summary.needsContextCount} needing context, and ${summary.worthNotingCount} worth noting.`}
+    >
+      <svg viewBox="0 0 100 100" aria-hidden="true">
+        <circle className="audit-summary-donut-track" cx="50" cy="50" r="42" />
+        {total > 0 &&
+          summary.statusMix.map((item) => {
+            const length = Math.max((item.count / total) * DONUT_CIRCUMFERENCE - 3, 0)
+            const segment = (
+              <circle
+                className="audit-summary-donut-segment"
+                data-group={item.group}
+                cx="50"
+                cy="50"
+                key={item.group}
+                r="42"
+                style={{
+                  '--segment-length': length,
+                  '--segment-total': DONUT_CIRCUMFERENCE,
+                  '--segment-offset': -offset,
+                  strokeDasharray: `${length} ${DONUT_CIRCUMFERENCE}`,
+                  strokeDashoffset: -offset,
+                } as CSSProperties}
+              />
+            )
+            offset += (item.count / total) * DONUT_CIRCUMFERENCE
+            return segment
+          })}
+      </svg>
+      <div>
+        <strong>{total}</strong>
+        <span>open cases</span>
+      </div>
+    </div>
+  )
+}
 
 interface OverviewViewProps {
   summary: OverviewSummary
@@ -38,7 +87,17 @@ export function OverviewView({
   const reduceMotion = useReducedMotion()
   const recommended = summary.nextRecommendedCase
   const previewRecords = recommended?.finding.relatedRecords.slice(0, 2) ?? []
+  const openCaseCount = summary.statusMix.reduce((sum, item) => sum + item.count, 0)
+  const largestExposure = summary.exposureByType[0]?.dollarImpact ?? 0
   const OverviewTitle = activeCase ? 'p' : 'h1'
+  const revealSignature = [
+    summary.recordCount,
+    summary.totalFindingCount,
+    summary.worthInvestigatingTotal,
+    summary.recoveryActiveCount,
+    summary.recoveryActiveValue,
+  ].join(':')
+  const revealData = useMeaningfulReveal('overview', revealSignature)
 
   return (
     <div className="audit-workspace audit-overview" data-case-open={Boolean(activeCase)}>
@@ -46,43 +105,109 @@ export function OverviewView({
         <div className="audit-overview-heading">
           <span>Standing ledger</span>
           <OverviewTitle className="audit-overview-title">
-            {hasActiveWork ? 'Your next recovery is already in the records.' : 'Your ledger is current.'}
+            {hasActiveWork ? 'Your payment recovery, summarized.' : 'Your ledger is current.'}
           </OverviewTitle>
           <p>
-            {summary.recordCount} records across {summary.vendorCount} vendors, kept as one continuous evidence trail.
+            {summary.recordCount} records across {summary.vendorCount} vendors. Reclaim keeps the evidence and the next decision in the same view.
           </p>
         </div>
 
-        <div className="audit-overview-total" data-tone={hasActiveWork ? 'recovery' : 'quiet'}>
-          <span>{hasActiveWork ? 'Worth investigating' : 'Open recovery value'}</span>
+        <div className="audit-overview-total" data-tone={hasActiveWork ? 'recovery' : 'quiet'} data-motion-value>
+          <span>{hasActiveWork ? 'Open exposure' : 'Open recovery value'}</span>
           <strong>{formatCurrency(hasActiveWork ? summary.worthInvestigatingTotal : 0)}</strong>
           <small>
-            {summary.importCount} import{summary.importCount === 1 ? '' : 's'}
-            {summary.dateRangeLabel ? ` / ${summary.dateRangeLabel}` : ''}
+            {openCaseCount} case{openCaseCount === 1 ? '' : 's'} awaiting a decision
           </small>
+          {summary.recoveryActiveCount > 0 && (
+            <div className="audit-overview-total-secondary">
+              <span>Already in recovery</span>
+              <strong>{formatCurrency(summary.recoveryActiveValue)}</strong>
+            </div>
+          )}
         </div>
       </header>
 
       {!activeCase && hasActiveWork && (
-        <div className="audit-overview-signals" aria-label="Finding readiness">
-          <div data-class="recoverable">
-            <strong>{summary.readyToVerifyCount}</strong>
-            <span>Ready to verify</span>
+        <section className="audit-summary-grid" data-reveal={revealData} aria-label="Ledger summary">
+          <div className="audit-summary-panel audit-summary-mix">
+            <div className="audit-summary-panel-heading">
+              <div>
+                <span>Open case mix</span>
+                <h2>What needs your attention</h2>
+              </div>
+              <p>Cases by readiness, not confidence.</p>
+            </div>
+            <div className="audit-summary-mix-body">
+              <CaseMixDonut summary={summary} />
+              <div className="audit-summary-legend">
+                {summary.statusMix.map((item) => (
+                  <div data-group={item.group} key={item.group}>
+                    <span className="audit-summary-key" aria-hidden="true" />
+                    <p>{QUEUE_GROUP_LABEL[item.group]}</p>
+                    <strong>{item.count}</strong>
+                    <small>{formatCurrency(item.dollarImpact)}</small>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
-          <div data-class="review">
-            <strong>{summary.needsContextCount}</strong>
-            <span>Need context</span>
+
+          <div className="audit-summary-panel audit-summary-exposure">
+            <div className="audit-summary-panel-heading">
+              <div>
+                <span>Exposure by signal</span>
+                <h2>Where the value is concentrated</h2>
+              </div>
+              <p>Open cases only.</p>
+            </div>
+            <ol>
+              {summary.exposureByType.map((item) => (
+                <li key={item.type}>
+                  <div>
+                    <span>{FINDING_TYPE_LABELS[item.type]}</span>
+                    <strong>{formatCurrency(item.dollarImpact)}</strong>
+                  </div>
+                  <i aria-hidden="true">
+                    <b
+                      style={{
+                        width: `${largestExposure > 0 ? (item.dollarImpact / largestExposure) * 100 : 0}%`,
+                      }}
+                    />
+                  </i>
+                  <small>{item.count} open case{item.count === 1 ? '' : 's'}</small>
+                </li>
+              ))}
+            </ol>
           </div>
-          <div data-class="opportunity">
-            <strong>{summary.worthNotingCount}</strong>
-            <span>Worth noting</span>
+
+          <div className="audit-summary-panel audit-summary-pipeline">
+            <div className="audit-summary-panel-heading">
+              <div>
+                <span>Recovery pipeline</span>
+                <h2>From ledger to action</h2>
+              </div>
+              <p>{summary.newSinceLastVisitCount > 0 ? `${summary.newSinceLastVisitCount} new since your last visit` : 'Every case stays linked to its source rows.'}</p>
+            </div>
+            <div className="audit-summary-stages">
+              <div>
+                <strong>{summary.recordCount}</strong>
+                <span>Records checked</span>
+              </div>
+              <div>
+                <strong>{summary.totalFindingCount}</strong>
+                <span>Signals surfaced</span>
+              </div>
+              <div data-emphasis="true">
+                <strong>{summary.readyToVerifyCount}</strong>
+                <span>Ready to verify</span>
+              </div>
+              <div data-emphasis={summary.recoveryActiveCount > 0}>
+                <strong>{summary.recoveryActiveCount}</strong>
+                <span>In recovery</span>
+              </div>
+            </div>
           </div>
-          <p>
-            {summary.newSinceLastVisitCount > 0
-              ? `${summary.newSinceLastVisitCount} new since your last visit`
-              : 'Every open case remains attached to its source rows'}
-          </p>
-        </div>
+        </section>
       )}
 
       <AnimatePresence mode="popLayout" initial={false}>
@@ -109,8 +234,11 @@ export function OverviewView({
             <motion.button
               type="button"
               className="audit-recommended-object"
+              data-motion="pressable"
+              data-motion-ray="true"
+              data-motion-arrow="true"
               layoutId={`finding-${recommended.finding.id}`}
-              transition={reduceMotion ? { duration: 0 } : { type: 'spring', bounce: 0, duration: 0.42 }}
+              transition={reduceMotion ? { duration: 0 } : MOTION_SPRING.shared}
               onClick={() => onOpenCase(recommended.finding.id)}
               aria-label={`Review evidence for ${recommended.finding.title}`}
             >
@@ -153,11 +281,11 @@ export function OverviewView({
 
       {!activeCase && (
         <footer className="audit-overview-footer">
-          <button type="button" className="audit-btn" data-variant="primary" onClick={onOpenImport}>
+          <button type="button" className="audit-btn" data-motion="pressable" data-motion-ray="true" data-variant="primary" onClick={onOpenImport}>
             <Plus aria-hidden="true" />
             Add records
           </button>
-          <button type="button" className="audit-btn" data-variant="ghost" onClick={onClearLedger}>
+          <button type="button" className="audit-btn" data-motion="pressable" data-variant="ghost" onClick={onClearLedger}>
             <Trash2 aria-hidden="true" />
             Clear ledger
           </button>

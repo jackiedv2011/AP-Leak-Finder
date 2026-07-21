@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { LayoutGroup } from 'motion/react'
+import { LayoutGroup, motion, useReducedMotion } from 'motion/react'
 import { ArrowLeft } from 'lucide-react'
 import { AuditShell } from '@/components/audit/AuditShell'
 import { AuditEntry } from '@/components/audit/AuditEntry'
@@ -35,6 +35,9 @@ import {
 import { overviewSummary, findingsQueue, recoveryQueue, findCaseView } from '@/ledger/views'
 import { getSampleLedger } from '@/data/sampleLedger'
 import type { ImportInput } from '@/components/audit/ImportPanel'
+import { MOTION_TRANSITION, sceneVariants } from '@/motion/system'
+
+const MODE_POSITION = { overview: 0, findings: 1, recovery: 2 } as const
 
 function sampleImportInput(): MergeImportInput {
   return { sourceLabel: 'Sample payment ledger', mode: 'sample', parsed: getSampleLedger() }
@@ -47,10 +50,17 @@ export function AuditApp() {
   const [entryError, setEntryError] = useState<string | null>(null)
   const [importDialogOpen, setImportDialogOpen] = useState(false)
   const [clearDialogOpen, setClearDialogOpen] = useState(false)
+  const reduceMotion = useReducedMotion()
 
   const environmentRef = useRef(environment)
   environmentRef.current = environment
   const caseOriginRef = useRef<{ mode: typeof route.mode; y: number }>({ mode: route.mode, y: 0 })
+  const previousModeRef = useRef(route.mode)
+  const modeDirection = Math.sign(MODE_POSITION[route.mode] - MODE_POSITION[previousModeRef.current])
+
+  useEffect(() => {
+    previousModeRef.current = route.mode
+  }, [route.mode])
 
   const runImport = useCallback(
     async (input: MergeImportInput) => {
@@ -230,7 +240,7 @@ export function AuditApp() {
     <AuditShell
       variant="full"
       topBarRight={
-        <a className="audit-btn" data-variant="ghost" data-size="sm" href="/">
+        <a className="audit-btn" data-motion="pressable" data-motion-arrow="true" data-variant="ghost" data-size="sm" href="/">
           <ArrowLeft aria-hidden="true" />
           Back to home
         </a>
@@ -258,36 +268,46 @@ export function AuditApp() {
         )}
 
         <div className="audit-scene" data-depth={activeCase ? (route.draft ? 'action' : 'case') : 'ledger'}>
-          {route.mode === 'overview' && (
-            <OverviewView
-              summary={overview}
-              activeCase={activeCase}
-              draftOpen={route.draft}
-              onOpenCase={handleOpenCase}
-              onCloseCase={handleCloseCase}
-              onOpenDraft={handleOpenDraft}
-              onDecide={handleDecide}
-              onAdvanceStage={handleAdvanceStage}
-              onDraftChange={handleDraftChange}
-              onOpenImport={() => setImportDialogOpen(true)}
-              onClearLedger={() => setClearDialogOpen(true)}
-            />
-          )}
-          {route.mode !== 'overview' && activeCase && (
-            <FindingCase
-              key={activeCase.finding.id}
-              finding={activeCase.finding}
-              state={activeCase.state}
-              isNew={activeCase.isNew}
-              draftOpen={route.draft}
-              onOpenDraft={handleOpenDraft}
-              onDecide={handleDecide}
-              onAdvanceStage={handleAdvanceStage}
-              onDraftChange={handleDraftChange}
-            />
-          )}
-          {route.mode === 'findings' && !activeCase && <FindingsView queue={findingsQueue(environment)} onOpenCase={handleOpenCase} />}
-          {route.mode === 'recovery' && !activeCase && <RecoveryView queue={recoveryQueue(environment)} onOpenCase={handleOpenCase} />}
+          <motion.div
+            className="audit-scene-frame"
+            key={activeCase ? `case-${activeCase.finding.id}` : `ledger-${route.mode}`}
+            custom={modeDirection}
+            variants={reduceMotion ? undefined : sceneVariants}
+            initial={reduceMotion ? { opacity: 0 } : 'enter'}
+            animate={reduceMotion ? { opacity: 1 } : 'center'}
+            transition={reduceMotion ? { duration: 0.1 } : MOTION_TRANSITION.enter}
+          >
+              {route.mode === 'overview' && (
+                <OverviewView
+                  summary={overview}
+                  activeCase={activeCase}
+                  draftOpen={route.draft}
+                  onOpenCase={handleOpenCase}
+                  onCloseCase={handleCloseCase}
+                  onOpenDraft={handleOpenDraft}
+                  onDecide={handleDecide}
+                  onAdvanceStage={handleAdvanceStage}
+                  onDraftChange={handleDraftChange}
+                  onOpenImport={() => setImportDialogOpen(true)}
+                  onClearLedger={() => setClearDialogOpen(true)}
+                />
+              )}
+              {route.mode !== 'overview' && activeCase && (
+                <FindingCase
+                  key={activeCase.finding.id}
+                  finding={activeCase.finding}
+                  state={activeCase.state}
+                  isNew={activeCase.isNew}
+                  draftOpen={route.draft}
+                  onOpenDraft={handleOpenDraft}
+                  onDecide={handleDecide}
+                  onAdvanceStage={handleAdvanceStage}
+                  onDraftChange={handleDraftChange}
+                />
+              )}
+              {route.mode === 'findings' && !activeCase && <FindingsView queue={findingsQueue(environment)} onOpenCase={handleOpenCase} />}
+              {route.mode === 'recovery' && !activeCase && <RecoveryView queue={recoveryQueue(environment)} onOpenCase={handleOpenCase} />}
+          </motion.div>
         </div>
       </LayoutGroup>
 

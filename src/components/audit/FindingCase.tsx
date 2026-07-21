@@ -14,6 +14,7 @@ import {
 } from '@/ledger/caseState'
 import { EvidenceComparison, type EvidenceFieldKey } from '@/components/audit/EvidenceComparison'
 import { RecoveryDraftPanel } from '@/components/audit/RecoveryDraftPanel'
+import { MOTION_SPRING, MOTION_TRANSITION } from '@/motion/system'
 
 interface FindingCaseProps {
   finding: Finding
@@ -93,7 +94,7 @@ export function FindingCase({
       className="audit-case"
       data-embedded={embedded}
       layoutId={`finding-${finding.id}`}
-      transition={reduceMotion ? { duration: 0 } : { type: 'spring', bounce: 0, duration: 0.42 }}
+      transition={reduceMotion ? { duration: 0 } : MOTION_SPRING.shared}
     >
       <p className="sr-only" role="status" aria-live="polite">Opened case: {finding.title}</p>
       <header className="audit-case-header">
@@ -152,13 +153,19 @@ export function FindingCase({
             <h2>Why this was flagged</h2>
             <p className="audit-panel-hint">Plain-language rule breakdown — not a confidence score.</p>
             <ul className="audit-rule-checklist">
-              {checklist.map((check) => (
-                <li key={check.label} data-matched={check.matched}>
+              {checklist.map((check, index) => (
+                <motion.li
+                  key={check.label}
+                  data-matched={check.matched}
+                  initial={reduceMotion ? { opacity: 0 } : { opacity: 0, transform: 'translate3d(-6px, 0, 0)' }}
+                  animate={{ opacity: 1, transform: 'translate3d(0, 0, 0)' }}
+                  transition={reduceMotion ? { duration: 0.1 } : { ...MOTION_TRANSITION.enter, delay: 0.05 + index * 0.035 }}
+                >
                   <span className="audit-rule-mark" aria-hidden="true">
                     {check.matched ? '✓' : '○'}
                   </span>
                   {check.label}
-                </li>
+                </motion.li>
               ))}
             </ul>
           </div>
@@ -171,7 +178,10 @@ export function FindingCase({
                 <button
                   type="button"
                   className="audit-decision-btn"
+                  data-motion="pressable"
+                  data-motion-ray="true"
                   data-selected={state.decision === 'confirmed'}
+                  data-motion-state={state.decision === 'confirmed' ? 'confirmed' : undefined}
                   aria-pressed={state.decision === 'confirmed'}
                   onClick={() => pickDecision('confirmed')}
                 >
@@ -183,6 +193,8 @@ export function FindingCase({
                 <button
                   type="button"
                   className="audit-decision-btn"
+                  data-motion="pressable"
+                  data-motion-ray="true"
                   data-selected={state.decision === 'needs_info'}
                   aria-pressed={state.decision === 'needs_info'}
                   onClick={() => pickDecision('needs_info')}
@@ -195,6 +207,8 @@ export function FindingCase({
                 <button
                   type="button"
                   className="audit-decision-btn"
+                  data-motion="pressable"
+                  data-motion-ray="true"
                   data-selected={state.decision === 'expected'}
                   aria-pressed={state.decision === 'expected'}
                   onClick={() => pickDecision('expected')}
@@ -206,7 +220,12 @@ export function FindingCase({
             </div>
 
             {state.decision && (
-              <div className="audit-decision-reason">
+              <motion.div
+                className="audit-decision-reason"
+                initial={reduceMotion ? { opacity: 0 } : { opacity: 0, transform: 'translate3d(0, -6px, 0)' }}
+                animate={{ opacity: 1, transform: 'translate3d(0, 0, 0)' }}
+                transition={reduceMotion ? { duration: 0.12 } : MOTION_TRANSITION.enter}
+              >
                 <label htmlFor="audit-decision-note" className="audit-decision-reason-label">
                   Reason (optional)
                 </label>
@@ -220,14 +239,27 @@ export function FindingCase({
                   onChange={(e) => setReasonDraft(e.target.value)}
                   onBlur={commitReason}
                 />
-                <p className="audit-decision-status" role="status" aria-live="polite">
+                <motion.p
+                  className="audit-decision-status"
+                  key={caseStatusLabel(finding, state)}
+                  role="status"
+                  aria-live="polite"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: reduceMotion ? 0.08 : 0.16 }}
+                >
                   {caseStatusLabel(finding, state)}
-                </p>
-              </div>
+                </motion.p>
+              </motion.div>
             )}
 
             {state.decision === 'needs_info' && (
-              <div className="audit-evidence-gaps">
+              <motion.div
+                className="audit-evidence-gaps"
+                initial={reduceMotion ? { opacity: 0 } : { opacity: 0, transform: 'translate3d(0, 8px, 0)' }}
+                animate={{ opacity: 1, transform: 'translate3d(0, 0, 0)' }}
+                transition={reduceMotion ? { duration: 0.12 } : MOTION_TRANSITION.enter}
+              >
                 <h3>What would resolve this case</h3>
                 {buildEvidenceGaps(finding).map((gap) => (
                   <div className="audit-evidence-gap" data-source={gap.source} key={gap.label}>
@@ -239,21 +271,28 @@ export function FindingCase({
                     <p className="audit-gap-next-step">Next step: {gap.nextStep}</p>
                   </div>
                 ))}
-              </div>
+              </motion.div>
             )}
 
             {!draftOpen && canDraft && (
-              <div className="audit-recovery-readiness" role="status">
+              <motion.div
+                className="audit-recovery-readiness"
+                data-motion-state="confirmed"
+                role="status"
+                initial={reduceMotion ? { opacity: 0 } : { opacity: 0, transform: 'translate3d(0, 8px, 0)' }}
+                animate={{ opacity: 1, transform: 'translate3d(0, 0, 0)' }}
+                transition={reduceMotion ? { duration: 0.12 } : MOTION_TRANSITION.enter}
+              >
                 <div>
                   <span>Recovery ready</span>
                   <strong>The evidence package is complete.</strong>
                   <p>The vendor, invoice, payment dates, amount, and source rows will travel with the request.</p>
                 </div>
-                <button type="button" className="audit-btn" data-variant="primary" onClick={onOpenDraft}>
+                <button type="button" className="audit-btn" data-motion="pressable" data-motion-ray="true" data-variant="primary" onClick={onOpenDraft}>
                   <FileText className="h-4 w-4" aria-hidden="true" />
                   {draftActionLabel}
                 </button>
-              </div>
+              </motion.div>
             )}
           </div>
         </div>

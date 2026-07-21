@@ -4,7 +4,7 @@ import {
   useState,
   type RefObject,
 } from 'react'
-import { useMotionValueEvent, useScroll } from 'motion/react'
+import { useMotionValueEvent, useReducedMotion, useScroll } from 'motion/react'
 import { ReclaimLogo, ReclaimMark, ReclaimWordmark } from '@/components/ReclaimLogo'
 import { MagneticLink } from '@/components/landing/MagneticLink'
 import { SideRays } from '@/components/landing/SideRays'
@@ -112,15 +112,17 @@ function LandingNav() {
         </a>
 
         <div className="reclaim-nav-links">
-          <a href="#evidence">Evidence</a>
-          <a href="#analysis">Analysis</a>
-          <a href="/audit?upload=1">Use your ledger</a>
+          <a data-motion="pressable" href="#evidence">Evidence</a>
+          <a data-motion="pressable" href="#analysis">Analysis</a>
+          <a data-motion="pressable" href="/audit?upload=1">Use your ledger</a>
         </div>
 
         <MagneticLink className="reclaim-nav-action" href="/audit?sample=1" pendingLabel="Opening…">Run sample audit</MagneticLink>
 
         <button
           className="reclaim-menu-button"
+          data-motion="pressable"
+          data-motion-ray="true"
           type="button"
           aria-expanded={menuOpen}
           aria-controls="reclaim-mobile-menu"
@@ -132,10 +134,10 @@ function LandingNav() {
         </button>
 
         <div className="reclaim-mobile-menu" id="reclaim-mobile-menu" data-open={menuOpen} aria-hidden={!menuOpen}>
-          <a href="#evidence" tabIndex={menuOpen ? 0 : -1} onClick={() => setMenuOpen(false)}><span>Evidence</span><span className="reclaim-menu-link-icon" aria-hidden="true">↗</span></a>
-          <a href="#analysis" tabIndex={menuOpen ? 0 : -1} onClick={() => setMenuOpen(false)}><span>Analysis</span><span className="reclaim-menu-link-icon" aria-hidden="true">↗</span></a>
-          <a href="/audit?upload=1" tabIndex={menuOpen ? 0 : -1} onClick={() => setMenuOpen(false)}><span>Use your ledger</span><span className="reclaim-menu-link-icon" aria-hidden="true">↗</span></a>
-          <a href="/audit?sample=1" tabIndex={menuOpen ? 0 : -1} onClick={() => setMenuOpen(false)}><span>Run sample audit</span><span className="reclaim-menu-link-icon" aria-hidden="true">↗</span></a>
+          <a data-motion="pressable" data-motion-arrow="true" href="#evidence" tabIndex={menuOpen ? 0 : -1} onClick={() => setMenuOpen(false)}><span>Evidence</span><span className="reclaim-menu-link-icon motion-arrow" aria-hidden="true">↗</span></a>
+          <a data-motion="pressable" data-motion-arrow="true" href="#analysis" tabIndex={menuOpen ? 0 : -1} onClick={() => setMenuOpen(false)}><span>Analysis</span><span className="reclaim-menu-link-icon motion-arrow" aria-hidden="true">↗</span></a>
+          <a data-motion="pressable" data-motion-arrow="true" href="/audit?upload=1" tabIndex={menuOpen ? 0 : -1} onClick={() => setMenuOpen(false)}><span>Use your ledger</span><span className="reclaim-menu-link-icon motion-arrow" aria-hidden="true">↗</span></a>
+          <a data-motion="pressable" data-motion-arrow="true" href="/audit?sample=1" tabIndex={menuOpen ? 0 : -1} onClick={() => setMenuOpen(false)}><span>Run sample audit</span><span className="reclaim-menu-link-icon motion-arrow" aria-hidden="true">↗</span></a>
         </div>
       </nav>
     </header>
@@ -144,7 +146,7 @@ function LandingNav() {
 
 function HeroAudit() {
   return (
-    <article className="hero-audit" aria-label="Animated sample audit showing a duplicate payment finding">
+    <article className="hero-audit" data-motion-ray="true" aria-label="Animated sample audit showing a duplicate payment finding">
       <header className="hero-audit-header">
         <div><span className="hero-audit-pulse" aria-hidden="true" /> Sample audit</div>
         <span>{sample.records.length} records scanned</span>
@@ -204,7 +206,7 @@ function Hero({ heroRef }: { heroRef: RefObject<HTMLElement | null> }) {
           </p>
           <div className="reclaim-actions">
             <MagneticLink className="reclaim-button reclaim-button-primary" href="/audit?sample=1" pendingLabel="Opening sample audit…">Run sample audit</MagneticLink>
-            <a className="reclaim-text-action" href="/audit?upload=1">Use your ledger</a>
+            <a className="reclaim-text-action" data-motion="pressable" data-motion-arrow="true" href="/audit?upload=1">Use your ledger</a>
           </div>
         </div>
         <HeroAudit />
@@ -277,7 +279,7 @@ function RawLedger() {
 
       <div className="ledger-discovery">
         <span>Matched on vendor, invoice, and amount.</span>
-        <a href="/audit?sample=1">Recovery-ready: {currency.format(canonicalFinding.dollarImpact)}</a>
+        <a data-motion="pressable" data-motion-ray="true" href="/audit?sample=1">Recovery-ready: {currency.format(canonicalFinding.dollarImpact)}</a>
       </div>
     </section>
   )
@@ -331,7 +333,16 @@ function ReviewState({ active, onConfirm }: { active: boolean; onConfirm: () => 
         <div><dt>Invoice</dt><dd>INV-3305</dd></div>
         <div><dt>Extra payment</dt><dd>{currency.format(canonicalFinding.dollarImpact)}</dd></div>
       </dl>
-      <button className="reclaim-confirm-button" type="button" onClick={onConfirm} tabIndex={active ? 0 : -1}>Confirm and prepare request</button>
+      <button
+        className="reclaim-confirm-button"
+        data-motion="pressable"
+        data-motion-ray="true"
+        type="button"
+        onClick={onConfirm}
+        tabIndex={active ? 0 : -1}
+      >
+        Confirm and prepare request
+      </button>
       <small>Reclaim never sends a request without your review.</small>
     </div>
   )
@@ -362,6 +373,7 @@ function RecoveryDocument() {
 
 function EvidenceStory() {
   const [activeStage, setActiveStage] = useState(0)
+  const reduceMotion = useReducedMotion()
   const stepRefs = useRef<Array<HTMLButtonElement | null>>([])
   const layoutRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLDivElement>(null)
@@ -426,7 +438,7 @@ function EvidenceStory() {
 
   return (
     <section id="evidence" className="evidence-story" aria-labelledby="evidence-title">
-      <div className="story-intro">
+      <div className="story-intro" data-motion-section>
         <h2 id="evidence-title">The evidence stays attached.</h2>
         <p>One finding moves from raw records to a recovery-ready action without losing its paper trail.</p>
       </div>
@@ -437,13 +449,15 @@ function EvidenceStory() {
             <button
               type="button"
               className="story-step"
+              data-motion="pressable"
+              data-motion-ray="true"
               data-stage={index}
               data-active={activeStage === index}
               key={step.title}
               ref={(node) => { stepRefs.current[index] = node }}
               onClick={() => {
                 setActiveStage(index)
-                stepRefs.current[index]?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                stepRefs.current[index]?.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'center' })
               }}
               aria-pressed={activeStage === index}
             >
@@ -544,7 +558,7 @@ function DetectionBreadth() {
       data-revealed={revealed}
       aria-labelledby="analysis-title"
     >
-      <div className="analysis-copy">
+      <div className="analysis-copy" data-motion-section>
         <h2 id="analysis-title">Not every flag means money is recoverable.</h2>
         <p>Every figure below traces back to the evidence you just reviewed, split into what&apos;s recoverable, what needs a person, and what prevents the next leak.</p>
       </div>
@@ -580,13 +594,13 @@ function DetectionBreadth() {
 
 function Closing() {
   return (
-    <section className="reclaim-closing" aria-labelledby="closing-title">
+    <section className="reclaim-closing" data-motion-section aria-labelledby="closing-title">
       <ReclaimMark size={76} interactive />
       <h2 id="closing-title">Start with the ledger you already have.</h2>
       <p>See the full path from upload to evidence, review, and recovery request.</p>
       <div className="reclaim-actions">
         <MagneticLink className="reclaim-button reclaim-button-primary" href="/audit?sample=1" pendingLabel="Opening sample audit…">Run sample audit</MagneticLink>
-        <a className="reclaim-text-action" href="/audit?upload=1">Use your ledger</a>
+        <a className="reclaim-text-action" data-motion="pressable" data-motion-arrow="true" href="/audit?upload=1">Use your ledger</a>
       </div>
     </section>
   )
@@ -594,6 +608,28 @@ function Closing() {
 
 export function LandingPage() {
   const heroRef = useRef<HTMLElement>(null)
+
+  useEffect(() => {
+    const sections = Array.from(document.querySelectorAll<HTMLElement>('[data-motion-section]'))
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      sections.forEach((section) => { section.dataset.motionVisible = 'true' })
+      return
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return
+          ;(entry.target as HTMLElement).dataset.motionVisible = 'true'
+          observer.unobserve(entry.target)
+        })
+      },
+      { rootMargin: '-8% 0px -12% 0px', threshold: 0.08 }
+    )
+
+    sections.forEach((section) => observer.observe(section))
+    return () => observer.disconnect()
+  }, [])
 
   return (
     <div className="reclaim-page">
@@ -609,7 +645,7 @@ export function LandingPage() {
       <footer className="reclaim-footer">
         <a href="/" aria-label="Reclaim home"><ReclaimLogo size={28} /></a>
         <p>Explainable payment review. Local by default.</p>
-        <a href="/audit?upload=1">Open audit workspace</a>
+        <a data-motion="pressable" data-motion-arrow="true" href="/audit?upload=1">Open audit workspace</a>
       </footer>
     </div>
   )

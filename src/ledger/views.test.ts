@@ -31,6 +31,9 @@ describe('views', () => {
     expect(overview.worthInvestigatingTotal).toBeGreaterThan(0)
     expect(overview.nextRecommendedCase).not.toBeNull()
     expect(overview.nextRecommendedCase!.finding.class).toBe('recoverable')
+    expect(overview.statusMix.reduce((sum, item) => sum + item.count, 0)).toBe(overview.totalFindingCount)
+    expect(overview.statusMix.reduce((sum, item) => sum + item.dollarImpact, 0)).toBe(overview.worthInvestigatingTotal)
+    expect(overview.exposureByType[0]?.dollarImpact).toBeGreaterThan(0)
   })
 
   it('findings queue groups undecided cases by readiness, sorted by dollar impact', () => {
@@ -57,6 +60,7 @@ describe('views', () => {
     const recovery = recoveryQueue(env)
     const prepareGroup = recovery.find((g) => g.stage === 'ready_to_prepare')!
     expect(prepareGroup.cases.some((c) => c.finding.id === recoverable.id)).toBe(true)
+    expect(overviewSummary(env).recoveryActiveValue).toBe(recoverable.dollarImpact)
   })
 
   it('marking a case expected resolves it directly, visible in the Recovery "resolved" group', () => {

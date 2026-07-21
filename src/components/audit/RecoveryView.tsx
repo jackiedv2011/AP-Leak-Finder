@@ -1,5 +1,7 @@
 import type { RecoveryQueueGroup } from '@/ledger/views'
 import { formatCurrency } from '@/lib/format'
+import { motion, useReducedMotion } from 'motion/react'
+import { MOTION_SPRING } from '@/motion/system'
 
 interface RecoveryViewProps {
   queue: RecoveryQueueGroup[]
@@ -16,6 +18,7 @@ const STAGE_SUBTEXT: Record<RecoveryQueueGroup['stage'], string> = {
 /** Recovery lens — every confirmed (or resolved) case, grouped by operational stage. */
 export function RecoveryView({ queue, onOpenCase }: RecoveryViewProps) {
   const totalCases = queue.reduce((sum, group) => sum + group.cases.length, 0)
+  const reduceMotion = useReducedMotion()
 
   if (totalCases === 0) {
     return (
@@ -51,12 +54,23 @@ export function RecoveryView({ queue, onOpenCase }: RecoveryViewProps) {
               <p className="audit-lane-empty">No cases in "{group.label.toLowerCase()}" right now.</p>
             ) : (
               <div className="audit-lane-cards">
-                {group.cases.map(({ finding }) => (
-                  <button type="button" className="audit-finding-card" key={finding.id} onClick={() => onOpenCase(finding.id)}>
+                {group.cases.map(({ finding }, caseIndex) => (
+                  <motion.button
+                    type="button"
+                    className="audit-finding-card"
+                    data-motion="pressable"
+                    data-motion-ray="true"
+                    layoutId={`finding-${finding.id}`}
+                    initial={reduceMotion ? { opacity: 0 } : { opacity: 0, transform: 'translate3d(0, 8px, 0)' }}
+                    animate={{ opacity: 1, transform: 'translate3d(0, 0, 0)' }}
+                    transition={reduceMotion ? { duration: 0.12 } : { ...MOTION_SPRING.shared, delay: Math.min(caseIndex * 0.035, 0.14) }}
+                    key={finding.id}
+                    onClick={() => onOpenCase(finding.id)}
+                  >
                     <span>{finding.vendor}</span>
                     <strong>{finding.title}</strong>
                     <span className="audit-finding-card-amount">{formatCurrency(finding.dollarImpact)}</span>
-                  </button>
+                  </motion.button>
                 ))}
               </div>
             )}

@@ -4,7 +4,7 @@ import { AuditApp } from '@/AuditApp'
 import { getSampleLedger } from '@/data/sampleLedger'
 import { detectFindings } from '@/lib/detection'
 import { formatCurrency } from '@/lib/format'
-import { clearEnvironment } from '@/ledger/store'
+import { clearEnvironment, loadEnvironment } from '@/ledger/store'
 
 function setLocation(path: string) {
   window.history.pushState({}, '', path)
@@ -18,7 +18,7 @@ function realSampleResult() {
 async function renderAtSample() {
   setLocation('/audit?sample=1')
   render(<AuditApp />)
-  await waitFor(() => expect(screen.getByText(/worth investigating|every case has a decision/i)).toBeInTheDocument())
+  await waitFor(() => expect(screen.getByText(/payment recovery, summarized|every case has a decision/i)).toBeInTheDocument())
 }
 
 describe('AuditApp', () => {
@@ -33,7 +33,7 @@ describe('AuditApp', () => {
     setLocation('/audit')
     render(<AuditApp />)
     expect(screen.getByText(/drop a csv here/i)).toBeInTheDocument()
-    expect(screen.queryByText(/worth investigating/i)).not.toBeInTheDocument()
+    expect(screen.queryByText(/payment recovery, summarized/i)).not.toBeInTheDocument()
   })
 
   it('?sample=1 creates the ledger and lands on Overview with real, non-fabricated totals', async () => {
@@ -41,7 +41,7 @@ describe('AuditApp', () => {
 
     const result = realSampleResult()
     expect(screen.getByText(formatCurrency(result.recoverableTotal + result.reviewTotal + result.opportunityTotal))).toBeInTheDocument()
-    expect(screen.getByText(`${result.findings.filter((f) => f.class === 'recoverable').length}`)).toBeInTheDocument()
+    expect(screen.getAllByText(`${result.findings.filter((f) => f.class === 'recoverable').length}`).length).toBeGreaterThan(0)
   })
 
   it('opening the strongest case shows evidence and a plain-language rule checklist — no confidence score', async () => {
@@ -72,7 +72,7 @@ describe('AuditApp', () => {
     await renderAtSample()
     fireEvent.click(screen.getByRole('button', { name: /review evidence/i }))
 
-    expect(screen.getByText('Your next recovery is already in the records.')).toBeInTheDocument()
+    expect(screen.getByText('Why this was flagged')).toBeInTheDocument()
     expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1)
 
     fireEvent.click(screen.getByRole('button', { name: 'Confirm likely duplicate' }))
@@ -157,7 +157,7 @@ describe('AuditApp', () => {
     await waitFor(() => expect(screen.getByText('more.csv')).toBeInTheDocument())
     fireEvent.click(screen.getByRole('button', { name: /add to ledger/i }))
 
-    await waitFor(() => expect(screen.getByText(/2 imports/i)).toBeInTheDocument())
+    await waitFor(() => expect(loadEnvironment()?.imports).toHaveLength(2))
 
     // Radix's tab-trigger pointer handling isn't reliably exercised by jsdom's
     // synthetic click event, so verify the mode switch through the same route
@@ -177,7 +177,7 @@ describe('AuditApp', () => {
 
     setLocation('/audit')
     render(<AuditApp />)
-    await waitFor(() => expect(screen.getByText(/worth investigating|every case has a decision/i)).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByText(/payment recovery, summarized|every case has a decision/i)).toBeInTheDocument())
     expect(screen.queryByText(/drop a csv here/i)).not.toBeInTheDocument()
   })
 
@@ -198,13 +198,13 @@ describe('AuditApp', () => {
     fireEvent.click(sampleLink)
     fireEvent.click(sampleLink)
 
-    await waitFor(() => expect(screen.getByText(/worth investigating|every case has a decision/i)).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByText(/payment recovery, summarized|every case has a decision/i)).toBeInTheDocument())
 
     const result = realSampleResult()
     expect(
       screen.getByText(formatCurrency(result.recoverableTotal + result.reviewTotal + result.opportunityTotal))
     ).toBeInTheDocument()
     // exactly one import happened, not three
-    expect(screen.getByText(/1 import\b/i)).toBeInTheDocument()
+    expect(loadEnvironment()?.imports).toHaveLength(1)
   })
 })

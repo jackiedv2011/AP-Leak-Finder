@@ -18,10 +18,10 @@ export function ClearLedgerDialog({ open, onOpenChange, onConfirm }: ClearLedger
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
-          <button type="button" className="audit-btn" onClick={() => onOpenChange(false)}>
+          <button type="button" className="audit-btn" data-motion="pressable" onClick={() => onOpenChange(false)}>
             Cancel
           </button>
-          <button type="button" className="audit-btn" data-variant="primary" onClick={onConfirm}>
+          <button type="button" className="audit-btn" data-motion="pressable" data-motion-ray="true" data-variant="primary" onClick={onConfirm}>
             Delete ledger
           </button>
         </DialogFooter>

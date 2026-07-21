@@ -19,7 +19,7 @@ const magneticSpring = {
   stiffness: 360,
 }
 
-const PENDING_NAVIGATE_DELAY_MS = 260
+const PENDING_NAVIGATE_DELAY_MS = 140
 
 export function MagneticLink({
   children,
@@ -49,6 +49,9 @@ export function MagneticLink({
     onClick?.(event)
     if (event.defaultPrevented || !pendingLabel || !href) return
     if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
+    // Keyboard activation and reduced-motion navigation should remain
+    // immediate; the brief pressed state is only useful for pointer input.
+    if (event.detail === 0 || reduceMotion) return
     if (isPending) {
       event.preventDefault()
       return
@@ -66,6 +69,9 @@ export function MagneticLink({
       href={href}
       ref={linkRef}
       className={`magnetic-control ${className}`}
+      data-motion="pressable"
+      data-motion-arrow="true"
+      data-motion-ray="true"
       style={reduceMotion ? undefined : { transform }}
       aria-disabled={isPending || undefined}
       onClick={handleClick}
@@ -76,8 +82,8 @@ export function MagneticLink({
         const bounds = linkRef.current?.getBoundingClientRect()
         if (!bounds) return
 
-        x.set(((event.clientX - bounds.left) / bounds.width - 0.5) * 8)
-        y.set(((event.clientY - bounds.top) / bounds.height - 0.5) * 6)
+        x.set(((event.clientX - bounds.left) / bounds.width - 0.5) * 5)
+        y.set(((event.clientY - bounds.top) / bounds.height - 0.5) * 4)
       }}
       onPointerLeave={(event) => {
         onPointerLeave?.(event)

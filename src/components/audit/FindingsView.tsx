@@ -1,5 +1,7 @@
 import type { FindingsQueueGroup } from '@/ledger/views'
 import { formatCurrency } from '@/lib/format'
+import { motion, useReducedMotion } from 'motion/react'
+import { MOTION_SPRING } from '@/motion/system'
 
 interface FindingsViewProps {
   queue: FindingsQueueGroup[]
@@ -15,6 +17,7 @@ const GROUP_SUBTEXT: Record<FindingsQueueGroup['group'], string> = {
 /** Findings lens — every case still awaiting a decision, grouped by readiness. */
 export function FindingsView({ queue, onOpenCase }: FindingsViewProps) {
   const totalCases = queue.reduce((sum, group) => sum + group.cases.length, 0)
+  const reduceMotion = useReducedMotion()
 
   if (totalCases === 0) {
     return (
@@ -50,15 +53,26 @@ export function FindingsView({ queue, onOpenCase }: FindingsViewProps) {
               <p className="audit-lane-empty">No cases in "{group.label.toLowerCase()}" right now.</p>
             ) : (
               <div className="audit-lane-cards">
-                {group.cases.map(({ finding, isNew }) => (
-                  <button type="button" className="audit-finding-card" key={finding.id} onClick={() => onOpenCase(finding.id)}>
+                {group.cases.map(({ finding, isNew }, caseIndex) => (
+                  <motion.button
+                    type="button"
+                    className="audit-finding-card"
+                    data-motion="pressable"
+                    data-motion-ray="true"
+                    layoutId={`finding-${finding.id}`}
+                    initial={reduceMotion ? { opacity: 0 } : { opacity: 0, transform: 'translate3d(0, 8px, 0)' }}
+                    animate={{ opacity: 1, transform: 'translate3d(0, 0, 0)' }}
+                    transition={reduceMotion ? { duration: 0.12 } : { ...MOTION_SPRING.shared, delay: Math.min(caseIndex * 0.035, 0.14) }}
+                    key={finding.id}
+                    onClick={() => onOpenCase(finding.id)}
+                  >
                     <div className="audit-finding-card-top">
                       <span>{finding.vendor}</span>
                       {isNew && <span className="audit-finding-card-status">New</span>}
                     </div>
                     <strong>{finding.title}</strong>
                     <span className="audit-finding-card-amount">{formatCurrency(finding.dollarImpact)}</span>
-                  </button>
+                  </motion.button>
                 ))}
               </div>
             )}
