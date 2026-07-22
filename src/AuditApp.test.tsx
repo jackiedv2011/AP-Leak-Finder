@@ -44,6 +44,30 @@ describe('AuditApp', () => {
     expect(screen.getAllByText(`${result.findings.filter((f) => f.class === 'recoverable').length}`).length).toBeGreaterThan(0)
   })
 
+  it('the sample launch is a real threshold and only enters the workspace after its CTA', async () => {
+    setLocation('/audit?entry=sample')
+    render(<AuditApp />)
+    expect(screen.getByRole('heading', { name: /see the evidence connect/i })).toBeInTheDocument()
+    expect(screen.queryByText(/payment recovery, summarized/i)).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: /run the sample audit/i }))
+    expect(screen.getByText(/preparing sample ledger/i)).toBeInTheDocument()
+    await waitFor(
+      () => expect(screen.getByText(/payment recovery, summarized|every case has a decision/i)).toBeInTheDocument(),
+      { timeout: 3000 }
+    )
+  })
+
+  it('the upload entry route stays on the import screen even if a ledger already exists', async () => {
+    await renderAtSample()
+    cleanup()
+    setLocation('/audit?entry=upload')
+    render(<AuditApp />)
+
+    expect(screen.getByText(/drop a csv here/i)).toBeInTheDocument()
+    expect(screen.queryByText(/payment recovery, summarized/i)).not.toBeInTheDocument()
+  })
+
   it('opening the strongest case shows evidence and a plain-language rule checklist — no confidence score', async () => {
     await renderAtSample()
     fireEvent.click(screen.getByRole('button', { name: /review evidence/i }))

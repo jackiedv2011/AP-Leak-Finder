@@ -3,6 +3,8 @@ import { LayoutGroup, motion, useReducedMotion } from 'motion/react'
 import { ArrowLeft } from 'lucide-react'
 import { AuditShell } from '@/components/audit/AuditShell'
 import { AuditEntry } from '@/components/audit/AuditEntry'
+import { AuditLaunch } from '@/components/audit/AuditLaunch'
+import { AuditProcessing, type SampleAuditPhase } from '@/components/audit/AuditProcessing'
 import { IngestStatus } from '@/components/audit/IngestStatus'
 import { LivingCapsule } from '@/components/audit/LivingCapsule'
 import { OverviewView } from '@/components/audit/OverviewView'
@@ -50,9 +52,12 @@ export function AuditApp() {
   const [entryError, setEntryError] = useState<string | null>(null)
   const [importDialogOpen, setImportDialogOpen] = useState(false)
   const [clearDialogOpen, setClearDialogOpen] = useState(false)
+  const [sampleSession, setSampleSession] = useState(false)
+  const [sampleAuditPhase, setSampleAuditPhase] = useState<SampleAuditPhase | null>(null)
   const reduceMotion = useReducedMotion()
 
   const environmentRef = useRef(environment)
+  const sampleAuditRunRef = useRef(0)
   environmentRef.current = environment
   const caseOriginRef = useRef<{ mode: typeof route.mode; y: number }>({ mode: route.mode, y: 0 })
   const previousModeRef = useRef(route.mode)
@@ -62,8 +67,14 @@ export function AuditApp() {
     previousModeRef.current = route.mode
   }, [route.mode])
 
+  useEffect(() => () => {
+    // A pending sample launch must not pull someone back into the audit if
+    // they used browser Back to leave the route mid-sequence.
+    sampleAuditRunRef.current += 1
+  }, [])
+
   const runImport = useCallback(
-    async (input: MergeImportInput) => {
+    async (input: MergeImportInput, options: { replaceEnvironment?: boolean; persist?: boolean } = {}) => {
       setEntryError(null)
       setImportDialogOpen(false)
       const count = input.parsed.records.length
@@ -75,10 +86,11 @@ export function AuditApp() {
       // reliably in a backgrounded or non-compositing tab.
       await new Promise((resolve) => setTimeout(resolve, 0))
       try {
-        const next = mergeImport(environmentRef.current, input)
-        saveEnvironment(next)
+        const next = mergeImport(options.replaceEnvironment ? null : environmentRef.current, input)
+        if (options.persist !== false) saveEnvironment(next)
         setEnvironment(next)
-        navigate({ mode: 'overview', caseId: null, draft: false }, { replace: true })
+        setSampleSession(options.persist === false)
+        navigate({ mode: 'overview', caseId: null, draft: false, entry: null }, { replace: true })
       } catch (err) {
         console.error('Reclaim: import failed', err)
         setEntryError('Something went wrong reading that file. Please try again.')
@@ -88,6 +100,31 @@ export function AuditApp() {
     },
     [navigate]
   )
+
+  const runSampleAudit = useCallback(async () => {
+    const runId = sampleAuditRunRef.current + 1
+    sampleAuditRunRef.current = runId
+    const isCurrentRun = () => sampleAuditRunRef.current === runId
+    const pause = (duration: number) => new Promise((resolve) => window.setTimeout(resolve, duration))
+
+    setSampleAuditPhase('reading')
+    await pause(360)
+    if (!isCurrentRun()) return
+
+    setSampleAuditPhase('matching')
+    await pause(480)
+    if (!isCurrentRun()) return
+
+    setSampleAuditPhase('ready')
+    await pause(520)
+    if (!isCurrentRun()) return
+
+    try {
+      await runImport(sampleImportInput(), { replaceEnvironment: true, persist: false })
+    } finally {
+      if (isCurrentRun()) setSampleAuditPhase(null)
+    }
+  }, [runImport])
 
   // One-time bootstrap: honor a first-time `?sample=1` CTA from the landing
   // page, and restore the last working context on a bare reload (no query
@@ -148,7 +185,12 @@ export function AuditApp() {
   const handleOpenCase = useCallback(
     (findingId: string) => {
       caseOriginRef.current = { mode: route.mode, y: window.scrollY }
-      navigate({ caseId: findingId, draft: false })
+      navigate({ caseId: findingId, draft: false, entry: null })
+      // Opening a case is a new scene, not a continuation of the queue below it.
+      // Reset twice so the post-navigation layout cannot restore the previous scroll position.
+      const resetCaseScroll = () => window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+      resetCaseScroll()
+      window.requestAnimationFrame(resetCaseScroll)
     },
     [navigate, route.mode]
   )
@@ -198,21 +240,54 @@ export function AuditApp() {
   )
 
   const handleClearLedger = useCallback(() => {
-    clearEnvironment()
+    if (!sampleSession) clearEnvironment()
     setEnvironment(null)
+    setSampleSession(false)
     setClearDialogOpen(false)
     setEntryError(null)
-    navigate({ mode: 'overview', caseId: null, draft: false }, { replace: true })
-  }, [navigate])
+    navigate({ mode: 'overview', caseId: null, draft: false, entry: sampleSession ? 'upload' : null }, { replace: true })
+  }, [navigate, sampleSession])
 
   const handleCloseCase = useCallback(() => {
     goBack()
   }, [goBack])
 
+  if (sampleAuditPhase) {
+    return (
+      <AuditShell variant="minimal">
+        <AuditProcessing phase={sampleAuditPhase} />
+      </AuditShell>
+    )
+  }
+
   if (ingestLabel) {
     return (
       <AuditShell variant="minimal">
         <IngestStatus label={ingestLabel} />
+      </AuditShell>
+    )
+  }
+
+  if (route.entry === 'sample') {
+    return (
+      <AuditShell variant="minimal">
+        <AuditLaunch
+          onRunSample={runSampleAudit}
+          onUseLedger={() => navigate({ entry: 'upload', caseId: null, draft: false }, { replace: true })}
+        />
+      </AuditShell>
+    )
+  }
+
+  if (route.entry === 'upload') {
+    return (
+      <AuditShell variant="minimal">
+        <AuditEntry
+          variant="upload"
+          error={entryError}
+          onRunSample={runSampleAudit}
+          onImport={handleImport}
+        />
       </AuditShell>
     )
   }

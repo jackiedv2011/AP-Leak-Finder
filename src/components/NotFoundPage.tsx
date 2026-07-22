@@ -22,7 +22,7 @@ export function NotFoundPage() {
           <a className="rounded-[10px] bg-[#eef0eb] px-5 py-3 text-sm font-bold text-[#151a17] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#79d99b] focus-visible:ring-offset-4 focus-visible:ring-offset-[#090b0c]" href="/">
             Return home
           </a>
-          <a className="rounded-[10px] px-5 py-3 text-sm font-semibold text-[#cbd2cd] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#79d99b] focus-visible:ring-offset-4 focus-visible:ring-offset-[#090b0c]" href="/audit?sample=1">
+          <a className="rounded-[10px] px-5 py-3 text-sm font-semibold text-[#cbd2cd] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#79d99b] focus-visible:ring-offset-4 focus-visible:ring-offset-[#090b0c]" href="/audit?entry=sample">
             Open sample audit
           </a>
         </div>

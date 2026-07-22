@@ -17,32 +17,15 @@
 }
 
 [data-motion='pressable'] {
+  translate: 0 0;
   scale: 1;
-  transition: scale var(--motion-press) var(--motion-ease-out);
+  transition:
+    translate var(--motion-hover) var(--motion-ease-out),
+    scale var(--motion-press) var(--motion-ease-out);
 }
 
 [data-motion='pressable']:active {
   scale: 0.975;
-}
-
-[data-motion-ray='true'] {
-  position: relative;
-  isolation: isolate;
-  overflow: hidden;
-}
-
-[data-motion-ray='true']::after {
-  position: absolute;
-  z-index: 2;
-  inset: -55% -35%;
-  background: var(--motion-ray);
-  content: '';
-  opacity: 0;
-  pointer-events: none;
-  transform: translate3d(-58%, 0, 0);
-  transition:
-    transform 280ms var(--motion-ease-out),
-    opacity 140ms ease;
 }
 
 [data-motion-arrow='true'] svg,
@@ -68,10 +51,8 @@
 }
 
 @media (hover: hover) and (pointer: fine) {
-  [data-motion-ray='true']:hover::after,
-  [data-motion-ray='true'][data-motion-state='confirmed']::after {
-    opacity: 0.82;
-    transform: translate3d(58%, 0, 0);
+  [data-motion='pressable']:not(:disabled):hover {
+    translate: 0 -1px;
   }
 
   [data-motion-arrow='true']:hover svg,
@@ -122,11 +103,8 @@
   .motion-dialog-content {
     scale: 1 !important;
     transform: none !important;
+    translate: 0 0 !important;
     translate: -50% -50%;
-  }
-
-  [data-motion-ray='true']::after {
-    display: none;
   }
 
   [data-motion-section] {

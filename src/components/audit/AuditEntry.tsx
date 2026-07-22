@@ -4,10 +4,12 @@ interface AuditEntryProps {
   error: string | null
   onRunSample: () => void
   onImport: (input: ImportInput) => void
+  variant?: 'default' | 'upload'
 }
 
 /** First-time entry — the only moment that feels like a threshold, since there's no ledger yet. */
-export function AuditEntry({ error, onRunSample, onImport }: AuditEntryProps) {
+export function AuditEntry({ error, onRunSample, onImport, variant = 'default' }: AuditEntryProps) {
+  const isUpload = variant === 'upload'
   return (
     <div className="audit-entry">
       <ImportPanel
@@ -16,8 +18,8 @@ export function AuditEntry({ error, onRunSample, onImport }: AuditEntryProps) {
         error={error}
         onImport={onImport}
         onRunSample={onRunSample}
-        intro="Identify potential payment errors and review the evidence behind them."
-        confirmLabel="Start the ledger"
+        intro={isUpload ? 'Start with your own ledger, then follow each finding back to its original records.' : 'Identify potential payment errors and review the evidence behind them.'}
+        confirmLabel={isUpload ? 'Add to my ledger' : 'Start the ledger'}
       />
     </div>
   )

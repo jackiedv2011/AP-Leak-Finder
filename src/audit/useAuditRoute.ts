@@ -1,11 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 export type RouteMode = 'overview' | 'findings' | 'recovery'
+export type EntryRoute = 'sample' | 'upload'
 
 export interface AuditRouteState {
   mode: RouteMode
   caseId: string | null
   draft: boolean
+  /** A deliberate threshold before a new sample/import flow, never persisted. */
+  entry: EntryRoute | null
 }
 
 export function parseAuditRoute(search: string): AuditRouteState {
@@ -14,11 +17,17 @@ export function parseAuditRoute(search: string): AuditRouteState {
   const mode: RouteMode = modeParam === 'findings' || modeParam === 'recovery' ? modeParam : 'overview'
   const caseId = params.get('case')
   const draft = caseId !== null && params.get('draft') === '1'
-  return { mode, caseId, draft }
+  const entryParam = params.get('entry')
+  const entry: EntryRoute | null = entryParam === 'sample' || entryParam === 'upload' ? entryParam : null
+  return entry ? { mode: 'overview', caseId: null, draft: false, entry } : { mode, caseId, draft, entry: null }
 }
 
 export function buildAuditSearch(state: AuditRouteState): string {
   const params = new URLSearchParams()
+  if (state.entry) {
+    params.set('entry', state.entry)
+    return `?${params.toString()}`
+  }
   if (state.mode !== 'overview') params.set('mode', state.mode)
   if (state.caseId) {
     params.set('case', state.caseId)
@@ -99,7 +108,7 @@ export function useAuditRoute() {
       window.history.back()
       return
     }
-    navigate({ caseId: null, draft: false }, { replace: true })
+    navigate({ caseId: null, draft: false, entry: null }, { replace: true })
   }, [navigate])
 
   return { route, navigate, goBack }

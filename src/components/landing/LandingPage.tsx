@@ -114,10 +114,10 @@ function LandingNav() {
         <div className="reclaim-nav-links">
           <a data-motion="pressable" href="#evidence">Evidence</a>
           <a data-motion="pressable" href="#analysis">Analysis</a>
-          <a data-motion="pressable" href="/audit?upload=1">Use your ledger</a>
+          <a data-motion="pressable" href="/audit?entry=upload">Use your ledger</a>
         </div>
 
-        <MagneticLink className="reclaim-nav-action" href="/audit?sample=1" pendingLabel="Opening…">Run sample audit</MagneticLink>
+        <MagneticLink className="reclaim-nav-action" href="/audit?entry=sample" pendingLabel="Opening…">Run sample audit</MagneticLink>
 
         <button
           className="reclaim-menu-button"
@@ -136,8 +136,8 @@ function LandingNav() {
         <div className="reclaim-mobile-menu" id="reclaim-mobile-menu" data-open={menuOpen} aria-hidden={!menuOpen}>
           <a data-motion="pressable" data-motion-arrow="true" href="#evidence" tabIndex={menuOpen ? 0 : -1} onClick={() => setMenuOpen(false)}><span>Evidence</span><span className="reclaim-menu-link-icon motion-arrow" aria-hidden="true">↗</span></a>
           <a data-motion="pressable" data-motion-arrow="true" href="#analysis" tabIndex={menuOpen ? 0 : -1} onClick={() => setMenuOpen(false)}><span>Analysis</span><span className="reclaim-menu-link-icon motion-arrow" aria-hidden="true">↗</span></a>
-          <a data-motion="pressable" data-motion-arrow="true" href="/audit?upload=1" tabIndex={menuOpen ? 0 : -1} onClick={() => setMenuOpen(false)}><span>Use your ledger</span><span className="reclaim-menu-link-icon motion-arrow" aria-hidden="true">↗</span></a>
-          <a data-motion="pressable" data-motion-arrow="true" href="/audit?sample=1" tabIndex={menuOpen ? 0 : -1} onClick={() => setMenuOpen(false)}><span>Run sample audit</span><span className="reclaim-menu-link-icon motion-arrow" aria-hidden="true">↗</span></a>
+          <a data-motion="pressable" data-motion-arrow="true" href="/audit?entry=upload" tabIndex={menuOpen ? 0 : -1} onClick={() => setMenuOpen(false)}><span>Use your ledger</span><span className="reclaim-menu-link-icon motion-arrow" aria-hidden="true">↗</span></a>
+          <a data-motion="pressable" data-motion-arrow="true" href="/audit?entry=sample" tabIndex={menuOpen ? 0 : -1} onClick={() => setMenuOpen(false)}><span>Run sample audit</span><span className="reclaim-menu-link-icon motion-arrow" aria-hidden="true">↗</span></a>
         </div>
       </nav>
     </header>
@@ -205,8 +205,8 @@ function Hero({ heroRef }: { heroRef: RefObject<HTMLElement | null> }) {
             Reclaim finds suspicious vendor payments, shows the exact records behind each flag, and keeps every decision human.
           </p>
           <div className="reclaim-actions">
-            <MagneticLink className="reclaim-button reclaim-button-primary" href="/audit?sample=1" pendingLabel="Opening sample audit…">Run sample audit</MagneticLink>
-            <a className="reclaim-text-action" data-motion="pressable" data-motion-arrow="true" href="/audit?upload=1">Use your ledger</a>
+            <MagneticLink className="reclaim-button reclaim-button-primary" href="/audit?entry=sample" pendingLabel="Opening sample audit…">Run sample audit</MagneticLink>
+            <a className="reclaim-text-action" data-motion="pressable" data-motion-arrow="true" href="/audit?entry=upload">Use your ledger</a>
           </div>
         </div>
         <HeroAudit />
@@ -279,7 +279,7 @@ function RawLedger() {
 
       <div className="ledger-discovery">
         <span>Matched on vendor, invoice, and amount.</span>
-        <a data-motion="pressable" data-motion-ray="true" href="/audit?sample=1">Recovery-ready: {currency.format(canonicalFinding.dollarImpact)}</a>
+        <a data-motion="pressable" href="/audit?entry=sample">Recovery-ready: {currency.format(canonicalFinding.dollarImpact)}</a>
       </div>
     </section>
   )
@@ -599,8 +599,8 @@ function Closing() {
       <h2 id="closing-title">Start with the ledger you already have.</h2>
       <p>See the full path from upload to evidence, review, and recovery request.</p>
       <div className="reclaim-actions">
-        <MagneticLink className="reclaim-button reclaim-button-primary" href="/audit?sample=1" pendingLabel="Opening sample audit…">Run sample audit</MagneticLink>
-        <a className="reclaim-text-action" data-motion="pressable" data-motion-arrow="true" href="/audit?upload=1">Use your ledger</a>
+        <MagneticLink className="reclaim-button reclaim-button-primary" href="/audit?entry=sample" pendingLabel="Opening sample audit…">Run sample audit</MagneticLink>
+        <a className="reclaim-text-action" data-motion="pressable" data-motion-arrow="true" href="/audit?entry=upload">Use your ledger</a>
       </div>
     </section>
   )
@@ -645,7 +645,7 @@ export function LandingPage() {
       <footer className="reclaim-footer">
         <a href="/" aria-label="Reclaim home"><ReclaimLogo size={28} /></a>
         <p>Explainable payment review. Local by default.</p>
-        <a data-motion="pressable" data-motion-arrow="true" href="/audit?upload=1">Open audit workspace</a>
+        <a data-motion="pressable" data-motion-arrow="true" href="/audit?entry=upload">Open audit workspace</a>
       </footer>
     </div>
   )
