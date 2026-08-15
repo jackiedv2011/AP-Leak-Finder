@@ -50,6 +50,10 @@ export function SideRays({
 }: SideRaysProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const [visible, setVisible] = useState(false)
+  const [pageVisible, setPageVisible] = useState(true)
+  const [reducedMotion, setReducedMotion] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+  )
 
   useEffect(() => {
     const container = containerRef.current
@@ -61,13 +65,27 @@ export function SideRays({
   }, [])
 
   useEffect(() => {
+    const syncPageVisibility = () => setPageVisible(!document.hidden)
+    syncPageVisibility()
+    document.addEventListener('visibilitychange', syncPageVisibility)
+    return () => document.removeEventListener('visibilitychange', syncPageVisibility)
+  }, [])
+
+  useEffect(() => {
+    const media = window.matchMedia('(prefers-reduced-motion: reduce)')
+    const syncMotionPreference = () => setReducedMotion(media.matches)
+    syncMotionPreference()
+    media.addEventListener('change', syncMotionPreference)
+    return () => media.removeEventListener('change', syncMotionPreference)
+  }, [])
+
+  useEffect(() => {
     const container = containerRef.current
-    if (!visible || !container) return
+    if (!visible || !pageVisible || !container) return
 
     const renderer = new Renderer({ dpr: Math.min(window.devicePixelRatio, 2), alpha: true })
     const { gl } = renderer
     const canvas = gl.canvas
-    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     let frame = 0
 
     canvas.style.width = '100%'
@@ -151,7 +169,6 @@ export function SideRays({
 
     resize()
     render(0)
-    if (!reducedMotion) frame = requestAnimationFrame(render)
     window.addEventListener('resize', resize)
 
     return () => {
@@ -160,7 +177,7 @@ export function SideRays({
       gl.getExtension('WEBGL_lose_context')?.loseContext()
       container.replaceChildren()
     }
-  }, [blend, falloff, intensity, opacity, origin, rayColor1, rayColor2, saturation, speed, spread, tilt, visible])
+  }, [blend, falloff, intensity, opacity, origin, pageVisible, rayColor1, rayColor2, reducedMotion, saturation, speed, spread, tilt, visible])
 
   return <div ref={containerRef} className={`side-rays-container ${className}`.trim()} aria-hidden="true" />
 }

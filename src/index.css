@@ -34,7 +34,7 @@
   }
   body {
     @apply bg-paper text-foreground antialiased;
-    min-width: 320px;
+    min-width: 0;
     margin: 0;
     font-family: "Manrope Variable", "Segoe UI Variable", ui-sans-serif, system-ui, sans-serif;
     font-optical-sizing: auto;
