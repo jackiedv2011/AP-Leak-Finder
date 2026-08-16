@@ -1,5 +1,5 @@
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
-import { ArrowRight, Plus, Trash2 } from 'lucide-react'
+import { ArrowRight, Plus, Save, Trash2 } from 'lucide-react'
 import type { CSSProperties } from 'react'
 import type { OverviewSummary, CaseView } from '@/ledger/views'
 import type { DecisionValue } from '@/ledger/caseState'
@@ -67,6 +67,7 @@ interface OverviewViewProps {
   onDraftChange?: (findingId: string, text: string) => void
   onOpenImport: () => void
   onClearLedger: () => void
+  onSaveToHistory?: () => void
 }
 
 /** Overview lens: the standing ledger, compressed into the next useful move. */
@@ -82,6 +83,7 @@ export function OverviewView({
   onDraftChange,
   onOpenImport,
   onClearLedger,
+  onSaveToHistory,
 }: OverviewViewProps) {
   const hasActiveWork = summary.readyToVerifyCount + summary.needsContextCount + summary.worthNotingCount > 0
   const reduceMotion = useReducedMotion()
@@ -112,7 +114,7 @@ export function OverviewView({
           </p>
         </div>
 
-        <div className="audit-overview-total" data-tone={hasActiveWork ? 'recovery' : 'quiet'} data-motion-value>
+        <div className="audit-overview-total" data-tone={hasActiveWork ? 'recovery' : 'quiet'} data-motion-value data-tutorial="overview-total">
           <span>{hasActiveWork ? 'Open exposure' : 'Open recovery value'}</span>
           <strong>{formatCurrency(hasActiveWork ? summary.worthInvestigatingTotal : 0)}</strong>
           <small>
@@ -128,7 +130,7 @@ export function OverviewView({
       </header>
 
       {!activeCase && hasActiveWork && (
-        <section className="audit-summary-grid" data-reveal={revealData} aria-label="Ledger summary">
+        <section className="audit-summary-grid" data-reveal={revealData} aria-label="Ledger summary" data-tutorial="overview-summary">
           <div className="audit-summary-panel audit-summary-mix">
             <div className="audit-summary-panel-heading">
               <div>
@@ -280,7 +282,7 @@ export function OverviewView({
       </AnimatePresence>
 
       {!activeCase && (
-        <footer className="audit-overview-footer">
+        <footer className="audit-overview-footer" data-tutorial="overview-footer">
           <button type="button" className="audit-btn" data-motion="pressable" data-motion-ray="true" data-variant="primary" onClick={onOpenImport}>
             <Plus aria-hidden="true" />
             Add records
@@ -289,6 +291,12 @@ export function OverviewView({
             <Trash2 aria-hidden="true" />
             Clear ledger
           </button>
+          {onSaveToHistory && (
+            <button type="button" className="audit-btn" data-motion="pressable" data-variant="ghost" onClick={onSaveToHistory}>
+              <Save aria-hidden="true" />
+              Save to history
+            </button>
+          )}
           {summary.recoveryActiveCount > 0 && (
             <span>
               {summary.recoveryActiveCount} case{summary.recoveryActiveCount === 1 ? '' : 's'} moving through recovery

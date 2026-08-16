@@ -8,9 +8,10 @@ interface AuditShellProps {
   variant?: 'full' | 'minimal'
   topBarRight?: ReactNode
   homeHref?: string
+  banner?: ReactNode
 }
 
-export function AuditShell({ children, variant = 'full', topBarRight, homeHref = '/' }: AuditShellProps) {
+export function AuditShell({ children, variant = 'full', topBarRight, homeHref = '/', banner }: AuditShellProps) {
   return (
     <div className="reclaim-audit">
       <a className="audit-skip-link" href="#audit-main">
@@ -23,6 +24,7 @@ export function AuditShell({ children, variant = 'full', topBarRight, homeHref =
         </a>
         {variant === 'full' && topBarRight && <div className="audit-topbar-right">{topBarRight}</div>}
       </header>
+      {variant === 'full' && banner}
       <main className="audit-main" id="audit-main">
         {children}
       </main>

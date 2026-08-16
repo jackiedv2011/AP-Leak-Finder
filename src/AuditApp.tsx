@@ -13,7 +13,15 @@ import { RecoveryView } from '@/components/audit/RecoveryView'
 import { FindingCase } from '@/components/audit/FindingCase'
 import { ImportDialog } from '@/components/audit/ImportDialog'
 import { ClearLedgerDialog } from '@/components/audit/ClearLedgerDialog'
+import { SaveToHistoryDialog } from '@/components/audit/SaveToHistoryDialog'
+import { GuestGateDialog } from '@/components/audit/GuestGateDialog'
+import { AccountMenu } from '@/components/app/AccountMenu'
+import { GuestBanner } from '@/components/app/GuestBanner'
+import { useAuth } from '@/lib/auth/AuthContext'
+import { saveToHistory } from '@/history/store'
 import { useAuditRoute, loadPersistedContext } from '@/audit/useAuditRoute'
+import { TutorialTour, type TutorialStep } from '@/components/tutorial/TutorialTour'
+import { resetTutorial } from '@/components/tutorial/tutorialState'
 import {
   loadEnvironment,
   saveEnvironment,
@@ -41,17 +49,63 @@ import { MOTION_TRANSITION, sceneVariants } from '@/motion/system'
 
 const MODE_POSITION = { overview: 0, findings: 1, recovery: 2 } as const
 
+const DASHBOARD_TOUR_STEPS: TutorialStep[] = [
+  {
+    id: 'ledger',
+    title: 'This is your standing ledger',
+    body: 'Every import builds up one ledger. Reclaim keeps the original evidence attached to every finding so nothing is a black box.',
+  },
+  {
+    id: 'modes',
+    title: 'Overview, Findings, Recovery',
+    body: 'Switch between the summary, the queue of findings to review, and cases actively moving through recovery.',
+    target: '[data-tutorial="mode-tabs"]',
+    placement: 'bottom',
+  },
+  {
+    id: 'total',
+    title: 'Your open exposure',
+    body: 'The total dollar amount across every case still awaiting a decision — the number to watch.',
+    target: '[data-tutorial="overview-total"]',
+    placement: 'bottom',
+  },
+  {
+    id: 'summary',
+    title: 'Case mix and exposure',
+    body: 'See what’s ready to verify, what needs more context, and where the dollar value is concentrated.',
+    target: '[data-tutorial="overview-summary"]',
+    placement: 'top',
+  },
+  {
+    id: 'footer',
+    title: 'Add, clear, or save',
+    body: 'Add more records any time, clear the ledger to start fresh, or save the current audit to your history.',
+    target: '[data-tutorial="overview-footer"]',
+    placement: 'top',
+  },
+  {
+    id: 'account',
+    title: 'Your account',
+    body: 'Open audit history, settings, or your profile from here — and log out whenever you’re done.',
+    target: '[data-tutorial="account-menu"]',
+    placement: 'bottom',
+  },
+]
+
 function sampleImportInput(): MergeImportInput {
   return { sourceLabel: 'Sample payment ledger', mode: 'sample', parsed: getSampleLedger() }
 }
 
 export function AuditApp() {
   const { route, navigate, goBack } = useAuditRoute()
+  const { user, isGuest } = useAuth()
   const [environment, setEnvironment] = useState<LedgerEnvironment | null>(() => loadEnvironment())
   const [ingestLabel, setIngestLabel] = useState<string | null>(null)
   const [entryError, setEntryError] = useState<string | null>(null)
   const [importDialogOpen, setImportDialogOpen] = useState(false)
   const [clearDialogOpen, setClearDialogOpen] = useState(false)
+  const [saveDialogOpen, setSaveDialogOpen] = useState(false)
+  const [guestGateOpen, setGuestGateOpen] = useState(false)
   const [sampleSession, setSampleSession] = useState(false)
   const [sampleAuditPhase, setSampleAuditPhase] = useState<SampleAuditPhase | null>(null)
   const reduceMotion = useReducedMotion()
@@ -252,6 +306,24 @@ export function AuditApp() {
     goBack()
   }, [goBack])
 
+  const handleRequestSaveToHistory = useCallback(() => {
+    if (!user || isGuest) {
+      setGuestGateOpen(true)
+      return
+    }
+    setSaveDialogOpen(true)
+  }, [user, isGuest])
+
+  const handleConfirmSaveToHistory = useCallback(
+    (name: string) => {
+      const env = environmentRef.current
+      if (!env || !user || isGuest) return
+      saveToHistory(user.id, name, env)
+      setSaveDialogOpen(false)
+    },
+    [user, isGuest]
+  )
+
   if (sampleAuditPhase) {
     return (
       <AuditShell variant="minimal">
@@ -314,11 +386,15 @@ export function AuditApp() {
   return (
     <AuditShell
       variant="full"
+      banner={isGuest ? <GuestBanner /> : null}
       topBarRight={
-        <a className="audit-btn" data-motion="pressable" data-motion-arrow="true" data-variant="ghost" data-size="sm" href="/">
-          <ArrowLeft aria-hidden="true" />
-          Back to home
-        </a>
+        <>
+          <a className="audit-btn" data-motion="pressable" data-motion-arrow="true" data-variant="ghost" data-size="sm" href="/">
+            <ArrowLeft aria-hidden="true" />
+            Back to home
+          </a>
+          <AccountMenu onRestartTutorial={() => { resetTutorial(); window.location.reload() }} />
+        </>
       }
     >
       <LayoutGroup id="audit-scene">
@@ -365,6 +441,7 @@ export function AuditApp() {
                   onDraftChange={handleDraftChange}
                   onOpenImport={() => setImportDialogOpen(true)}
                   onClearLedger={() => setClearDialogOpen(true)}
+                  onSaveToHistory={handleRequestSaveToHistory}
                 />
               )}
               {route.mode !== 'overview' && activeCase && (
@@ -386,8 +463,17 @@ export function AuditApp() {
         </div>
       </LayoutGroup>
 
+      {route.mode === 'overview' && !activeCase && <TutorialTour tourId="dashboard" steps={DASHBOARD_TOUR_STEPS} />}
+
       <ImportDialog open={importDialogOpen} onOpenChange={setImportDialogOpen} onImport={handleImport} error={entryError} />
       <ClearLedgerDialog open={clearDialogOpen} onOpenChange={setClearDialogOpen} onConfirm={handleClearLedger} />
+      <SaveToHistoryDialog
+        open={saveDialogOpen}
+        onOpenChange={setSaveDialogOpen}
+        onSave={handleConfirmSaveToHistory}
+        defaultName={`Audit — ${new Date().toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}`}
+      />
+      <GuestGateDialog open={guestGateOpen} onOpenChange={setGuestGateOpen} feature="Saving audit history" />
     </AuditShell>
   )
 }

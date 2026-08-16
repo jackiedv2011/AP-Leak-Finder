@@ -215,6 +215,7 @@ export function ImportPanel({ allowSample, autoFocusUpload, error, onImport, onR
             data-motion="pressable"
             data-motion-ray="true"
             data-variant="primary"
+            data-tutorial="entry-upload"
             autoFocus={autoFocusUpload}
             onClick={() => fileInputRef.current?.click()}
           >
@@ -226,7 +227,7 @@ export function ImportPanel({ allowSample, autoFocusUpload, error, onImport, onR
         {allowSample && onRunSample && (
           <>
             <div className="audit-divider">or</div>
-            <button type="button" className="audit-link" data-motion="pressable" style={{ width: '100%', justifyContent: 'center' }} onClick={onRunSample}>
+            <button type="button" className="audit-link" data-motion="pressable" data-tutorial="entry-sample" style={{ width: '100%', justifyContent: 'center' }} onClick={onRunSample}>
               <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
               See how this works with sample data
             </button>

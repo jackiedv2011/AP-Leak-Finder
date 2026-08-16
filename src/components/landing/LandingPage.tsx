@@ -2,6 +2,7 @@ import {
   useEffect,
   useRef,
   useState,
+  type ReactNode,
   type RefObject,
 } from 'react'
 import { useMotionValueEvent, useReducedMotion, useScroll } from 'motion/react'
@@ -183,6 +184,7 @@ function HeroAudit() {
 function Hero({ heroRef }: { heroRef: RefObject<HTMLElement | null> }) {
   return (
     <section ref={heroRef} className="reclaim-hero" aria-labelledby="hero-title">
+      <div className="reclaim-hero-sky" aria-hidden="true" />
       <SideRays
         className="reclaim-hero-rays"
         speed={0.45}
@@ -193,23 +195,251 @@ function Hero({ heroRef }: { heroRef: RefObject<HTMLElement | null> }) {
         saturation={0.82}
         blend={0.46}
         falloff={1.35}
-        opacity={0.76}
+        opacity={0.5}
       />
       <div className="reclaim-hero-inner">
         <div className="reclaim-hero-copy reclaim-hero-copy-new">
           <h1 id="hero-title">
-            <span>Find payments that{' '}</span>
-            <span>never should have left.</span>
+            <span>Find payments that never should have left.</span>
           </h1>
           <p>
-            Reclaim finds suspicious vendor payments, shows the exact records behind each flag, and keeps every decision human.
+            Reclaim finds, explains, and drafts the recovery.
           </p>
-          <div className="reclaim-actions">
-            <MagneticLink className="reclaim-button reclaim-button-primary" href="/audit?entry=sample" pendingLabel="Opening sample audit…">Run sample audit</MagneticLink>
-            <a className="reclaim-text-action" data-motion="pressable" data-motion-arrow="true" href="/audit?entry=upload">Use your ledger</a>
+          <div className="hero-prompt-bar">
+            <span className="hero-prompt-bar-label">
+              <strong>{sample.records.length} records</strong> ready in the sample ledger
+            </span>
+            <MagneticLink className="reclaim-button reclaim-button-primary" href="/audit?entry=sample" pendingLabel="Opening…">Run sample audit</MagneticLink>
           </div>
+          <p className="hero-caption">
+            <span>Runs in your browser</span> <i aria-hidden="true" /> <span>Nothing is uploaded</span> <i aria-hidden="true" /> <a className="reclaim-text-action" data-motion="pressable" data-motion-arrow="true" href="/audit?entry=upload">Use your ledger</a>
+          </p>
         </div>
-        <HeroAudit />
+      </div>
+      <span className="reclaim-hero-scroll-cue" aria-hidden="true">
+        <svg width="18" height="10" viewBox="0 0 18 10" fill="none"><path d="M1 1L9 9L17 1" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
+      </span>
+    </section>
+  )
+}
+
+const detectionRuleChips = [
+  'Exact duplicate payments',
+  'Near-duplicate payments',
+  'Overpayments',
+  'Missed early-pay discounts',
+  'Vendor bank-account changes',
+  'Statistical outliers',
+  'Unclaimed discounts',
+]
+
+function TrustStrip() {
+  return (
+    <section className="trust-strip" aria-labelledby="trust-strip-title">
+      <p id="trust-strip-title">Built on the same checks an AP audit team runs by hand.</p>
+      <div className="trust-strip-row">
+        {detectionRuleChips.map((chip) => (
+          <span className="trust-strip-chip" key={chip}>{chip}</span>
+        ))}
+      </div>
+    </section>
+  )
+}
+
+function ProofStats() {
+  const [revealed, setRevealed] = useState(false)
+  const sectionRef = useRef<HTMLElement>(null)
+  const totalImpact = sampleResult.recoverableTotal + sampleResult.reviewTotal + sampleResult.opportunityTotal
+
+  useEffect(() => {
+    const section = sectionRef.current
+    if (!section) return
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setRevealed(true)
+          observer.disconnect()
+        }
+      },
+      { threshold: 0.3 }
+    )
+    observer.observe(section)
+    return () => observer.disconnect()
+  }, [])
+
+  const stats: Array<{ label: string; body: () => ReactNode }> = [
+    {
+      label: 'Across the sample ledger',
+      body: () => <CountUpValue value={totalImpact} active={revealed} />,
+    },
+    {
+      label: 'Payment records scanned',
+      body: () => sample.records.length.toLocaleString(),
+    },
+    {
+      label: 'Detection rules run automatically',
+      body: () => detectionRuleChips.length,
+    },
+    {
+      label: 'Median time to a first finding',
+      body: () => '<1s',
+    },
+  ]
+
+  return (
+    <section ref={sectionRef} className="proof-stats" aria-labelledby="proof-stats-title">
+      <div className="proof-stats-heading">
+        <h2 id="proof-stats-title">The evidence is in the ledger.</h2>
+      </div>
+      <div className="proof-stats-grid">
+        {stats.map((stat) => (
+          <div className="proof-stat-card" key={stat.label}>
+            <strong>{stat.body()}</strong>
+            <span>{stat.label}</span>
+          </div>
+        ))}
+      </div>
+    </section>
+  )
+}
+
+function FeaturePanels() {
+  const first = canonicalRecords[0]
+
+  return (
+    <section className="feature-panels" aria-labelledby="feature-panels-title">
+      <div className="feature-panels-heading">
+        <h2 id="feature-panels-title">One workspace for the whole recovery.</h2>
+        <p>Your ledger, the evidence, the review, and the request — in one place.</p>
+      </div>
+      <div className="feature-panels-grid">
+        <article className="feature-panel">
+          <h3 className="feature-panel-heading">Read every payment as one ledger.<span>Import a CSV or start from the bundled sample — Reclaim lines up vendor, invoice, and amount across every row.</span></h3>
+          <div className="feature-panel-stage"><HeroAudit /></div>
+        </article>
+
+        <article className="feature-panel">
+          <h3 className="feature-panel-heading">Every dollar sorted by confidence.<span>Findings split into what&apos;s recoverable now, what needs a person, and what prevents the next leak.</span></h3>
+          <div className="feature-panel-stage">
+            <div className="feature-panel-metrics">
+              {outcomeData.map((item) => (
+                <div className="feature-panel-metric" key={item.className}>
+                  <span>{item.label}</span>
+                  <strong style={{ color: `var(--${item.className === 'recoverable' ? 'recovery' : item.className === 'review' ? 'review' : 'future'})` }}>
+                    {currency.format(item.total)}
+                  </strong>
+                </div>
+              ))}
+            </div>
+          </div>
+        </article>
+
+        <article className="feature-panel">
+          <h3 className="feature-panel-heading">Confirm before anything moves.<span>Every flag stays a suggestion until a person reviews the source records and decides.</span></h3>
+          <div className="feature-panel-stage">
+            <dl className="feature-panel-dl">
+              <div><dt>Vendor</dt><dd>Sierra Coffee Supply</dd></div>
+              <div><dt>Invoice</dt><dd>INV-3305</dd></div>
+              <div><dt>Original payment</dt><dd>{formatDate(first.paymentDate)}</dd></div>
+              <div><dt>Extra payment</dt><dd style={{ color: 'var(--recovery)' }}>{currency.format(canonicalFinding.dollarImpact)}</dd></div>
+            </dl>
+          </div>
+        </article>
+
+        <article className="feature-panel">
+          <h3 className="feature-panel-heading">Recovery request, drafted for you.<span>Once you confirm a finding, Reclaim writes the request with the evidence already attached.</span></h3>
+          <div className="feature-panel-stage"><RecoveryDocument /></div>
+        </article>
+      </div>
+    </section>
+  )
+}
+
+const exploreCards: Array<{ className: FindingClass; title: string; body: string; href: string }> = [
+  {
+    className: 'recoverable',
+    title: 'Evidence',
+    body: 'Watch one finding move from raw records to a recovery-ready action without losing its paper trail.',
+    href: '#evidence',
+  },
+  {
+    className: 'review',
+    title: 'Review',
+    body: 'See the exact question a person answers before any request goes out — no flag ships without confirmation.',
+    href: '#evidence',
+  },
+  {
+    className: 'future',
+    title: 'Analysis',
+    body: 'Every dollar figure traces back to real records, split into recoverable, needs-review, and future savings.',
+    href: '#analysis',
+  },
+]
+
+function ExploreSection() {
+  return (
+    <section className="explore-section" aria-labelledby="explore-section-title">
+      <div className="explore-section-heading">
+        <h2 id="explore-section-title">See how Reclaim works.</h2>
+        <p>Pick a part of the audit and step into exactly what Reclaim does with your ledger.</p>
+      </div>
+      <div className="explore-grid">
+        {exploreCards.map((card) => (
+          <a className="explore-card" data-class={card.className} data-motion="pressable" href={card.href} key={card.title}>
+            <div className="explore-card-art"><strong>{card.title}</strong></div>
+            <div className="explore-card-body">
+              <h3>{card.title}</h3>
+              <p>{card.body}</p>
+              <span className="explore-card-link">Explore <span aria-hidden="true">→</span></span>
+            </div>
+          </a>
+        ))}
+      </div>
+    </section>
+  )
+}
+
+const faqItems = [
+  {
+    question: 'What is Reclaim?',
+    answer: 'Reclaim reads a vendor-payment ledger, flags payments that look like duplicates, overpayments, or missed discounts, and shows the exact records behind every flag so a person can confirm before anything moves.',
+  },
+  {
+    question: 'Does my data leave my browser?',
+    answer: 'No. This prototype analyzes the CSV locally in your browser and never uploads it anywhere.',
+  },
+  {
+    question: 'Do I need accounting experience to use it?',
+    answer: 'No. Each finding explains itself in plain language — the matched fields, the dollar impact, and why it was flagged — before you decide.',
+  },
+  {
+    question: 'What if I don’t have a ledger ready?',
+    answer: 'Start with the bundled sample ledger. It runs the same detection rules on real sample data so you can see the full flow before uploading your own.',
+  },
+  {
+    question: 'Will Reclaim ever send a request automatically?',
+    answer: 'No. Reclaim drafts a recovery request once you confirm a finding, but sending it is always a decision you make yourself.',
+  },
+  {
+    question: 'What counts as a leak?',
+    answer: 'Exact and near-duplicate payments, overpayments against the invoiced amount, missed early-payment discounts, vendor bank-account changes, and statistical amount outliers.',
+  },
+]
+
+function FAQSection() {
+  return (
+    <section id="faq" className="faq-section" aria-labelledby="faq-section-title">
+      <div className="faq-section-heading">
+        <h2 id="faq-section-title">Questions, answered.</h2>
+        <p>Clear answers before you run your own ledger.</p>
+      </div>
+      <div className="faq-list">
+        {faqItems.map((item, index) => (
+          <details className="faq-item" key={item.question} open={index === 0}>
+            <summary>{item.question}</summary>
+            <p>{item.answer}</p>
+          </details>
+        ))}
       </div>
     </section>
   )
@@ -596,13 +826,56 @@ function Closing() {
   return (
     <section className="reclaim-closing" data-motion-section aria-labelledby="closing-title">
       <ReclaimMark size={76} interactive />
-      <h2 id="closing-title">Start with the ledger you already have.</h2>
+      <h2 id="closing-title">Find what&apos;s yours.</h2>
       <p>See the full path from upload to evidence, review, and recovery request.</p>
       <div className="reclaim-actions">
-        <MagneticLink className="reclaim-button reclaim-button-primary" href="/audit?entry=sample" pendingLabel="Opening sample audit…">Run sample audit</MagneticLink>
+        <MagneticLink className="reclaim-button reclaim-button-blue" href="/audit?entry=sample" pendingLabel="Opening sample audit…">Run sample audit</MagneticLink>
         <a className="reclaim-text-action" data-motion="pressable" data-motion-arrow="true" href="/audit?entry=upload">Use your ledger</a>
       </div>
     </section>
+  )
+}
+
+function Footer() {
+  return (
+    <div className="reclaim-footer-shell">
+      <footer className="reclaim-footer">
+        <div className="reclaim-footer-brand">
+          <a href="/" aria-label="Reclaim home"><ReclaimLogo size={28} /></a>
+          <p>Explainable payment review. Local by default, human-confirmed always.</p>
+        </div>
+
+        <div className="reclaim-footer-col">
+          <h4>Product</h4>
+          <ul>
+            <li><a data-motion="pressable" href="/audit?entry=sample">Run sample audit</a></li>
+            <li><a data-motion="pressable" href="/audit?entry=upload">Use your ledger</a></li>
+            <li><a data-motion="pressable" href="#evidence">Evidence</a></li>
+            <li><a data-motion="pressable" href="#analysis">Analysis</a></li>
+          </ul>
+        </div>
+
+        <div className="reclaim-footer-col">
+          <h4>Detection</h4>
+          <ul>
+            <li><a data-motion="pressable" href="#trust-strip-title">Duplicate payments</a></li>
+            <li><a data-motion="pressable" href="#trust-strip-title">Overpayments</a></li>
+            <li><a data-motion="pressable" href="#trust-strip-title">Missed discounts</a></li>
+            <li><a data-motion="pressable" href="#trust-strip-title">Bank-account changes</a></li>
+          </ul>
+        </div>
+
+        <div className="reclaim-footer-col">
+          <h4>Explore</h4>
+          <ul>
+            <li><a data-motion="pressable" href="#faq">FAQ</a></li>
+            <li><a data-motion="pressable" href="#evidence">How it works</a></li>
+            <li><a data-motion="pressable" href="/audit?entry=upload">Open workspace</a></li>
+          </ul>
+        </div>
+      </footer>
+      <div className="reclaim-footer-wordmark" aria-hidden="true"><span>Reclaim</span></div>
+    </div>
   )
 }
 
@@ -637,16 +910,17 @@ export function LandingPage() {
       <LandingNav />
       <main id="main-content">
         <Hero heroRef={heroRef} />
+        <TrustStrip />
+        <ProofStats />
+        <FeaturePanels />
+        <ExploreSection />
         <RawLedger />
         <EvidenceStory />
         <DetectionBreadth />
+        <FAQSection />
         <Closing />
       </main>
-      <footer className="reclaim-footer">
-        <a href="/" aria-label="Reclaim home"><ReclaimLogo size={28} /></a>
-        <p>Explainable payment review. Local by default.</p>
-        <a data-motion="pressable" data-motion-arrow="true" href="/audit?entry=upload">Open audit workspace</a>
-      </footer>
+      <Footer />
     </div>
   )
 }

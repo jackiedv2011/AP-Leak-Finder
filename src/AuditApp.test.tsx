@@ -1,6 +1,8 @@
 import { afterEach, describe, expect, it } from 'vitest'
-import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, cleanup, fireEvent, render as testingLibraryRender, screen, waitFor } from '@testing-library/react'
+import type { ReactElement } from 'react'
 import { AuditApp } from '@/AuditApp'
+import { AuthProvider } from '@/lib/auth/AuthContext'
 import { getSampleLedger } from '@/data/sampleLedger'
 import { detectFindings } from '@/lib/detection'
 import { formatCurrency } from '@/lib/format'
@@ -8,6 +10,10 @@ import { clearEnvironment, loadEnvironment } from '@/ledger/store'
 
 function setLocation(path: string) {
   window.history.pushState({}, '', path)
+}
+
+function render(ui: ReactElement) {
+  return testingLibraryRender(<AuthProvider>{ui}</AuthProvider>)
 }
 
 function realSampleResult() {
