@@ -1,5 +1,4 @@
-import { render, screen, within } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { LandingPage } from './LandingPage'
 
@@ -10,30 +9,23 @@ vi.mock('motion/react', async (importOriginal) => {
   return { ...actual, useReducedMotion: () => motionPreference.reduce }
 })
 
-vi.mock('./SideRays', () => ({
-  SideRays: () => <div aria-hidden="true" />,
-}))
-
 afterEach(() => {
   motionPreference.reduce = false
+  window.localStorage.clear()
 })
 
 describe('LandingPage', () => {
-  it('uses the real review as the primary path and keeps the example secondary', () => {
+  it('makes a real ledger review primary and keeps the sample easy to reach', () => {
     render(<LandingPage />)
 
     expect(screen.getByRole('heading', { level: 1, name: 'Find the payments worth a second look.' })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'See the review flow' })).toHaveAttribute('href', '#how-it-works')
-    expect(screen.getAllByRole('link', { name: 'Start a review' })[0]).toHaveAttribute('href', '/audit?entry=upload')
-    expect(screen.getByRole('link', { name: 'Open a guided example' })).toHaveAttribute('href', '/audit?entry=sample')
-    expect(screen.queryByText('Sample audit')).not.toBeInTheDocument()
-    expect(screen.queryByText('Recovery ready')).not.toBeInTheDocument()
-    expect(screen.queryByText('Potential recovery')).not.toBeInTheDocument()
-    expect(screen.getByText('A person confirms the outcome.')).toBeInTheDocument()
+    expect(screen.getAllByRole('link', { name: 'Review your ledger' })[0]).toHaveAttribute('href', '/audit?entry=upload')
+    expect(screen.getByRole('link', { name: 'Explore a sample case' })).toHaveAttribute('href', '/audit?entry=sample')
+    expect(screen.getByRole('link', { name: 'Security' })).toHaveAttribute('href', '#security')
+    expect(screen.getByRole('link', { name: 'Pricing' })).toHaveAttribute('href', '#pricing')
   })
 
-  it('keeps the approved story, claim limits, and retained reason in one ordered page', async () => {
-    const user = userEvent.setup()
+  it('tells the value, accounting fit, privacy, recovery, and pricing story without fake proof', () => {
     render(<LandingPage />)
 
     expect(screen.getByText('A payment only tells part of the story. The rest lives in the records around it.')).toBeInTheDocument()
@@ -41,38 +33,44 @@ describe('LandingPage', () => {
     expect([...document.querySelectorAll('.motto-word')].map((word) => word.textContent?.trim())).toEqual([
       'A', 'payment', 'only', 'tells', 'part', 'of', 'the', 'story.', 'The', 'rest', 'lives', 'in', 'the', 'records', 'around', 'it.',
     ])
-    expect(screen.getByText('Currency basis, payment status, and source-event identity')).toBeInTheDocument()
-    expect(screen.getByRole('heading', { level: 2, name: 'One ledger can raise more than one question.' })).toBeInTheDocument()
-    expect(screen.getAllByText('A difference worth checking.').length).toBeGreaterThan(0)
-
-    const evidence = screen.getByRole('region', { name: 'The evidence stays with the question.' })
-    await user.click(within(evidence).getByRole('button', { name: /Review the context\./ }))
-    await user.click(within(evidence).getByRole('button', { name: 'Continue to decision' }))
-    expect(within(evidence).getByText('Keep the reason with the case.')).toBeInTheDocument()
-    expect(within(evidence).getByText('Reclaim presents the evidence. A person decides the outcome.')).toBeInTheDocument()
-
-    expect(screen.getByText('No accounting-system writeback')).toBeInTheDocument()
-    expect(screen.getByText('No vendor outreach')).toBeInTheDocument()
-    expect(screen.getByText('No decision made on your behalf')).toBeInTheDocument()
-    expect(screen.getByText('For compatible reviews in the same project, prior decisions stay beside current evidence so familiar cases do not start from zero.')).toBeInTheDocument()
-    expect(screen.getByText('Payment review that keeps the reason.')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 2, name: 'A duplicate can look ordinary.' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 2, name: 'A finding only matters if you can act on it.' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 2, name: 'Keep QuickBooks or Xero. Add a recovery layer.' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 2, name: 'Your ledger stays on this device, in this browser. It is never uploaded to our servers.' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 2, name: 'If the money does not come back, you do not pay.' })).toBeInTheDocument()
+    expect(screen.getByText('Illustrative sample data, not a customer recovery claim.')).toBeInTheDocument()
+    expect(screen.getByText('No silent writeback')).toBeInTheDocument()
+    expect(screen.getByText('Delete on demand')).toBeInTheDocument()
+    expect(screen.getByText('$0 fee')).toBeInTheDocument()
+    expect(screen.queryByText(/trusted by/i)).not.toBeInTheDocument()
   })
 
-  it('composes complete static chapters when reduced motion is requested', () => {
-    motionPreference.reduce = true
+  it('turns the header action into the most relevant saved-work destination', () => {
+    window.localStorage.setItem('reclaim.projects.active.v1', 'project_1')
+    window.localStorage.setItem('reclaim.projects.index.v1', JSON.stringify([{
+      id: 'project_1', name: 'March review', sourceLabel: 'march.csv', mode: 'upload', createdAt: 1, updatedAt: 2,
+      recordCount: 80, openCaseCount: 2, recoveryValue: 6800, recoveryActiveCount: 1, recoveryActiveValue: 6800,
+    }]))
 
     render(<LandingPage />)
 
-    expect(document.querySelector('.motto-interlude')).toHaveAttribute('data-reduced', 'true')
-    expect(document.querySelector('.story-canvas')).toHaveAttribute('data-reduced', 'true')
-    expect(document.querySelector('.story-question-card')).toHaveAttribute('aria-hidden', 'false')
-    expect(document.querySelector('.story-decision-sheet')).toHaveAttribute('aria-hidden', 'false')
-    expect(document.querySelector('.raw-ledger')).toHaveAttribute('data-sequence', '5')
-    expect(document.querySelector('.pattern-field')).toHaveAttribute('data-stage', '2')
-    expect(document.querySelector('.decision-trail')).toHaveAttribute('data-stage', '3')
-    expect(document.querySelector('.control-corridor')).toHaveAttribute('data-stage', '2')
-    expect(document.querySelector('.dossier-section')).toHaveAttribute('data-stage', '3')
-    expect(document.querySelector('.recurring-review')).toHaveAttribute('data-stage', '3')
+    const actions = screen.getAllByRole('link', { name: /Resume recovery/ })
+    expect(actions[0]).toHaveAttribute('href', '/audit?project=project_1&mode=recovery')
+    expect(actions[0]).toHaveTextContent('$6,800')
+  })
 
+  it('shows the complete principle and ledger story when reduced motion is requested', () => {
+    motionPreference.reduce = true
+    render(<LandingPage />)
+
+    expect(document.querySelector('.motto-interlude')).toHaveAttribute('data-reduced', 'true')
+    expect(document.querySelector('.motto-interlude')).toHaveAttribute('data-stage', '5')
+    expect(document.querySelector('.motto-interlude')).toHaveAttribute('data-ready', 'true')
+    expect(document.querySelector('.raw-ledger')).toHaveAttribute('data-sequence', '5')
+    expect(document.querySelectorAll('.motto-letter[data-written="true"]')).toHaveLength(mottoCharacterCount())
   })
 })
+
+function mottoCharacterCount() {
+  return 'A payment only tells part of the story. The rest lives in the records around it.'.replaceAll(' ', '').length
+}
