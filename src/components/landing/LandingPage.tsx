@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type MouseEvent as ReactMouseEvent, type ReactNode } from 'react'
 import { AnimatePresence, motion, useMotionValueEvent, useReducedMotion, useScroll, useSpring, useTransform } from 'motion/react'
 import { ReclaimLogo, ReclaimMark, ReclaimWordmark } from '@/components/ReclaimLogo'
 import { MagneticLink } from '@/components/landing/MagneticLink'
@@ -24,6 +24,7 @@ if (canonicalRecords.length !== 2) throw new Error('Canonical sample records INV
 
 const mottoThought = 'A payment only tells part of the story. The rest lives in the records around it.'
 const mottoPrinciple = 'See the payment. Keep the reason.'
+const skipMottoEvent = 'reclaim:skip-motto'
 const mottoWords = mottoThought.split(' ')
 const mottoWordOffsets = mottoWords.reduce<number[]>((offsets, _word, index) => {
   offsets.push(index === 0 ? 0 : offsets[index - 1] + mottoWords[index - 1].length + 1)
@@ -65,15 +66,30 @@ function LandingNav({ action }: { action: LandingAction }) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [activeTarget, setActiveTarget] = useState('')
   const [condensed, setCondensed] = useState(false)
+  const condensedRef = useRef(false)
   const { scrollY } = useScroll()
 
+  const navigateToSection = (event: ReactMouseEvent<HTMLAnchorElement>, href: string, closeMenu = false) => {
+    if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
+    event.preventDefault()
+    if (closeMenu) setMenuOpen(false)
+    window.dispatchEvent(new Event(skipMottoEvent))
+    window.history.pushState(null, '', href)
+    window.setTimeout(() => document.querySelector<HTMLElement>(href)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0)
+  }
+
+  const syncCondensed = (value: number) => {
+    const next = value > Math.max(72, window.innerHeight * 0.1)
+    if (next === condensedRef.current) return
+    condensedRef.current = next
+    setCondensed(next)
+  }
+
   useEffect(() => {
-    setCondensed(scrollY.get() > Math.max(72, window.innerHeight * 0.1))
+    syncCondensed(scrollY.get())
   }, [scrollY])
 
-  useMotionValueEvent(scrollY, 'change', (value) => {
-    setCondensed(value > Math.max(72, window.innerHeight * 0.1))
-  })
+  useMotionValueEvent(scrollY, 'change', syncCondensed)
 
   useEffect(() => {
     const targets = navigationItems
@@ -98,7 +114,7 @@ function LandingNav({ action }: { action: LandingAction }) {
           </AnimatePresence>
         </motion.a>
         <div className="reclaim-nav-links">
-          {navigationItems.map((item) => <a data-motion="pressable" data-active={activeTarget === item.href} href={item.href} key={item.href}>{item.label}</a>)}
+          {navigationItems.map((item) => <a data-motion="pressable" data-active={activeTarget === item.href} href={item.href} onClick={(event) => navigateToSection(event, item.href)} key={item.href}>{item.label}</a>)}
         </div>
         <MagneticLink className="reclaim-nav-action" href={action.href} pendingLabel="Opening…">
           <span className="reclaim-nav-action-copy">{action.label}{action.context && <small>{action.context}</small>}</span>
@@ -107,7 +123,7 @@ function LandingNav({ action }: { action: LandingAction }) {
           <span>{menuOpen ? 'Close' : 'Menu'}</span><span className="reclaim-menu-glyph" aria-hidden="true"><i /><i /></span>
         </button>
         <div className="reclaim-mobile-menu" id="reclaim-mobile-menu" data-open={menuOpen} aria-hidden={!menuOpen}>
-          {navigationItems.map((item) => <a href={item.href} tabIndex={menuOpen ? 0 : -1} onClick={() => setMenuOpen(false)} key={item.href}><span>{item.label}</span><span aria-hidden="true">↗</span></a>)}
+          {navigationItems.map((item) => <a href={item.href} tabIndex={menuOpen ? 0 : -1} onClick={(event) => navigateToSection(event, item.href, true)} key={item.href}><span>{item.label}</span><span aria-hidden="true">↗</span></a>)}
           <a href={action.href} tabIndex={menuOpen ? 0 : -1} onClick={() => setMenuOpen(false)}><span>{action.label}</span><span aria-hidden="true">↗</span></a>
         </div>
       </motion.nav>
@@ -169,42 +185,123 @@ function MottoInterlude() {
   const characterRefs = useRef<Array<HTMLSpanElement | null>>([])
   const revealedCharacters = useRef(-1)
   const reduceMotion = useReducedMotion()
+  const queuedCharacters = useRef(-1)
+  const characterFrame = useRef<number | null>(null)
+  const stageRef = useRef(reduceMotion ? 5 : 0)
+  const autoStartedRef = useRef(false)
+  const bypassedGateRef = useRef(false)
   const [stage, setStage] = useState(reduceMotion ? 5 : 0)
   const [autoStarted, setAutoStarted] = useState(false)
   const [readyToContinue, setReadyToContinue] = useState(Boolean(reduceMotion))
   const { scrollYProgress } = useScroll({ target: sectionRef, offset: ['start start', 'end end'] })
 
   useMotionValueEvent(scrollYProgress, 'change', (progress) => {
-    if (reduceMotion || autoStarted || window.innerWidth < 1024) return
+    if (reduceMotion || autoStartedRef.current || window.innerWidth < 1024) return
     const revealProgress = Math.min(1, Math.max(0, (progress - 0.04) / 0.49))
     const nextCharacterCount = Math.round(revealProgress * mottoThought.length)
     if (nextCharacterCount !== revealedCharacters.current) {
-      revealedCharacters.current = nextCharacterCount
-      characterRefs.current.forEach((character, index) => { if (character) character.dataset.written = String(index < nextCharacterCount) })
+      queuedCharacters.current = nextCharacterCount
+      if (characterFrame.current === null) {
+        characterFrame.current = window.requestAnimationFrame(() => {
+          const previous = Math.max(0, revealedCharacters.current)
+          const next = queuedCharacters.current
+          const firstChanged = Math.min(previous, next)
+          const lastChanged = Math.max(previous, next)
+          for (let index = firstChanged; index < lastChanged; index += 1) {
+            const character = characterRefs.current[index]
+            if (character) character.dataset.written = String(index < next)
+          }
+          revealedCharacters.current = next
+          characterFrame.current = null
+        })
+      }
     }
-    setStage(progress < 0.08 ? 0 : 1)
-    if (progress >= 0.53) setAutoStarted(true)
+    const nextStage = progress < 0.08 ? 0 : 1
+    if (nextStage !== stageRef.current) {
+      stageRef.current = nextStage
+      setStage(nextStage)
+    }
+    if (progress >= 0.53) {
+      autoStartedRef.current = true
+      setAutoStarted(true)
+    }
   })
 
   useEffect(() => {
     if (reduceMotion) {
       characterRefs.current.forEach((character) => { if (character) character.dataset.written = 'true' })
+      stageRef.current = 5
       setStage(5)
       setReadyToContinue(true)
       return
     }
-    if (!autoStarted) return
+    if (!autoStarted || readyToContinue) return
     characterRefs.current.forEach((character) => { if (character) character.dataset.written = 'true' })
     setReadyToContinue(false)
+    stageRef.current = 2
     setStage(2)
     const timers = [
-      window.setTimeout(() => setStage(3), 320),
-      window.setTimeout(() => setStage(4), 1320),
-      window.setTimeout(() => setStage(5), 2320),
+      window.setTimeout(() => { stageRef.current = 3; setStage(3) }, 320),
+      window.setTimeout(() => { stageRef.current = 4; setStage(4) }, 1320),
+      window.setTimeout(() => { stageRef.current = 5; setStage(5) }, 2320),
       window.setTimeout(() => setReadyToContinue(true), 3000),
     ]
     return () => timers.forEach((timer) => window.clearTimeout(timer))
-  }, [autoStarted, reduceMotion])
+  }, [autoStarted, readyToContinue, reduceMotion])
+
+  useEffect(() => {
+    if (reduceMotion || window.innerWidth >= 1024 || !sectionRef.current) return
+    let started = false
+    let timer: number | null = null
+    const revealOnArrival = () => {
+      if (started) return
+      started = true
+      stageRef.current = 1
+      setStage(1)
+      let index = 0
+      const writeNext = () => {
+        const character = characterRefs.current[index]
+        if (character) character.dataset.written = 'true'
+        index += 1
+        if (index < mottoThought.length) {
+          timer = window.setTimeout(writeNext, 22)
+          return
+        }
+        revealedCharacters.current = mottoThought.length
+        timer = window.setTimeout(() => { stageRef.current = 3; setStage(3) }, 180)
+        window.setTimeout(() => { stageRef.current = 4; setStage(4) }, 620)
+        window.setTimeout(() => { stageRef.current = 5; setStage(5); setReadyToContinue(true) }, 940)
+      }
+      writeNext()
+    }
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) {
+        observer.disconnect()
+        revealOnArrival()
+      }
+    }, { threshold: 0.28 })
+    observer.observe(sectionRef.current)
+    return () => {
+      observer.disconnect()
+      if (timer !== null) window.clearTimeout(timer)
+    }
+  }, [reduceMotion])
+
+  useEffect(() => {
+    const bypassForNavigation = () => {
+      bypassedGateRef.current = true
+      autoStartedRef.current = true
+      characterRefs.current.forEach((character) => { if (character) character.dataset.written = 'true' })
+      stageRef.current = 5
+      setStage(5)
+      setReadyToContinue(true)
+      setAutoStarted(true)
+    }
+    window.addEventListener(skipMottoEvent, bypassForNavigation)
+    return () => window.removeEventListener(skipMottoEvent, bypassForNavigation)
+  }, [])
+
+  useEffect(() => () => { if (characterFrame.current !== null) window.cancelAnimationFrame(characterFrame.current) }, [])
 
   useEffect(() => {
     if (!autoStarted || readyToContinue || reduceMotion || window.innerWidth < 1024) return
@@ -219,10 +316,11 @@ function MottoInterlude() {
     const blockScroll = (event: Event) => event.preventDefault()
     const holdPosition = () => {
       if (Math.abs(window.scrollY - lockedScrollY) < 1) return
-      window.scrollTo(0, lockedScrollY)
+      if (!bypassedGateRef.current) window.scrollTo(0, lockedScrollY)
     }
     const finishEarly = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
+        stageRef.current = 5
         setStage(5)
         setReadyToContinue(true)
         return
@@ -240,7 +338,7 @@ function MottoInterlude() {
       window.removeEventListener('keydown', finishEarly)
       window.removeEventListener('scroll', holdPosition)
       delete root.dataset.reclaimScrollGate
-      window.scrollTo(0, lockedScrollY)
+      if (!bypassedGateRef.current) window.scrollTo(0, lockedScrollY)
       root.style.scrollBehavior = previousScrollBehavior
     }
   }, [autoStarted, readyToContinue, reduceMotion])
@@ -249,10 +347,10 @@ function MottoInterlude() {
     <section className="motto-interlude" data-stage={stage} data-autoplay={autoStarted} data-complete={stage >= 5} data-ready={readyToContinue} data-reduced={Boolean(reduceMotion)} ref={sectionRef} aria-label="Reclaim's operating principle">
       <div className="motto-stage"><div className="motto-accessible"><p>{mottoThought}</p><strong>{mottoPrinciple}</strong><span>That is Reclaim.</span><span aria-live="polite">{readyToContinue ? 'Animation complete. Scroll down to continue.' : ''}</span></div>
         <div className="motto-visual" aria-hidden="true">
-          <div className="motto-rays">{stage >= 3 && !reduceMotion && <SideRays speed={0.34} intensity={1.9} spread={1.3} origin="bottom-right" tilt={-15} saturation={0.84} blend={0.52} falloff={1.5} opacity={0.92} />}</div>
+          <div className="motto-rays">{!reduceMotion && <SideRays speed={stage >= 3 ? 0.34 : 0} intensity={2.08} spread={1.3} origin="bottom-right" tilt={-15} saturation={0.84} blend={0.52} falloff={1.5} opacity={0.92} />}</div>
           <p className="motto-handwritten">{mottoWords.map((word, wordIndex) => <span className="motto-word" key={`${word}-${wordIndex}`}>{Array.from(word).map((character, characterIndex) => { const index = mottoWordOffsets[wordIndex] + characterIndex; return <span className="motto-letter" data-written="false" key={`${character}-${index}`} ref={(node) => { characterRefs.current[index] = node }}>{character}</span> })}{wordIndex < mottoWords.length - 1 && <span className="motto-space"> </span>}</span>)}</p>
           <div className="motto-principle"><span className="motto-principle-script">{mottoPrinciple}</span><span className="motto-principle-sans">{mottoPrinciple}</span></div>
-          <div className="motto-logo-lockup"><ReclaimLogo size={48} /></div><p className="motto-signoff">That is Reclaim.</p><p className="motto-scroll-cue"><span>Scroll down</span><i aria-hidden="true" /></p>
+          <div className="motto-logo-lockup"><ReclaimMark size={48} className="motto-logo-mark" /><ReclaimWordmark className="motto-logo-wordmark" /></div><p className="motto-signoff">That is Reclaim.</p><p className="motto-scroll-cue"><span>Scroll down</span><i aria-hidden="true" /></p>
         </div>
       </div>
     </section>
@@ -276,8 +374,6 @@ function KineticFrame({ children, direction }: { children: ReactNode; direction:
     return `translate3d(0, ${y}px, 0) skewY(${skew}deg) rotate(${rotation}deg)`
   })
   const planeOpacity = useTransform(smoothProgress, [0, 0.11, 0.88, 1], [0.82, 1, 1, 0.95])
-  const vectorTransform = useTransform(smoothProgress, (progress) => reduceMotion ? 'none' : `translate3d(0, ${6 - progress * 12}%, 0) rotate(${direction * -4.5}deg)`)
-  const vectorOpacity = useTransform(smoothProgress, [0, 0.16, 0.74, 1], [0, 0.2, 0.12, 0])
 
   useEffect(() => {
     const frame = frameRef.current
@@ -288,7 +384,6 @@ function KineticFrame({ children, direction }: { children: ReactNode; direction:
   }, [reduceMotion])
 
   return <div className="kinetic-frame" data-active={active} data-direction={direction > 0 ? 'right' : 'left'} ref={frameRef}>
-    <motion.span className="kinetic-vector" style={{ transform: vectorTransform, opacity: vectorOpacity }} aria-hidden="true"><i /></motion.span>
     <motion.div className="kinetic-plane" style={{ transform: planeTransform, opacity: reduceMotion ? 1 : planeOpacity }}>{children}</motion.div>
   </div>
 }
@@ -320,10 +415,11 @@ function RawLedger() {
 
   useEffect(() => {
     const section = sectionRef.current
-    if (!section || reduceMotion) return
+    if (!section || reduceMotion || sequence > 0) return
     const timers: number[] = []
     const observer = new IntersectionObserver(([entry]) => {
       if (!entry.isIntersecting || sequence > 0) return
+      observer.disconnect()
       ;[1, 2, 3, 4, 5].forEach((next, index) => timers.push(window.setTimeout(() => setSequence(next), index * 220)))
     }, { rootMargin: '-22% 0px -30% 0px', threshold: 0.2 })
     observer.observe(section)
