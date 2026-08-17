@@ -5740,12 +5740,7 @@
   left: auto;
   isolation: isolate;
   transform: none;
-  transition:
-    top 480ms var(--ease-drawer),
-    width 480ms var(--ease-drawer),
-    height 480ms var(--ease-drawer),
-    padding 480ms var(--ease-drawer),
-    grid-template-columns 480ms var(--ease-drawer);
+  will-change: transform;
 }
 
 .reclaim-product-nav {
@@ -5786,7 +5781,7 @@
   pointer-events: none;
   transform: translate3d(0, -0.45rem, 0) scale(0.965);
   transform-origin: 50% 0;
-  transition: opacity 220ms var(--ease-out), transform 460ms var(--ease-drawer);
+  transition: opacity 180ms var(--ease-out), transform 240ms var(--ease-out);
   backdrop-filter: blur(24px) saturate(138%);
   -webkit-backdrop-filter: blur(24px) saturate(138%);
 }
@@ -6332,7 +6327,10 @@
   letter-spacing: -0.068em;
 }
 
-.reclaim-commercial-page .reclaim-hero .reclaim-eyebrow { color: var(--recovery); }
+.reclaim-commercial-page .reclaim-hero .reclaim-eyebrow {
+  color: #f2f4f0;
+  text-shadow: 0 1px 0 rgb(0 0 0 / 0.24);
+}
 .reclaim-commercial-page .reclaim-hero-pitch > p { color: var(--text-soft); font-size: clamp(0.92rem, 1.15vw, 1.04rem); }
 .reclaim-commercial-page .reclaim-hero .reclaim-text-action { color: var(--text); border-bottom-color: rgb(238 241 236 / 0.26); }
 
@@ -6393,12 +6391,32 @@
   border-color: rgb(238 241 236 / 0.13);
 }
 
-.reclaim-commercial-page .reclaim-product-nav:not([data-condensed='true'])::before {
-  opacity: 1;
-  border-color: rgb(255 255 255 / 0.08);
-  background: rgb(27 31 29 / 0.92);
-  box-shadow: 0 1.15rem 3.4rem rgb(67 57 42 / 0.2), inset 0 1px rgb(255 255 255 / 0.07);
+.reclaim-commercial-page .reclaim-product-nav::before {
+  opacity: 0.58;
+  border-color: rgb(238 241 236 / 0.14);
+  background: linear-gradient(135deg, rgb(18 23 23 / 0.64), rgb(8 11 12 / 0.48));
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.08), 0 1rem 3rem rgb(0 0 0 / 0.2);
+  transform: translate3d(0, 0.12rem, 0) scale(0.994);
+  backdrop-filter: blur(20px) saturate(135%);
+  -webkit-backdrop-filter: blur(20px) saturate(135%);
+}
+
+.reclaim-commercial-page .reclaim-product-nav[data-condensed='true']::before {
+  opacity: 0.82;
+  border-color: rgb(238 241 236 / 0.18);
+  background: linear-gradient(135deg, rgb(18 23 23 / 0.78), rgb(8 11 12 / 0.66));
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.09), 0 1.15rem 3.2rem rgb(0 0 0 / 0.26);
   transform: translate3d(0, 0, 0) scale(1);
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .reclaim-commercial-page .reclaim-product-nav::before,
+  .reclaim-commercial-page .reclaim-product-nav[data-condensed='true']::before {
+    opacity: 1;
+    background: #0d1011;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
 }
 
 @media (max-width: 640px) {
