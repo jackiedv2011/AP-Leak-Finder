@@ -110,14 +110,7 @@ function LandingNav({ action }: { action: LandingAction }) {
 
   return (
     <header className="reclaim-nav-shell">
-      <motion.nav
-        className="reclaim-nav reclaim-product-nav"
-        data-condensed={condensed}
-        data-menu-open={menuOpen}
-        aria-label="Main navigation"
-        layout
-        transition={{ layout: { type: 'spring', duration: 0.28, bounce: 0 } }}
-      >
+      <motion.nav className="reclaim-nav reclaim-product-nav" data-condensed={condensed} data-menu-open={menuOpen} aria-label="Main navigation">
         <motion.a className="reclaim-nav-brand" href="/" aria-label="Reclaim home" layout="position">
           <motion.span className="reclaim-nav-mark" layout="position"><ReclaimMark size={28} interactive /></motion.span>
           <AnimatePresence initial={false}>
