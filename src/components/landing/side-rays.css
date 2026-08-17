@@ -2,9 +2,18 @@
   width: 100%;
   height: 100%;
   pointer-events: none;
-  overflow: hidden;
+  overflow: visible;
+  background:
+    radial-gradient(ellipse 56% 64% at 74% 106%, rgb(121 217 155 / 0.28), transparent 72%),
+    linear-gradient(158deg, transparent 42%, rgb(235 243 237 / 0.09) 57%, transparent 76%);
+}
+
+.side-rays-container[data-renderer='canvas'] {
+  background: none;
 }
 
 .side-rays-container canvas {
   display: block;
+  width: 100%;
+  height: 100%;
 }

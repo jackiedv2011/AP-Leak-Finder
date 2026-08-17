@@ -1,926 +1,569 @@
-import {
-  useEffect,
-  useRef,
-  useState,
-  type ReactNode,
-  type RefObject,
-} from 'react'
-import { useMotionValueEvent, useReducedMotion, useScroll } from 'motion/react'
+import { useEffect, useRef, useState, type MouseEvent as ReactMouseEvent, type ReactNode } from 'react'
+import { AnimatePresence, motion, useMotionValueEvent, useReducedMotion, useScroll, useSpring, useTransform } from 'motion/react'
 import { ReclaimLogo, ReclaimMark, ReclaimWordmark } from '@/components/ReclaimLogo'
 import { MagneticLink } from '@/components/landing/MagneticLink'
+import { DitherBackground } from '@/components/landing/DitherBackground'
 import { SideRays } from '@/components/landing/SideRays'
 import { getSampleLedger } from '@/data/sampleLedger'
+import { ACTIVE_PROJECT_KEY, readProjectIndex } from '@/ledger/projectIndex'
 import { detectFindings } from '@/lib/detection'
 import { formatDate } from '@/lib/format'
-import type { Finding, FindingClass } from '@/types'
+import ivoryEvidenceImage from '@/assets/landing/reclaim-ivory-evidence.webp'
 import './landing.css'
 
 const currency = new Intl.NumberFormat('en-US', {
-  style: 'currency',
-  currency: 'USD',
-  maximumFractionDigits: 0,
+  style: 'currency', currency: 'USD', maximumFractionDigits: 0,
 })
 
 const sample = getSampleLedger()
-const sampleResult = detectFindings(sample.records)
-const matchedCanonicalFinding = sampleResult.findings.find(
-  (finding) =>
-    finding.type === 'exact_duplicate' &&
-    finding.class === 'recoverable' &&
-    finding.relatedRecords.some((record) => record.invoiceNumber === 'INV-3305')
-)
-
-if (!matchedCanonicalFinding) throw new Error('Canonical sample finding INV-3305 is missing.')
-
-const canonicalFinding: Finding = matchedCanonicalFinding
-
-const canonicalRecords = [...canonicalFinding.relatedRecords].sort(
-  (a, b) => a.paymentDate.getTime() - b.paymentDate.getTime()
-)
-
+const sampleFindings = detectFindings(sample.records)
+const canonicalRecords = sample.records
+  .filter((record) => record.invoiceNumber === 'INV-3305')
+  .sort((a, b) => a.paymentDate.getTime() - b.paymentDate.getTime())
 const ledgerRecords = sample.records.filter((record) =>
   ['INV-3303', 'INV-3305', 'INV-3308'].includes(record.invoiceNumber ?? '')
 )
 
-const outcomeData: Array<{
-  className: FindingClass
-  label: string
-  description: string
-  total: number
-  count: number
-}> = [
-  {
-    className: 'recoverable',
-    label: 'Likely recoverable',
-    description: 'Evidence supports a recovery review.',
-    total: sampleResult.recoverableTotal,
-    count: sampleResult.findings.filter((finding) => finding.class === 'recoverable').length,
-  },
-  {
-    className: 'review',
-    label: 'Needs review',
-    description: 'A person should verify the context.',
-    total: sampleResult.reviewTotal,
-    count: sampleResult.findings.filter((finding) => finding.class === 'review').length,
-  },
-  {
-    className: 'opportunity',
-    label: 'Future savings',
-    description: 'A process change could prevent loss.',
-    total: sampleResult.opportunityTotal,
-    count: sampleResult.findings.filter((finding) => finding.class === 'opportunity').length,
-  },
-]
+if (canonicalRecords.length !== 2) throw new Error('Canonical sample records INV-3305 are missing.')
 
-function LandingNav() {
-  const [condensed, setCondensed] = useState(false)
+const mottoThought = 'A payment only tells part of the story. The rest lives in the records around it.'
+const mottoPrinciple = 'See the payment. Keep the reason.'
+const skipMottoEvent = 'reclaim:skip-motto'
+const mottoWords = mottoThought.split(' ')
+const mottoWordOffsets = mottoWords.reduce<number[]>((offsets, _word, index) => {
+  offsets.push(index === 0 ? 0 : offsets[index - 1] + mottoWords[index - 1].length + 1)
+  return offsets
+}, [])
+
+interface LandingAction {
+  label: string
+  href: string
+  context: string | null
+}
+
+function getLandingAction(): LandingAction {
+  const projects = readProjectIndex()
+  if (projects.length === 0) return { label: 'Review your ledger', href: '/audit?entry=upload', context: null }
+
+  const activeId = window.localStorage.getItem(ACTIVE_PROJECT_KEY)
+  const project = projects.find((item) => item.id === activeId) ?? projects[0]
+  const projectParam = encodeURIComponent(project.id)
+
+  if (project.recoveryActiveCount > 0) {
+    return { label: 'Resume recovery', href: `/audit?project=${projectParam}&mode=recovery`, context: currency.format(project.recoveryActiveValue) }
+  }
+  if (project.openCaseCount > 0) {
+    return { label: 'Continue review', href: `/audit?project=${projectParam}&mode=findings`, context: `${project.openCaseCount} open` }
+  }
+  return { label: 'Start a new review', href: '/audit?entry=upload', context: null }
+}
+
+const navigationItems = [
+  { href: '#value', label: 'What it does' },
+  { href: '#recovery', label: 'Recovery' },
+  { href: '#security', label: 'Security' },
+  { href: '#pricing', label: 'Pricing' },
+  { href: '#about', label: 'About' },
+] as const
+
+function LandingNav({ action }: { action: LandingAction }) {
   const [menuOpen, setMenuOpen] = useState(false)
+  const [activeTarget, setActiveTarget] = useState('')
+  const [condensed, setCondensed] = useState(false)
+  const condensedRef = useRef(false)
+  const { scrollY } = useScroll()
+
+  const navigateToSection = (event: ReactMouseEvent<HTMLAnchorElement>, href: string, closeMenu = false) => {
+    if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
+    event.preventDefault()
+    if (closeMenu) setMenuOpen(false)
+    window.dispatchEvent(new Event(skipMottoEvent))
+    window.history.pushState(null, '', href)
+    window.setTimeout(() => document.querySelector<HTMLElement>(href)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0)
+  }
+
+  const syncCondensed = (value: number) => {
+    const next = value > Math.max(72, window.innerHeight * 0.1)
+    if (next === condensedRef.current) return
+    condensedRef.current = next
+    setCondensed(next)
+  }
 
   useEffect(() => {
-    let animationFrame: number | null = null
+    syncCondensed(scrollY.get())
+  }, [scrollY])
 
-    const updateNavigation = () => {
-      animationFrame = null
-      const nextCondensed = window.scrollY > Math.max(72, window.innerHeight * 0.1)
+  useMotionValueEvent(scrollY, 'change', syncCondensed)
 
-      setCondensed((current) => {
-        if (current !== nextCondensed) setMenuOpen(false)
-        return nextCondensed
-      })
-    }
+  useEffect(() => {
+    const targets = navigationItems
+      .map((item) => document.querySelector<HTMLElement>(item.href))
+      .filter((target): target is HTMLElement => target !== null)
+    const observer = new IntersectionObserver((entries) => {
+      const visible = entries.filter((entry) => entry.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0]
+      if (visible) setActiveTarget(`#${visible.target.id}`)
+    }, { rootMargin: '-20% 0px -68% 0px', threshold: [0.05, 0.25] })
 
-    const scheduleUpdate = () => {
-      if (animationFrame === null) animationFrame = window.requestAnimationFrame(updateNavigation)
-    }
-
-    updateNavigation()
-    window.addEventListener('scroll', scheduleUpdate, { passive: true })
-    window.addEventListener('resize', scheduleUpdate)
-
-    return () => {
-      window.removeEventListener('scroll', scheduleUpdate)
-      window.removeEventListener('resize', scheduleUpdate)
-      if (animationFrame !== null) window.cancelAnimationFrame(animationFrame)
-    }
+    targets.forEach((target) => observer.observe(target))
+    return () => observer.disconnect()
   }, [])
 
   return (
-    <header className="reclaim-nav-shell" data-condensed={condensed}>
-      <nav className="reclaim-nav" data-condensed={condensed} data-menu-open={menuOpen} aria-label="Main navigation">
-        <a className="reclaim-nav-brand" href="/" aria-label="Reclaim home">
-          <ReclaimMark size={30} interactive />
-          <span className="reclaim-nav-wordmark"><ReclaimWordmark interactive /></span>
-        </a>
-
+    <header className="reclaim-nav-shell">
+      <motion.nav className="reclaim-nav reclaim-product-nav" data-condensed={condensed} data-menu-open={menuOpen} aria-label="Main navigation">
+        <motion.a className="reclaim-nav-brand" href="/" aria-label="Reclaim home" layout="position">
+          <motion.span className="reclaim-nav-mark" layout="position"><ReclaimMark size={28} interactive /></motion.span>
+          <AnimatePresence initial={false}>
+            {!condensed && <motion.span className="reclaim-nav-wordmark" initial={{ opacity: 0, transform: 'translate3d(0, 0, 0)', filter: 'blur(2px)' }} animate={{ opacity: 1, transform: 'translate3d(0, 0, 0)', filter: 'blur(0px)' }} exit={{ opacity: 0, transform: 'translate3d(0, 0, 0)', filter: 'blur(2px)' }} transition={{ duration: 0.18, ease: [0.23, 1, 0.32, 1] }}><ReclaimWordmark interactive /></motion.span>}
+          </AnimatePresence>
+        </motion.a>
         <div className="reclaim-nav-links">
-          <a data-motion="pressable" href="#evidence">Evidence</a>
-          <a data-motion="pressable" href="#analysis">Analysis</a>
-          <a data-motion="pressable" href="/audit?entry=upload">Use your ledger</a>
+          {navigationItems.map((item) => <a data-motion="pressable" data-active={activeTarget === item.href} href={item.href} onClick={(event) => navigateToSection(event, item.href)} key={item.href}>{item.label}</a>)}
         </div>
-
-        <MagneticLink className="reclaim-nav-action" href="/audit?entry=sample" pendingLabel="Opening…">Run sample audit</MagneticLink>
-
-        <button
-          className="reclaim-menu-button"
-          data-motion="pressable"
-          data-motion-ray="true"
-          type="button"
-          aria-expanded={menuOpen}
-          aria-controls="reclaim-mobile-menu"
-          aria-label={menuOpen ? 'Close navigation menu' : 'Open navigation menu'}
-          onClick={() => setMenuOpen((open) => !open)}
-        >
-          <span>{menuOpen ? 'Close' : 'Menu'}</span>
-          <span className="reclaim-menu-glyph" aria-hidden="true"><i /><i /></span>
+        <MagneticLink className="reclaim-nav-action" href={action.href} pendingLabel="Opening…">
+          <span className="reclaim-nav-action-copy">{action.label}{action.context && <small>{action.context}</small>}</span>
+        </MagneticLink>
+        <button className="reclaim-menu-button" data-motion="pressable" type="button" aria-expanded={menuOpen} aria-controls="reclaim-mobile-menu" aria-label={menuOpen ? 'Close navigation menu' : 'Open navigation menu'} onClick={() => setMenuOpen((open) => !open)}>
+          <span>{menuOpen ? 'Close' : 'Menu'}</span><span className="reclaim-menu-glyph" aria-hidden="true"><i /><i /></span>
         </button>
-
         <div className="reclaim-mobile-menu" id="reclaim-mobile-menu" data-open={menuOpen} aria-hidden={!menuOpen}>
-          <a data-motion="pressable" data-motion-arrow="true" href="#evidence" tabIndex={menuOpen ? 0 : -1} onClick={() => setMenuOpen(false)}><span>Evidence</span><span className="reclaim-menu-link-icon motion-arrow" aria-hidden="true">↗</span></a>
-          <a data-motion="pressable" data-motion-arrow="true" href="#analysis" tabIndex={menuOpen ? 0 : -1} onClick={() => setMenuOpen(false)}><span>Analysis</span><span className="reclaim-menu-link-icon motion-arrow" aria-hidden="true">↗</span></a>
-          <a data-motion="pressable" data-motion-arrow="true" href="/audit?entry=upload" tabIndex={menuOpen ? 0 : -1} onClick={() => setMenuOpen(false)}><span>Use your ledger</span><span className="reclaim-menu-link-icon motion-arrow" aria-hidden="true">↗</span></a>
-          <a data-motion="pressable" data-motion-arrow="true" href="/audit?entry=sample" tabIndex={menuOpen ? 0 : -1} onClick={() => setMenuOpen(false)}><span>Run sample audit</span><span className="reclaim-menu-link-icon motion-arrow" aria-hidden="true">↗</span></a>
+          {navigationItems.map((item) => <a href={item.href} tabIndex={menuOpen ? 0 : -1} onClick={(event) => navigateToSection(event, item.href, true)} key={item.href}><span>{item.label}</span><span aria-hidden="true">↗</span></a>)}
+          <a href={action.href} tabIndex={menuOpen ? 0 : -1} onClick={() => setMenuOpen(false)}><span>{action.label}</span><span aria-hidden="true">↗</span></a>
         </div>
-      </nav>
+      </motion.nav>
     </header>
   )
 }
 
 function HeroAudit() {
   return (
-    <article className="hero-audit" data-motion-ray="true" aria-label="Animated sample audit showing a duplicate payment finding">
-      <header className="hero-audit-header">
-        <div><span className="hero-audit-pulse" aria-hidden="true" /> Sample audit</div>
-        <span>{sample.records.length} records scanned</span>
-      </header>
-
+    <article className="hero-audit hero-review-preview" aria-label="Example payment recovery case with its source records">
+      <header className="hero-audit-header"><div>Recovery case</div><span>Example from a payment export</span></header>
       <div className="hero-audit-body">
-        <div className="hero-audit-ledger" aria-label="Matched payment records">
-          <div className="hero-audit-columns" aria-hidden="true">
-            <span>Vendor</span><span>Invoice</span><span>Paid</span><span>Amount</span>
-          </div>
+        <div className="hero-audit-ledger" role="table" aria-label="Source records for invoice INV-3305">
+          <div className="hero-audit-columns" role="row"><span role="columnheader">Vendor</span><span role="columnheader">Invoice</span><span role="columnheader">Paid</span><span role="columnheader">Amount</span></div>
           {canonicalRecords.map((record, index) => (
-            <div className="hero-audit-row" data-match={index === 1} key={record.rowIndex}>
-              <strong>{record.vendor}</strong>
-              <span>{record.invoiceNumber}</span>
-              <time dateTime={record.paymentDate.toISOString()}>{formatDate(record.paymentDate)}</time>
-              <strong>{currency.format(record.amountPaid)}</strong>
+            <div className="hero-audit-row" data-match={index === canonicalRecords.length - 1} role="row" key={record.rowIndex}>
+              <strong role="cell">{record.vendor}</strong><span role="cell">{record.invoiceNumber}</span><time role="cell" dateTime={record.paymentDate.toISOString()}>{formatDate(record.paymentDate)}</time><strong role="cell">{currency.format(record.amountPaid)}</strong>
             </div>
           ))}
-          <div className="hero-audit-matchline" aria-hidden="true"><i /><span>3 matching fields</span></div>
+          <div className="hero-audit-matchline"><i aria-hidden="true" /><span>Vendor, invoice, and amount align.</span></div>
         </div>
-
         <aside className="hero-audit-finding">
-          <span className="hero-audit-status">Recovery ready</span>
-          <strong>Exact duplicate payment</strong>
-          <p>Vendor, invoice, and amount match.</p>
-          <div className="hero-audit-total"><span>Potential recovery</span><b>{currency.format(canonicalFinding.dollarImpact)}</b></div>
-          <small>Human confirmation required</small>
+          <strong>Possible duplicate payment</strong><p>Two source payments point to the same obligation.</p>
+          <div className="hero-audit-readiness"><span>Amount to confirm</span><b>{currency.format(canonicalRecords[0].amountPaid)}</b></div><small>A person confirms the case before outreach.</small>
         </aside>
       </div>
     </article>
   )
 }
 
-function Hero({ heroRef }: { heroRef: RefObject<HTMLElement | null> }) {
+function Hero({ action }: { action: LandingAction }) {
+  const sectionRef = useRef<HTMLElement>(null)
+  const reduceMotion = useReducedMotion()
+  const { scrollYProgress } = useScroll({ target: sectionRef, offset: ['start start', 'end start'] })
+  const smoothProgress = useSpring(scrollYProgress, { stiffness: 120, damping: 28, mass: 0.32 })
+  const copyTransform = useTransform(smoothProgress, (progress) => reduceMotion ? 'none' : `translate3d(0, ${-progress * 14}px, 0) skewY(${-progress * 0.18}deg)`)
+  const auditTransform = useTransform(smoothProgress, (progress) => reduceMotion ? 'none' : `translate3d(0, ${-progress * 26}px, 0) rotate(${progress * 0.3}deg) skewY(${progress * 0.14}deg)`)
+  const assuranceTransform = useTransform(smoothProgress, (progress) => reduceMotion ? 'none' : `translate3d(0, ${-progress * 9}px, 0)`)
+  const heroOpacity = useTransform(smoothProgress, [0, 0.72, 1], [1, 0.98, 0.82])
+
   return (
-    <section ref={heroRef} className="reclaim-hero" aria-labelledby="hero-title">
-      <div className="reclaim-hero-sky" aria-hidden="true" />
-      <SideRays
-        className="reclaim-hero-rays"
-        speed={0.45}
-        intensity={1.42}
-        spread={1.45}
-        origin="bottom-right"
-        tilt={-15}
-        saturation={0.82}
-        blend={0.46}
-        falloff={1.35}
-        opacity={0.5}
-      />
+    <section className="reclaim-hero" ref={sectionRef} aria-labelledby="hero-title">
+      <div className="reclaim-hero-atmosphere" aria-hidden="true">
+        <DitherBackground className="reclaim-hero-dither" />
+        <span className="reclaim-hero-atmosphere-scrim" />
+      </div>
       <div className="reclaim-hero-inner">
-        <div className="reclaim-hero-copy reclaim-hero-copy-new">
-          <h1 id="hero-title">
-            <span>Find payments that never should have left.</span>
-          </h1>
-          <p>
-            Reclaim finds, explains, and drafts the recovery.
-          </p>
-          <div className="hero-prompt-bar">
-            <span className="hero-prompt-bar-label">
-              <strong>{sample.records.length} records</strong> ready in the sample ledger
-            </span>
-            <MagneticLink className="reclaim-button reclaim-button-primary" href="/audit?entry=sample" pendingLabel="Opening…">Run sample audit</MagneticLink>
+        <motion.div className="reclaim-hero-copy reclaim-hero-copy-new" style={{ transform: copyTransform, opacity: reduceMotion ? 1 : heroOpacity }}>
+          <div className="reclaim-hero-heading"><span className="reclaim-eyebrow">Payment recovery for small businesses</span><h1 id="hero-title">Find the payments worth a <em>second look.</em></h1></div>
+          <div className="reclaim-hero-pitch"><p>Upload a QuickBooks, Xero, or accounting CSV. Reclaim connects suspicious payments to evidence and helps you pursue confirmed recoveries.</p>
+            <div className="reclaim-actions"><MagneticLink className="reclaim-button reclaim-button-primary" href={action.href} pendingLabel="Opening workspace…">{action.label}</MagneticLink><a className="reclaim-text-action" data-motion="pressable" href="/audit?entry=sample">Explore a sample case</a></div>
           </div>
-          <p className="hero-caption">
-            <span>Runs in your browser</span> <i aria-hidden="true" /> <span>Nothing is uploaded</span> <i aria-hidden="true" /> <a className="reclaim-text-action" data-motion="pressable" data-motion-arrow="true" href="/audit?entry=upload">Use your ledger</a>
-          </p>
+        </motion.div>
+        <motion.div className="hero-audit-kinetic" style={{ transform: auditTransform, opacity: reduceMotion ? 1 : heroOpacity }}><HeroAudit /></motion.div>
+        <motion.div className="reclaim-hero-assurance" style={{ transform: assuranceTransform, opacity: reduceMotion ? 1 : heroOpacity }} aria-label="Product assurances"><span>CSV in</span><span>Evidence attached</span><span>Ledger stays local</span><span>No recovery, no fee</span></motion.div>
+      </div>
+    </section>
+  )
+}
+
+function MottoInterlude() {
+  const sectionRef = useRef<HTMLElement>(null)
+  const characterRefs = useRef<Array<HTMLSpanElement | null>>([])
+  const revealedCharacters = useRef(-1)
+  const reduceMotion = useReducedMotion()
+  const queuedCharacters = useRef(-1)
+  const characterFrame = useRef<number | null>(null)
+  const stageRef = useRef(reduceMotion ? 5 : 0)
+  const autoStartedRef = useRef(false)
+  const bypassedGateRef = useRef(false)
+  const [stage, setStage] = useState(reduceMotion ? 5 : 0)
+  const [autoStarted, setAutoStarted] = useState(false)
+  const [readyToContinue, setReadyToContinue] = useState(Boolean(reduceMotion))
+  const { scrollYProgress } = useScroll({ target: sectionRef, offset: ['start start', 'end end'] })
+
+  useMotionValueEvent(scrollYProgress, 'change', (progress) => {
+    if (reduceMotion || autoStartedRef.current || window.innerWidth < 1024) return
+    const revealProgress = Math.min(1, Math.max(0, (progress - 0.04) / 0.49))
+    const nextCharacterCount = Math.round(revealProgress * mottoThought.length)
+    if (nextCharacterCount !== revealedCharacters.current) {
+      queuedCharacters.current = nextCharacterCount
+      if (characterFrame.current === null) {
+        characterFrame.current = window.requestAnimationFrame(() => {
+          const previous = Math.max(0, revealedCharacters.current)
+          const next = queuedCharacters.current
+          const firstChanged = Math.min(previous, next)
+          const lastChanged = Math.max(previous, next)
+          for (let index = firstChanged; index < lastChanged; index += 1) {
+            const character = characterRefs.current[index]
+            if (character) character.dataset.written = String(index < next)
+          }
+          revealedCharacters.current = next
+          characterFrame.current = null
+        })
+      }
+    }
+    const nextStage = progress < 0.08 ? 0 : 1
+    if (nextStage !== stageRef.current) {
+      stageRef.current = nextStage
+      setStage(nextStage)
+    }
+    if (progress >= 0.53) {
+      autoStartedRef.current = true
+      setAutoStarted(true)
+    }
+  })
+
+  useEffect(() => {
+    if (reduceMotion) {
+      characterRefs.current.forEach((character) => { if (character) character.dataset.written = 'true' })
+      stageRef.current = 5
+      setStage(5)
+      setReadyToContinue(true)
+      return
+    }
+    if (!autoStarted || readyToContinue) return
+    characterRefs.current.forEach((character) => { if (character) character.dataset.written = 'true' })
+    setReadyToContinue(false)
+    stageRef.current = 2
+    setStage(2)
+    const timers = [
+      window.setTimeout(() => { stageRef.current = 3; setStage(3) }, 320),
+      window.setTimeout(() => { stageRef.current = 4; setStage(4) }, 1320),
+      window.setTimeout(() => { stageRef.current = 5; setStage(5) }, 2320),
+      window.setTimeout(() => setReadyToContinue(true), 3000),
+    ]
+    return () => timers.forEach((timer) => window.clearTimeout(timer))
+  }, [autoStarted, readyToContinue, reduceMotion])
+
+  useEffect(() => {
+    if (reduceMotion || window.innerWidth >= 1024 || !sectionRef.current) return
+    let started = false
+    let timer: number | null = null
+    const revealOnArrival = () => {
+      if (started) return
+      started = true
+      stageRef.current = 1
+      setStage(1)
+      let index = 0
+      const writeNext = () => {
+        const character = characterRefs.current[index]
+        if (character) character.dataset.written = 'true'
+        index += 1
+        if (index < mottoThought.length) {
+          timer = window.setTimeout(writeNext, 22)
+          return
+        }
+        revealedCharacters.current = mottoThought.length
+        timer = window.setTimeout(() => { stageRef.current = 3; setStage(3) }, 180)
+        window.setTimeout(() => { stageRef.current = 4; setStage(4) }, 620)
+        window.setTimeout(() => { stageRef.current = 5; setStage(5); setReadyToContinue(true) }, 940)
+      }
+      writeNext()
+    }
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) {
+        observer.disconnect()
+        revealOnArrival()
+      }
+    }, { threshold: 0.28 })
+    observer.observe(sectionRef.current)
+    return () => {
+      observer.disconnect()
+      if (timer !== null) window.clearTimeout(timer)
+    }
+  }, [reduceMotion])
+
+  useEffect(() => {
+    const bypassForNavigation = () => {
+      bypassedGateRef.current = true
+      autoStartedRef.current = true
+      characterRefs.current.forEach((character) => { if (character) character.dataset.written = 'true' })
+      stageRef.current = 5
+      setStage(5)
+      setReadyToContinue(true)
+      setAutoStarted(true)
+    }
+    window.addEventListener(skipMottoEvent, bypassForNavigation)
+    return () => window.removeEventListener(skipMottoEvent, bypassForNavigation)
+  }, [])
+
+  useEffect(() => () => { if (characterFrame.current !== null) window.cancelAnimationFrame(characterFrame.current) }, [])
+
+  useEffect(() => {
+    if (!autoStarted || readyToContinue || reduceMotion || window.innerWidth < 1024) return
+    const root = document.documentElement
+    const lockedScrollY = window.scrollY
+    const previousScrollBehavior = root.style.scrollBehavior
+
+    root.dataset.reclaimScrollGate = 'true'
+    root.style.scrollBehavior = 'auto'
+
+    const blockedKeys = new Set([' ', 'ArrowDown', 'ArrowUp', 'PageDown', 'PageUp', 'Home', 'End'])
+    const blockScroll = (event: Event) => event.preventDefault()
+    const holdPosition = () => {
+      if (Math.abs(window.scrollY - lockedScrollY) < 1) return
+      if (!bypassedGateRef.current) window.scrollTo(0, lockedScrollY)
+    }
+    const finishEarly = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        stageRef.current = 5
+        setStage(5)
+        setReadyToContinue(true)
+        return
+      }
+      if (blockedKeys.has(event.key)) event.preventDefault()
+    }
+    window.addEventListener('wheel', blockScroll, { passive: false })
+    window.addEventListener('touchmove', blockScroll, { passive: false })
+    window.addEventListener('keydown', finishEarly)
+    window.addEventListener('scroll', holdPosition, { passive: true })
+
+    return () => {
+      window.removeEventListener('wheel', blockScroll)
+      window.removeEventListener('touchmove', blockScroll)
+      window.removeEventListener('keydown', finishEarly)
+      window.removeEventListener('scroll', holdPosition)
+      delete root.dataset.reclaimScrollGate
+      if (!bypassedGateRef.current) window.scrollTo(0, lockedScrollY)
+      root.style.scrollBehavior = previousScrollBehavior
+    }
+  }, [autoStarted, readyToContinue, reduceMotion])
+
+  return (
+    <section className="motto-interlude" data-stage={stage} data-autoplay={autoStarted} data-complete={stage >= 5} data-ready={readyToContinue} data-reduced={Boolean(reduceMotion)} ref={sectionRef} aria-label="Reclaim's operating principle">
+      <div className="motto-stage"><div className="motto-accessible"><p>{mottoThought}</p><strong>{mottoPrinciple}</strong><span>That is Reclaim.</span><span aria-live="polite">{readyToContinue ? 'Animation complete. Scroll down to continue.' : ''}</span></div>
+        <div className="motto-visual" aria-hidden="true">
+          <div className="motto-rays">{!reduceMotion && <SideRays speed={stage >= 3 ? 0.34 : 0} intensity={2.08} spread={1.3} origin="bottom-right" tilt={-15} saturation={0.84} blend={0.52} falloff={1.5} opacity={0.92} />}</div>
+          <p className="motto-handwritten">{mottoWords.map((word, wordIndex) => <span className="motto-word" key={`${word}-${wordIndex}`}>{Array.from(word).map((character, characterIndex) => { const index = mottoWordOffsets[wordIndex] + characterIndex; return <span className="motto-letter" data-written="false" key={`${character}-${index}`} ref={(node) => { characterRefs.current[index] = node }}>{character}</span> })}{wordIndex < mottoWords.length - 1 && <span className="motto-space"> </span>}</span>)}</p>
+          <div className="motto-principle"><span className="motto-principle-script">{mottoPrinciple}</span><span className="motto-principle-sans">{mottoPrinciple}</span></div>
+          <div className="motto-logo-lockup"><ReclaimMark size={48} className="motto-logo-mark" /><ReclaimWordmark className="motto-logo-wordmark" /></div><p className="motto-signoff">That is Reclaim.</p><p className="motto-scroll-cue"><span>Scroll down</span><i aria-hidden="true" /></p>
         </div>
       </div>
-      <span className="reclaim-hero-scroll-cue" aria-hidden="true">
-        <svg width="18" height="10" viewBox="0 0 18 10" fill="none"><path d="M1 1L9 9L17 1" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
-      </span>
     </section>
   )
 }
 
-const detectionRuleChips = [
-  'Exact duplicate payments',
-  'Near-duplicate payments',
-  'Overpayments',
-  'Missed early-pay discounts',
-  'Vendor bank-account changes',
-  'Statistical outliers',
-  'Unclaimed discounts',
-]
+function KineticFrame({ children, direction }: { children: ReactNode; direction: -1 | 1 }) {
+  const frameRef = useRef<HTMLDivElement>(null)
+  const reduceMotion = useReducedMotion()
+  const [active, setActive] = useState(false)
+  const { scrollYProgress } = useScroll({ target: frameRef, offset: ['start 94%', 'end 6%'] })
+  const smoothProgress = useSpring(scrollYProgress, { stiffness: 115, damping: 27, mass: 0.34 })
+  const planeTransform = useTransform(smoothProgress, (progress) => {
+    if (reduceMotion) return 'none'
+    const narrow = window.innerWidth < 768
+    const entry = Math.max(0, 1 - progress / 0.27)
+    const exit = Math.max(0, (progress - 0.78) / 0.22)
+    const y = (narrow ? 11 : 20) * entry - (narrow ? 3 : 6) * exit
+    const skew = direction * (narrow ? -0.5 : -1.05) * entry + direction * (narrow ? 0.06 : 0.16) * exit
+    const rotation = direction * (narrow ? -0.1 : -0.24) * entry + direction * (narrow ? 0.02 : 0.04) * exit
+    return `translate3d(0, ${y}px, 0) skewY(${skew}deg) rotate(${rotation}deg)`
+  })
+  const planeOpacity = useTransform(smoothProgress, [0, 0.11, 0.88, 1], [0.82, 1, 1, 0.95])
 
-function TrustStrip() {
-  return (
-    <section className="trust-strip" aria-labelledby="trust-strip-title">
-      <p id="trust-strip-title">Built on the same checks an AP audit team runs by hand.</p>
-      <div className="trust-strip-row">
-        {detectionRuleChips.map((chip) => (
-          <span className="trust-strip-chip" key={chip}>{chip}</span>
-        ))}
-      </div>
-    </section>
-  )
+  useEffect(() => {
+    const frame = frameRef.current
+    if (!frame || reduceMotion) return
+    const observer = new IntersectionObserver(([entry]) => setActive(entry.isIntersecting), { rootMargin: '12% 0px', threshold: 0.04 })
+    observer.observe(frame)
+    return () => observer.disconnect()
+  }, [reduceMotion])
+
+  return <div className="kinetic-frame" data-active={active} data-direction={direction > 0 ? 'right' : 'left'} ref={frameRef}>
+    <motion.div className="kinetic-plane" style={{ transform: planeTransform, opacity: reduceMotion ? 1 : planeOpacity }}>{children}</motion.div>
+  </div>
 }
 
-function ProofStats() {
-  const [revealed, setRevealed] = useState(false)
-  const sectionRef = useRef<HTMLElement>(null)
-  const totalImpact = sampleResult.recoverableTotal + sampleResult.reviewTotal + sampleResult.opportunityTotal
+function useSectionWake<T extends HTMLElement>(threshold = 0.18) {
+  const sectionRef = useRef<T>(null)
+  const reduceMotion = useReducedMotion()
+  const [awake, setAwake] = useState(Boolean(reduceMotion))
 
   useEffect(() => {
     const section = sectionRef.current
-    if (!section) return
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setRevealed(true)
-          observer.disconnect()
-        }
-      },
-      { threshold: 0.3 }
-    )
+    if (!section || reduceMotion || awake) return
+    const observer = new IntersectionObserver(([entry]) => {
+      if (!entry.isIntersecting) return
+      setAwake(true)
+      observer.disconnect()
+    }, { rootMargin: '-8% 0px -14% 0px', threshold })
     observer.observe(section)
     return () => observer.disconnect()
-  }, [])
+  }, [awake, reduceMotion, threshold])
 
-  const stats: Array<{ label: string; body: () => ReactNode }> = [
-    {
-      label: 'Across the sample ledger',
-      body: () => <CountUpValue value={totalImpact} active={revealed} />,
-    },
-    {
-      label: 'Payment records scanned',
-      body: () => sample.records.length.toLocaleString(),
-    },
-    {
-      label: 'Detection rules run automatically',
-      body: () => detectionRuleChips.length,
-    },
-    {
-      label: 'Median time to a first finding',
-      body: () => '<1s',
-    },
-  ]
-
-  return (
-    <section ref={sectionRef} className="proof-stats" aria-labelledby="proof-stats-title">
-      <div className="proof-stats-heading">
-        <h2 id="proof-stats-title">The evidence is in the ledger.</h2>
-      </div>
-      <div className="proof-stats-grid">
-        {stats.map((stat) => (
-          <div className="proof-stat-card" key={stat.label}>
-            <strong>{stat.body()}</strong>
-            <span>{stat.label}</span>
-          </div>
-        ))}
-      </div>
-    </section>
-  )
-}
-
-function FeaturePanels() {
-  const first = canonicalRecords[0]
-
-  return (
-    <section className="feature-panels" aria-labelledby="feature-panels-title">
-      <div className="feature-panels-heading">
-        <h2 id="feature-panels-title">One workspace for the whole recovery.</h2>
-        <p>Your ledger, the evidence, the review, and the request — in one place.</p>
-      </div>
-      <div className="feature-panels-grid">
-        <article className="feature-panel">
-          <h3 className="feature-panel-heading">Read every payment as one ledger.<span>Import a CSV or start from the bundled sample — Reclaim lines up vendor, invoice, and amount across every row.</span></h3>
-          <div className="feature-panel-stage"><HeroAudit /></div>
-        </article>
-
-        <article className="feature-panel">
-          <h3 className="feature-panel-heading">Every dollar sorted by confidence.<span>Findings split into what&apos;s recoverable now, what needs a person, and what prevents the next leak.</span></h3>
-          <div className="feature-panel-stage">
-            <div className="feature-panel-metrics">
-              {outcomeData.map((item) => (
-                <div className="feature-panel-metric" key={item.className}>
-                  <span>{item.label}</span>
-                  <strong style={{ color: `var(--${item.className === 'recoverable' ? 'recovery' : item.className === 'review' ? 'review' : 'future'})` }}>
-                    {currency.format(item.total)}
-                  </strong>
-                </div>
-              ))}
-            </div>
-          </div>
-        </article>
-
-        <article className="feature-panel">
-          <h3 className="feature-panel-heading">Confirm before anything moves.<span>Every flag stays a suggestion until a person reviews the source records and decides.</span></h3>
-          <div className="feature-panel-stage">
-            <dl className="feature-panel-dl">
-              <div><dt>Vendor</dt><dd>Sierra Coffee Supply</dd></div>
-              <div><dt>Invoice</dt><dd>INV-3305</dd></div>
-              <div><dt>Original payment</dt><dd>{formatDate(first.paymentDate)}</dd></div>
-              <div><dt>Extra payment</dt><dd style={{ color: 'var(--recovery)' }}>{currency.format(canonicalFinding.dollarImpact)}</dd></div>
-            </dl>
-          </div>
-        </article>
-
-        <article className="feature-panel">
-          <h3 className="feature-panel-heading">Recovery request, drafted for you.<span>Once you confirm a finding, Reclaim writes the request with the evidence already attached.</span></h3>
-          <div className="feature-panel-stage"><RecoveryDocument /></div>
-        </article>
-      </div>
-    </section>
-  )
-}
-
-const exploreCards: Array<{ className: FindingClass; title: string; body: string; href: string }> = [
-  {
-    className: 'recoverable',
-    title: 'Evidence',
-    body: 'Watch one finding move from raw records to a recovery-ready action without losing its paper trail.',
-    href: '#evidence',
-  },
-  {
-    className: 'review',
-    title: 'Review',
-    body: 'See the exact question a person answers before any request goes out — no flag ships without confirmation.',
-    href: '#evidence',
-  },
-  {
-    className: 'future',
-    title: 'Analysis',
-    body: 'Every dollar figure traces back to real records, split into recoverable, needs-review, and future savings.',
-    href: '#analysis',
-  },
-]
-
-function ExploreSection() {
-  return (
-    <section className="explore-section" aria-labelledby="explore-section-title">
-      <div className="explore-section-heading">
-        <h2 id="explore-section-title">See how Reclaim works.</h2>
-        <p>Pick a part of the audit and step into exactly what Reclaim does with your ledger.</p>
-      </div>
-      <div className="explore-grid">
-        {exploreCards.map((card) => (
-          <a className="explore-card" data-class={card.className} data-motion="pressable" href={card.href} key={card.title}>
-            <div className="explore-card-art"><strong>{card.title}</strong></div>
-            <div className="explore-card-body">
-              <h3>{card.title}</h3>
-              <p>{card.body}</p>
-              <span className="explore-card-link">Explore <span aria-hidden="true">→</span></span>
-            </div>
-          </a>
-        ))}
-      </div>
-    </section>
-  )
-}
-
-const faqItems = [
-  {
-    question: 'What is Reclaim?',
-    answer: 'Reclaim reads a vendor-payment ledger, flags payments that look like duplicates, overpayments, or missed discounts, and shows the exact records behind every flag so a person can confirm before anything moves.',
-  },
-  {
-    question: 'Does my data leave my browser?',
-    answer: 'No. This prototype analyzes the CSV locally in your browser and never uploads it anywhere.',
-  },
-  {
-    question: 'Do I need accounting experience to use it?',
-    answer: 'No. Each finding explains itself in plain language — the matched fields, the dollar impact, and why it was flagged — before you decide.',
-  },
-  {
-    question: 'What if I don’t have a ledger ready?',
-    answer: 'Start with the bundled sample ledger. It runs the same detection rules on real sample data so you can see the full flow before uploading your own.',
-  },
-  {
-    question: 'Will Reclaim ever send a request automatically?',
-    answer: 'No. Reclaim drafts a recovery request once you confirm a finding, but sending it is always a decision you make yourself.',
-  },
-  {
-    question: 'What counts as a leak?',
-    answer: 'Exact and near-duplicate payments, overpayments against the invoiced amount, missed early-payment discounts, vendor bank-account changes, and statistical amount outliers.',
-  },
-]
-
-function FAQSection() {
-  return (
-    <section id="faq" className="faq-section" aria-labelledby="faq-section-title">
-      <div className="faq-section-heading">
-        <h2 id="faq-section-title">Questions, answered.</h2>
-        <p>Clear answers before you run your own ledger.</p>
-      </div>
-      <div className="faq-list">
-        {faqItems.map((item, index) => (
-          <details className="faq-item" key={item.question} open={index === 0}>
-            <summary>{item.question}</summary>
-            <p>{item.answer}</p>
-          </details>
-        ))}
-      </div>
-    </section>
-  )
+  return { sectionRef, awake }
 }
 
 function RawLedger() {
-  const [discovered, setDiscovered] = useState(false)
   const sectionRef = useRef<HTMLElement>(null)
+  const reduceMotion = useReducedMotion()
+  const [sequence, setSequence] = useState(reduceMotion ? 5 : 0)
 
   useEffect(() => {
     const section = sectionRef.current
-    if (!section) return
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setDiscovered(true)
-          observer.disconnect()
-        }
-      },
-      { rootMargin: '-22% 0px -30% 0px', threshold: 0.2 }
-    )
-
+    if (!section || reduceMotion) return
+    const timers: number[] = []
+    const observer = new IntersectionObserver(([entry]) => {
+      if (!entry.isIntersecting) return
+      observer.disconnect()
+      ;[1, 2, 3, 4, 5].forEach((next, index) => timers.push(window.setTimeout(() => setSequence(next), index * 220)))
+    }, { rootMargin: '-22% 0px -30% 0px', threshold: 0.2 })
     observer.observe(section)
-    return () => observer.disconnect()
-  }, [])
+    return () => { observer.disconnect(); timers.forEach((timer) => window.clearTimeout(timer)) }
+  }, [reduceMotion])
 
   return (
-    <section ref={sectionRef} className="raw-ledger" data-discovered={discovered} aria-labelledby="ledger-title">
-      <div className="ledger-intro">
-        <div>
-          <h2 id="ledger-title">A duplicate can look ordinary.</h2>
-          <p>Fifteen days apart, these payments are easy to miss until the ledger is read as one connected record.</p>
-        </div>
-        <div className="ledger-gap-proof" aria-label="The matching payments are 15 days apart">
-          <strong>15</strong>
-          <span>days apart</span>
+    <section ref={sectionRef} className="raw-ledger chapter-dark-ledger" data-sequence={sequence} data-reduced={Boolean(reduceMotion)} aria-labelledby="ledger-title">
+      <div className="ledger-atmospheric-shell">
+        <div className="ledger-contained-panel">
+          <div className="ledger-intro"><div><h2 id="ledger-title">A duplicate can <em>look ordinary.</em></h2><p>Fifteen days apart, these payments are easy to miss until the ledger is read as one connected record.</p></div><div className="ledger-gap-proof" aria-label="The matching payments are 15 days apart"><strong>15</strong><span>days apart</span></div></div>
+          <div className="ledger-table ledger-contained-table" role="table" aria-label="Sample ledger records around invoice INV-3305"><div className="ledger-row ledger-row-head" role="row"><span role="columnheader">Vendor</span><span role="columnheader">Invoice</span><span role="columnheader">Payment date</span><span role="columnheader">Amount paid</span></div>
+          {ledgerRecords.map((record, index) => { const matched = record.invoiceNumber === 'INV-3305'; return <div key={record.rowIndex}>{index === 2 && <div className="ledger-gap" data-drawn={sequence >= 3} data-rule={sequence >= 4} aria-hidden="true"><span>15 days</span><i /><span>same invoice · same amount</span></div>}<div className="ledger-row" data-match={matched} data-focus={matched && sequence >= (index === 1 ? 1 : 2)} role="row"><span role="cell">{record.vendor}</span><strong role="cell">{record.invoiceNumber}</strong><time role="cell" dateTime={record.paymentDate.toISOString()}>{formatDate(record.paymentDate)}</time><strong role="cell">{currency.format(record.amountPaid)}</strong></div></div> })}
+          </div>
+          <div className="ledger-discovery" data-settled={sequence >= 5}><span>Matched on vendor, invoice, and amount.</span><strong>Source rows stay attached.</strong></div>
         </div>
       </div>
+    </section>
+  )
+}
 
-      <div className="ledger-table" role="table" aria-label="Sample ledger records around invoice INV-3305">
-        <div className="ledger-row ledger-row-head" role="row">
-          <span role="columnheader">Vendor</span>
-          <span role="columnheader">Invoice</span>
-          <span role="columnheader">Payment date</span>
-          <span role="columnheader">Amount paid</span>
-        </div>
-        {ledgerRecords.map((record, index) => {
-          const matched = record.invoiceNumber === 'INV-3305'
-          return (
-            <div key={record.rowIndex}>
-              {index === 2 ? (
-                <div className="ledger-gap" aria-hidden="true">
-                  <span>15 days</span><i /><span>same invoice · same amount</span>
-                </div>
-              ) : null}
-              <div className="ledger-row" data-match={matched} role="row">
-                <span role="cell">{record.vendor}</span>
-                <strong role="cell">{record.invoiceNumber}</strong>
-                <time role="cell" dateTime={record.paymentDate.toISOString()}>{formatDate(record.paymentDate)}</time>
-                <strong role="cell">{currency.format(record.amountPaid)}</strong>
-              </div>
-            </div>
-          )
+function RecoveryValue() {
+  const { sectionRef, awake } = useSectionWake<HTMLElement>()
+  const values = [
+    ['01', 'Find what is worth attention.', 'Deterministic checks connect payments that share meaningful fields, without pretending every match is a mistake.'],
+    ['02', 'Understand why it matters.', 'Each case keeps the exact rows, matched fields, amount, and open questions together for human review.'],
+    ['03', 'Move confirmed money forward.', 'Turn a confirmed case into an editable, evidence-backed recovery request with a clear next action.'],
+  ]
+  return <section id="value" className="commercial-value evidence-chapter chapter-ivory wake-section" data-awake={awake} ref={sectionRef} aria-labelledby="value-title"><div className="commercial-heading"><span className="reclaim-eyebrow">Evidence, not a black box</span><h2 id="value-title">A finding only matters if you can act on it.</h2><p>Reclaim is the recovery layer after accounting. It does not replace your books or make the decision for you.</p></div><div className="evidence-stage"><figure><img src={ivoryEvidenceImage} alt="Invoice slips and evidence cards arranged on a warm ivory surface" width="1536" height="1024" loading="lazy" /></figure><div className="evidence-question"><span>Case note · INV-3305</span><h3>Why did Reclaim flag this?</h3><p>Vendor, invoice number, and amount align across two source payments.</p></div><div className="evidence-fragments" aria-label="Evidence connected to sample case INV-3305"><article><span>Payment</span><strong>{currency.format(canonicalRecords[0].amountPaid)}</strong><time dateTime={canonicalRecords[0].paymentDate.toISOString()}>{formatDate(canonicalRecords[0].paymentDate)}</time></article><article><span>Invoice</span><strong>INV-3305</strong><small>Exact match</small></article><article><span>Vendor</span><strong>Sierra Coffee Supply</strong><small>Same vendor on both rows</small></article></div><div className="commercial-value-grid">{values.map(([number, title, body]) => <article key={number}><span>{number}</span><h3>{title}</h3><p>{body}</p></article>)}</div></div></section>
+}
+
+function AccountingFit() {
+  const { sectionRef, awake } = useSectionWake<HTMLElement>(0.24)
+  return <section className="accounting-fit accounting-bento-chapter wake-section" data-awake={awake} ref={sectionRef} aria-labelledby="accounting-title"><div className="accounting-fit-copy"><span className="reclaim-eyebrow">Fits the workflow you have</span><h2 id="accounting-title">Keep QuickBooks or Xero. Add a <em>recovery layer.</em></h2><p>Export the payment ledger you already use, review it locally, and take the evidence back into the workflow your business trusts. No direct connection is required.</p></div><div className="accounting-fit-flow accounting-bento" aria-label="Accounting export flows into Reclaim recovery review"><div className="accounting-records accounting-import-preview" aria-label="Imported payment ledger preview"><header><div><span>Payment export</span><strong>quickbooks_payments.csv</strong></div><b>Imported</b></header><div className="accounting-import-columns"><span>Vendor</span><span>Invoice</span><span>Paid</span></div><div className="accounting-import-row"><strong>Sierra Coffee Supply</strong><span>INV-3303</span><time>Feb 14</time></div><div className="accounting-import-row" data-match="true"><strong>Sierra Coffee Supply</strong><span>INV-3305</span><time>Feb 28</time></div><div className="accounting-import-row" data-match="true"><strong>Sierra Coffee Supply</strong><span>INV-3305</span><time>Mar 15</time></div><footer><span>128 rows normalized</span><strong>Ready to review →</strong></footer></div><div className="accounting-sources"><span>QuickBooks</span><span>Xero</span><span>Other CSV</span></div><i aria-hidden="true" /><article className="accounting-reclaim-panel"><header><ReclaimMark size={30} /><div><strong>Recovery review</strong><span>INV-3305 · open case</span></div></header><ol><li data-active="true"><span>01</span><div><strong>Find</strong><small>Two matching payments</small></div></li><li data-active="true"><span>02</span><div><strong>Prove</strong><small>Source rows attached</small></div></li><li><span>03</span><div><strong>Recover</strong><small>Human-confirmed outreach</small></div></li></ol></article></div></section>
+}
+
+function PortfolioProof() {
+  const { sectionRef, awake } = useSectionWake<HTMLElement>(0.2)
+  return <section className="portfolio-proof wake-section" data-awake={awake} ref={sectionRef} aria-labelledby="portfolio-proof-title"><div className="portfolio-proof-meta"><span className="reclaim-eyebrow">Across the complete sample review</span><p>Validated demo data. Every amount remains tied to its underlying finding and source rows.</p></div><div className="portfolio-proof-result"><strong>{currency.format(sampleFindings.recoverableTotal)}</strong><h2 id="portfolio-proof-title">potentially recoverable</h2></div><div className="portfolio-proof-count"><strong>{sample.records.length}</strong><span>payments reviewed</span></div><small>Illustrative sample results, not a customer recovery claim.</small></section>
+}
+
+function RecoveryProof() {
+  const { sectionRef, awake } = useSectionWake<HTMLElement>(0.14)
+  return <section id="recovery" className="recovery-proof recovery-case-study chapter-ivory wake-section" data-awake={awake} ref={sectionRef} aria-labelledby="recovery-title"><div className="commercial-heading"><span className="reclaim-eyebrow">One case, end to end</span><h2 id="recovery-title">From two suspicious payments to one recovery-ready case.</h2><p>This example shows what Reclaim preserves so a business can pursue the money without rebuilding the evidence from scratch.</p></div><div className="recovery-case-study-grid"><aside className="recovery-proof-stat" aria-label={`${currency.format(canonicalRecords[0].amountPaid)} amount to confirm`}><span>Amount to confirm</span><strong>{currency.format(canonicalRecords[0].amountPaid)}</strong><div><span>2 source payments</span><span>15 days apart</span></div><small>Illustrative sample data</small></aside><div className="recovery-case">
+    <header><div><span>Example case</span><strong>INV-3305 · Sierra Coffee Supply</strong></div><b>{currency.format(canonicalRecords[0].amountPaid)}</b></header>
+    <div className="recovery-case-body"><div className="recovery-evidence"><span className="recovery-case-label">Evidence attached</span>{canonicalRecords.map((record) => <div key={record.rowIndex}><time dateTime={record.paymentDate.toISOString()}>{formatDate(record.paymentDate)}</time><strong>{record.invoiceNumber}</strong><b>{currency.format(record.amountPaid)}</b></div>)}<p>Same vendor, invoice, and amount. Paid 15 days apart.</p></div><div className="recovery-request"><span className="recovery-case-label">Editable request</span><p>We are reviewing two payments associated with invoice INV-3305. Please confirm whether both payments were applied and advise on a refund, credit, or offset for any duplicate amount.</p><small>Professional, specific, and based only on the records in the case.</small></div></div>
+    <ol className="recovery-lifecycle" aria-label="Recovery lifecycle"><li data-active="true"><span>Potential</span></li><li data-active="true"><span>Confirmed</span></li><li><span>Requested</span></li><li><span>Recovered</span></li></ol><footer>Illustrative sample data, not a customer recovery claim.</footer>
+  </div></div></section>
+}
+
+function SecurityBoundary() {
+  const { sectionRef, awake } = useSectionWake<HTMLElement>(0.2)
+  return <section id="security" className="security-boundary security-editorial chapter-ivory wake-section" data-awake={awake} ref={sectionRef} aria-labelledby="security-title"><div className="security-statement"><span className="reclaim-eyebrow">A clear boundary</span><h2 id="security-title">Your ledger stays on this device, in this browser. It is never uploaded to our servers.</h2><p>Review data is retained locally so you can leave and continue later. You can delete any project and its saved ledger from the workspace.</p></div><div className="security-controls"><article><span>01</span><strong>Processed locally</strong><p>Ledger parsing and review happen in your browser.</p></article><article><span>02</span><strong>No silent writeback</strong><p>Reclaim does not change your accounting system or contact a vendor for you.</p></article><article><span>03</span><strong>Delete on demand</strong><p>A visible delete control removes the selected local project.</p></article></div><div className="security-paper-stack" aria-hidden="true"><span>Local review</span><span>Human decision</span><span>Your workspace</span></div></section>
+}
+
+function OutcomePricing() {
+  const { sectionRef, awake } = useSectionWake<HTMLElement>(0.24)
+  return <section id="pricing" className="outcome-pricing pricing-payoff wake-section" data-awake={awake} ref={sectionRef} aria-labelledby="pricing-title"><div className="pricing-promise"><span className="reclaim-eyebrow">Outcome-aligned pricing</span><h2 id="pricing-title">If the money does not come back, <em>you do not pay.</em></h2><p>A recovery fee is agreed before outreach and becomes due only after a verified refund, credit, or offset. A finding by itself is never the bill.</p></div><div className="pricing-ledger" aria-label="How recovery pricing works"><header><span>Recovery-ready case</span><strong>Evidence attached · terms aligned</strong></header><div><span>Potential case</span><strong>{currency.format(canonicalRecords[0].amountPaid)}</strong><small>No fee</small></div><div><span>Confirmed and requested</span><strong>Evidence sent</strong><small>No fee yet</small></div><div data-recovered="true"><span>Verified recovery</span><strong>Money returned</strong><small>Agreed fee becomes due</small></div><footer><span>Not recovered</span><strong aria-hidden="true"><b>$0</b> fee</strong><span className="pricing-accessible">$0 fee</span></footer></div></section>
+}
+
+function AboutReclaim() {
+  const { sectionRef, awake } = useSectionWake<HTMLElement>(0.2)
+  return <section id="about" className="about-reclaim chapter-ivory wake-section" data-awake={awake} ref={sectionRef} aria-labelledby="about-title"><span className="about-index">Reclaim · 2026</span><div><h2 id="about-title">Accounting software records what happened. Reclaim helps you ask whether <em>money can come back.</em></h2><p>Small businesses should not need an enterprise audit team to follow a suspicious payment. Reclaim keeps the evidence understandable, the decision human, and the recovery work practical.</p></div><aside><span>Find it.</span><span>Understand it.</span><strong>Reclaim it.</strong></aside></section>
+}
+
+function QuestionsAndAnswers() {
+  const { sectionRef, awake } = useSectionWake<HTMLElement>(0.16)
+  const reduceMotion = useReducedMotion()
+  const [openQuestion, setOpenQuestion] = useState(0)
+  const questions = [
+    ['Does Reclaim replace QuickBooks or Xero?', 'No. Reclaim adds a focused recovery layer after accounting. You export the ledger you already use, review possible cases, and take confirmed evidence back into your existing workflow.'],
+    ['Does Reclaim decide that a payment is wrong?', 'No. Reclaim points to records worth a second look and explains why they match. A person reviews the evidence and confirms the next step.'],
+    ['Where does my ledger data go?', 'Your ledger stays on this device, in this browser. It is processed locally, is never uploaded to our servers, and can be deleted from your workspace.'],
+    ['When would I pay a recovery fee?', 'Only after a verified refund, credit, or offset. The recovery terms are agreed before outreach; a possible finding or an unanswered request does not create a fee.'],
+  ]
+
+  return (
+    <section id="faq" className="reclaim-faq chapter-ivory wake-section" data-awake={awake} ref={sectionRef} aria-labelledby="faq-title">
+      <div className="reclaim-faq-intro"><span className="reclaim-eyebrow">Questions, answered plainly</span><h2 id="faq-title">Before you open the ledger.</h2><p>The important boundaries are simple: your data stays local, every finding keeps its evidence, and you remain the decision-maker.</p></div>
+      <div className="reclaim-faq-list">
+        {questions.map(([question, answer], index) => {
+          const open = openQuestion === index
+          const answerId = `faq-answer-${index}`
+          return <article data-open={open} key={question}><h3><button type="button" aria-expanded={open} aria-controls={answerId} onClick={() => setOpenQuestion((current) => current === index ? -1 : index)}><span>{question}</span><i aria-hidden="true" /></button></h3><AnimatePresence initial={false}>{open && <motion.div id={answerId} className="reclaim-faq-answer" initial={reduceMotion ? false : { height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={reduceMotion ? { display: 'none' } : { height: 0, opacity: 0 }} transition={reduceMotion ? { duration: 0 } : { height: { type: 'spring', stiffness: 420, damping: 38, mass: 0.72 }, opacity: { duration: 0.18, ease: [0.23, 1, 0.32, 1] } }}><p>{answer}</p></motion.div>}</AnimatePresence></article>
         })}
       </div>
-
-      <div className="ledger-discovery">
-        <span>Matched on vendor, invoice, and amount.</span>
-        <a data-motion="pressable" href="/audit?entry=sample">Recovery-ready: {currency.format(canonicalFinding.dollarImpact)}</a>
-      </div>
     </section>
   )
 }
 
-const storySteps = [
-  {
-    title: 'Connect the records.',
-    body: 'Reclaim keeps the original payment and the possible duplicate attached to the same finding.',
-  },
-  {
-    title: 'Confirm the evidence.',
-    body: 'The rule is visible, the source rows stay linked, and a person decides whether the flag is valid.',
-  },
-  {
-    title: 'Prepare the recovery.',
-    body: 'A recovery request starts with the exact invoice, payment dates, amount, and evidence already included.',
-  },
-]
+function ClosingFooter({ action }: { action: LandingAction }) {
+  const { sectionRef, awake } = useSectionWake<HTMLElement>(0.28)
+  const footerMenus = [
+    { label: 'Product', items: ['Review your ledger', 'Recovery workspace', 'Security', 'Pricing'] },
+    { label: 'Resources', items: ['How it works', 'Sample case', 'Guides', 'FAQ'] },
+    { label: 'Company', items: ['About Reclaim', 'Contact', 'Privacy', 'Terms'] },
+  ]
 
-function EvidenceRecords() {
   return (
-    <div className="story-evidence-records">
-      {canonicalRecords.map((record, index) => (
-        <div key={record.rowIndex} data-duplicate={index === 1}>
-          <span>{index === 0 ? 'Original payment' : 'Possible duplicate'}</span>
-          <strong>{record.invoiceNumber}</strong>
-          <time dateTime={record.paymentDate.toISOString()}>{formatDate(record.paymentDate)}</time>
-          <strong>{currency.format(record.amountPaid)}</strong>
+    <footer className="reclaim-footer wake-section" data-awake={awake} ref={sectionRef} aria-labelledby="closing-title">
+      <div className="reclaim-footer-atmosphere" aria-hidden="true">
+        <DitherBackground className="reclaim-footer-dither" />
+        <span className="reclaim-footer-scrim" />
+      </div>
+      <div className="reclaim-footer-shell">
+        <div className="reclaim-footer-cta">
+          <ReclaimMark size={54} interactive />
+          <h2 id="closing-title"><span>Start with the ledger</span><span>you <em>already have.</em></span></h2>
+          <p>Upload a CSV for a private local review, or open the sample case first.</p>
+          <div className="reclaim-actions">
+            <MagneticLink className="reclaim-button reclaim-button-primary" href={action.href} pendingLabel="Opening workspace…">{action.label}</MagneticLink>
+            <a className="reclaim-text-action" data-motion="pressable" href="/audit?entry=sample">Explore the sample case</a>
+          </div>
         </div>
-      ))}
-      <div className="story-match-rule">
-        <span>Matched on</span>
-        <strong>Vendor</strong>
-        <strong>Invoice</strong>
-        <strong>Amount</strong>
-      </div>
-    </div>
-  )
-}
-
-function ReviewState({ active, onConfirm }: { active: boolean; onConfirm: () => void }) {
-  return (
-    <div className="story-review-state">
-      <div className="story-review-heading">
-        <span>Review finding</span>
-        <strong>Do these records describe the same obligation?</strong>
-      </div>
-      <dl>
-        <div><dt>Vendor</dt><dd>Sierra Coffee Supply</dd></div>
-        <div><dt>Invoice</dt><dd>INV-3305</dd></div>
-        <div><dt>Extra payment</dt><dd>{currency.format(canonicalFinding.dollarImpact)}</dd></div>
-      </dl>
-      <button
-        className="reclaim-confirm-button"
-        data-motion="pressable"
-        data-motion-ray="true"
-        type="button"
-        onClick={onConfirm}
-        tabIndex={active ? 0 : -1}
-      >
-        Confirm and prepare request
-      </button>
-      <small>Reclaim never sends a request without your review.</small>
-    </div>
-  )
-}
-
-function RecoveryDocument() {
-  return (
-    <article className="recovery-document">
-      <header>
-        <span>Recovery request</span>
-        <span>Draft</span>
-      </header>
-      <div>
-        <p>Sierra Coffee Supply</p>
-        <h3>Duplicate payment for invoice INV-3305</h3>
-        <p>
-          Our records show two payments of {currency.format(canonicalFinding.dollarImpact)} for the same invoice. Please confirm the available recovery method.
-        </p>
-        <dl>
-          <div><dt>Original payment</dt><dd>{formatDate(canonicalRecords[0].paymentDate)}</dd></div>
-          <div><dt>Duplicate payment</dt><dd>{formatDate(canonicalRecords[1].paymentDate)}</dd></div>
-          <div><dt>Amount requested</dt><dd>{currency.format(canonicalFinding.dollarImpact)}</dd></div>
-        </dl>
-      </div>
-    </article>
-  )
-}
-
-function EvidenceStory() {
-  const [activeStage, setActiveStage] = useState(0)
-  const reduceMotion = useReducedMotion()
-  const stepRefs = useRef<Array<HTMLButtonElement | null>>([])
-  const layoutRef = useRef<HTMLDivElement>(null)
-  const canvasRef = useRef<HTMLDivElement>(null)
-  const { scrollY } = useScroll()
-
-  const syncActiveStageByNearestStep = () => {
-    const viewportAnchor = window.innerHeight * 0.5
-    const closestStep = stepRefs.current
-      .filter((step): step is HTMLButtonElement => step !== null)
-      .map((step) => {
-        const bounds = step.getBoundingClientRect()
-        return {
-          stage: Number(step.dataset.stage),
-          distance: Math.abs(bounds.top + bounds.height / 2 - viewportAnchor),
-        }
-      })
-      .sort((a, b) => a.distance - b.distance)[0]
-
-    if (closestStep) {
-      setActiveStage((currentStage) => currentStage === closestStep.stage ? currentStage : closestStep.stage)
-    }
-  }
-
-  const syncActiveStage = () => {
-    const layoutEl = layoutRef.current
-    const canvasEl = canvasRef.current
-    if (!layoutEl || !canvasEl) return
-
-    // The canvas pins via `position: sticky`. Below the tablet breakpoint it
-    // becomes `position: relative` (with `top: auto`, which resolves to "0px"
-    // rather than a usable offset), so fall back to the simple nearest-step
-    // heuristic there instead of a pin range that no longer exists.
-    const canvasStyle = getComputedStyle(canvasEl)
-    if (canvasStyle.position !== 'sticky') {
-      syncActiveStageByNearestStep()
-      return
-    }
-    const stickyTop = Number.parseFloat(canvasStyle.top)
-
-    // Drive the active stage from how far scroll has progressed through the
-    // canvas's actual pinned range (settle point -> unstick point), not from
-    // an arbitrary "closest to viewport center" comparison. That guarantees
-    // stage 0 holds until the canvas has genuinely settled into its sticky
-    // position, and the three stages then split the real pin distance evenly
-    // in both scroll directions.
-    const layoutRect = layoutEl.getBoundingClientRect()
-    const pinRange = layoutRect.height - canvasEl.offsetHeight
-    const progress = pinRange > 0
-      ? Math.min(1, Math.max(0, (stickyTop - layoutRect.top) / pinRange))
-      : 0
-
-    const stageIndex = Math.min(storySteps.length - 1, Math.floor(progress * storySteps.length))
-    setActiveStage((currentStage) => currentStage === stageIndex ? currentStage : stageIndex)
-  }
-
-  useMotionValueEvent(scrollY, 'change', syncActiveStage)
-
-  useEffect(() => {
-    const frame = requestAnimationFrame(syncActiveStage)
-    return () => cancelAnimationFrame(frame)
-  }, [])
-
-  return (
-    <section id="evidence" className="evidence-story" aria-labelledby="evidence-title">
-      <div className="story-intro" data-motion-section>
-        <h2 id="evidence-title">The evidence stays attached.</h2>
-        <p>One finding moves from raw records to a recovery-ready action without losing its paper trail.</p>
-      </div>
-
-      <div className="story-layout" ref={layoutRef}>
-        <div className="story-steps">
-          {storySteps.map((step, index) => (
-            <button
-              type="button"
-              className="story-step"
-              data-motion="pressable"
-              data-motion-ray="true"
-              data-stage={index}
-              data-active={activeStage === index}
-              key={step.title}
-              ref={(node) => { stepRefs.current[index] = node }}
-              onClick={() => {
-                setActiveStage(index)
-                stepRefs.current[index]?.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'center' })
-              }}
-              aria-pressed={activeStage === index}
-            >
-              <strong>{step.title}</strong>
-              <span>{step.body}</span>
-            </button>
+        <div className="reclaim-footer-menu" aria-label="Reclaim footer navigation">
+          <div className="reclaim-footer-brand">
+            <a href="/" aria-label="Reclaim home"><ReclaimLogo size={28} /></a>
+            <p>Find it. Understand it. Reclaim it.</p>
+            <small>© 2026 Reclaim</small>
+          </div>
+          {footerMenus.map((menu) => (
+            <section key={menu.label} className="reclaim-footer-menu-column" aria-label={menu.label}>
+              <h3>{menu.label}</h3>
+              <ul>
+                {menu.items.map((item) => <li key={item}><span>{item}</span></li>)}
+              </ul>
+            </section>
           ))}
         </div>
-
-        <div className="story-canvas" data-stage={activeStage} ref={canvasRef}>
-          <div className="story-canvas-bar">
-            <ReclaimMark size={27} />
-            <span>INV-3305</span>
-            <span>{activeStage === 2 ? 'Request ready' : 'Human review'}</span>
-          </div>
-          <div className="story-layer story-layer-evidence" data-active={activeStage === 0} aria-hidden={activeStage !== 0}>
-            <EvidenceRecords />
-          </div>
-          <div className="story-layer story-layer-review" data-active={activeStage === 1} aria-hidden={activeStage !== 1}>
-            <ReviewState active={activeStage === 1} onConfirm={() => setActiveStage(2)} />
-          </div>
-          <div className="story-layer story-layer-document" data-active={activeStage === 2} aria-hidden={activeStage !== 2}>
-            <RecoveryDocument />
-          </div>
-        </div>
-        <div className="story-scroll-spacer" aria-hidden="true" />
       </div>
-
-      <aside className="local-privacy" aria-label="Local data privacy">
-        <strong>Your ledger stays on your device.</strong>
-        <span>This prototype analyzes the CSV in your browser and does not upload it.</span>
-      </aside>
-    </section>
-  )
-}
-
-function easeOutCubic(t: number) {
-  return 1 - (1 - t) ** 3
-}
-
-function CountUpValue({ value, active }: { value: number; active: boolean }) {
-  const [displayed, setDisplayed] = useState(0)
-  const hasAnimated = useRef(false)
-
-  useEffect(() => {
-    if (!active || hasAnimated.current) return
-    hasAnimated.current = true
-
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      setDisplayed(value)
-      return
-    }
-
-    const duration = 700
-    const start = performance.now()
-    let frame: number
-
-    const tick = (now: number) => {
-      const progress = Math.min(1, (now - start) / duration)
-      setDisplayed(Math.round(value * easeOutCubic(progress)))
-      if (progress < 1) frame = requestAnimationFrame(tick)
-    }
-
-    frame = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(frame)
-  }, [active, value])
-
-  return <>{currency.format(displayed)}</>
-}
-
-function DetectionBreadth() {
-  const [revealed, setRevealed] = useState(false)
-  const sectionRef = useRef<HTMLElement>(null)
-
-  useEffect(() => {
-    const section = sectionRef.current
-    if (!section) return
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setRevealed(true)
-          observer.disconnect()
-        }
-      },
-      { rootMargin: '-15% 0px -25% 0px', threshold: 0.2 }
-    )
-
-    observer.observe(section)
-    return () => observer.disconnect()
-  }, [])
-
-  return (
-    <section
-      ref={sectionRef}
-      id="analysis"
-      className="detection-breadth"
-      data-revealed={revealed}
-      aria-labelledby="analysis-title"
-    >
-      <div className="analysis-copy" data-motion-section>
-        <h2 id="analysis-title">Not every flag means money is recoverable.</h2>
-        <p>Every figure below traces back to the evidence you just reviewed, split into what&apos;s recoverable, what needs a person, and what prevents the next leak.</p>
-      </div>
-
-      <div className="outcome-lanes" aria-label="Dollar impact by outcome in the sample ledger">
-        {outcomeData.map((item) => (
-          <article className="outcome-lane" data-class={item.className} key={item.className}>
-            {item.className === 'opportunity' ? (
-              <p className="outcome-lane-sentence">
-                <strong className="outcome-lane-sentence-label">{item.label}</strong>
-                {' — '}
-                <strong className="outcome-lane-sentence-value"><CountUpValue value={item.total} active={revealed} /></strong>
-                {` across ${item.count} ${item.count === 1 ? 'finding' : 'findings'}. `}
-                {item.description}
-              </p>
-            ) : (
-              <>
-                <h3>{item.label}</h3>
-                <div className="outcome-lane-value">
-                  <strong><CountUpValue value={item.total} active={revealed} /></strong>
-                  <span>{item.count} {item.count === 1 ? 'finding' : 'findings'}</span>
-                </div>
-                <p>{item.description}</p>
-              </>
-            )}
-          </article>
-        ))}
-      </div>
-      <p className="analysis-source">Real output from the included {sample.records.length}-record sample ledger.</p>
-    </section>
-  )
-}
-
-function Closing() {
-  return (
-    <section className="reclaim-closing" data-motion-section aria-labelledby="closing-title">
-      <ReclaimMark size={76} interactive />
-      <h2 id="closing-title">Find what&apos;s yours.</h2>
-      <p>See the full path from upload to evidence, review, and recovery request.</p>
-      <div className="reclaim-actions">
-        <MagneticLink className="reclaim-button reclaim-button-blue" href="/audit?entry=sample" pendingLabel="Opening sample audit…">Run sample audit</MagneticLink>
-        <a className="reclaim-text-action" data-motion="pressable" data-motion-arrow="true" href="/audit?entry=upload">Use your ledger</a>
-      </div>
-    </section>
-  )
-}
-
-function Footer() {
-  return (
-    <div className="reclaim-footer-shell">
-      <footer className="reclaim-footer">
-        <div className="reclaim-footer-brand">
-          <a href="/" aria-label="Reclaim home"><ReclaimLogo size={28} /></a>
-          <p>Explainable payment review. Local by default, human-confirmed always.</p>
-        </div>
-
-        <div className="reclaim-footer-col">
-          <h4>Product</h4>
-          <ul>
-            <li><a data-motion="pressable" href="/audit?entry=sample">Run sample audit</a></li>
-            <li><a data-motion="pressable" href="/audit?entry=upload">Use your ledger</a></li>
-            <li><a data-motion="pressable" href="#evidence">Evidence</a></li>
-            <li><a data-motion="pressable" href="#analysis">Analysis</a></li>
-          </ul>
-        </div>
-
-        <div className="reclaim-footer-col">
-          <h4>Detection</h4>
-          <ul>
-            <li><a data-motion="pressable" href="#trust-strip-title">Duplicate payments</a></li>
-            <li><a data-motion="pressable" href="#trust-strip-title">Overpayments</a></li>
-            <li><a data-motion="pressable" href="#trust-strip-title">Missed discounts</a></li>
-            <li><a data-motion="pressable" href="#trust-strip-title">Bank-account changes</a></li>
-          </ul>
-        </div>
-
-        <div className="reclaim-footer-col">
-          <h4>Explore</h4>
-          <ul>
-            <li><a data-motion="pressable" href="#faq">FAQ</a></li>
-            <li><a data-motion="pressable" href="#evidence">How it works</a></li>
-            <li><a data-motion="pressable" href="/audit?entry=upload">Open workspace</a></li>
-          </ul>
-        </div>
-      </footer>
-      <div className="reclaim-footer-wordmark" aria-hidden="true"><span>Reclaim</span></div>
-    </div>
+      <div className="reclaim-footer-wordmark" aria-hidden="true">RECLAIM</div>
+    </footer>
   )
 }
 
 export function LandingPage() {
-  const heroRef = useRef<HTMLElement>(null)
-
-  useEffect(() => {
-    const sections = Array.from(document.querySelectorAll<HTMLElement>('[data-motion-section]'))
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      sections.forEach((section) => { section.dataset.motionVisible = 'true' })
-      return
-    }
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (!entry.isIntersecting) return
-          ;(entry.target as HTMLElement).dataset.motionVisible = 'true'
-          observer.unobserve(entry.target)
-        })
-      },
-      { rootMargin: '-8% 0px -12% 0px', threshold: 0.08 }
-    )
-
-    sections.forEach((section) => observer.observe(section))
-    return () => observer.disconnect()
-  }, [])
-
-  return (
-    <div className="reclaim-page">
-      <a className="reclaim-skip-link" href="#main-content">Skip to main content</a>
-      <LandingNav />
-      <main id="main-content">
-        <Hero heroRef={heroRef} />
-        <TrustStrip />
-        <ProofStats />
-        <FeaturePanels />
-        <ExploreSection />
-        <RawLedger />
-        <EvidenceStory />
-        <DetectionBreadth />
-        <FAQSection />
-        <Closing />
-      </main>
-      <Footer />
-    </div>
-  )
+  const [action] = useState(getLandingAction)
+  return <div className="reclaim-page reclaim-commercial-page"><a className="reclaim-skip-link" href="#main-content">Skip to main content</a><LandingNav action={action} /><main id="main-content"><Hero action={action} /><MottoInterlude /><KineticFrame direction={-1}><RawLedger /></KineticFrame><KineticFrame direction={1}><RecoveryValue /></KineticFrame><KineticFrame direction={-1}><AccountingFit /></KineticFrame><KineticFrame direction={1}><PortfolioProof /></KineticFrame><KineticFrame direction={1}><RecoveryProof /></KineticFrame><KineticFrame direction={-1}><SecurityBoundary /></KineticFrame><KineticFrame direction={1}><OutcomePricing /></KineticFrame><KineticFrame direction={-1}><AboutReclaim /></KineticFrame><KineticFrame direction={1}><QuestionsAndAnswers /></KineticFrame></main><ClosingFooter action={action} /></div>
 }
