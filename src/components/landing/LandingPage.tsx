@@ -2,10 +2,13 @@ import { useEffect, useRef, useState, type MouseEvent as ReactMouseEvent, type R
 import { AnimatePresence, motion, useMotionValueEvent, useReducedMotion, useScroll, useSpring, useTransform } from 'motion/react'
 import { ReclaimLogo, ReclaimMark, ReclaimWordmark } from '@/components/ReclaimLogo'
 import { MagneticLink } from '@/components/landing/MagneticLink'
+import { DitherBackground } from '@/components/landing/DitherBackground'
 import { SideRays } from '@/components/landing/SideRays'
 import { getSampleLedger } from '@/data/sampleLedger'
 import { ACTIVE_PROJECT_KEY, readProjectIndex } from '@/ledger/projectIndex'
+import { detectFindings } from '@/lib/detection'
 import { formatDate } from '@/lib/format'
+import ivoryEvidenceImage from '@/assets/landing/reclaim-ivory-evidence.webp'
 import './landing.css'
 
 const currency = new Intl.NumberFormat('en-US', {
@@ -13,6 +16,7 @@ const currency = new Intl.NumberFormat('en-US', {
 })
 
 const sample = getSampleLedger()
+const sampleFindings = detectFindings(sample.records)
 const canonicalRecords = sample.records
   .filter((record) => record.invoiceNumber === 'INV-3305')
   .sort((a, b) => a.paymentDate.getTime() - b.paymentDate.getTime())
@@ -166,9 +170,13 @@ function Hero({ action }: { action: LandingAction }) {
 
   return (
     <section className="reclaim-hero" ref={sectionRef} aria-labelledby="hero-title">
+      <div className="reclaim-hero-atmosphere" aria-hidden="true">
+        <DitherBackground className="reclaim-hero-dither" />
+        <span className="reclaim-hero-atmosphere-scrim" />
+      </div>
       <div className="reclaim-hero-inner">
         <motion.div className="reclaim-hero-copy reclaim-hero-copy-new" style={{ transform: copyTransform, opacity: reduceMotion ? 1 : heroOpacity }}>
-          <div className="reclaim-hero-heading"><span className="reclaim-eyebrow">Payment recovery for small businesses</span><h1 id="hero-title">Find the payments worth a second look.</h1></div>
+          <div className="reclaim-hero-heading"><span className="reclaim-eyebrow">Payment recovery for small businesses</span><h1 id="hero-title">Find the payments worth a <em>second look.</em></h1></div>
           <div className="reclaim-hero-pitch"><p>Upload a QuickBooks, Xero, or accounting CSV. Reclaim connects suspicious payments to evidence and helps you pursue confirmed recoveries.</p>
             <div className="reclaim-actions"><MagneticLink className="reclaim-button reclaim-button-primary" href={action.href} pendingLabel="Opening workspace…">{action.label}</MagneticLink><a className="reclaim-text-action" data-motion="pressable" href="/audit?entry=sample">Explore a sample case</a></div>
           </div>
@@ -415,24 +423,28 @@ function RawLedger() {
 
   useEffect(() => {
     const section = sectionRef.current
-    if (!section || reduceMotion || sequence > 0) return
+    if (!section || reduceMotion) return
     const timers: number[] = []
     const observer = new IntersectionObserver(([entry]) => {
-      if (!entry.isIntersecting || sequence > 0) return
+      if (!entry.isIntersecting) return
       observer.disconnect()
       ;[1, 2, 3, 4, 5].forEach((next, index) => timers.push(window.setTimeout(() => setSequence(next), index * 220)))
     }, { rootMargin: '-22% 0px -30% 0px', threshold: 0.2 })
     observer.observe(section)
     return () => { observer.disconnect(); timers.forEach((timer) => window.clearTimeout(timer)) }
-  }, [reduceMotion, sequence])
+  }, [reduceMotion])
 
   return (
-    <section ref={sectionRef} className="raw-ledger" data-sequence={sequence} data-reduced={Boolean(reduceMotion)} aria-labelledby="ledger-title">
-      <div className="ledger-intro"><div><h2 id="ledger-title">A duplicate can look ordinary.</h2><p>Fifteen days apart, these payments are easy to miss until the ledger is read as one connected record.</p></div><div className="ledger-gap-proof" aria-label="The matching payments are 15 days apart"><strong>15</strong><span>days apart</span></div></div>
-      <div className="ledger-table" role="table" aria-label="Sample ledger records around invoice INV-3305"><div className="ledger-row ledger-row-head" role="row"><span role="columnheader">Vendor</span><span role="columnheader">Invoice</span><span role="columnheader">Payment date</span><span role="columnheader">Amount paid</span></div>
-        {ledgerRecords.map((record, index) => { const matched = record.invoiceNumber === 'INV-3305'; return <div key={record.rowIndex}>{index === 2 && <div className="ledger-gap" data-drawn={sequence >= 3} data-rule={sequence >= 4} aria-hidden="true"><span>15 days</span><i /><span>same invoice · same amount</span></div>}<div className="ledger-row" data-match={matched} data-focus={matched && sequence >= (index === 1 ? 1 : 2)} role="row"><span role="cell">{record.vendor}</span><strong role="cell">{record.invoiceNumber}</strong><time role="cell" dateTime={record.paymentDate.toISOString()}>{formatDate(record.paymentDate)}</time><strong role="cell">{currency.format(record.amountPaid)}</strong></div></div> })}
+    <section ref={sectionRef} className="raw-ledger chapter-dark-ledger" data-sequence={sequence} data-reduced={Boolean(reduceMotion)} aria-labelledby="ledger-title">
+      <div className="ledger-atmospheric-shell">
+        <div className="ledger-contained-panel">
+          <div className="ledger-intro"><div><h2 id="ledger-title">A duplicate can <em>look ordinary.</em></h2><p>Fifteen days apart, these payments are easy to miss until the ledger is read as one connected record.</p></div><div className="ledger-gap-proof" aria-label="The matching payments are 15 days apart"><strong>15</strong><span>days apart</span></div></div>
+          <div className="ledger-table ledger-contained-table" role="table" aria-label="Sample ledger records around invoice INV-3305"><div className="ledger-row ledger-row-head" role="row"><span role="columnheader">Vendor</span><span role="columnheader">Invoice</span><span role="columnheader">Payment date</span><span role="columnheader">Amount paid</span></div>
+          {ledgerRecords.map((record, index) => { const matched = record.invoiceNumber === 'INV-3305'; return <div key={record.rowIndex}>{index === 2 && <div className="ledger-gap" data-drawn={sequence >= 3} data-rule={sequence >= 4} aria-hidden="true"><span>15 days</span><i /><span>same invoice · same amount</span></div>}<div className="ledger-row" data-match={matched} data-focus={matched && sequence >= (index === 1 ? 1 : 2)} role="row"><span role="cell">{record.vendor}</span><strong role="cell">{record.invoiceNumber}</strong><time role="cell" dateTime={record.paymentDate.toISOString()}>{formatDate(record.paymentDate)}</time><strong role="cell">{currency.format(record.amountPaid)}</strong></div></div> })}
+          </div>
+          <div className="ledger-discovery" data-settled={sequence >= 5}><span>Matched on vendor, invoice, and amount.</span><strong>Source rows stay attached.</strong></div>
+        </div>
       </div>
-      <div className="ledger-discovery" data-settled={sequence >= 5}><span>Matched on vendor, invoice, and amount.</span><strong>Source rows stay attached.</strong></div>
     </section>
   )
 }
@@ -444,44 +456,114 @@ function RecoveryValue() {
     ['02', 'Understand why it matters.', 'Each case keeps the exact rows, matched fields, amount, and open questions together for human review.'],
     ['03', 'Move confirmed money forward.', 'Turn a confirmed case into an editable, evidence-backed recovery request with a clear next action.'],
   ]
-  return <section id="value" className="commercial-value wake-section" data-awake={awake} ref={sectionRef} aria-labelledby="value-title"><div className="commercial-heading"><h2 id="value-title">A finding only matters if you can act on it.</h2><p>Reclaim is the recovery layer after accounting. It does not replace your books or make the decision for you.</p></div><div className="commercial-value-grid">{values.map(([number, title, body]) => <article key={number}><span>{number}</span><h3>{title}</h3><p>{body}</p></article>)}</div></section>
+  return <section id="value" className="commercial-value evidence-chapter chapter-ivory wake-section" data-awake={awake} ref={sectionRef} aria-labelledby="value-title"><div className="commercial-heading"><span className="reclaim-eyebrow">Evidence, not a black box</span><h2 id="value-title">A finding only matters if you can act on it.</h2><p>Reclaim is the recovery layer after accounting. It does not replace your books or make the decision for you.</p></div><div className="evidence-stage"><figure><img src={ivoryEvidenceImage} alt="Invoice slips and evidence cards arranged on a warm ivory surface" width="1536" height="1024" loading="lazy" /></figure><div className="evidence-question"><span>Case note · INV-3305</span><h3>Why did Reclaim flag this?</h3><p>Vendor, invoice number, and amount align across two source payments.</p></div><div className="evidence-fragments" aria-label="Evidence connected to sample case INV-3305"><article><span>Payment</span><strong>{currency.format(canonicalRecords[0].amountPaid)}</strong><time dateTime={canonicalRecords[0].paymentDate.toISOString()}>{formatDate(canonicalRecords[0].paymentDate)}</time></article><article><span>Invoice</span><strong>INV-3305</strong><small>Exact match</small></article><article><span>Vendor</span><strong>Sierra Coffee Supply</strong><small>Same vendor on both rows</small></article></div><div className="commercial-value-grid">{values.map(([number, title, body]) => <article key={number}><span>{number}</span><h3>{title}</h3><p>{body}</p></article>)}</div></div></section>
 }
 
 function AccountingFit() {
   const { sectionRef, awake } = useSectionWake<HTMLElement>(0.24)
-  return <section className="accounting-fit wake-section" data-awake={awake} ref={sectionRef} aria-labelledby="accounting-title"><div className="accounting-fit-copy"><h2 id="accounting-title">Keep QuickBooks or Xero. Add a recovery layer.</h2><p>Export the payment ledger you already use, review it locally, and take the evidence back into the workflow your business trusts. No direct connection is required.</p></div><div className="accounting-fit-flow" aria-label="Accounting export flows into Reclaim recovery review"><div className="accounting-sources"><span>QuickBooks</span><span>Xero</span><span>Other CSV</span></div><i aria-hidden="true" /><article><ReclaimMark size={32} /><div><strong>Reclaim</strong><span>Review and recovery</span></div></article></div></section>
+  return <section className="accounting-fit accounting-bento-chapter wake-section" data-awake={awake} ref={sectionRef} aria-labelledby="accounting-title"><div className="accounting-fit-copy"><span className="reclaim-eyebrow">Fits the workflow you have</span><h2 id="accounting-title">Keep QuickBooks or Xero. Add a <em>recovery layer.</em></h2><p>Export the payment ledger you already use, review it locally, and take the evidence back into the workflow your business trusts. No direct connection is required.</p></div><div className="accounting-fit-flow accounting-bento" aria-label="Accounting export flows into Reclaim recovery review"><div className="accounting-records accounting-import-preview" aria-label="Imported payment ledger preview"><header><div><span>Payment export</span><strong>quickbooks_payments.csv</strong></div><b>Imported</b></header><div className="accounting-import-columns"><span>Vendor</span><span>Invoice</span><span>Paid</span></div><div className="accounting-import-row"><strong>Sierra Coffee Supply</strong><span>INV-3303</span><time>Feb 14</time></div><div className="accounting-import-row" data-match="true"><strong>Sierra Coffee Supply</strong><span>INV-3305</span><time>Feb 28</time></div><div className="accounting-import-row" data-match="true"><strong>Sierra Coffee Supply</strong><span>INV-3305</span><time>Mar 15</time></div><footer><span>128 rows normalized</span><strong>Ready to review →</strong></footer></div><div className="accounting-sources"><span>QuickBooks</span><span>Xero</span><span>Other CSV</span></div><i aria-hidden="true" /><article className="accounting-reclaim-panel"><header><ReclaimMark size={30} /><div><strong>Recovery review</strong><span>INV-3305 · open case</span></div></header><ol><li data-active="true"><span>01</span><div><strong>Find</strong><small>Two matching payments</small></div></li><li data-active="true"><span>02</span><div><strong>Prove</strong><small>Source rows attached</small></div></li><li><span>03</span><div><strong>Recover</strong><small>Human-confirmed outreach</small></div></li></ol></article></div></section>
+}
+
+function PortfolioProof() {
+  const { sectionRef, awake } = useSectionWake<HTMLElement>(0.2)
+  return <section className="portfolio-proof wake-section" data-awake={awake} ref={sectionRef} aria-labelledby="portfolio-proof-title"><div className="portfolio-proof-meta"><span className="reclaim-eyebrow">Across the complete sample review</span><p>Validated demo data. Every amount remains tied to its underlying finding and source rows.</p></div><div className="portfolio-proof-result"><strong>{currency.format(sampleFindings.recoverableTotal)}</strong><h2 id="portfolio-proof-title">potentially recoverable</h2></div><div className="portfolio-proof-count"><strong>{sample.records.length}</strong><span>payments reviewed</span></div><small>Illustrative sample results, not a customer recovery claim.</small></section>
 }
 
 function RecoveryProof() {
   const { sectionRef, awake } = useSectionWake<HTMLElement>(0.14)
-  return <section id="recovery" className="recovery-proof wake-section" data-awake={awake} ref={sectionRef} aria-labelledby="recovery-title"><div className="commercial-heading"><span className="reclaim-eyebrow">One case, end to end</span><h2 id="recovery-title">From two suspicious payments to one recovery-ready case.</h2><p>This example shows what Reclaim preserves so a business can pursue the money without rebuilding the evidence from scratch.</p></div><div className="recovery-case">
+  return <section id="recovery" className="recovery-proof recovery-case-study chapter-ivory wake-section" data-awake={awake} ref={sectionRef} aria-labelledby="recovery-title"><div className="commercial-heading"><span className="reclaim-eyebrow">One case, end to end</span><h2 id="recovery-title">From two suspicious payments to one recovery-ready case.</h2><p>This example shows what Reclaim preserves so a business can pursue the money without rebuilding the evidence from scratch.</p></div><div className="recovery-case-study-grid"><aside className="recovery-proof-stat" aria-label={`${currency.format(canonicalRecords[0].amountPaid)} amount to confirm`}><span>Amount to confirm</span><strong>{currency.format(canonicalRecords[0].amountPaid)}</strong><div><span>2 source payments</span><span>15 days apart</span></div><small>Illustrative sample data</small></aside><div className="recovery-case">
     <header><div><span>Example case</span><strong>INV-3305 · Sierra Coffee Supply</strong></div><b>{currency.format(canonicalRecords[0].amountPaid)}</b></header>
     <div className="recovery-case-body"><div className="recovery-evidence"><span className="recovery-case-label">Evidence attached</span>{canonicalRecords.map((record) => <div key={record.rowIndex}><time dateTime={record.paymentDate.toISOString()}>{formatDate(record.paymentDate)}</time><strong>{record.invoiceNumber}</strong><b>{currency.format(record.amountPaid)}</b></div>)}<p>Same vendor, invoice, and amount. Paid 15 days apart.</p></div><div className="recovery-request"><span className="recovery-case-label">Editable request</span><p>We are reviewing two payments associated with invoice INV-3305. Please confirm whether both payments were applied and advise on a refund, credit, or offset for any duplicate amount.</p><small>Professional, specific, and based only on the records in the case.</small></div></div>
     <ol className="recovery-lifecycle" aria-label="Recovery lifecycle"><li data-active="true"><span>Potential</span></li><li data-active="true"><span>Confirmed</span></li><li><span>Requested</span></li><li><span>Recovered</span></li></ol><footer>Illustrative sample data, not a customer recovery claim.</footer>
-  </div></section>
+  </div></div></section>
 }
 
 function SecurityBoundary() {
   const { sectionRef, awake } = useSectionWake<HTMLElement>(0.2)
-  return <section id="security" className="security-boundary wake-section" data-awake={awake} ref={sectionRef} aria-labelledby="security-title"><div className="security-statement"><h2 id="security-title">Your ledger stays on this device, in this browser. It is never uploaded to our servers.</h2><p>Review data is retained locally so you can leave and continue later. You can delete any project and its saved ledger from the workspace.</p></div><div className="security-controls"><article><span>01</span><strong>Processed locally</strong><p>Ledger parsing and review happen in your browser.</p></article><article><span>02</span><strong>No silent writeback</strong><p>Reclaim does not change your accounting system or contact a vendor for you.</p></article><article><span>03</span><strong>Delete on demand</strong><p>A visible delete control removes the selected local project.</p></article></div></section>
+  return <section id="security" className="security-boundary security-editorial chapter-ivory wake-section" data-awake={awake} ref={sectionRef} aria-labelledby="security-title"><div className="security-statement"><span className="reclaim-eyebrow">A clear boundary</span><h2 id="security-title">Your ledger stays on this device, in this browser. It is never uploaded to our servers.</h2><p>Review data is retained locally so you can leave and continue later. You can delete any project and its saved ledger from the workspace.</p></div><div className="security-controls"><article><span>01</span><strong>Processed locally</strong><p>Ledger parsing and review happen in your browser.</p></article><article><span>02</span><strong>No silent writeback</strong><p>Reclaim does not change your accounting system or contact a vendor for you.</p></article><article><span>03</span><strong>Delete on demand</strong><p>A visible delete control removes the selected local project.</p></article></div><div className="security-paper-stack" aria-hidden="true"><span>Local review</span><span>Human decision</span><span>Your workspace</span></div></section>
 }
 
 function OutcomePricing() {
   const { sectionRef, awake } = useSectionWake<HTMLElement>(0.24)
-  return <section id="pricing" className="outcome-pricing wake-section" data-awake={awake} ref={sectionRef} aria-labelledby="pricing-title"><div className="pricing-promise"><span className="reclaim-eyebrow">Outcome-aligned pricing</span><h2 id="pricing-title">If the money does not come back, you do not pay.</h2><p>A recovery fee is agreed before outreach and becomes due only after a verified refund, credit, or offset. A finding by itself is never the bill.</p></div><div className="pricing-ledger" aria-label="How recovery pricing works"><div><span>Potential case</span><strong>{currency.format(canonicalRecords[0].amountPaid)}</strong><small>No fee</small></div><div><span>Confirmed and requested</span><strong>Evidence sent</strong><small>No fee yet</small></div><div data-recovered="true"><span>Verified recovery</span><strong>Money returned</strong><small>Agreed fee becomes due</small></div><footer><span>Not recovered</span><strong>$0 fee</strong></footer></div></section>
+  return <section id="pricing" className="outcome-pricing pricing-payoff wake-section" data-awake={awake} ref={sectionRef} aria-labelledby="pricing-title"><div className="pricing-promise"><span className="reclaim-eyebrow">Outcome-aligned pricing</span><h2 id="pricing-title">If the money does not come back, <em>you do not pay.</em></h2><p>A recovery fee is agreed before outreach and becomes due only after a verified refund, credit, or offset. A finding by itself is never the bill.</p></div><div className="pricing-ledger" aria-label="How recovery pricing works"><header><span>Recovery-ready case</span><strong>Evidence attached · terms aligned</strong></header><div><span>Potential case</span><strong>{currency.format(canonicalRecords[0].amountPaid)}</strong><small>No fee</small></div><div><span>Confirmed and requested</span><strong>Evidence sent</strong><small>No fee yet</small></div><div data-recovered="true"><span>Verified recovery</span><strong>Money returned</strong><small>Agreed fee becomes due</small></div><footer><span>Not recovered</span><strong aria-hidden="true"><b>$0</b> fee</strong><span className="pricing-accessible">$0 fee</span></footer></div></section>
 }
 
 function AboutReclaim() {
   const { sectionRef, awake } = useSectionWake<HTMLElement>(0.2)
-  return <section id="about" className="about-reclaim wake-section" data-awake={awake} ref={sectionRef} aria-labelledby="about-title"><div><h2 id="about-title">Accounting software records what happened. Reclaim helps you ask whether money can come back.</h2><p>Small businesses should not need an enterprise audit team to follow a suspicious payment. Reclaim keeps the evidence understandable, the decision human, and the recovery work practical.</p></div></section>
+  return <section id="about" className="about-reclaim chapter-ivory wake-section" data-awake={awake} ref={sectionRef} aria-labelledby="about-title"><span className="about-index">Reclaim · 2026</span><div><h2 id="about-title">Accounting software records what happened. Reclaim helps you ask whether <em>money can come back.</em></h2><p>Small businesses should not need an enterprise audit team to follow a suspicious payment. Reclaim keeps the evidence understandable, the decision human, and the recovery work practical.</p></div><aside><span>Find it.</span><span>Understand it.</span><strong>Reclaim it.</strong></aside></section>
 }
 
-function Closing({ action }: { action: LandingAction }) {
+function QuestionsAndAnswers() {
+  const { sectionRef, awake } = useSectionWake<HTMLElement>(0.16)
+  const reduceMotion = useReducedMotion()
+  const [openQuestion, setOpenQuestion] = useState(0)
+  const questions = [
+    ['Does Reclaim replace QuickBooks or Xero?', 'No. Reclaim adds a focused recovery layer after accounting. You export the ledger you already use, review possible cases, and take confirmed evidence back into your existing workflow.'],
+    ['Does Reclaim decide that a payment is wrong?', 'No. Reclaim points to records worth a second look and explains why they match. A person reviews the evidence and confirms the next step.'],
+    ['Where does my ledger data go?', 'Your ledger stays on this device, in this browser. It is processed locally, is never uploaded to our servers, and can be deleted from your workspace.'],
+    ['When would I pay a recovery fee?', 'Only after a verified refund, credit, or offset. The recovery terms are agreed before outreach; a possible finding or an unanswered request does not create a fee.'],
+  ]
+
+  return (
+    <section id="faq" className="reclaim-faq chapter-ivory wake-section" data-awake={awake} ref={sectionRef} aria-labelledby="faq-title">
+      <div className="reclaim-faq-intro"><span className="reclaim-eyebrow">Questions, answered plainly</span><h2 id="faq-title">Before you open the ledger.</h2><p>The important boundaries are simple: your data stays local, every finding keeps its evidence, and you remain the decision-maker.</p></div>
+      <div className="reclaim-faq-list">
+        {questions.map(([question, answer], index) => {
+          const open = openQuestion === index
+          const answerId = `faq-answer-${index}`
+          return <article data-open={open} key={question}><h3><button type="button" aria-expanded={open} aria-controls={answerId} onClick={() => setOpenQuestion((current) => current === index ? -1 : index)}><span>{question}</span><i aria-hidden="true" /></button></h3><AnimatePresence initial={false}>{open && <motion.div id={answerId} className="reclaim-faq-answer" initial={reduceMotion ? false : { height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={reduceMotion ? { display: 'none' } : { height: 0, opacity: 0 }} transition={reduceMotion ? { duration: 0 } : { height: { type: 'spring', stiffness: 420, damping: 38, mass: 0.72 }, opacity: { duration: 0.18, ease: [0.23, 1, 0.32, 1] } }}><p>{answer}</p></motion.div>}</AnimatePresence></article>
+        })}
+      </div>
+    </section>
+  )
+}
+
+function ClosingFooter({ action }: { action: LandingAction }) {
   const { sectionRef, awake } = useSectionWake<HTMLElement>(0.28)
-  return <section className="reclaim-closing wake-section" data-awake={awake} ref={sectionRef} aria-labelledby="closing-title"><div className="reclaim-closing-inner"><ReclaimMark size={64} interactive /><h2 id="closing-title"><span>Start with the ledger</span><span>you already have.</span></h2><p>Upload a CSV for a private local review, or open the sample case first.</p><div className="reclaim-actions"><MagneticLink className="reclaim-button reclaim-button-primary" href={action.href} pendingLabel="Opening workspace…">{action.label}</MagneticLink><a className="reclaim-text-action" data-motion="pressable" href="/audit?entry=sample">Explore the sample case</a></div></div></section>
+  const footerMenus = [
+    { label: 'Product', items: ['Review your ledger', 'Recovery workspace', 'Security', 'Pricing'] },
+    { label: 'Resources', items: ['How it works', 'Sample case', 'Guides', 'FAQ'] },
+    { label: 'Company', items: ['About Reclaim', 'Contact', 'Privacy', 'Terms'] },
+  ]
+
+  return (
+    <footer className="reclaim-footer wake-section" data-awake={awake} ref={sectionRef} aria-labelledby="closing-title">
+      <div className="reclaim-footer-atmosphere" aria-hidden="true">
+        <DitherBackground className="reclaim-footer-dither" />
+        <span className="reclaim-footer-scrim" />
+      </div>
+      <div className="reclaim-footer-shell">
+        <div className="reclaim-footer-cta">
+          <ReclaimMark size={54} interactive />
+          <h2 id="closing-title"><span>Start with the ledger</span><span>you <em>already have.</em></span></h2>
+          <p>Upload a CSV for a private local review, or open the sample case first.</p>
+          <div className="reclaim-actions">
+            <MagneticLink className="reclaim-button reclaim-button-primary" href={action.href} pendingLabel="Opening workspace…">{action.label}</MagneticLink>
+            <a className="reclaim-text-action" data-motion="pressable" href="/audit?entry=sample">Explore the sample case</a>
+          </div>
+        </div>
+        <div className="reclaim-footer-menu" aria-label="Reclaim footer navigation">
+          <div className="reclaim-footer-brand">
+            <a href="/" aria-label="Reclaim home"><ReclaimLogo size={28} /></a>
+            <p>Find it. Understand it. Reclaim it.</p>
+            <small>© 2026 Reclaim</small>
+          </div>
+          {footerMenus.map((menu) => (
+            <section key={menu.label} className="reclaim-footer-menu-column" aria-label={menu.label}>
+              <h3>{menu.label}</h3>
+              <ul>
+                {menu.items.map((item) => <li key={item}><span>{item}</span></li>)}
+              </ul>
+            </section>
+          ))}
+        </div>
+      </div>
+      <div className="reclaim-footer-wordmark" aria-hidden="true">RECLAIM</div>
+    </footer>
+  )
 }
 
 export function LandingPage() {
   const [action] = useState(getLandingAction)
-  return <div className="reclaim-page reclaim-commercial-page"><a className="reclaim-skip-link" href="#main-content">Skip to main content</a><LandingNav action={action} /><main id="main-content"><Hero action={action} /><MottoInterlude /><KineticFrame direction={-1}><RawLedger /></KineticFrame><KineticFrame direction={1}><RecoveryValue /></KineticFrame><KineticFrame direction={-1}><AccountingFit /></KineticFrame><KineticFrame direction={1}><RecoveryProof /></KineticFrame><KineticFrame direction={-1}><SecurityBoundary /></KineticFrame><KineticFrame direction={1}><OutcomePricing /></KineticFrame><KineticFrame direction={-1}><AboutReclaim /></KineticFrame><KineticFrame direction={1}><Closing action={action} /></KineticFrame></main><footer className="reclaim-footer"><a href="/" aria-label="Reclaim home"><ReclaimLogo size={28} /></a><p>Find it. Understand it. Reclaim it.</p><a data-motion="pressable" href={action.href}>{action.label}</a></footer></div>
+  return <div className="reclaim-page reclaim-commercial-page"><a className="reclaim-skip-link" href="#main-content">Skip to main content</a><LandingNav action={action} /><main id="main-content"><Hero action={action} /><MottoInterlude /><KineticFrame direction={-1}><RawLedger /></KineticFrame><KineticFrame direction={1}><RecoveryValue /></KineticFrame><KineticFrame direction={-1}><AccountingFit /></KineticFrame><KineticFrame direction={1}><PortfolioProof /></KineticFrame><KineticFrame direction={1}><RecoveryProof /></KineticFrame><KineticFrame direction={-1}><SecurityBoundary /></KineticFrame><KineticFrame direction={1}><OutcomePricing /></KineticFrame><KineticFrame direction={-1}><AboutReclaim /></KineticFrame><KineticFrame direction={1}><QuestionsAndAnswers /></KineticFrame></main><ClosingFooter action={action} /></div>
 }

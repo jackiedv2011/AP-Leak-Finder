@@ -19,6 +19,8 @@ describe('LandingPage', () => {
     render(<LandingPage />)
 
     expect(screen.getByRole('heading', { level: 1, name: 'Find the payments worth a second look.' })).toBeInTheDocument()
+    expect(document.querySelector('.reclaim-hero-atmosphere')).toHaveAttribute('aria-hidden', 'true')
+    expect(document.querySelector('.reclaim-hero-atmosphere')?.querySelector('.reclaim-hero-dither')).toBeInTheDocument()
     expect(screen.getAllByRole('link', { name: 'Review your ledger' })[0]).toHaveAttribute('href', '/audit?entry=upload')
     expect(screen.getByRole('link', { name: 'Explore a sample case' })).toHaveAttribute('href', '/audit?entry=sample')
     expect(screen.getByRole('link', { name: 'Security' })).toHaveAttribute('href', '#security')
