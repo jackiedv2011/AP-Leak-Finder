@@ -1673,13 +1673,13 @@
     scroll-behavior: auto;
   }
 
-  .reclaim-nav,
+  .reclaim-nav:not(.reclaim-product-nav),
   .reclaim-mobile-menu,
   .reclaim-mobile-menu a,
   .reclaim-menu-button,
-  .magnetic-control,
-  .magnetic-control-surface,
-  .magnetic-control-icon,
+  .magnetic-control:not(.reclaim-nav-action),
+  .magnetic-control:not(.reclaim-nav-action) .magnetic-control-surface,
+  .magnetic-control:not(.reclaim-nav-action) .magnetic-control-icon,
   .reclaim-confirm-button,
   .story-layer,
   .ledger-thread,
@@ -1711,8 +1711,8 @@
     transform: none;
   }
 
-  .magnetic-control,
-  .magnetic-control-surface,
+  .magnetic-control:not(.reclaim-nav-action),
+  .magnetic-control:not(.reclaim-nav-action) .magnetic-control-surface,
   .reclaim-confirm-button,
   .reclaim-menu-button,
   .reclaim-mobile-menu a {
@@ -5730,16 +5730,23 @@
 
 /* Directional presentation pass: motion is one continuous recovery signal. */
 .reclaim-nav-shell {
-  display: flex;
-  justify-content: center;
+  position: fixed;
+  z-index: 50;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: calc(5rem + env(safe-area-inset-top));
+  pointer-events: none;
 }
 
 .reclaim-product-nav,
 .reclaim-product-nav[data-condensed='true'] {
-  position: relative;
-  left: auto;
+  position: absolute;
+  left: 50%;
   isolation: isolate;
-  transform: none;
+  pointer-events: auto;
+  transform: translate3d(-50%, 0, 0);
+  will-change: width, height, padding, grid-template-columns;
   transition:
     top 480ms var(--ease-drawer),
     width 480ms var(--ease-drawer),
@@ -5794,6 +5801,17 @@
 .reclaim-product-nav[data-condensed='true']::before {
   opacity: 1;
   transform: translate3d(0, 0, 0) scale(1);
+}
+
+/* The open navigation is deliberately surface-less. Pull the hero artwork
+   through the safe area so the fixed shell never reads as a separate white bar. */
+.reclaim-commercial-page .reclaim-hero-atmosphere > img {
+  position: absolute;
+  inset: -4rem 0 0;
+  width: 100%;
+  height: calc(100% + 4rem);
+  object-fit: cover;
+  object-position: center;
 }
 
 .reclaim-product-nav[data-condensed='true']::after {
@@ -6063,6 +6081,7 @@
 
 /* Closing footer: a contained ledger surface within the same dither atmosphere as the hero. */
 .reclaim-commercial-page .reclaim-footer {
+  --reclaim-footer-blend: clamp(8rem, 10vw, 11.2rem);
   position: relative;
   isolation: isolate;
   display: block;
@@ -6072,7 +6091,15 @@
   padding: clamp(4.5rem, 9vw, 8.5rem) clamp(1rem, 3.2vw, 3rem) max(0.75rem, env(safe-area-inset-bottom));
   overflow: hidden;
   border: 0;
-  background: linear-gradient(180deg, #f5f1e7 0, #eee9de 3rem, #cbc6ba 6rem, #555650 10rem, #090b0c 14rem);
+  background: linear-gradient(
+    180deg,
+    #f3efe7 0,
+    #eee9de calc(var(--reclaim-footer-blend) * 0.22),
+    #cbc6ba calc(var(--reclaim-footer-blend) * 0.43),
+    #555650 calc(var(--reclaim-footer-blend) * 0.72),
+    #090b0c var(--reclaim-footer-blend),
+    #090b0c 100%
+  );
 }
 
 .reclaim-footer-atmosphere,
@@ -6085,8 +6112,8 @@
   z-index: -2;
   overflow: hidden;
   pointer-events: none;
-  mask-image: linear-gradient(180deg, transparent 0, #000 clamp(8rem, 12vw, 12rem));
-  -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 clamp(8rem, 12vw, 12rem));
+  mask-image: linear-gradient(180deg, transparent 0, #000 var(--reclaim-footer-blend));
+  -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 var(--reclaim-footer-blend));
 }
 
 .reclaim-footer-dither {
@@ -7493,7 +7520,7 @@
   background:
     linear-gradient(180deg, #090b0c 0, rgb(9 11 12 / 0.06) 17% 78%, #090b0c 100%),
     linear-gradient(90deg, rgb(9 11 12 / 0.08) 0, rgb(9 11 12 / 0.14) 34%, rgb(9 11 12 / 0.88) 68%, #090b0c 100%),
-    url('../../assets/landing/reclaim-geometric-world-mono-v6.webp') left center / cover no-repeat;
+    linear-gradient(transparent, transparent);
   content: '';
   opacity: 0.84;
   pointer-events: none;
@@ -7666,7 +7693,7 @@
   background:
     linear-gradient(180deg, #090b0c 0, transparent 18% 78%, #090b0c 100%),
     linear-gradient(90deg, #090b0c 0, transparent 12% 88%, #090b0c 100%),
-    url('../../assets/landing/reclaim-dark-vellum-v2.webp') center / cover no-repeat;
+    linear-gradient(transparent, transparent);
   content: '';
   opacity: 0.42;
   pointer-events: none;
@@ -7684,7 +7711,7 @@
   background:
     linear-gradient(180deg, #090b0c 0, transparent 16% 82%, #090b0c 100%),
     linear-gradient(90deg, rgb(9 11 12 / 0.42), transparent 18% 82%, rgb(9 11 12 / 0.4)),
-    url('../../assets/landing/reclaim-workflow-world-mono-v7.webp') center bottom / cover no-repeat;
+    linear-gradient(transparent, transparent);
   opacity: 0.5;
 }
 
@@ -7829,7 +7856,7 @@
   background:
     linear-gradient(180deg, #090b0c 0, transparent 16% 82%, #090b0c 100%),
     linear-gradient(90deg, rgb(9 11 12 / 0.08), rgb(9 11 12 / 0.36) 48%, transparent 72%, rgb(9 11 12 / 0.18)),
-    url('../../assets/landing/reclaim-results-world-mono-v7.webp') center / cover no-repeat;
+    linear-gradient(transparent, transparent);
   content: '';
   opacity: 0.52;
   pointer-events: none;
@@ -7888,7 +7915,7 @@
   background:
     linear-gradient(180deg, #090b0c 0, transparent 14% 82%, #090b0c 100%),
     linear-gradient(90deg, rgb(9 11 12 / 0.18), transparent 18% 84%, rgb(9 11 12 / 0.3)),
-    url('../../assets/landing/reclaim-pricing-world-mono-v7.webp') center bottom / cover no-repeat;
+    linear-gradient(transparent, transparent);
   opacity: 0.5;
 }
 
@@ -8103,7 +8130,7 @@
   background:
     linear-gradient(90deg, rgb(9 11 12 / 0.12) 0%, transparent 42%, rgb(9 11 12 / 0.76) 76%, #090b0c 100%),
     linear-gradient(180deg, #090b0c 0%, transparent 25% 77%, #090b0c 100%),
-    url('../../assets/landing/reclaim-motto-evidence-world-v1.png') left 60% / cover no-repeat;
+    linear-gradient(transparent, transparent);
   content: '';
   opacity: 0.22;
   pointer-events: none;

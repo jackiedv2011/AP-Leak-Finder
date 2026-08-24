@@ -4,6 +4,7 @@ import { AuthProvider } from '@/lib/auth/AuthContext'
 const LandingPage = lazy(() =>
   import('@/components/landing/LandingPage').then((module) => ({ default: module.LandingPage }))
 )
+
 const AuditApp = lazy(() =>
   import('@/AuditApp').then((module) => ({ default: module.AuditApp }))
 )
@@ -18,10 +19,10 @@ const NotFoundPage = lazy(() =>
   import('@/components/NotFoundPage').then((module) => ({ default: module.NotFoundPage }))
 )
 
-function RouteFallback() {
+function RouteFallback({ light = false }: { light?: boolean }) {
   return (
-    <main className="grid min-h-[100dvh] place-items-center bg-[#0a1220] text-[#eef1ec]" aria-busy="true">
-      <p className="text-sm text-[#9ca59f]">Loading…</p>
+    <main className={`grid min-h-[100dvh] place-items-center ${light ? 'bg-[#f2f0e9] text-[#171a17]' : 'bg-[#0a1220] text-[#eef1ec]'}`} aria-busy="true">
+      <p className={`text-sm ${light ? 'text-[#657068]' : 'text-[#9ca59f]'}`}>Loading Reclaim…</p>
     </main>
   )
 }
@@ -44,7 +45,7 @@ function App() {
 
   return (
     <AuthProvider>
-      <Suspense fallback={<RouteFallback />}>{page}</Suspense>
+      <Suspense fallback={<RouteFallback light={pathname === '/'} />}>{page}</Suspense>
     </AuthProvider>
   )
 }

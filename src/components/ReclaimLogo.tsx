@@ -4,6 +4,7 @@ type ReclaimMarkProps = {
   size?: number
   interactive?: boolean
   className?: string
+  tone?: 'auto' | 'ink'
 }
 
 type ReclaimWordmarkProps = {
@@ -20,12 +21,23 @@ type ReclaimLogoProps = ReclaimMarkProps & {
  * future navbar collapse from “Reclaim.” into only the R without changing
  * the identity or its interaction model.
  */
-export function ReclaimMark({ size = 40, interactive = false, className = '' }: ReclaimMarkProps) {
+export function ReclaimMark({ size = 40, interactive = false, className = '', tone = 'auto' }: ReclaimMarkProps) {
   const [isActive, setIsActive] = useState(false)
   const maskId = useId().replace(/:/g, '')
   const filterId = useId().replace(/:/g, '')
   const spreadId = useId().replace(/:/g, '')
   const accentId = useId().replace(/:/g, '')
+
+  if (tone === 'ink') {
+    return (
+      <span className={`inline-flex ${className}`}>
+        <svg aria-hidden="true" className="reclaim-mark reclaim-mark-ink" width={size} height={size} viewBox="0 0 48 48" fill="none">
+          <path d="M13 39V9h11.3c6.7 0 10.7 3.4 10.7 9.2 0 4.25-2.15 7.15-5.85 8.42L38 39h-7.1l-7.8-11.35H19.4V39H13Zm6.4-16.42h4.25c3.15 0 4.95-1.5 4.95-4.12 0-2.68-1.8-4.12-4.95-4.12H19.4v8.24Z" fill="currentColor" />
+          <circle className="reclaim-mark-dot" cx="16.2" cy="43" r="2.25" fill="#79D99B" />
+        </svg>
+      </span>
+    )
+  }
 
   return (
     <span
@@ -92,12 +104,12 @@ export function ReclaimWordmark({ interactive = false, className = '' }: Reclaim
   )
 }
 
-export function ReclaimLogo({ variant = 'full', size = 40, interactive = false, className = '' }: ReclaimLogoProps) {
-  if (variant === 'mark') return <ReclaimMark size={size} interactive={interactive} className={className} />
+export function ReclaimLogo({ variant = 'full', size = 40, interactive = false, className = '', tone = 'auto' }: ReclaimLogoProps) {
+  if (variant === 'mark') return <ReclaimMark size={size} interactive={interactive} className={className} tone={tone} />
 
   return (
     <span className={`inline-flex items-center gap-2.5 ${className}`}>
-      <ReclaimMark size={size} interactive={interactive} />
+      <ReclaimMark size={size} interactive={interactive} tone={tone} />
       <ReclaimWordmark interactive={interactive} />
     </span>
   )

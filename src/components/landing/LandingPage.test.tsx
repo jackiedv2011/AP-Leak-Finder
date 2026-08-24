@@ -20,11 +20,25 @@ describe('LandingPage', () => {
 
     expect(screen.getByRole('heading', { level: 1, name: 'Find the payments worth a second look.' })).toBeInTheDocument()
     expect(document.querySelector('.reclaim-hero-atmosphere')).toHaveAttribute('aria-hidden', 'true')
-    expect(document.querySelector('.reclaim-hero-atmosphere')?.querySelector('.reclaim-hero-dither')).toBeInTheDocument()
+    expect(document.querySelector('.reclaim-hero-atmosphere')?.querySelector('.reclaim-hero-dither')).not.toBeInTheDocument()
+    expect(document.querySelector('.reclaim-hero-atmosphere')?.querySelector('img')).toBeInTheDocument()
+    expect(screen.getByRole('navigation', { name: 'Main navigation' })).toHaveAttribute('data-on-dark', 'false')
     expect(screen.getAllByRole('link', { name: 'Review your ledger' })[0]).toHaveAttribute('href', '/audit?entry=upload')
-    expect(screen.getByRole('link', { name: 'Explore a sample case' })).toHaveAttribute('href', '/audit?entry=sample')
+    expect(screen.getByRole('link', { name: 'Explore the sample case' })).toHaveAttribute('href', '/audit?entry=sample')
     expect(screen.getByRole('link', { name: 'Security' })).toHaveAttribute('href', '#security')
     expect(screen.getByRole('link', { name: 'Pricing' })).toHaveAttribute('href', '#pricing')
+  })
+
+  it('keeps the approved footer contract while the main chapters use the light system', () => {
+    render(<LandingPage />)
+
+    expect(document.querySelector('main.reclaim-main-v2')).toBeInTheDocument()
+    const footer = document.querySelector('.reclaim-footer')
+    expect(footer).toBeInTheDocument()
+    expect(footer?.querySelector('.reclaim-footer-dither')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 2, name: 'Start with the ledger you already have.' })).toBeInTheDocument()
+    expect(footer?.querySelector('.reclaim-footer-wordmark')).not.toBeInTheDocument()
+    expect(footer?.querySelector('.reclaim-footer-menu[aria-label="Reclaim footer navigation"]')).toBeInTheDocument()
   })
 
   it('tells the value, accounting fit, privacy, recovery, and pricing story without fake proof', () => {
@@ -32,18 +46,18 @@ describe('LandingPage', () => {
 
     expect(screen.getByText('A payment only tells part of the story. The rest lives in the records around it.')).toBeInTheDocument()
     expect(screen.getAllByText('See the payment. Keep the reason.').length).toBeGreaterThan(0)
-    expect([...document.querySelectorAll('.motto-word')].map((word) => word.textContent?.trim())).toEqual([
-      'A', 'payment', 'only', 'tells', 'part', 'of', 'the', 'story.', 'The', 'rest', 'lives', 'in', 'the', 'records', 'around', 'it.',
+    expect([...document.querySelectorAll('.motto-ink-line')].map((line) => line.textContent)).toEqual([
+      'A payment only tells', 'part of the story.', 'The rest lives in the', 'records around it.',
     ])
     expect(screen.getByRole('heading', { level: 2, name: 'A duplicate can look ordinary.' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { level: 2, name: 'A finding only matters if you can act on it.' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { level: 2, name: 'Keep QuickBooks or Xero. Add a recovery layer.' })).toBeInTheDocument()
-    expect(screen.getByRole('heading', { level: 2, name: 'Your ledger stays on this device, in this browser. It is never uploaded to our servers.' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 2, name: 'Your ledger stays on this device.' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { level: 2, name: 'If the money does not come back, you do not pay.' })).toBeInTheDocument()
     expect(screen.getByText('Illustrative sample data, not a customer recovery claim.')).toBeInTheDocument()
     expect(screen.getByText('No silent writeback')).toBeInTheDocument()
     expect(screen.getByText('Delete on demand')).toBeInTheDocument()
-    expect(screen.getByText('$0 fee')).toBeInTheDocument()
+    expect(screen.getByText('$0 fee if no money returns')).toBeInTheDocument()
     expect(screen.queryByText(/trusted by/i)).not.toBeInTheDocument()
   })
 
@@ -69,10 +83,6 @@ describe('LandingPage', () => {
     expect(document.querySelector('.motto-interlude')).toHaveAttribute('data-stage', '5')
     expect(document.querySelector('.motto-interlude')).toHaveAttribute('data-ready', 'true')
     expect(document.querySelector('.raw-ledger')).toHaveAttribute('data-sequence', '5')
-    expect(document.querySelectorAll('.motto-letter[data-written="true"]')).toHaveLength(mottoCharacterCount())
+    expect(document.querySelectorAll('.motto-ink-line[data-written="true"]')).toHaveLength(4)
   })
 })
-
-function mottoCharacterCount() {
-  return 'A payment only tells part of the story. The rest lives in the records around it.'.replaceAll(' ', '').length
-}

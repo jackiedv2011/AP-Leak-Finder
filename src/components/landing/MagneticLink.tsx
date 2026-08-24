@@ -9,8 +9,10 @@ type MagneticLinkProps = Omit<HTMLMotionProps<'a'>, 'children' | 'style'> & {
    * registers the press (so the destination feels entered, not teleported
    * to) before following `href`. Full page navigations still happen — this
    * only smooths the moment right before they do.
-   */
+  */
   pendingLabel?: string
+  /** Opt into the landing navigation's intentional interaction motion. */
+  forceMotion?: boolean
 }
 
 const magneticSpring = {
@@ -25,6 +27,7 @@ export function MagneticLink({
   children,
   className = '',
   pendingLabel,
+  forceMotion = false,
   href,
   onClick,
   onPointerLeave,
@@ -33,6 +36,7 @@ export function MagneticLink({
 }: MagneticLinkProps) {
   const linkRef = useRef<HTMLAnchorElement>(null)
   const reduceMotion = useReducedMotion()
+  const motionEnabled = forceMotion || !reduceMotion
   const [isPending, setIsPending] = useState(false)
   const x = useMotionValue(0)
   const y = useMotionValue(0)
@@ -51,7 +55,7 @@ export function MagneticLink({
     if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
     // Keyboard activation and reduced-motion navigation should remain
     // immediate; the brief pressed state is only useful for pointer input.
-    if (event.detail === 0 || reduceMotion) return
+    if (event.detail === 0 || !motionEnabled) return
     if (isPending) {
       event.preventDefault()
       return
@@ -72,12 +76,12 @@ export function MagneticLink({
       data-motion="pressable"
       data-motion-arrow="true"
       data-motion-ray="true"
-      style={reduceMotion ? undefined : { transform }}
+      style={motionEnabled ? { transform } : undefined}
       aria-disabled={isPending || undefined}
       onClick={handleClick}
       onPointerMove={(event) => {
         onPointerMove?.(event)
-        if (reduceMotion || event.pointerType !== 'mouse') return
+        if (!motionEnabled || event.pointerType !== 'mouse') return
 
         const bounds = linkRef.current?.getBoundingClientRect()
         if (!bounds) return

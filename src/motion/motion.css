@@ -98,7 +98,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  [data-motion='pressable'],
+  [data-motion='pressable']:not(.reclaim-nav-action),
   [data-motion-section],
   .motion-dialog-content {
     scale: 1 !important;

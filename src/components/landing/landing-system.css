@@ -1,0 +1,747 @@
+/*
+ * Reclaim landing structural layer
+ *
+ * This file intentionally owns composition only: document flow, scene plates,
+ * safe image bounds, and the navigation state. Component styling and motion
+ * remain in their dedicated files. Keeping these concerns separate prevents a
+ * visual transition from ever being able to crop or cover real content.
+ */
+
+.reclaim-page {
+  --landing-ink: #171917;
+  --landing-paper: #f3efe7;
+  --landing-paper-deep: #e9e3d8;
+  --landing-dark: #101411;
+  --landing-mint: #73d99a;
+  --landing-page-gutter: clamp(1.25rem, 4vw, 4rem);
+  /* The page uses one generous rhythm, rather than per-section spacer hacks. */
+  --landing-section-space: clamp(5.1rem, 8.4vw, 8.4rem);
+  --landing-section-gap: clamp(2rem, 3.6vw, 3.6rem);
+  background: var(--landing-paper);
+  overflow-x: clip;
+}
+
+/* One unambiguous layer model: background 0, content 1, fixed navigation 20. */
+.reclaim-reference-v3 {
+  background: var(--landing-paper) !important;
+  overflow-x: clip;
+}
+
+.reclaim-reference-v3 > .ref-scene,
+.reclaim-reference-v3 > .motto-interlude {
+  position: relative;
+  z-index: 0;
+  width: 100%;
+  min-height: 0 !important;
+  margin: 0 !important;
+  overflow: visible;
+}
+
+.reclaim-reference-v3 .ref-scene {
+  --landing-section-y: var(--landing-section-space);
+  --scene-image: none;
+  --scene-position: center;
+  --scene-size: cover;
+  padding: var(--landing-section-y) var(--landing-page-gutter) !important;
+  background-color: var(--landing-paper) !important;
+  background-image: var(--scene-image) !important;
+  background-position: var(--scene-position) !important;
+  background-size: var(--scene-size) !important;
+  background-repeat: no-repeat !important;
+}
+
+/* Section plates meet directly. Legacy pseudo-elements used several competing
+ * full-width redraws and backdrop filters; disabling them here keeps every
+ * section to one background owner and prevents rectangular desktop seams. */
+.reclaim-reference-v3.reclaim-main-v2 > .ref-scene::before,
+.reclaim-reference-v3.reclaim-main-v2 > .motto-interlude::before {
+  content: none !important;
+  display: none !important;
+}
+
+.reclaim-reference-v3.reclaim-main-v2 > .ref-scene::after,
+.reclaim-reference-v3.reclaim-main-v2 > .motto-interlude::after {
+  display: none !important;
+  content: none !important;
+}
+
+.reclaim-reference-v3 .ref-scene > :not(.ref-pricing-objects),
+.reclaim-reference-v3 .motto-interlude > * {
+  position: relative;
+  z-index: 3 !important;
+}
+
+/* No permanent white strip. Each material begins cleanly at the exact section
+ * boundary, which is more stable than masking two independently cropped files. */
+.reclaim-reference-v3 .ref-ledger { --scene-image: url('../../assets/landing/backgrounds/reclaim-bg-03-workflow-mineral-v1.jpg'); }
+.reclaim-reference-v3 .ref-evidence {
+  --scene-image: url('../../assets/landing/scenes/reclaim-evidence-scene-v1-clean.webp');
+}
+.reclaim-reference-v3 .ref-workflow { --scene-image: url('../../assets/landing/backgrounds/reclaim-bg-03-workflow-mineral-v1.jpg'); }
+.reclaim-reference-v3 .ref-results { --scene-image: url('../../assets/landing/backgrounds/reclaim-bg-05-portfolio-cotton-v1.webp'); }
+.reclaim-reference-v3 .ref-recovery { --scene-image: url('../../assets/landing/backgrounds/reclaim-bg-06-recovery-chalk-v1.webp'); }
+.reclaim-reference-v3 .ref-security { --scene-image: url('../../assets/landing/backgrounds/reclaim-bg-07-security-linen-v1.webp'); }
+.reclaim-reference-v3 .ref-pricing {
+  --scene-image: url('../../assets/landing/scenes/reclaim-pricing-plate-v2-clean.jpg');
+}
+.reclaim-reference-v3 .ref-about { --scene-image: url('../../assets/landing/backgrounds/reclaim-bg-08-about-deckle-v1.webp'); }
+.reclaim-reference-v3 .ref-faq { --scene-image: url('../../assets/landing/scenes/reclaim-faq-table-scene-v2.png'); }
+
+/* Section boundaries are deliberately plain. Generated plates own their
+ * complete section; transition overlays and backdrop filters are forbidden. */
+.reclaim-reference-v3 > .ref-scene,
+.reclaim-reference-v3 > .motto-interlude {
+  -webkit-mask-image: none !important;
+  mask-image: none !important;
+}
+
+/* The motto now follows the same one-plate rule as every other chapter. */
+.reclaim-reference-v3.reclaim-main-v2 > section.motto-interlude {
+  --scene-image: url('../../assets/landing/backgrounds/reclaim-bg-02-motto-v1.webp');
+  --scene-position: center;
+  background-color: var(--landing-paper) !important;
+  background-image: var(--scene-image) !important;
+  background-position: var(--scene-position) !important;
+  background-size: cover !important;
+  background-repeat: no-repeat !important;
+}
+
+.reclaim-reference-v3 .motto-stage {
+  background: transparent !important;
+}
+
+.reclaim-reference-v3 .motto-visual::before {
+  display: none !important;
+  content: none !important;
+}
+
+/* Transparent at the hero. The existing motion state still controls the
+ * morph, while condensed navigation becomes a solid floating control. */
+.reclaim-nav-shell {
+  position: fixed !important;
+  z-index: 20 !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: 0 !important;
+  pointer-events: none;
+}
+
+.reclaim-product-nav {
+  position: absolute !important;
+  left: 50% !important;
+  right: auto !important;
+  pointer-events: auto;
+  width: min(calc(100% - 2rem), 76rem) !important;
+  min-height: 4.15rem !important;
+  margin: 0 !important;
+  transform: translate3d(-50%, 0, 0) !important;
+  padding-inline: clamp(0.75rem, 1.8vw, 1.4rem) !important;
+  border: 1px solid transparent !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  isolation: isolate;
+  transition:
+    top 480ms var(--ease-drawer),
+    width 480ms var(--ease-drawer),
+    min-height 480ms var(--ease-drawer),
+    padding 480ms var(--ease-drawer),
+    grid-template-columns 480ms var(--ease-drawer),
+    border-radius 480ms var(--ease-drawer),
+    background-color 220ms var(--ease-out),
+    border-color 220ms var(--ease-out),
+    box-shadow 300ms var(--ease-out) !important;
+}
+
+.reclaim-product-nav[data-condensed='true'] {
+  top: max(0.7rem, env(safe-area-inset-top)) !important;
+  grid-template-columns: 2.8rem minmax(0, 1fr) auto !important;
+  width: min(calc(100% - 2rem), 58rem) !important;
+  min-height: 3.78rem !important;
+  padding: 0 0.42rem 0 0.58rem !important;
+  border-color: rgb(23 25 23 / 0.13) !important;
+  border-radius: 1rem !important;
+  background: rgb(251 250 246 / 0.98) !important;
+  box-shadow: 0 0.85rem 2.5rem rgb(43 36 25 / 0.12) !important;
+}
+
+.reclaim-product-nav::before,
+.reclaim-product-nav::after,
+.reclaim-product-nav[data-condensed='true']::before,
+.reclaim-product-nav[data-condensed='true']::after {
+  display: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.reclaim-hero,
+.reclaim-reference-v3 .reclaim-hero {
+  position: relative !important;
+  isolation: isolate;
+  min-height: max(75rem, 118dvh) !important;
+  padding: clamp(7.25rem, 10.5vw, 10rem) var(--landing-page-gutter) clamp(4rem, 6vw, 6rem) !important;
+  overflow: clip !important;
+  background: var(--landing-paper) !important;
+}
+
+.reclaim-hero-atmosphere {
+  position: absolute !important;
+  z-index: -1 !important;
+  inset: 0 !important;
+  overflow: hidden !important;
+  background: transparent !important;
+}
+
+.reclaim-hero-atmosphere > img {
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  object-position: 56% center !important;
+  transform: none !important;
+  filter: none !important;
+  opacity: 1 !important;
+}
+
+/* The hero is intentionally a single, still material plate. Product proof,
+ * not decorative objects, provides the visual weight. */
+.reclaim-hero-atmosphere > .reclaim-hero-plate {
+  position: absolute !important;
+  inset: -4rem 0 0 !important;
+  width: 100% !important;
+  height: calc(100% + 4rem) !important;
+}
+
+.reclaim-hero-atmosphere > .reclaim-hero-plate {
+  object-fit: cover !important;
+  object-position: 56% center !important;
+}
+
+.reclaim-hero-atmosphere-scrim { display: none !important; }
+
+.reclaim-hero-inner {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 86rem) !important;
+  margin: 0 auto !important;
+}
+
+/* The proof surface belongs below the action group. Keeping it in normal
+ * flow gives the hero a deliberate handoff and removes the former crowding. */
+.reclaim-reference-v3 .hero-audit-kinetic {
+  top: 0 !important;
+  margin: clamp(2.5rem, 3.8vw, 3.75rem) auto 0 !important;
+}
+
+/* Desktop hero: the genuine Reclaim case view carries the visual weight.
+ * Keeping it beside the story makes the first screen about proof, not props. */
+@media (min-width: 1100px) {
+  .reclaim-reference-v3 .reclaim-hero-inner {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) minmax(36rem, 0.98fr) !important;
+    align-items: start !important;
+    gap: clamp(2.5rem, 4vw, 4rem) !important;
+    min-height: min(62rem, calc(118dvh - clamp(11rem, 14vw, 13rem))) !important;
+  }
+
+  .reclaim-reference-v3 .reclaim-hero-copy-new {
+    display: block !important;
+  }
+
+  .reclaim-reference-v3 .reclaim-hero-pitch {
+    max-width: 32rem;
+    padding-top: clamp(1.75rem, 3vw, 2.75rem);
+  }
+
+  .reclaim-reference-v3 .hero-audit-kinetic {
+    width: 100%;
+    margin: 0 !important;
+    align-self: center !important;
+  }
+
+  .reclaim-reference-v3 .hero-audit {
+    width: 100% !important;
+  }
+}
+
+/* Ledger proof has one contained dark surface. The result card participates in
+ * the grid, so it cannot be clipped by the section edge at any viewport. */
+.reclaim-reference-v3 .ref-ledger {
+  scroll-margin-top: 6.25rem;
+}
+
+.reclaim-reference-v3 .ref-ledger-heading,
+.reclaim-reference-v3 .ref-ledger-composition {
+  width: min(100%, 82rem) !important;
+  margin-inline: auto !important;
+}
+
+.reclaim-reference-v3 .ref-ledger-heading {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) minmax(18rem, 0.48fr) !important;
+  align-items: end !important;
+  gap: clamp(1.8rem, 5vw, 5rem) !important;
+  margin-bottom: clamp(2.25rem, 3.75vw, 3.75rem) !important;
+}
+
+.reclaim-reference-v3 .ref-ledger-heading h2 {
+  max-width: 11ch;
+  padding-bottom: 0.1em;
+}
+
+.reclaim-reference-v3 .ref-ledger-composition {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) minmax(17rem, 0.35fr) !important;
+  align-items: stretch !important;
+  gap: 0 !important;
+  padding: clamp(1rem, 2.6vw, 2rem) !important;
+  border: 1px solid rgb(255 255 255 / 0.12);
+  border-radius: 1.35rem;
+  background: var(--landing-dark);
+  box-shadow: 0 1.8rem 3.5rem rgb(47 40 28 / 0.16);
+}
+
+.reclaim-reference-v3 .ledger-contained-panel {
+  min-width: 0;
+  padding: 0 clamp(0.2rem, 1vw, 0.75rem) 0 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.reclaim-reference-v3 .ref-ledger-note {
+  position: relative !important;
+  inset: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  z-index: auto !important;
+  width: auto !important;
+  min-height: 100% !important;
+  margin: 0 !important;
+  border-radius: 0.9rem !important;
+  transform: translate3d(0, 0, 0) !important;
+  box-shadow: none !important;
+}
+
+/* Evidence stays in a two-column, in-flow layout above its scene plate. */
+.reclaim-reference-v3 .ref-evidence {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1.08fr) minmax(18rem, 0.92fr) !important;
+  align-items: end !important;
+  gap: var(--landing-section-gap) !important;
+}
+
+.reclaim-reference-v3 .ref-evidence .commercial-heading,
+.reclaim-reference-v3 .ref-evidence .ref-evidence-comparison {
+  grid-column: 1 !important;
+}
+
+.reclaim-reference-v3 .ref-evidence .commercial-heading { align-self: start !important; }
+
+.reclaim-reference-v3 .ref-evidence .ref-evidence-review {
+  position: relative !important;
+  inset: auto !important;
+  grid-column: 2 !important;
+  grid-row: 1 / span 2 !important;
+  align-self: end !important;
+  width: min(100%, 28rem) !important;
+  margin: 0 0 1.25rem auto !important;
+  transform: none !important;
+}
+
+/* The middle chapters use the same containment contract as the proof surface:
+ * copy and product evidence share one grid instead of being independently
+ * offset on the scene plate. */
+.reclaim-reference-v3 .ref-workflow,
+.reclaim-reference-v3 .ref-recovery,
+.reclaim-reference-v3 .ref-security {
+  display: grid !important;
+  grid-template-columns: minmax(0, 0.82fr) minmax(0, 1.18fr) !important;
+  align-items: start !important;
+  gap: clamp(2.4rem, 5.8vw, 6.5rem) !important;
+  min-height: 0 !important;
+}
+
+.reclaim-reference-v3 .ref-workflow .accounting-fit-copy,
+.reclaim-reference-v3 .ref-recovery .commercial-heading,
+.reclaim-reference-v3 .ref-security .security-statement {
+  display: block !important;
+  position: relative !important;
+  inset: auto !important;
+  width: auto !important;
+  margin: 0 !important;
+  transform: none !important;
+}
+
+.reclaim-reference-v3 .ref-workflow .accounting-fit-copy h2,
+.reclaim-reference-v3 .ref-recovery .commercial-heading h2,
+.reclaim-reference-v3 .ref-security .security-statement h2 {
+  max-width: 9ch !important;
+  overflow: visible !important;
+}
+
+.reclaim-reference-v3 .ref-workflow-flow {
+  display: grid !important;
+  grid-template-columns: minmax(0, 0.76fr) minmax(0, 1.24fr) !important;
+  grid-template-areas:
+    "sources sources"
+    "import workspace"
+    "extracts workspace" !important;
+  align-items: start !important;
+  gap: clamp(1.25rem, 2vw, 1.75rem) !important;
+  width: 100% !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+}
+
+.reclaim-reference-v3 .ref-workflow-sources { grid-area: sources !important; grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+.reclaim-reference-v3 .ref-import-sheet { grid-area: import !important; min-height: 0 !important; }
+.reclaim-reference-v3 .ref-workflow-extracts { grid-area: extracts !important; grid-template-columns: 1fr !important; }
+.reclaim-reference-v3 .ref-workspace-panel { grid-area: workspace !important; min-height: 100% !important; }
+
+.reclaim-reference-v3 .ref-workflow-sources,
+.reclaim-reference-v3 .ref-import-sheet,
+.reclaim-reference-v3 .ref-workflow-extracts,
+.reclaim-reference-v3 .ref-workspace-panel,
+.reclaim-reference-v3 .ref-case-file,
+.reclaim-reference-v3 .ref-browser-boundary {
+  position: relative !important;
+  inset: auto !important;
+  width: auto !important;
+  margin: 0 !important;
+  transform: none !important;
+  filter: none !important;
+  clip-path: none !important;
+}
+
+/* Disable the old chapter reveal crops only inside chapters being structurally
+ * rebuilt. Motion will be reintroduced deliberately after each final layout
+ * has room for it. */
+.reclaim-reference-v3 .ref-workflow :is(h2, h2 *, .ref-workflow-flow, .ref-workflow-flow *),
+.reclaim-reference-v3 .ref-results :is(.portfolio-proof-meta, .portfolio-proof-meta *, h2, h2 *, .portfolio-proof-result, .portfolio-proof-result *, .portfolio-proof-count, .portfolio-proof-count *, .ref-results-slips, .ref-results-slips *, .ref-results-table, .ref-results-table *, .portfolio-proof-note),
+.reclaim-reference-v3 .ref-recovery :is(h2, h2 *, .ref-case-file, .ref-case-file *),
+.reclaim-reference-v3 .ref-security :is(.security-statement, .security-statement *, .ref-security-points, .ref-security-points *, .ref-browser-boundary, .ref-browser-boundary *) {
+  clip-path: none !important;
+  -webkit-clip-path: none !important;
+  transform: none !important;
+  opacity: 1 !important;
+}
+
+.reclaim-reference-v3 .ref-recovery,
+.reclaim-reference-v3 .ref-results { overflow: visible !important; }
+
+.reclaim-reference-v3 .ref-recovery .commercial-heading,
+.reclaim-reference-v3 .ref-security .security-statement { grid-column: 1 !important; }
+
+.reclaim-reference-v3 .ref-case-file {
+  grid-column: 2 !important;
+  align-self: start !important;
+  overflow: hidden !important;
+}
+
+.reclaim-reference-v3 .ref-security {
+  grid-template-rows: auto 1fr !important;
+}
+
+.reclaim-reference-v3 .ref-security-points {
+  grid-column: 1 !important;
+  grid-row: 2 !important;
+  align-self: start !important;
+  margin: 0 !important;
+}
+
+.reclaim-reference-v3 .ref-browser-boundary {
+  grid-column: 2 !important;
+  grid-row: 1 / span 2 !important;
+  align-self: stretch !important;
+  min-height: 0 !important;
+}
+
+/* Sample-result figures, slips, and the source table are deliberately stacked
+ * inside a compact grid. This removes the former isolated count and empty
+ * field while keeping the editorial emphasis on the total. */
+.reclaim-reference-v3 .ref-results {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1.05fr) minmax(18rem, 0.95fr) !important;
+  grid-template-areas:
+    "meta slips"
+    "result slips"
+    "count slips"
+    "table table"
+    "note note" !important;
+  align-items: end !important;
+  gap: clamp(1.6rem, 3vw, 3rem) clamp(2.4rem, 5.8vw, 6.25rem) !important;
+  min-height: 0 !important;
+}
+
+.reclaim-reference-v3 .ref-results .portfolio-proof-meta { grid-area: meta !important; }
+.reclaim-reference-v3 .ref-results .portfolio-proof-result { grid-area: result !important; margin: 0 !important; }
+.reclaim-reference-v3 .ref-results .portfolio-proof-count { grid-area: count !important; width: auto !important; margin: 0 !important; }
+.reclaim-reference-v3 .ref-results-slips { grid-area: slips !important; align-self: stretch !important; margin: 0 !important; padding: 0 !important; }
+.reclaim-reference-v3 .ref-results-slips article,
+.reclaim-reference-v3 .ref-results-slips article:nth-child(2) { transform: none !important; }
+.reclaim-reference-v3 .ref-results-table { grid-area: table !important; margin: 0 !important; overflow: hidden !important; }
+.reclaim-reference-v3 .ref-results .portfolio-proof-note { grid-area: note !important; margin: 0 !important; }
+
+/* About is an editorial reading moment, not a remnant of the legacy twelve
+ * column grid. Resetting that inherited placement lets the written lines use
+ * the full safe measure at every width, including narrow phones. */
+.reclaim-reference-v3 .ref-about {
+  display: block !important;
+}
+
+.reclaim-reference-v3 .ref-about .about-index,
+.reclaim-reference-v3 .ref-about .about-statement {
+  grid-column: auto !important;
+  grid-row: auto !important;
+  width: min(100%, 78rem) !important;
+  margin-inline: auto !important;
+}
+
+.reclaim-reference-v3 .ref-about .about-index {
+  display: block !important;
+  margin-bottom: clamp(2.25rem, 4vw, 3.25rem) !important;
+}
+
+.reclaim-reference-v3 .ref-about .about-statement h2 {
+  max-width: 17ch !important;
+}
+
+.reclaim-reference-v3 .ref-about .about-support {
+  grid-column: auto !important;
+  grid-row: auto !important;
+}
+
+/* Footer is intentionally the only hard dark turn. It no longer overlays the
+ * preceding chapter, so the final light scene remains readable. */
+.reclaim-page > .reclaim-footer {
+  position: relative;
+  z-index: 0;
+  margin-top: 0 !important;
+  padding-top: clamp(4.5rem, 8vw, 7.5rem) !important;
+  -webkit-mask-image: none !important;
+  mask-image: none !important;
+}
+
+@media (max-width: 820px) {
+  .reclaim-page {
+    --landing-section-space: clamp(5rem, 14vw, 6rem);
+    --landing-section-gap: clamp(1.75rem, 7vw, 2.4rem);
+  }
+
+  .reclaim-product-nav {
+    width: calc(100% - 1rem) !important;
+    min-height: 3.75rem !important;
+  }
+
+  .reclaim-hero {
+    min-height: 0 !important;
+    padding-top: 6.5rem !important;
+    padding-bottom: 4.75rem !important;
+  }
+
+  .reclaim-hero-atmosphere > img { object-position: 63% center !important; }
+
+  .reclaim-reference-v3 .ref-ledger-heading,
+  .reclaim-reference-v3 .ref-ledger-composition,
+  .reclaim-reference-v3 .ref-evidence {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .reclaim-reference-v3 .ref-ledger-heading { gap: 1.35rem !important; }
+  .reclaim-reference-v3 .ref-ledger-composition { gap: 1.35rem !important; }
+  .reclaim-reference-v3 .ledger-contained-panel { padding-right: 0 !important; overflow-x: auto !important; }
+  .reclaim-reference-v3 .ref-ledger-note { min-height: auto !important; }
+  .reclaim-reference-v3 .ref-evidence .commercial-heading,
+  .reclaim-reference-v3 .ref-evidence .ref-evidence-comparison,
+  .reclaim-reference-v3 .ref-evidence .ref-evidence-review { grid-column: 1 !important; grid-row: auto !important; }
+  .reclaim-reference-v3 .ref-evidence .ref-evidence-review { width: 100% !important; margin: 0 !important; }
+
+  .reclaim-reference-v3 .ref-workflow,
+  .reclaim-reference-v3 .ref-recovery,
+  .reclaim-reference-v3 .ref-security,
+  .reclaim-reference-v3 .ref-results {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    grid-template-areas: none !important;
+    gap: var(--landing-section-gap) !important;
+  }
+
+  .reclaim-reference-v3 .ref-workflow-flow {
+    grid-template-columns: minmax(0, 1fr) !important;
+    grid-template-areas: "sources" "import" "extracts" "workspace" !important;
+  }
+
+  .reclaim-reference-v3 .hero-audit-kinetic {
+    margin-top: 3rem !important;
+  }
+
+  .reclaim-reference-v3 .ref-about .about-index,
+  .reclaim-reference-v3 .ref-about .about-statement {
+    width: 100% !important;
+  }
+
+  .reclaim-reference-v3 .ref-about .about-statement h2 {
+    max-width: 100% !important;
+    font-size: clamp(2.85rem, 13vw, 4.15rem) !important;
+    line-height: 0.95 !important;
+  }
+
+  .reclaim-reference-v3 .ref-workflow .accounting-fit-copy,
+  .reclaim-reference-v3 .ref-recovery .commercial-heading,
+  .reclaim-reference-v3 .ref-security .security-statement,
+  .reclaim-reference-v3 .ref-security-points,
+  .reclaim-reference-v3 .ref-case-file,
+  .reclaim-reference-v3 .ref-browser-boundary,
+  .reclaim-reference-v3 .ref-results .portfolio-proof-meta,
+  .reclaim-reference-v3 .ref-results .portfolio-proof-result,
+  .reclaim-reference-v3 .ref-results .portfolio-proof-count,
+  .reclaim-reference-v3 .ref-results-slips,
+  .reclaim-reference-v3 .ref-results-table,
+  .reclaim-reference-v3 .ref-results .portfolio-proof-note {
+    grid-column: 1 !important;
+    grid-row: auto !important;
+    grid-area: auto !important;
+  }
+
+  .reclaim-reference-v3 .ref-results-table { overflow-x: auto !important; }
+
+  /* Product evidence never relies on a cropped horizontal desktop table on a
+   * phone. Keep the identifying vendor and amount visible as a compact list. */
+  .reclaim-reference-v3 .ref-results-table > div {
+    min-width: 0 !important;
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    gap: 0.75rem !important;
+    padding-inline: 1rem !important;
+  }
+
+  .reclaim-reference-v3 .ref-results-table > div > :nth-child(2),
+  .reclaim-reference-v3 .ref-results-table > div > :nth-child(3) { display: none !important; }
+
+  .reclaim-reference-v3 .ref-browser-boundary,
+  .reclaim-reference-v3 .ref-browser-boundary > div,
+  .reclaim-reference-v3 .ref-browser-boundary article {
+    width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+  }
+
+  .reclaim-reference-v3 .ref-browser-boundary article {
+    padding: clamp(1rem, 5vw, 1.35rem) !important;
+  }
+
+  .reclaim-reference-v3 .ref-browser-boundary article > strong {
+    font-size: clamp(1.25rem, 6.3vw, 1.7rem) !important;
+    overflow-wrap: normal !important;
+    white-space: nowrap !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reclaim-reference-v3 .ref-ledger-note { transition: none !important; }
+
+  .reclaim-product-nav,
+  .reclaim-product-nav[data-condensed='true'],
+  .reclaim-commercial-page .reclaim-product-nav,
+  .reclaim-commercial-page .reclaim-product-nav[data-condensed='true'] {
+    transition:
+      top 480ms var(--ease-drawer),
+      width 480ms var(--ease-drawer),
+      min-height 480ms var(--ease-drawer),
+      padding 480ms var(--ease-drawer),
+      grid-template-columns 480ms var(--ease-drawer),
+      border-radius 480ms var(--ease-drawer),
+      background-color 220ms var(--ease-out),
+      border-color 220ms var(--ease-out),
+      box-shadow 300ms var(--ease-out) !important;
+  }
+
+  .reclaim-commercial-page .reclaim-nav-wordmark {
+    transition: clip-path 180ms var(--ease-out), transform 180ms var(--ease-out) !important;
+  }
+}
+
+/* FAQ: a taller, quieter closing chapter. The photo is one static material
+ * plate; the information stays in normal document flow above its low table
+ * scene, so neither the answer list nor the props need a compensating panel. */
+.reclaim-reference-v3 .ref-faq {
+  display: grid !important;
+  grid-template-columns: minmax(22rem, 0.78fr) minmax(34rem, 1.22fr) !important;
+  grid-template-rows: auto 1fr;
+  column-gap: clamp(4rem, 8vw, 10rem) !important;
+  align-items: start !important;
+  min-height: clamp(62rem, 74vw, 76rem) !important;
+  padding: clamp(7rem, 9vw, 10rem) var(--landing-page-gutter) clamp(15rem, 18vw, 19rem) !important;
+}
+
+.reclaim-reference-v3 .ref-faq .reclaim-faq-intro,
+.reclaim-reference-v3 .ref-faq .reclaim-faq-list {
+  grid-row: 1 !important;
+  align-self: start !important;
+}
+
+.reclaim-reference-v3 .ref-faq .reclaim-faq-intro {
+  grid-column: 1 !important;
+  padding-top: clamp(1rem, 2vw, 2rem) !important;
+}
+
+.reclaim-reference-v3 .ref-faq .reclaim-faq-intro h2 {
+  max-width: 6.6ch !important;
+  margin-block: 0.85rem 1.5rem !important;
+  font-size: clamp(4.4rem, 5.85vw, 6.3rem) !important;
+}
+
+.reclaim-reference-v3 .ref-faq .reclaim-faq-list {
+  grid-column: 2 !important;
+  width: 100% !important;
+  max-width: none !important;
+  margin: clamp(1rem, 2vw, 2.4rem) 0 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  backdrop-filter: none !important;
+  box-shadow: none !important;
+  border: 0 !important;
+}
+
+.reclaim-reference-v3 .ref-faq .reclaim-faq-list article {
+  background: transparent !important;
+  border-top: 1px solid rgb(23 25 23 / 0.18) !important;
+  border-bottom: 0 !important;
+}
+
+.reclaim-reference-v3 .ref-faq .reclaim-faq-list article:last-child {
+  border-bottom: 1px solid rgb(23 25 23 / 0.18) !important;
+}
+
+.reclaim-reference-v3 .ref-faq .reclaim-faq-list button {
+  min-height: clamp(5.2rem, 7vw, 6.5rem) !important;
+  padding-inline: 0 !important;
+}
+
+@media (max-width: 820px) {
+  .reclaim-reference-v3 .ref-faq {
+    display: block !important;
+    min-height: 0 !important;
+    padding: clamp(5.5rem, 16vw, 7rem) var(--landing-page-gutter) clamp(18rem, 56vw, 23rem) !important;
+  }
+
+  .reclaim-reference-v3 .ref-faq .reclaim-faq-intro {
+    min-height: 0 !important;
+    padding-top: 0 !important;
+    margin-bottom: clamp(3.5rem, 10vw, 5rem) !important;
+  }
+
+  .reclaim-reference-v3 .ref-faq .reclaim-faq-intro h2 {
+    max-width: 7.2ch !important;
+    font-size: clamp(3.6rem, 14vw, 5rem) !important;
+  }
+
+  .reclaim-reference-v3 .ref-faq .reclaim-faq-list {
+    margin-top: 0 !important;
+  }
+}
+
+/* The footer owns its complete light-to-dark handoff in landing.css. Do not
+ * redraw it here: a second footer plate was the source of the hard black seam. */

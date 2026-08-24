@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 const VERTEX_SHADER = `
 attribute vec2 a_position;
@@ -168,12 +168,33 @@ function buildWordTexture() {
 }
 
 /** Reclaim's hero-only adaptation of the supplied 21st.dev dithering shader, blended with the word "RECLAIM" scrolling across. */
-export function DitherBackground({ className = '', tone = 'dark' }: { className?: string; tone?: 'dark' | 'light' }) {
+export function DitherBackground({
+  className = '',
+  tone = 'dark',
+  showWord = true,
+}: {
+  className?: string
+  tone?: 'dark' | 'light'
+  showWord?: boolean
+}) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const [ready, setReady] = useState(false)
 
   useEffect(() => {
     const canvas = canvasRef.current
-    if (!canvas) return
+    if (!canvas || ready) return
+    const observer = new IntersectionObserver(([entry]) => {
+      if (!entry.isIntersecting) return
+      setReady(true)
+      observer.disconnect()
+    }, { rootMargin: '160% 0px' })
+    observer.observe(canvas)
+    return () => observer.disconnect()
+  }, [ready])
+
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas || !ready) return
     const pendingRelease = pendingContextReleases.get(canvas)
     if (pendingRelease !== undefined) window.clearTimeout(pendingRelease)
     pendingContextReleases.delete(canvas)
@@ -223,11 +244,23 @@ export function DitherBackground({ className = '', tone = 'dark' }: { className?
     gl.vertexAttribPointer(position, 2, gl.FLOAT, false, 0, 0)
     gl.uniform3fv(colors, tone === 'light' ? RECLAIM_LIGHT_COLORS : RECLAIM_COLORS)
 
-    const word = buildWordTexture()
+    // The footer keeps the dither field but deliberately omits the travelling
+    // wordmark; it should feel like a quiet material surface behind the CTA.
+    const word = showWord ? buildWordTexture() : { data: new Uint8Array([0]), wordFraction: 1 }
     gl.activeTexture(gl.TEXTURE0)
     gl.bindTexture(gl.TEXTURE_2D, maskTexture)
     gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1)
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.LUMINANCE, WORD_TEXTURE_WIDTH, WORD_TEXTURE_HEIGHT, 0, gl.LUMINANCE, gl.UNSIGNED_BYTE, word.data)
+    gl.texImage2D(
+      gl.TEXTURE_2D,
+      0,
+      gl.LUMINANCE,
+      showWord ? WORD_TEXTURE_WIDTH : 1,
+      showWord ? WORD_TEXTURE_HEIGHT : 1,
+      0,
+      gl.LUMINANCE,
+      gl.UNSIGNED_BYTE,
+      word.data,
+    )
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT)
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
@@ -238,7 +271,7 @@ export function DitherBackground({ className = '', tone = 'dark' }: { className?
 
     const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
     let visible = document.visibilityState === 'visible'
-    let inView = true
+    let inView = false
     let frame = 0
     let disposed = false
     let periodPx = 1
@@ -266,7 +299,6 @@ export function DitherBackground({ className = '', tone = 'dark' }: { className?
     const render = (now: number) => {
       frame = 0
       if (disposed || !visible || !inView) return
-      resize()
       const elapsed = motionQuery.matches ? 0 : (now - start) / 1000
       gl.uniform2f(resolution, canvas.width, canvas.height)
       gl.uniform1f(time, elapsed)
@@ -284,7 +316,8 @@ export function DitherBackground({ className = '', tone = 'dark' }: { className?
     }
     const handleMotionChange = () => requestRender()
 
-    const resizeObserver = new ResizeObserver(requestRender)
+    const resizeAndRender = () => { resize(); requestRender() }
+    const resizeObserver = new ResizeObserver(resizeAndRender)
     const intersectionObserver = new IntersectionObserver(([entry]) => {
       inView = entry?.isIntersecting ?? true
       if (inView) requestRender()
@@ -297,7 +330,8 @@ export function DitherBackground({ className = '', tone = 'dark' }: { className?
     intersectionObserver.observe(canvas)
     document.addEventListener('visibilitychange', handleVisibility)
     motionQuery.addEventListener('change', handleMotionChange)
-    requestRender()
+    window.addEventListener('resize', resizeAndRender, { passive: true })
+    resize()
 
     return () => {
       disposed = true
@@ -306,6 +340,7 @@ export function DitherBackground({ className = '', tone = 'dark' }: { className?
       intersectionObserver.disconnect()
       document.removeEventListener('visibilitychange', handleVisibility)
       motionQuery.removeEventListener('change', handleMotionChange)
+      window.removeEventListener('resize', resizeAndRender)
       gl.deleteBuffer(buffer)
       gl.deleteTexture(maskTexture)
       gl.deleteProgram(program)
@@ -318,7 +353,7 @@ export function DitherBackground({ className = '', tone = 'dark' }: { className?
       }, 0)
       pendingContextReleases.set(canvas, releaseTimer)
     }
-  }, [tone])
+  }, [ready, showWord, tone])
 
   return <canvas ref={canvasRef} className={className} aria-hidden="true" />
 }

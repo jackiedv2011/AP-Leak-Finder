@@ -1,0 +1,3179 @@
+/* Light-first landing chapters. Everything is scoped beneath main so the locked footer is untouched. */
+.reclaim-main-v2 {
+  --chapter-bg: #f3efe7;
+  --chapter-bg-soft: #ebe8df;
+  --chapter-paper: #fbfaf6;
+  --chapter-ink: #171a17;
+  --chapter-copy: #595f58;
+  --chapter-muted: #747a72;
+  --chapter-rule: rgb(23 26 23 / 0.14);
+  --chapter-rule-strong: rgb(23 26 23 / 0.24);
+  --chapter-green: #2c8b58;
+  --chapter-green-bright: #79e7a4;
+  --chapter-shadow: 0 2rem 6rem rgb(63 56 43 / 0.12);
+  position: relative;
+  z-index: 1;
+  isolation: isolate;
+  color: var(--chapter-ink);
+  color-scheme: light;
+  background: var(--chapter-bg);
+}
+
+.reclaim-main-v2::before {
+  content: none;
+}
+
+.reclaim-main-v2 .kinetic-frame {
+  position: relative;
+  z-index: 1;
+  overflow: clip;
+  background: var(--chapter-bg) !important;
+}
+
+.reclaim-main-v2 .kinetic-frame:has(.commercial-value),
+.reclaim-main-v2 .kinetic-frame:has(.recovery-proof),
+.reclaim-main-v2 .kinetic-frame:has(.about-reclaim) {
+  background:
+    radial-gradient(circle at 84% 16%, rgb(255 255 255 / 0.72), transparent 24%),
+    linear-gradient(112deg, transparent 0 62%, rgb(44 139 88 / 0.035) 62.1% 62.22%, transparent 62.35%),
+    var(--chapter-paper) !important;
+}
+
+.reclaim-main-v2 .kinetic-frame:has(.accounting-fit),
+.reclaim-main-v2 .kinetic-frame:has(.outcome-pricing),
+.reclaim-main-v2 .kinetic-frame:has(.reclaim-faq) {
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 0.32), transparent 18% 82%, rgb(67 60 48 / 0.035)),
+    var(--chapter-bg-soft) !important;
+}
+
+.reclaim-main-v2 .kinetic-plane {
+  opacity: 1 !important;
+  will-change: auto;
+}
+
+.reclaim-main-v2 .reclaim-eyebrow {
+  color: var(--chapter-ink);
+  font-size: 0.7rem;
+  font-weight: 760;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.reclaim-main-v2 h1,
+.reclaim-main-v2 h2,
+.reclaim-main-v2 h3,
+.reclaim-main-v2 p { color: inherit; }
+
+.reclaim-main-v2 h1,
+.reclaim-main-v2 h2 { text-wrap: balance; }
+
+.reclaim-main-v2 p { text-wrap: pretty; }
+
+/* Hero */
+.reclaim-main-v2 .reclaim-hero {
+  min-height: 100dvh;
+  padding: calc(7.2rem + env(safe-area-inset-top)) clamp(1.25rem, 4vw, 3.5rem) 4rem;
+  color: var(--chapter-ink);
+  background: transparent;
+}
+
+/* Retire the legacy dark-theme handoff; the light chapters should meet cleanly. */
+.reclaim-main-v2 .reclaim-hero::after { content: none !important; }
+
+/* Light-page navigation. Its layout still morphs; only the old dark skin is replaced. */
+.reclaim-commercial-page .reclaim-product-nav {
+  color: #171a17;
+  top: max(0.15rem, env(safe-area-inset-top));
+  width: min(calc(100% - 4rem), 90rem);
+  height: 4.3rem;
+  padding: 0 0.15rem;
+  transition:
+    top 480ms var(--ease-drawer),
+    width 480ms var(--ease-drawer),
+    height 480ms var(--ease-drawer),
+    padding 480ms var(--ease-drawer),
+    color 180ms ease !important;
+}
+
+.reclaim-commercial-page .reclaim-product-nav[data-condensed='true'],
+.reclaim-commercial-page .reclaim-product-nav[data-menu-open='true'] {
+  top: max(0.7rem, env(safe-area-inset-top));
+  width: min(calc(100% - 2rem), 58rem);
+  height: 3.78rem;
+  padding: 0 0.42rem 0 0.58rem;
+}
+
+.reclaim-commercial-page .reclaim-product-nav::before {
+  border-color: transparent;
+  background: rgb(251 250 246 / 0.96);
+  box-shadow: none;
+  opacity: 1;
+  clip-path: inset(50% 0 round 0.9rem);
+  transform: translate3d(0, -0.18rem, 0) scaleY(0.82);
+  transition: clip-path 480ms var(--ease-drawer), transform 480ms var(--ease-drawer), border-color 220ms ease, box-shadow 260ms ease;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.reclaim-commercial-page .reclaim-product-nav[data-condensed='true']::before,
+.reclaim-commercial-page .reclaim-product-nav[data-menu-open='true']::before {
+  clip-path: inset(0 round 0.9rem);
+  transform: translate3d(0, 0, 0) scaleY(1);
+  border-color: rgb(23 26 23 / 0.13);
+  background: rgb(251 250 246 / 0.96);
+  box-shadow: inset 0 1px rgb(255 255 255 / 0.96), 0 1.2rem 3.2rem rgb(63 56 43 / 0.16);
+  backdrop-filter: blur(22px) saturate(112%);
+  -webkit-backdrop-filter: blur(22px) saturate(112%);
+}
+
+.reclaim-commercial-page .reclaim-product-nav::after {
+  background: linear-gradient(90deg, transparent, rgb(44 139 88 / 0.12), rgb(121 231 164 / 0.72), rgb(44 139 88 / 0.12), transparent);
+}
+
+.reclaim-commercial-page .reclaim-product-nav .reclaim-nav-brand,
+.reclaim-commercial-page .reclaim-product-nav .reclaim-nav-links a,
+.reclaim-commercial-page .reclaim-product-nav .reclaim-menu-button {
+  color: #343a34;
+}
+
+.reclaim-commercial-page .reclaim-product-nav .reclaim-nav-links a[aria-current='location'] { color: #171a17; }
+
+.reclaim-commercial-page .reclaim-product-nav .reclaim-nav-mark {
+  width: auto;
+  height: auto;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 0;
+  color: #171a17;
+  background: transparent;
+  box-shadow: none;
+  transition: transform 180ms var(--ease-out);
+}
+
+.reclaim-commercial-page .reclaim-product-nav .reclaim-nav-mark .reclaim-mark {
+  width: 2rem;
+  height: 2rem;
+  color: #171a17 !important;
+}
+
+.reclaim-commercial-page .reclaim-product-nav .reclaim-nav-mark .reclaim-mark path {
+  fill: currentColor !important;
+}
+
+.reclaim-commercial-page .reclaim-product-nav .reclaim-nav-mark .reclaim-mark g {
+  filter: none !important;
+  mask: none !important;
+}
+
+.reclaim-commercial-page .reclaim-product-nav .reclaim-nav-brand:hover .reclaim-nav-mark {
+  transform: translate3d(0, -1px, 0);
+  background: transparent;
+}
+
+.reclaim-commercial-page .reclaim-product-nav .reclaim-wordmark { color: #171a17; }
+.reclaim-commercial-page .reclaim-product-nav .reclaim-wordmark-period { color: #2c8b58; }
+
+.reclaim-commercial-page .reclaim-product-nav .reclaim-nav-action .magnetic-control-surface {
+  color: #f5f6f2;
+  border: 1px solid rgb(8 10 9 / 0.86);
+  background: linear-gradient(155deg, #20231f 0%, #111310 100%);
+  box-shadow: 0 0.65rem 1.35rem rgb(29 31 28 / 0.16), inset 0 1px rgb(255 255 255 / 0.14), inset 0 -1px rgb(0 0 0 / 0.52);
+}
+
+.reclaim-commercial-page .reclaim-product-nav .reclaim-nav-action .magnetic-control-icon {
+  color: #f5f6f2;
+  background: rgb(255 255 255 / 0.09);
+  box-shadow: inset 0 1px rgb(255 255 255 / 0.16), inset 0 -1px rgb(0 0 0 / 0.42);
+}
+
+.reclaim-commercial-page .reclaim-product-nav[data-on-dark='true']::before {
+  border-color: rgb(238 241 236 / 0.14);
+  background-color: rgb(13 16 17 / 0.88);
+  box-shadow: inset 0 1px rgb(255 255 255 / 0.08), 0 1.15rem 3.4rem rgb(0 0 0 / 0.26);
+}
+
+.reclaim-commercial-page .reclaim-product-nav[data-on-dark='true'] .reclaim-nav-brand,
+.reclaim-commercial-page .reclaim-product-nav[data-on-dark='true'] .reclaim-nav-links a,
+.reclaim-commercial-page .reclaim-product-nav[data-on-dark='true'] .reclaim-menu-button,
+.reclaim-commercial-page .reclaim-product-nav[data-on-dark='true'] .reclaim-wordmark {
+  color: #eef1ec;
+}
+
+.reclaim-commercial-page .reclaim-product-nav[data-on-dark='true'] .reclaim-nav-mark {
+  color: #eef1ec;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.reclaim-commercial-page .reclaim-product-nav[data-on-dark='true'] .reclaim-nav-mark .reclaim-mark {
+  color: #eef1ec !important;
+}
+
+.reclaim-commercial-page .reclaim-product-nav[data-on-dark='true'] .reclaim-nav-action .magnetic-control-surface {
+  color: #171a17;
+  border-color: rgb(255 255 255 / 0.5);
+  background: #f4f5f1;
+  box-shadow: inset 0 1px rgb(255 255 255 / 0.9), 0 0.8rem 2rem rgb(0 0 0 / 0.2);
+}
+
+.reclaim-main-v2 .reclaim-hero-atmosphere {
+  background:
+    linear-gradient(90deg, transparent 0 49.92%, rgb(23 26 23 / 0.055) 50%, transparent 50.08%),
+    linear-gradient(0deg, transparent 0 49.92%, rgb(23 26 23 / 0.035) 50%, transparent 50.08%),
+    radial-gradient(circle at 82% 18%, rgb(255 255 255 / 0.9), transparent 28%),
+    radial-gradient(circle at 12% 82%, rgb(103 151 116 / 0.1), transparent 28%),
+    var(--chapter-bg);
+  background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%, auto;
+}
+
+.reclaim-main-v2 .reclaim-hero-atmosphere::after {
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgb(23 26 23 / 0.14) 0.55px, transparent 0.65px);
+  background-size: 5px 5px;
+  content: '';
+  opacity: 0.16;
+  pointer-events: none;
+}
+
+.reclaim-main-v2 .reclaim-hero-atmosphere-scrim {
+  background: linear-gradient(180deg, rgb(242 240 233 / 0.06), rgb(242 240 233 / 0.78) 88%, var(--chapter-bg));
+}
+
+.reclaim-main-v2 .reclaim-hero-inner {
+  width: min(100%, 86rem);
+  gap: clamp(2.5rem, 5vw, 4.5rem);
+}
+
+.reclaim-main-v2 .reclaim-hero-copy-new {
+  grid-template-columns: minmax(0, 1.35fr) minmax(18rem, 0.58fr);
+  gap: 2rem clamp(3rem, 8vw, 8rem);
+  align-items: end;
+}
+
+.reclaim-main-v2 .reclaim-hero-heading { max-width: 53rem; }
+
+.reclaim-main-v2 .reclaim-hero h1 {
+  width: auto;
+  max-width: 10.2ch;
+  color: var(--chapter-ink);
+  font-size: clamp(4.5rem, 7.4vw, 8rem);
+  font-weight: 540;
+  line-height: 0.84;
+  letter-spacing: -0.085em;
+}
+
+.reclaim-main-v2 .reclaim-hero h1 em {
+  display: inline-block;
+  padding-bottom: 0.08em;
+  color: var(--chapter-ink);
+  font-family: inherit;
+  font-style: italic;
+  font-weight: 510;
+  line-height: 1.05;
+}
+
+.reclaim-main-v2 .reclaim-hero-pitch {
+  max-width: 25rem;
+  padding-bottom: 0.45rem;
+}
+
+.reclaim-main-v2 .reclaim-hero-pitch p {
+  color: var(--chapter-copy);
+  font-size: clamp(1rem, 1.35vw, 1.18rem);
+  line-height: 1.58;
+}
+
+.reclaim-main-v2 .reclaim-hero .reclaim-text-action { color: var(--chapter-ink); }
+.reclaim-main-v2 .reclaim-hero .reclaim-button-primary .magnetic-control-surface {
+  color: #f7f8f4;
+  border-color: rgb(8 10 9 / 0.86);
+  border-radius: 0.88rem;
+  background: linear-gradient(155deg, #20231f 0%, #111310 100%);
+  box-shadow: 0 0.9rem 2rem rgb(29 31 28 / 0.17), inset 0 1px rgb(255 255 255 / 0.16), inset 0 -1px rgb(0 0 0 / 0.56);
+}
+
+.reclaim-main-v2 .reclaim-hero .reclaim-button-primary .magnetic-control-icon {
+  color: #f7f8f4;
+  background: rgb(255 255 255 / 0.09);
+  box-shadow: inset 0 1px rgb(255 255 255 / 0.18), inset 0 -1px rgb(0 0 0 / 0.46);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .reclaim-commercial-page .reclaim-product-nav:not([data-on-dark='true']) .reclaim-nav-action:hover .magnetic-control-surface,
+  .reclaim-main-v2 .reclaim-hero .reclaim-button-primary:hover .magnetic-control-surface {
+    border-color: rgb(255 255 255 / 0.16);
+    background: linear-gradient(155deg, #292c28 0%, #151815 100%);
+    box-shadow: 0 1rem 2.25rem rgb(29 31 28 / 0.2), inset 0 1px rgb(255 255 255 / 0.19), inset 0 -1px rgb(0 0 0 / 0.58);
+  }
+
+  .reclaim-commercial-page .reclaim-product-nav:not([data-on-dark='true']) .reclaim-nav-action:hover .magnetic-control-icon,
+  .reclaim-main-v2 .reclaim-hero .reclaim-button-primary:hover .magnetic-control-icon {
+    background: rgb(255 255 255 / 0.14);
+  }
+}
+
+.reclaim-main-v2 .reclaim-hero .reclaim-text-action {
+  border-bottom-color: rgb(23 26 23 / 0.25);
+}
+
+.reclaim-main-v2 .hero-audit-kinetic { perspective: 1200px; }
+
+.reclaim-main-v2 .hero-audit {
+  overflow: hidden;
+  border: 1px solid rgb(255 255 255 / 0.13);
+  border-radius: 1.4rem;
+  color: #eef1ec;
+  background: #111513;
+  box-shadow: 0 2.6rem 7rem rgb(39 45 40 / 0.2), inset 0 1px rgb(255 255 255 / 0.06);
+}
+
+.reclaim-main-v2 .reclaim-hero-assurance {
+  color: #60665f;
+  border-color: var(--chapter-rule);
+}
+
+/* Separate physical layers; predetermined wake is CSS, scroll depth remains on the containing chapter. */
+.reclaim-main-v2 .reclaim-paper-field {
+  position: absolute;
+  width: clamp(18rem, 32vw, 34rem);
+  height: clamp(16rem, 30vw, 32rem);
+  transform-style: preserve-3d;
+  pointer-events: none;
+}
+
+.reclaim-main-v2 .reclaim-paper-field-hero {
+  top: 7%;
+  right: -4%;
+  opacity: 0.64;
+  transform: rotate(-5deg);
+}
+
+.reclaim-main-v2 .paper-shadow {
+  position: absolute;
+  inset: 25% 10% 8%;
+  border-radius: 50%;
+  background: rgb(49 59 49 / 0.16);
+  filter: blur(36px);
+  transform: translate3d(0, 2rem, -20px);
+}
+
+.reclaim-main-v2 .paper-sheet {
+  position: absolute;
+  display: grid;
+  align-content: start;
+  gap: 0.7rem;
+  width: 58%;
+  aspect-ratio: 0.76;
+  padding: 2rem 1.6rem;
+  border: 1px solid rgb(47 46 38 / 0.12);
+  border-radius: 0.35rem;
+  background: linear-gradient(145deg, #fffefa, #e6e1d6);
+  box-shadow: 0 1.4rem 3rem rgb(63 56 43 / 0.14), inset 0 1px rgb(255 255 255 / 0.9);
+}
+
+.reclaim-main-v2 .paper-sheet b {
+  color: #54705c;
+  font-size: 0.62rem;
+  letter-spacing: 0.15em;
+}
+
+.reclaim-main-v2 .paper-sheet i {
+  display: block;
+  height: 1px;
+  background: rgb(43 47 42 / 0.16);
+}
+
+.reclaim-main-v2 .paper-sheet-back { top: 11%; left: 24%; transform: translate3d(0, 0, -18px) rotate(11deg); }
+.reclaim-main-v2 .paper-sheet-mid { top: 18%; left: 20%; transform: translate3d(0, 0, -9px) rotate(3deg); }
+.reclaim-main-v2 .paper-sheet-front { top: 25%; left: 14%; transform: translate3d(0, 0, 0) rotate(-7deg); }
+
+.reclaim-main-v2 .paper-clip {
+  position: absolute;
+  z-index: 5;
+  top: 17%;
+  left: 30%;
+  width: 1.4rem;
+  height: 4.4rem;
+  border: 2px solid rgb(57 63 58 / 0.5);
+  border-radius: 1rem;
+  transform: rotate(8deg);
+}
+
+.reclaim-main-v2 .paper-tab {
+  position: absolute;
+  z-index: 4;
+  top: 41%;
+  right: 14%;
+  padding: 0.48rem 0.75rem;
+  color: #204e32;
+  background: #b9dec3;
+  font-size: 0.56rem;
+  font-weight: 780;
+  letter-spacing: 0.12em;
+  transform: rotate(5deg);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .reclaim-main-v2 .reclaim-hero .paper-sheet-back { animation: reclaim-paper-wake-back 900ms var(--ease-out) 160ms both; }
+  .reclaim-main-v2 .reclaim-hero .paper-sheet-mid { animation: reclaim-paper-wake-mid 980ms var(--ease-out) 220ms both; }
+  .reclaim-main-v2 .reclaim-hero .paper-sheet-front { animation: reclaim-paper-wake-front 1080ms var(--ease-out) 300ms both; }
+  .reclaim-main-v2 .reclaim-hero .paper-clip,
+  .reclaim-main-v2 .reclaim-hero .paper-tab { animation: reclaim-detail-settle 620ms var(--ease-out) 700ms both; }
+}
+
+@keyframes reclaim-paper-wake-back {
+  from { transform: translate3d(2.5rem, 2.2rem, -18px) rotate(17deg); clip-path: inset(0 0 100%); }
+  to { transform: translate3d(0, 0, -18px) rotate(11deg); clip-path: inset(0); }
+}
+
+@keyframes reclaim-paper-wake-mid {
+  from { transform: translate3d(1.2rem, 2.8rem, -9px) rotate(9deg); clip-path: inset(0 0 100%); }
+  to { transform: translate3d(0, 0, -9px) rotate(3deg); clip-path: inset(0); }
+}
+
+@keyframes reclaim-paper-wake-front {
+  from { transform: translate3d(-1rem, 3.2rem, 0) rotate(-1deg); clip-path: inset(0 0 100%); }
+  to { transform: translate3d(0, 0, 0) rotate(-7deg); clip-path: inset(0); }
+}
+
+@keyframes reclaim-detail-settle {
+  from { transform: translate3d(0, 1rem, 0) rotate(14deg) scale(0.96); clip-path: inset(0 0 100%); }
+  to { clip-path: inset(0); }
+}
+
+/* Motto: automatic handwriting on arrival, no scroll capture. */
+.reclaim-main-v2 .motto-interlude {
+  min-height: 88dvh;
+  overflow: clip;
+  color: var(--chapter-ink);
+  background:
+    radial-gradient(circle at 14% 22%, rgb(255 255 255 / 0.85), transparent 24%),
+    linear-gradient(118deg, transparent 0 58%, rgb(35 61 43 / 0.05) 58.1% 58.25%, transparent 58.4%),
+    var(--chapter-paper) !important;
+}
+
+.reclaim-main-v2 .motto-stage {
+  position: relative;
+  min-height: 88dvh;
+}
+
+.reclaim-main-v2 .motto-visual {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(15rem, 0.45fr);
+  grid-template-rows: 1fr auto auto;
+  gap: 1.5rem 4rem;
+  width: min(calc(100% - 3rem), 82rem);
+  min-height: 88dvh !important;
+  margin: 0 auto;
+  padding: clamp(6rem, 10vw, 9rem) 0 clamp(5rem, 8vw, 7rem);
+}
+
+.reclaim-main-v2 .motto-visual::before { content: none !important; }
+.reclaim-main-v2 .motto-rays,
+.reclaim-main-v2 .motto-principle-script,
+.reclaim-main-v2 .motto-scroll-cue { display: none !important; }
+
+.reclaim-main-v2 .motto-handwritten {
+  position: relative;
+  top: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  left: auto !important;
+  z-index: 3;
+  grid-column: 1 / -1;
+  align-self: center;
+  justify-self: center;
+  width: min(100%, 17ch);
+  max-width: 17ch;
+  margin: 0;
+  color: var(--chapter-ink);
+  font-size: clamp(2.7rem, 5.7vw, 6.4rem);
+  font-weight: 490;
+  line-height: 1.05;
+  letter-spacing: -0.055em;
+}
+
+.reclaim-main-v2 .motto-interlude[data-stage] .motto-handwritten {
+  opacity: 1 !important;
+  clip-path: none !important;
+  transform: none !important;
+}
+
+.reclaim-main-v2 .motto-principle,
+.reclaim-main-v2 .motto-interlude[data-stage] .motto-principle {
+  position: static;
+  grid-column: 1;
+  grid-row: 2;
+  width: auto !important;
+  min-height: 0 !important;
+  color: var(--chapter-ink) !important;
+  font-size: clamp(1.55rem, 2.8vw, 2.8rem) !important;
+  line-height: 1;
+  transform: none !important;
+}
+
+.reclaim-main-v2 .motto-principle-sans {
+  position: static !important;
+  display: inline !important;
+  width: auto !important;
+  inset: auto !important;
+  clip-path: none !important;
+  font-weight: 610;
+  word-spacing: 0.1em;
+}
+
+.reclaim-main-v2 .motto-logo-lockup,
+.reclaim-main-v2 .motto-interlude[data-stage] .motto-logo-lockup {
+  position: static;
+  grid-column: 2;
+  grid-row: 2;
+  justify-self: end;
+  width: auto;
+  margin: 0;
+  padding: 0;
+  color: var(--chapter-ink);
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  transform: none;
+}
+
+.reclaim-main-v2 .motto-logo-lockup .reclaim-mark,
+.reclaim-main-v2 .motto-logo-lockup .reclaim-wordmark { color: var(--chapter-ink); }
+
+.reclaim-main-v2 .motto-logo-mark,
+.reclaim-main-v2 .motto-logo-wordmark,
+.reclaim-main-v2 .motto-signoff {
+  opacity: 1 !important;
+  clip-path: none !important;
+  transform: none !important;
+  transition: none !important;
+}
+
+.reclaim-main-v2 .motto-signoff,
+.reclaim-main-v2 .motto-interlude[data-stage] .motto-signoff {
+  position: static;
+  grid-column: 2;
+  grid-row: 3;
+  justify-self: end;
+  margin: -0.9rem 0 0;
+  color: var(--chapter-copy);
+  font-size: 0.88rem;
+  transform: none;
+}
+
+.reclaim-main-v2 .reclaim-paper-field-motto {
+  right: -8%;
+  bottom: -8%;
+  opacity: 0.24;
+  transform: rotate(10deg) scale(1.3);
+}
+
+/* Shared chapter stage */
+.reclaim-main-v2 .kinetic-frame > .kinetic-plane > section {
+  width: min(calc(100% - 3rem), 82rem) !important;
+  min-height: auto;
+  margin-inline: auto !important;
+  padding: clamp(6.5rem, 9vw, 9rem) 0 !important;
+  color: var(--chapter-ink);
+  background: transparent;
+}
+
+.reclaim-main-v2 .kinetic-frame > .kinetic-plane > section::before,
+.reclaim-main-v2 .kinetic-frame > .kinetic-plane > section::after { content: none; }
+
+.reclaim-main-v2 .commercial-heading,
+.reclaim-main-v2 .accounting-fit-copy,
+.reclaim-main-v2 .pricing-promise,
+.reclaim-main-v2 .security-statement {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(18rem, 0.55fr);
+  gap: 1.2rem clamp(3rem, 7vw, 7rem);
+  align-items: end;
+}
+
+.reclaim-main-v2 .commercial-heading .reclaim-eyebrow,
+.reclaim-main-v2 .accounting-fit-copy .reclaim-eyebrow,
+.reclaim-main-v2 .pricing-promise .reclaim-eyebrow,
+.reclaim-main-v2 .security-statement .reclaim-eyebrow { grid-column: 1 / -1; }
+
+.reclaim-main-v2 .commercial-heading h2,
+.reclaim-main-v2 .accounting-fit-copy h2,
+.reclaim-main-v2 .pricing-promise h2,
+.reclaim-main-v2 .security-statement h2 {
+  max-width: 11ch;
+  margin: 0;
+  color: var(--chapter-ink);
+  font-size: clamp(3.25rem, 5.7vw, 6rem);
+  font-weight: 540;
+  line-height: 0.92;
+  letter-spacing: -0.075em;
+}
+
+.reclaim-main-v2 .commercial-heading > p,
+.reclaim-main-v2 .accounting-fit-copy > p,
+.reclaim-main-v2 .pricing-promise > p,
+.reclaim-main-v2 .security-statement > p {
+  max-width: 28rem;
+  margin: 0 0 0.35rem;
+  color: var(--chapter-copy);
+  font-size: 1rem;
+  line-height: 1.62;
+}
+
+.reclaim-main-v2 .accounting-fit-copy h2 em,
+.reclaim-main-v2 .pricing-promise h2 em,
+.reclaim-main-v2 .about-reclaim h2 em {
+  color: var(--chapter-ink);
+  font-family: inherit;
+  font-style: italic;
+  font-weight: inherit;
+}
+
+/* Wake sequence uses spatial masks and transforms, never opacity-only fades. */
+.reclaim-main-v2 .wake-section .reclaim-eyebrow,
+.reclaim-main-v2 .wake-section .commercial-heading > h2,
+.reclaim-main-v2 .wake-section .commercial-heading > p,
+.reclaim-main-v2 .wake-section .accounting-fit-copy > *,
+.reclaim-main-v2 .wake-section .security-statement > *,
+.reclaim-main-v2 .wake-section .pricing-promise > *,
+.reclaim-main-v2 .wake-section .reclaim-faq-intro,
+.reclaim-main-v2 .wake-section .about-index,
+.reclaim-main-v2 .wake-section.about-reclaim > div > * {
+  opacity: 1 !important;
+  clip-path: inset(0 0 100% 0);
+  transform: translate3d(0, 1.2rem, 0) !important;
+  transition: clip-path 720ms var(--ease-out), transform 720ms var(--ease-out);
+}
+
+.reclaim-main-v2 .wake-section[data-awake='true'] .reclaim-eyebrow,
+.reclaim-main-v2 .wake-section[data-awake='true'] .commercial-heading > h2,
+.reclaim-main-v2 .wake-section[data-awake='true'] .commercial-heading > p,
+.reclaim-main-v2 .wake-section[data-awake='true'] .accounting-fit-copy > *,
+.reclaim-main-v2 .wake-section[data-awake='true'] .security-statement > *,
+.reclaim-main-v2 .wake-section[data-awake='true'] .pricing-promise > *,
+.reclaim-main-v2 .wake-section[data-awake='true'] .reclaim-faq-intro,
+.reclaim-main-v2 .wake-section[data-awake='true'] .about-index,
+.reclaim-main-v2 .wake-section.about-reclaim[data-awake='true'] > div > * {
+  clip-path: inset(0);
+  transform: translate3d(0, 0, 0) !important;
+}
+
+.reclaim-main-v2 .wake-section .reclaim-eyebrow { transition-delay: 30ms; }
+.reclaim-main-v2 .wake-section h2 { transition-delay: 100ms !important; }
+.reclaim-main-v2 .wake-section p { transition-delay: 210ms !important; }
+
+/* Ledger chapter: dark evidence surface contained by the light world. */
+.reclaim-main-v2 .chapter-dark-ledger {
+  color: #eef1ec !important;
+}
+
+.reclaim-main-v2 .ledger-atmospheric-shell { padding: 0; }
+
+.reclaim-main-v2 .ledger-contained-panel {
+  position: relative;
+  overflow: hidden;
+  padding: clamp(2rem, 4vw, 4rem);
+  border: 1px solid rgb(255 255 255 / 0.11);
+  border-radius: 1.75rem;
+  background:
+    linear-gradient(135deg, rgb(121 217 155 / 0.045), transparent 36%),
+    #101412;
+  box-shadow: 0 3rem 8rem rgb(48 46 38 / 0.18), inset 0 1px rgb(255 255 255 / 0.06);
+}
+
+.reclaim-main-v2 .ledger-contained-panel::after {
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(rgb(255 255 255 / 0.025) 1px, transparent 1px), linear-gradient(90deg, rgb(255 255 255 / 0.025) 1px, transparent 1px);
+  background-size: 4rem 4rem;
+  content: '';
+  pointer-events: none;
+}
+
+.reclaim-main-v2 .ledger-contained-panel > * { position: relative; z-index: 1; }
+.reclaim-main-v2 .chapter-dark-ledger .ledger-intro h2,
+.reclaim-main-v2 .chapter-dark-ledger .ledger-intro p,
+.reclaim-main-v2 .chapter-dark-ledger .ledger-gap-proof strong { color: #eef1ec; }
+
+.reclaim-main-v2 .chapter-dark-ledger .ledger-intro h2 {
+  max-width: 11ch;
+  font-size: clamp(3.2rem, 6vw, 6.4rem);
+  font-weight: 520;
+  line-height: 0.9;
+  letter-spacing: -0.075em;
+}
+
+.reclaim-main-v2 .chapter-dark-ledger .ledger-intro h2 em {
+  color: #eef1ec;
+  font-family: inherit;
+  font-style: italic;
+}
+
+.reclaim-main-v2 .ledger-contained-table {
+  width: min(94%, 68rem);
+  margin: 4rem 0 0 auto;
+  border-radius: 1.1rem;
+  background: rgb(5 8 7 / 0.52);
+}
+
+.reclaim-main-v2 .ledger-contained-panel .ledger-discovery {
+  margin-top: -1rem;
+  border-radius: 1rem;
+  background: #171d1a;
+}
+
+/* Evidence */
+.reclaim-main-v2 .evidence-stage {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 1rem;
+  margin-top: clamp(3.5rem, 7vw, 6rem);
+}
+
+.reclaim-main-v2 .evidence-stage > figure {
+  grid-column: 1 / 9;
+  grid-row: 1 / 4;
+  min-height: 34rem;
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid var(--chapter-rule);
+  border-radius: 1.5rem;
+  background: #ded8cb;
+  box-shadow: var(--chapter-shadow);
+  clip-path: inset(0 0 100% 0 round 1.5rem);
+  transform: translate3d(0, 2.5rem, 0) rotate(-1deg);
+  transition: clip-path 900ms var(--ease-out) 220ms, transform 1000ms var(--ease-out) 220ms;
+}
+
+.reclaim-main-v2 .evidence-stage > figure img { width: 100%; height: 100%; object-fit: cover; }
+
+.reclaim-main-v2 .evidence-question {
+  z-index: 2;
+  grid-column: 7 / 13;
+  grid-row: 1;
+  align-self: start;
+  margin-top: 3rem;
+  padding: 1.6rem;
+  border: 1px solid var(--chapter-rule);
+  border-radius: 1rem;
+  background: rgb(251 250 246 / 0.92);
+  box-shadow: 0 1.5rem 4rem rgb(59 53 42 / 0.13);
+  backdrop-filter: blur(12px);
+  transform: translate3d(2rem, 1rem, 0) rotate(1deg);
+  clip-path: inset(0 0 100% 0 round 1rem);
+  transition: clip-path 720ms var(--ease-out) 360ms, transform 820ms var(--ease-out) 360ms;
+}
+
+.reclaim-main-v2 .evidence-question h3 { color: var(--chapter-ink); }
+.reclaim-main-v2 .evidence-question p { color: var(--chapter-copy); }
+
+.reclaim-main-v2 .evidence-fragments {
+  z-index: 3;
+  grid-column: 8 / 13;
+  grid-row: 2 / 4;
+  display: grid;
+  gap: 0.75rem;
+  align-self: end;
+}
+
+.reclaim-main-v2 .evidence-fragments article {
+  border: 1px solid var(--chapter-rule);
+  border-radius: 0.85rem;
+  color: var(--chapter-ink);
+  background: var(--chapter-paper);
+  box-shadow: 0 1rem 2.5rem rgb(65 58 46 / 0.1);
+  opacity: 1 !important;
+  clip-path: inset(0 0 100% 0 round 0.85rem);
+  transform: translate3d(1.5rem, 1rem, 0) rotate(1.5deg);
+  transition: clip-path 620ms var(--ease-out), transform 700ms var(--ease-out);
+}
+
+.reclaim-main-v2 .evidence-fragments article:nth-child(2) { transform: translate3d(1.5rem, 1rem, 0) rotate(-1deg); }
+.reclaim-main-v2 .evidence-fragments article:nth-child(3) { transform: translate3d(1.5rem, 1rem, 0) rotate(0.6deg); }
+
+.reclaim-main-v2 .commercial-value-grid {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  margin-top: 3rem;
+  border-top: 1px solid var(--chapter-rule);
+}
+
+.reclaim-main-v2 .evidence-stage {
+  grid-template-rows: 5rem 10rem auto auto;
+}
+
+.reclaim-main-v2 .evidence-stage .commercial-value-grid {
+  position: relative;
+  z-index: 4;
+  grid-column: 1 / -1;
+  grid-row: 4;
+  align-items: stretch;
+  gap: 0;
+  margin: 3rem 0 0;
+  clip-path: none;
+}
+
+.reclaim-main-v2 .commercial-value-grid article {
+  min-height: 18rem !important;
+  padding: 1.5rem 2rem 1.5rem 0;
+  border-right: 1px solid var(--chapter-rule);
+  background: transparent;
+}
+
+.reclaim-main-v2 .evidence-stage .commercial-value-grid article:nth-child(n) {
+  grid-column: auto;
+  min-height: 18rem !important;
+}
+
+.reclaim-main-v2 .reclaim-faq-answer {
+  display: grid;
+  overflow: hidden;
+  grid-template-rows: 0fr;
+  clip-path: inset(0 0 100% 0);
+  transform: translate3d(0, -0.35rem, 0);
+  transition: grid-template-rows 220ms var(--ease-out), clip-path 220ms var(--ease-out), transform 220ms var(--ease-out);
+}
+
+.reclaim-main-v2 .reclaim-faq-answer > div { min-height: 0; overflow: hidden; }
+
+.reclaim-main-v2 .reclaim-faq-answer[data-open='true'] {
+  grid-template-rows: 1fr;
+  clip-path: inset(0);
+  transform: translate3d(0, 0, 0);
+}
+
+.reclaim-main-v2 .commercial-value-grid h3 { color: var(--chapter-ink); }
+.reclaim-main-v2 .commercial-value-grid p { color: var(--chapter-copy); }
+
+.reclaim-main-v2 .commercial-value[data-awake='true'] .evidence-stage > figure,
+.reclaim-main-v2 .commercial-value[data-awake='true'] .evidence-question,
+.reclaim-main-v2 .commercial-value[data-awake='true'] .evidence-fragments article {
+  clip-path: inset(0 round 0.85rem);
+  transform: translate3d(0, 0, 0) rotate(0);
+}
+
+.reclaim-main-v2 .commercial-value[data-awake='true'] .evidence-fragments article:nth-child(1) { transition-delay: 460ms; }
+.reclaim-main-v2 .commercial-value[data-awake='true'] .evidence-fragments article:nth-child(2) { transition-delay: 520ms; }
+.reclaim-main-v2 .commercial-value[data-awake='true'] .evidence-fragments article:nth-child(3) { transition-delay: 580ms; }
+
+/* Accounting workflow */
+.reclaim-main-v2 .accounting-bento-chapter { color: var(--chapter-ink); }
+.reclaim-main-v2 .accounting-bento-chapter .accounting-fit-copy .reclaim-eyebrow { color: var(--chapter-ink); text-shadow: none; }
+.reclaim-main-v2 .accounting-bento { min-height: 31rem; margin-top: 4.5rem; }
+
+.reclaim-main-v2 .accounting-sources span {
+  color: var(--chapter-copy) !important;
+  border-color: var(--chapter-rule) !important;
+}
+
+.reclaim-main-v2 .accounting-records,
+.reclaim-main-v2 .accounting-reclaim-panel {
+  border: 1px solid rgb(255 255 255 / 0.12);
+  background: #111513;
+  box-shadow: 0 2.5rem 6rem rgb(59 53 42 / 0.18), inset 0 1px rgb(255 255 255 / 0.06);
+  opacity: 1 !important;
+  clip-path: inset(0 0 100% 0 round 1.35rem);
+  transform: translate3d(0, 2rem, 0) rotate(-0.8deg);
+  transition: clip-path 820ms var(--ease-out) 320ms, transform 900ms var(--ease-out) 320ms;
+}
+
+.reclaim-main-v2 .accounting-reclaim-panel { transform: translate3d(0, 2rem, 0) rotate(0.8deg); transition-delay: 480ms; }
+
+.reclaim-main-v2 .accounting-fit[data-awake='true'] .accounting-records,
+.reclaim-main-v2 .accounting-fit[data-awake='true'] .accounting-reclaim-panel {
+  clip-path: inset(0 round 1.35rem);
+  transform: translate3d(0, 0, 0) rotate(0);
+}
+
+/* Results */
+.reclaim-main-v2 .portfolio-proof {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  min-height: 75dvh !important;
+  align-content: center;
+  gap: 2rem 1rem;
+  color: var(--chapter-ink);
+}
+
+.reclaim-main-v2 .portfolio-proof::after {
+  display: block;
+  position: absolute;
+  z-index: -1;
+  inset: 18% 3% 12% 42%;
+  border: 1px solid var(--chapter-rule);
+  border-radius: 1.4rem;
+  background:
+    linear-gradient(150deg, rgb(255 255 255 / 0.72), transparent 48%),
+    repeating-linear-gradient(180deg, transparent 0 2.8rem, rgb(31 38 32 / 0.08) 2.8rem calc(2.8rem + 1px)),
+    #e9e5db;
+  box-shadow: var(--chapter-shadow);
+  content: '';
+  transform: rotate(2.2deg);
+}
+
+.reclaim-main-v2 .portfolio-proof-meta { grid-column: 1 / 5; color: var(--chapter-copy); }
+.reclaim-main-v2 .portfolio-proof-result { grid-column: 1 / 11; }
+.reclaim-main-v2 .portfolio-proof-result strong {
+  color: var(--chapter-green);
+  font-size: clamp(6rem, 14vw, 14rem);
+  text-shadow: none;
+}
+.reclaim-main-v2 .portfolio-proof-result h2 { color: var(--chapter-ink); }
+.reclaim-main-v2 .portfolio-proof-count { grid-column: 10 / 13; color: var(--chapter-ink); border-color: var(--chapter-rule); }
+.reclaim-main-v2 .portfolio-proof-count strong { color: var(--chapter-ink); text-shadow: none; }
+.reclaim-main-v2 .portfolio-proof-count span { color: var(--chapter-copy); }
+.reclaim-main-v2 .portfolio-proof > small { color: var(--chapter-muted); }
+
+/* Recovery */
+.reclaim-main-v2 .recovery-case-study-grid { margin-top: 4.5rem; }
+.reclaim-main-v2 .recovery-proof-stat { color: var(--chapter-ink); border-color: var(--chapter-rule); background: var(--chapter-paper); }
+.reclaim-main-v2 .recovery-proof-stat > strong { color: var(--chapter-green); }
+.reclaim-main-v2 .recovery-case {
+  color: #eef1ec;
+  border-color: rgb(255 255 255 / 0.12);
+  background: #111513;
+  box-shadow: 0 2.6rem 7rem rgb(54 49 39 / 0.18);
+}
+
+/* Security */
+.reclaim-main-v2 .security-boundary { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 4rem 1rem; }
+.reclaim-main-v2 .security-statement { grid-column: 1 / -1; }
+.reclaim-main-v2 .security-controls { grid-column: 1 / 8; border-color: var(--chapter-rule); }
+.reclaim-main-v2 .security-controls article { color: var(--chapter-ink); border-color: var(--chapter-rule); opacity: 1 !important; }
+.reclaim-main-v2 .security-controls article p { color: var(--chapter-copy); }
+.reclaim-main-v2 .security-paper-stack {
+  grid-column: 9 / 13;
+  align-self: center;
+  color: var(--chapter-ink);
+  opacity: 1 !important;
+}
+.reclaim-main-v2 .security-paper-stack span {
+  border-color: var(--chapter-rule);
+  background: var(--chapter-paper);
+  box-shadow: 0 1.2rem 3rem rgb(63 56 43 / 0.1);
+}
+
+/* Pricing: compact outcome story on one light chapter with one contained dark ledger. */
+.reclaim-main-v2 .pricing-payoff { display: block; color: var(--chapter-ink); }
+.reclaim-main-v2 .pricing-ledger {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  grid-template-rows: repeat(5, auto);
+  gap: 0.75rem;
+  min-height: 25rem;
+  margin-top: 4rem;
+  padding: 1.4rem;
+  border: 1px solid rgb(255 255 255 / 0.12);
+  border-radius: 1.6rem;
+  color: #eef1ec;
+  background: #111513;
+  box-shadow: 0 2.7rem 7rem rgb(56 50 40 / 0.18), inset 0 1px rgb(255 255 255 / 0.06);
+  opacity: 1 !important;
+  transform: translate3d(0, 2rem, 0);
+  clip-path: inset(0 0 100% 0 round 1.6rem);
+  transition: transform 900ms var(--ease-out) 260ms, clip-path 900ms var(--ease-out) 260ms;
+}
+
+.reclaim-main-v2 .pricing-ledger > header,
+.reclaim-main-v2 .pricing-ledger > div,
+.reclaim-main-v2 .pricing-ledger > footer {
+  border-color: rgb(255 255 255 / 0.12);
+  background: #171c19;
+}
+
+.reclaim-main-v2 .pricing-ledger > header { grid-column: 7 / 13; }
+.reclaim-main-v2 .pricing-ledger > div:nth-of-type(1) { grid-column: 1 / 6; }
+.reclaim-main-v2 .pricing-ledger > div:nth-of-type(2) { grid-column: 3 / 8; }
+.reclaim-main-v2 .pricing-ledger > div:nth-of-type(3) { grid-column: 5 / 10; }
+.reclaim-main-v2 .pricing-ledger > footer { grid-column: 8 / 13; background: #152319; }
+.reclaim-main-v2 .outcome-pricing[data-awake='true'] .pricing-ledger { transform: translate3d(0, 0, 0); clip-path: inset(0 round 1.6rem); }
+
+/* About */
+.reclaim-main-v2 .about-reclaim {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 2rem 1rem;
+  min-height: 80dvh !important;
+  align-content: center;
+}
+
+.reclaim-main-v2 .about-reclaim > div { grid-column: 2 / 12; }
+.reclaim-main-v2 .about-reclaim h2 {
+  max-width: 13ch;
+  color: var(--chapter-ink);
+  font-size: clamp(4rem, 7.7vw, 8rem);
+  font-weight: 530;
+  line-height: 0.88;
+  letter-spacing: -0.08em;
+}
+.reclaim-main-v2 .about-reclaim p { color: var(--chapter-copy); }
+.reclaim-main-v2 .about-reclaim > aside { color: var(--chapter-copy); border-color: var(--chapter-rule); }
+.reclaim-main-v2 .about-reclaim > aside strong { color: var(--chapter-ink); }
+
+/* Motion reset: retire legacy opacity fades and long reveal delays. */
+.reclaim-main-v2 .wake-section .evidence-stage > figure,
+.reclaim-main-v2 .wake-section .evidence-question,
+.reclaim-main-v2 .wake-section .evidence-fragments > article,
+.reclaim-main-v2 .wake-section .portfolio-proof-meta,
+.reclaim-main-v2 .wake-section .portfolio-proof-result,
+.reclaim-main-v2 .wake-section .portfolio-proof-count,
+.reclaim-main-v2 .wake-section.portfolio-proof > small,
+.reclaim-main-v2 .wake-section .reclaim-faq-intro,
+.reclaim-main-v2 .wake-section .reclaim-faq-list,
+.reclaim-main-v2 .wake-section .recovery-proof-stat,
+.reclaim-main-v2 .wake-section .security-paper-stack,
+.reclaim-main-v2 .wake-section .pricing-ledger > header,
+.reclaim-main-v2 .wake-section .about-index,
+.reclaim-main-v2 .wake-section.about-reclaim > aside {
+  opacity: 1 !important;
+  clip-path: inset(0 0 100% 0);
+  transform: translate3d(0, 0.8rem, 0);
+  transition: clip-path 440ms var(--ease-in-out), transform 440ms var(--ease-out);
+  transition-delay: 0ms;
+}
+
+.reclaim-main-v2 .wake-section[data-awake='true'] .evidence-stage > figure,
+.reclaim-main-v2 .wake-section[data-awake='true'] .evidence-question,
+.reclaim-main-v2 .wake-section[data-awake='true'] .evidence-fragments > article,
+.reclaim-main-v2 .wake-section[data-awake='true'] .portfolio-proof-meta,
+.reclaim-main-v2 .wake-section[data-awake='true'] .portfolio-proof-result,
+.reclaim-main-v2 .wake-section[data-awake='true'] .portfolio-proof-count,
+.reclaim-main-v2 .wake-section.portfolio-proof[data-awake='true'] > small,
+.reclaim-main-v2 .wake-section[data-awake='true'] .reclaim-faq-intro,
+.reclaim-main-v2 .wake-section[data-awake='true'] .reclaim-faq-list,
+.reclaim-main-v2 .wake-section[data-awake='true'] .recovery-proof-stat,
+.reclaim-main-v2 .wake-section[data-awake='true'] .security-paper-stack,
+.reclaim-main-v2 .wake-section[data-awake='true'] .pricing-ledger > header,
+.reclaim-main-v2 .wake-section.about-reclaim[data-awake='true'] .about-index,
+.reclaim-main-v2 .wake-section.about-reclaim[data-awake='true'] > aside {
+  clip-path: inset(0);
+  transform: translate3d(0, 0, 0);
+}
+
+.reclaim-main-v2 .commercial-value-grid article > *,
+.reclaim-main-v2 .accounting-sources span,
+.reclaim-main-v2 .accounting-fit-flow > article,
+.reclaim-main-v2 .security-controls article,
+.reclaim-main-v2 .recovery-case,
+.reclaim-main-v2 .recovery-case > header > *,
+.reclaim-main-v2 .recovery-evidence > *,
+.reclaim-main-v2 .recovery-request > *,
+.reclaim-main-v2 .recovery-lifecycle li,
+.reclaim-main-v2 .recovery-case > footer,
+.reclaim-main-v2 .pricing-ledger,
+.reclaim-main-v2 .pricing-ledger > div,
+.reclaim-main-v2 .pricing-ledger > footer {
+  opacity: 1 !important;
+}
+
+.reclaim-main-v2 .commercial-value-grid article > *,
+.reclaim-main-v2 .accounting-sources span,
+.reclaim-main-v2 .accounting-fit-flow > article,
+.reclaim-main-v2 .security-controls article,
+.reclaim-main-v2 .recovery-case > header > *,
+.reclaim-main-v2 .recovery-evidence > *,
+.reclaim-main-v2 .recovery-request > *,
+.reclaim-main-v2 .recovery-lifecycle li,
+.reclaim-main-v2 .recovery-case > footer,
+.reclaim-main-v2 .pricing-ledger > div,
+.reclaim-main-v2 .pricing-ledger > footer {
+  clip-path: inset(0 0 100% 0);
+  transform: translate3d(0, 0.65rem, 0);
+  transition: clip-path 400ms var(--ease-in-out), transform 400ms var(--ease-out), border-color 200ms ease;
+}
+
+.reclaim-main-v2 .commercial-value[data-awake='true'] .commercial-value-grid article > *,
+.reclaim-main-v2 .accounting-fit[data-awake='true'] .accounting-sources span,
+.reclaim-main-v2 .accounting-fit[data-awake='true'] .accounting-fit-flow > article,
+.reclaim-main-v2 .security-boundary[data-awake='true'] .security-controls article,
+.reclaim-main-v2 .recovery-proof[data-awake='true'] .recovery-case > header > *,
+.reclaim-main-v2 .recovery-proof[data-awake='true'] .recovery-evidence > *,
+.reclaim-main-v2 .recovery-proof[data-awake='true'] .recovery-request > *,
+.reclaim-main-v2 .recovery-proof[data-awake='true'] .recovery-lifecycle li,
+.reclaim-main-v2 .recovery-proof[data-awake='true'] .recovery-case > footer,
+.reclaim-main-v2 .outcome-pricing[data-awake='true'] .pricing-ledger > div,
+.reclaim-main-v2 .outcome-pricing[data-awake='true'] .pricing-ledger > footer {
+  clip-path: inset(0);
+  transform: translate3d(0, 0, 0);
+}
+
+.reclaim-main-v2 .recovery-case,
+.reclaim-main-v2 .pricing-ledger {
+  clip-path: inset(0 0 12% 0 round 1.2rem);
+  transform: translate3d(0, 1rem, 0);
+  transition: clip-path 500ms var(--ease-in-out), transform 500ms var(--ease-out), box-shadow 220ms ease;
+  transition-delay: 0ms;
+}
+
+.reclaim-main-v2 .recovery-proof[data-awake='true'] .recovery-case,
+.reclaim-main-v2 .outcome-pricing[data-awake='true'] .pricing-ledger {
+  clip-path: inset(0 round 1.2rem);
+  transform: translate3d(0, 0, 0);
+  transition-delay: 100ms;
+}
+
+.reclaim-main-v2 .commercial-value[data-awake='true'] .commercial-value-grid article:nth-child(1) > *,
+.reclaim-main-v2 .accounting-fit[data-awake='true'] .accounting-sources span:nth-child(1),
+.reclaim-main-v2 .security-boundary[data-awake='true'] .security-controls article:nth-child(1) { transition-delay: 100ms; }
+.reclaim-main-v2 .commercial-value[data-awake='true'] .commercial-value-grid article:nth-child(2) > *,
+.reclaim-main-v2 .accounting-fit[data-awake='true'] .accounting-sources span:nth-child(2),
+.reclaim-main-v2 .security-boundary[data-awake='true'] .security-controls article:nth-child(2) { transition-delay: 150ms; }
+.reclaim-main-v2 .commercial-value[data-awake='true'] .commercial-value-grid article:nth-child(3) > *,
+.reclaim-main-v2 .accounting-fit[data-awake='true'] .accounting-sources span:nth-child(3),
+.reclaim-main-v2 .security-boundary[data-awake='true'] .security-controls article:nth-child(3) { transition-delay: 200ms; }
+.reclaim-main-v2 .accounting-fit[data-awake='true'] .accounting-fit-flow > i { transition-delay: 200ms; }
+.reclaim-main-v2 .accounting-fit[data-awake='true'] .accounting-fit-flow > article { transition-delay: 240ms; }
+
+.reclaim-main-v2 .recovery-proof[data-awake='true'] .recovery-case > header > * { transition-delay: 130ms; }
+.reclaim-main-v2 .recovery-proof[data-awake='true'] .recovery-evidence > * { transition-delay: 180ms; }
+.reclaim-main-v2 .recovery-proof[data-awake='true'] .recovery-request > * { transition-delay: 230ms; }
+.reclaim-main-v2 .recovery-proof[data-awake='true'] .recovery-lifecycle li:nth-child(1) { transition-delay: 250ms; }
+.reclaim-main-v2 .recovery-proof[data-awake='true'] .recovery-lifecycle li:nth-child(2) { transition-delay: 280ms; }
+.reclaim-main-v2 .recovery-proof[data-awake='true'] .recovery-lifecycle li:nth-child(3) { transition-delay: 310ms; }
+.reclaim-main-v2 .recovery-proof[data-awake='true'] .recovery-lifecycle li:nth-child(4) { transition-delay: 340ms; }
+.reclaim-main-v2 .recovery-proof[data-awake='true'] .recovery-case > footer { transition-delay: 360ms; }
+
+.reclaim-main-v2 .outcome-pricing[data-awake='true'] .pricing-ledger > div:nth-of-type(1) { transition-delay: 110ms; }
+.reclaim-main-v2 .outcome-pricing[data-awake='true'] .pricing-ledger > div:nth-of-type(2) { transition-delay: 150ms; }
+.reclaim-main-v2 .outcome-pricing[data-awake='true'] .pricing-ledger > div:nth-of-type(3) { transition-delay: 190ms; }
+.reclaim-main-v2 .outcome-pricing[data-awake='true'] .pricing-ledger > footer { transition-delay: 230ms; }
+
+/* FAQ */
+.reclaim-main-v2 .reclaim-faq {
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) minmax(28rem, 1.2fr);
+  gap: clamp(3rem, 8vw, 8rem);
+  color: var(--chapter-ink);
+}
+.reclaim-main-v2 .reclaim-faq-intro h2 { color: var(--chapter-ink); }
+.reclaim-main-v2 .reclaim-faq-intro p { color: var(--chapter-copy); }
+.reclaim-main-v2 .reclaim-faq-intro { grid-column: 1; }
+.reclaim-main-v2 .reclaim-faq-list { grid-column: 2; }
+.reclaim-main-v2 .reclaim-faq-list article { border-color: var(--chapter-rule); }
+.reclaim-main-v2 .reclaim-faq-list button { color: var(--chapter-ink); }
+.reclaim-main-v2 .reclaim-faq-answer p { color: var(--chapter-copy); }
+
+@media (hover: hover) and (pointer: fine) {
+  .reclaim-main-v2 .evidence-fragments article:hover,
+  .reclaim-main-v2 .security-paper-stack span:hover { transform: translate3d(0, -3px, 0) rotate(-0.3deg); }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .reclaim-main-v2 .reclaim-hero-heading .reclaim-eyebrow {
+    animation: reclaim-hero-mask-wake 360ms var(--ease-out) both;
+  }
+  .reclaim-main-v2 .reclaim-hero-heading h1 {
+    animation: reclaim-hero-mask-wake 620ms var(--ease-out) 60ms both;
+  }
+  .reclaim-main-v2 .reclaim-hero-pitch > p {
+    animation: reclaim-hero-mask-wake 500ms var(--ease-out) 140ms both;
+  }
+  .reclaim-main-v2 .reclaim-hero-pitch .reclaim-actions {
+    animation: reclaim-hero-mask-wake 420ms var(--ease-out) 220ms both;
+  }
+  .reclaim-main-v2 .hero-audit-kinetic {
+    animation: reclaim-audit-wake 720ms var(--ease-out) 300ms both;
+  }
+  .reclaim-main-v2 .hero-audit-row:first-of-type { animation: reclaim-row-wake 420ms var(--ease-out) 440ms both; }
+  .reclaim-main-v2 .hero-audit-row:nth-of-type(2) { animation: reclaim-row-wake 420ms var(--ease-out) 500ms both; }
+  .reclaim-main-v2 .hero-audit-matchline { animation: reclaim-line-mask 520ms var(--ease-in-out) 620ms both; }
+  .reclaim-main-v2 .hero-audit-finding { animation: reclaim-candidate-wake 480ms var(--ease-out) 840ms both; }
+}
+
+@keyframes reclaim-hero-mask-wake {
+  from { clip-path: inset(0 0 100% 0); transform: translate3d(0, 1rem, 0); }
+  to { clip-path: inset(0); transform: translate3d(0, 0, 0); }
+}
+
+@keyframes reclaim-audit-wake {
+  from { clip-path: inset(0 0 100% 0 round 1.4rem); transform: translate3d(0, 2rem, 0) rotate(0.8deg); }
+  to { clip-path: inset(0 round 1.4rem); transform: translate3d(0, 0, 0) rotate(0); }
+}
+
+@keyframes reclaim-row-wake {
+  from { clip-path: inset(0 100% 0 0); transform: translate3d(-0.8rem, 0, 0); }
+  to { clip-path: inset(0); transform: translate3d(0, 0, 0); }
+}
+
+@keyframes reclaim-line-mask {
+  from { clip-path: inset(0 100% 0 0); }
+  to { clip-path: inset(0); }
+}
+
+@keyframes reclaim-candidate-wake {
+  from { clip-path: inset(0 0 100% 0); transform: translate3d(0, 0.8rem, 0); }
+  to { clip-path: inset(0); transform: translate3d(0, 0, 0); }
+}
+
+/* View-linked depth is limited to inner physical layers, never whole chapters. */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .reclaim-main-v2 .evidence-stage > figure img,
+    .reclaim-main-v2 .portfolio-proof::after,
+    .reclaim-main-v2 .security-paper-stack span,
+    .reclaim-main-v2 .pricing-ledger > div {
+      animation-name: reclaim-layer-depth;
+      animation-timing-function: linear;
+      animation-fill-mode: both;
+      animation-timeline: view();
+      animation-range: entry 0% exit 100%;
+    }
+
+    .reclaim-main-v2 .security-paper-stack span:nth-child(2),
+    .reclaim-main-v2 .pricing-ledger > div:nth-of-type(2) { animation-name: reclaim-layer-depth-reverse; }
+  }
+}
+
+@keyframes reclaim-layer-depth {
+  from { transform: translate3d(0, 7px, 0) rotate(-0.15deg); }
+  to { transform: translate3d(0, -11px, 0) rotate(0.18deg); }
+}
+
+@keyframes reclaim-layer-depth-reverse {
+  from { transform: translate3d(0, 10px, 0) rotate(0.2deg); }
+  to { transform: translate3d(0, -15px, 0) rotate(-0.2deg); }
+}
+
+@media (max-width: 1023px) {
+  .reclaim-main-v2 .reclaim-hero-copy-new,
+  .reclaim-main-v2 .commercial-heading,
+  .reclaim-main-v2 .accounting-fit-copy,
+  .reclaim-main-v2 .pricing-promise,
+  .reclaim-main-v2 .security-statement { grid-template-columns: 1fr; }
+
+  .reclaim-main-v2 .reclaim-hero-pitch,
+  .reclaim-main-v2 .commercial-heading > p,
+  .reclaim-main-v2 .accounting-fit-copy > p,
+  .reclaim-main-v2 .pricing-promise > p,
+  .reclaim-main-v2 .security-statement > p { max-width: 34rem; }
+
+  .reclaim-main-v2 .reclaim-paper-field-hero { top: 9%; right: -13%; opacity: 0.34; }
+  .reclaim-main-v2 .motto-visual {
+    display: flex !important;
+    flex-direction: column;
+    grid-template-columns: none !important;
+  }
+  .reclaim-main-v2 .motto-handwritten { margin-block: auto clamp(2.5rem, 7vw, 5rem); }
+  .reclaim-main-v2 .motto-principle,
+  .reclaim-main-v2 .motto-logo-lockup,
+  .reclaim-main-v2 .motto-signoff { grid-column: 1; align-self: flex-start; justify-self: start; }
+  .reclaim-main-v2 .motto-logo-lockup { grid-row: 3; }
+  .reclaim-main-v2 .motto-signoff { grid-row: 4; margin-top: -0.5rem; }
+
+  .reclaim-main-v2 .evidence-stage > figure { grid-column: 1 / 10; }
+  .reclaim-main-v2 .evidence-question { grid-column: 6 / 13; }
+  .reclaim-main-v2 .evidence-fragments { grid-column: 7 / 13; }
+  .reclaim-main-v2 .security-controls { grid-column: 1 / 9; }
+  .reclaim-main-v2 .security-paper-stack { grid-column: 9 / 13; }
+  .reclaim-main-v2 .reclaim-faq { grid-template-columns: 1fr; }
+  .reclaim-main-v2 .reclaim-faq-intro,
+  .reclaim-main-v2 .reclaim-faq-list { grid-column: 1; }
+  .reclaim-main-v2 .reclaim-faq-list { margin-top: 1rem; }
+}
+
+@media (max-width: 767px) {
+  .reclaim-main-v2 .reclaim-hero { min-height: auto; padding: calc(6.8rem + env(safe-area-inset-top)) 1rem 3.5rem; }
+  .reclaim-main-v2 .reclaim-hero-inner { gap: 2.5rem; }
+  .reclaim-main-v2 .reclaim-hero h1 { max-width: 9ch; font-size: clamp(3.65rem, 17vw, 5.5rem); line-height: 0.88; }
+  .reclaim-main-v2 .reclaim-paper-field-hero { top: 4rem; right: -10rem; opacity: 0.18; }
+  .reclaim-main-v2 .hero-audit { border-radius: 1.1rem; }
+  .reclaim-main-v2 .reclaim-hero-assurance { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+  .reclaim-main-v2 .motto-interlude,
+  .reclaim-main-v2 .motto-stage,
+  .reclaim-main-v2 .motto-visual { min-height: 76dvh !important; }
+  .reclaim-main-v2 .motto-visual { width: 100% !important; padding-block: 5rem; gap: 1.2rem; }
+  .reclaim-main-v2 .motto-handwritten { justify-self: start; width: 100%; max-width: 100%; font-size: clamp(2.35rem, 11vw, 4rem); line-height: 1.08; }
+  .reclaim-main-v2 .reclaim-paper-field-motto { right: -10rem; opacity: 0.13; }
+
+  .reclaim-main-v2 .kinetic-frame > .kinetic-plane > section { width: min(calc(100% - 2rem), 82rem) !important; padding-block: 5.5rem !important; }
+  .reclaim-main-v2 .commercial-heading h2,
+  .reclaim-main-v2 .accounting-fit-copy h2,
+  .reclaim-main-v2 .pricing-promise h2,
+  .reclaim-main-v2 .security-statement h2 { max-width: 10.5ch; font-size: clamp(3rem, 13.5vw, 4.6rem); line-height: 0.92; }
+
+  .reclaim-main-v2 .ledger-contained-panel { padding: 1.25rem; border-radius: 1.25rem; }
+  .reclaim-main-v2 .chapter-dark-ledger .ledger-intro h2 { font-size: clamp(3rem, 13vw, 4.5rem); }
+  .reclaim-main-v2 .ledger-contained-table { width: 100%; margin-top: 3rem; }
+
+  .reclaim-main-v2 .evidence-stage { display: flex; flex-direction: column; }
+  .reclaim-main-v2 .evidence-stage > figure { width: 100%; min-height: 25rem; }
+  .reclaim-main-v2 .evidence-question { width: 92%; margin: -3.5rem 0 0 auto; }
+  .reclaim-main-v2 .evidence-fragments { width: 88%; margin: 0 0 0 auto; }
+  .reclaim-main-v2 .commercial-value-grid { grid-template-columns: 1fr; }
+  .reclaim-main-v2 .commercial-value-grid article { grid-column: auto !important; grid-area: auto !important; min-height: auto !important; padding: 2rem 0; border-right: 0; border-bottom: 1px solid var(--chapter-rule); }
+
+  .reclaim-main-v2 .accounting-bento { min-height: auto; }
+  .reclaim-main-v2 .portfolio-proof { display: flex; min-height: auto !important; flex-direction: column; }
+  .reclaim-main-v2 .portfolio-proof::after { inset: 27% -8% 12% 35%; }
+  .reclaim-main-v2 .portfolio-proof-result strong { font-size: clamp(5rem, 25vw, 8rem); }
+
+  .reclaim-main-v2 .security-boundary { display: block; }
+  .reclaim-main-v2 .security-controls { margin-top: 3.5rem; }
+  .reclaim-main-v2 .security-paper-stack { width: 70%; margin: 3rem 0 0 auto; }
+
+  .reclaim-main-v2 .pricing-ledger { display: flex; min-height: auto; flex-direction: column; padding: 0.85rem; }
+  .reclaim-main-v2 .pricing-ledger > * { width: 100% !important; }
+  .reclaim-main-v2 .pricing-ledger > footer { width: 82% !important; align-self: end; }
+
+  .reclaim-main-v2 .about-reclaim { display: block; min-height: auto !important; }
+  .reclaim-main-v2 .about-reclaim h2 { max-width: 10ch; font-size: clamp(3.4rem, 14vw, 5rem); line-height: 0.9; }
+  .reclaim-main-v2 .about-reclaim > aside { margin-top: 3rem; }
+
+  .reclaim-main-v2 .reclaim-faq { display: block; }
+  .reclaim-main-v2 .reclaim-faq-intro,
+  .reclaim-main-v2 .reclaim-faq-list { grid-column: auto; }
+  .reclaim-main-v2 .reclaim-faq-list { margin-top: 3.5rem; }
+}
+
+/* The navigation remains one light object throughout the editorial page. Its
+   condensed state is slightly wider, with a roomier CTA, so the morph feels
+   deliberate rather than compressed when the page is in motion. */
+@media (min-width: 768px) {
+  .reclaim-commercial-page .reclaim-product-nav[data-condensed='true'],
+  .reclaim-commercial-page .reclaim-product-nav[data-menu-open='true'] {
+    width: min(calc(100% - 2rem), 62rem);
+    grid-template-columns: minmax(8.6rem, 1fr) auto minmax(13rem, 1fr);
+    height: 3.9rem;
+    padding-inline: 0.72rem 0.54rem;
+  }
+
+  .reclaim-commercial-page .reclaim-product-nav[data-condensed='true'] .reclaim-nav-action,
+  .reclaim-commercial-page .reclaim-product-nav[data-menu-open='true'] .reclaim-nav-action,
+  .reclaim-commercial-page .reclaim-product-nav[data-condensed='true'] .reclaim-nav-action .magnetic-control-surface,
+  .reclaim-commercial-page .reclaim-product-nav[data-menu-open='true'] .reclaim-nav-action .magnetic-control-surface {
+    min-height: 2.82rem;
+  }
+
+  .reclaim-commercial-page .reclaim-product-nav[data-condensed='true'] .reclaim-nav-action .magnetic-control-surface,
+  .reclaim-commercial-page .reclaim-product-nav[data-menu-open='true'] .reclaim-nav-action .magnetic-control-surface {
+    padding-inline: 1.05rem 0.48rem;
+  }
+}
+
+@media (max-width: 390px) {
+  .reclaim-main-v2 .reclaim-hero h1 { font-size: clamp(3.15rem, 16vw, 4.4rem); }
+  .reclaim-main-v2 .motto-handwritten { font-size: clamp(2.05rem, 10.4vw, 3rem); }
+  .reclaim-main-v2 .motto-principle,
+  .reclaim-main-v2 .motto-interlude[data-stage] .motto-principle {
+    font-size: clamp(1.12rem, 5.9vw, 1.45rem) !important;
+    white-space: nowrap;
+  }
+  .reclaim-main-v2 .commercial-heading h2,
+  .reclaim-main-v2 .accounting-fit-copy h2,
+  .reclaim-main-v2 .pricing-promise h2,
+  .reclaim-main-v2 .security-statement h2 { font-size: clamp(2.65rem, 13vw, 3.8rem); }
+}
+
+@media (max-width: 480px) {
+  .reclaim-main-v2 .chapter-dark-ledger .ledger-row {
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    gap: 0.35rem 0.75rem;
+  }
+
+  .reclaim-main-v2 .chapter-dark-ledger .ledger-row > :first-child {
+    grid-column: 1 / -1;
+    grid-row: 1;
+  }
+
+  .reclaim-main-v2 .chapter-dark-ledger .ledger-row > :nth-child(2) {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .reclaim-main-v2 .chapter-dark-ledger .ledger-row time {
+    grid-column: 1;
+    grid-row: 3;
+  }
+
+  .reclaim-main-v2 .chapter-dark-ledger .ledger-row > :last-child {
+    grid-column: 2;
+    grid-row: 2 / 4;
+    align-self: center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reclaim-main-v2 .kinetic-plane { transform: none !important; }
+  .reclaim-main-v2 .motto-letter,
+  .reclaim-main-v2 .wake-section *,
+  .reclaim-main-v2 .paper-sheet,
+  .reclaim-main-v2 .paper-clip,
+  .reclaim-main-v2 .paper-tab { animation: none !important; transition-duration: 0.2s !important; }
+  .reclaim-main-v2 .wake-section *,
+  .reclaim-main-v2 .motto-letter { transform: none !important; }
+  .reclaim-main-v2 .reclaim-faq-answer { transition: none !important; }
+}
+
+/* Relationship chapter: the copy belongs to the page, while only the data and
+   its proof become objects. This keeps the story editorial and the evidence
+   tactile without wrapping the entire chapter in one large dark card. */
+.reclaim-main-v2 .chapter-dark-ledger {
+  width: min(calc(100% - 4rem), 82rem) !important;
+  max-width: 82rem !important;
+  padding: clamp(7rem, 11vw, 11rem) 0 clamp(7.5rem, 11vw, 11rem) !important;
+  color: var(--chapter-ink) !important;
+}
+
+.reclaim-main-v2 .chapter-dark-ledger::after,
+.reclaim-main-v2 .ledger-contained-panel::after {
+  content: none;
+}
+
+.reclaim-main-v2 .ledger-contained-panel {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  grid-template-rows: auto auto;
+  gap: clamp(1.4rem, 2.8vw, 2.75rem) clamp(0.9rem, 1.7vw, 1.6rem);
+  padding: 0;
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.reclaim-main-v2 .chapter-dark-ledger .ledger-intro {
+  grid-column: 1 / 9;
+  grid-row: 1;
+  display: block;
+  margin: 0;
+}
+
+.reclaim-main-v2 .chapter-dark-ledger .ledger-intro > div:first-child { max-width: 43rem; }
+
+.reclaim-main-v2 .ledger-kicker {
+  display: block;
+  margin-bottom: 1.2rem;
+  color: rgb(23 26 23 / 0.58);
+  font-size: 0.72rem;
+  font-weight: 720;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.reclaim-main-v2 .chapter-dark-ledger .ledger-intro h2 {
+  max-width: 9.5ch;
+  color: var(--chapter-ink) !important;
+  font-size: clamp(3.65rem, 6.1vw, 6.6rem);
+  font-weight: 530;
+  line-height: 0.91;
+  letter-spacing: -0.082em;
+}
+
+.reclaim-main-v2 .chapter-dark-ledger .ledger-intro h2 em {
+  padding-bottom: 0.075em;
+  color: inherit;
+  font-family: inherit;
+  font-style: italic;
+  font-weight: 500;
+  line-height: 1.04;
+  letter-spacing: -0.075em;
+}
+
+.reclaim-main-v2 .chapter-dark-ledger .ledger-intro p {
+  max-width: 31rem;
+  margin-top: 1.7rem;
+  color: rgb(23 26 23 / 0.68) !important;
+  font-size: clamp(1rem, 1.3vw, 1.14rem);
+  line-height: 1.57;
+  letter-spacing: -0.025em;
+}
+
+.reclaim-main-v2 .chapter-dark-ledger .ledger-gap-proof {
+  grid-column: 10 / -1;
+  grid-row: 1;
+  min-width: 0;
+  width: 100%;
+  align-self: end;
+  padding: 1.25rem 1.35rem 1.2rem;
+  border: 1px solid rgb(255 255 255 / 0.12);
+  border-radius: 1.1rem;
+  background:
+    linear-gradient(135deg, rgb(121 217 155 / 0.07), transparent 68%),
+    #121614;
+  box-shadow: 0 1.35rem 3.4rem rgb(48 46 38 / 0.17), inset 0 1px rgb(255 255 255 / 0.07);
+}
+
+.reclaim-main-v2 .chapter-dark-ledger .ledger-gap-proof strong {
+  color: #f0f2ed !important;
+  font-size: clamp(3.3rem, 4.5vw, 4.7rem);
+  font-weight: 530;
+  line-height: 0.74;
+  letter-spacing: -0.09em;
+}
+
+.reclaim-main-v2 .chapter-dark-ledger .ledger-gap-proof span {
+  margin-top: 0.72rem;
+  color: rgb(240 242 237 / 0.6);
+  font-size: 0.68rem;
+  font-weight: 650;
+  letter-spacing: 0.015em;
+}
+
+.reclaim-main-v2 .ledger-contained-table {
+  grid-column: 2 / -1;
+  grid-row: 2;
+  width: auto;
+  margin: 0;
+  padding: 1rem clamp(1rem, 2vw, 1.55rem) 1.15rem;
+  border: 1px solid rgb(255 255 255 / 0.12);
+  border-radius: 1.3rem;
+  background:
+    linear-gradient(90deg, rgb(255 255 255 / 0.026) 1px, transparent 1px),
+    linear-gradient(rgb(255 255 255 / 0.022) 1px, transparent 1px),
+    #111513;
+  background-size: 4.5rem 4.5rem;
+  box-shadow: 0 2.5rem 5.5rem rgb(48 46 38 / 0.21), inset 0 1px rgb(255 255 255 / 0.06);
+}
+
+.reclaim-main-v2 .ledger-contained-table .ledger-row { min-height: 4.15rem; }
+.reclaim-main-v2 .ledger-contained-table .ledger-row-head { min-height: 3.35rem; }
+
+.reclaim-main-v2 .ledger-contained-panel .ledger-discovery {
+  z-index: 2;
+  grid-column: 1 / 6;
+  grid-row: 2;
+  width: auto;
+  min-height: 5.35rem;
+  align-self: end;
+  margin: 0 0 -1.2rem;
+  padding: 1.15rem 1.3rem;
+  border: 1px solid rgb(255 255 255 / 0.13);
+  border-radius: 1.1rem;
+  background: #171d1a;
+  box-shadow: 0 1.65rem 3.6rem rgb(48 46 38 / 0.22), inset 0 1px rgb(255 255 255 / 0.055);
+}
+
+.reclaim-main-v2 .ledger-contained-panel .ledger-discovery span {
+  color: rgb(238 241 236 / 0.58);
+  font-size: 0.7rem;
+}
+
+.reclaim-main-v2 .ledger-contained-panel .ledger-discovery strong {
+  color: #79d99b;
+  font-size: 0.76rem;
+}
+
+@media (max-width: 767px) {
+  .reclaim-main-v2 .chapter-dark-ledger {
+    width: min(calc(100% - 2rem), 82rem) !important;
+    padding-block: 5.75rem 6.75rem !important;
+  }
+
+  .reclaim-main-v2 .ledger-contained-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 1.45rem;
+  }
+
+  .reclaim-main-v2 .chapter-dark-ledger .ledger-intro,
+  .reclaim-main-v2 .chapter-dark-ledger .ledger-gap-proof,
+  .reclaim-main-v2 .ledger-contained-table,
+  .reclaim-main-v2 .ledger-contained-panel .ledger-discovery { width: 100%; }
+
+  .reclaim-main-v2 .chapter-dark-ledger .ledger-intro h2 { max-width: 9.5ch; font-size: clamp(3.15rem, 13.5vw, 4.55rem); }
+  .reclaim-main-v2 .chapter-dark-ledger .ledger-intro p { max-width: 30rem; font-size: 0.98rem; }
+  .reclaim-main-v2 .chapter-dark-ledger .ledger-gap-proof { align-self: flex-end; width: min(12rem, 62%); }
+  .reclaim-main-v2 .ledger-contained-table { order: 3; margin-top: 1.2rem; }
+  .reclaim-main-v2 .ledger-contained-panel .ledger-discovery { order: 4; width: min(90%, 20rem); margin: -2.55rem 0 0; }
+}
+
+/* The hero case explains one relationship: the visible fields connect first,
+   then the possible amount resolves. Keep this separate from the surface wake
+   so the meaning is still legible after every replay and at every viewport. */
+.reclaim-main-v2 .hero-audit-matchline {
+  animation: none !important;
+}
+
+.reclaim-main-v2 .hero-audit-matchline i {
+  display: block;
+  transform: scaleX(1);
+  transform-origin: left center;
+}
+
+.reclaim-main-v2 .hero-audit[data-audit-active='false'] .hero-audit-matchline i {
+  transform: scaleX(0);
+}
+
+/* The motto is a stationary paper field. Only the ink writes; the surface
+   never pushes, zooms, or transitions toward the reader. */
+.reclaim-main-v2 .motto-visual::before,
+.reclaim-main-v2 .motto-interlude[data-stage] .motto-visual::before {
+  opacity: 1 !important;
+  transform: translateX(-50%) !important;
+  transition: none !important;
+  animation: none !important;
+}
+
+/* The landing lockup uses the ink mark in both navigation states and in the
+   motto: black letterform, one restrained mint point at its baseline. */
+.reclaim-commercial-page .reclaim-product-nav .reclaim-nav-mark .reclaim-mark-ink,
+.reclaim-commercial-page .reclaim-product-nav[data-on-dark='true'] .reclaim-nav-mark .reclaim-mark-ink,
+.reclaim-main-v2 .motto-logo-lockup .reclaim-mark-ink {
+  color: #171a17 !important;
+}
+
+.reclaim-commercial-page .reclaim-product-nav .reclaim-nav-mark .reclaim-mark-ink path,
+.reclaim-main-v2 .motto-logo-lockup .reclaim-mark-ink path {
+  fill: currentColor !important;
+}
+
+.reclaim-commercial-page .reclaim-product-nav .reclaim-nav-mark .reclaim-mark-dot,
+.reclaim-main-v2 .motto-logo-lockup .reclaim-mark-dot {
+  fill: #79d99b !important;
+}
+
+.reclaim-commercial-page .reclaim-product-nav .reclaim-wordmark-period,
+.reclaim-main-v2 .motto-logo-lockup .reclaim-wordmark-period {
+  color: currentColor !important;
+}
+
+.reclaim-main-v2 .hero-audit-readiness b {
+  display: inline-block;
+  transform: translate3d(0, 0, 0);
+  color: #5dc27f;
+}
+
+.reclaim-main-v2 .hero-audit[data-audit-active='false'] .hero-audit-readiness b {
+  color: #24442f;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .reclaim-main-v2 .hero-audit[data-audit-active='true'] .hero-audit-matchline i {
+    animation: reclaim-audit-evidence-trace 920ms cubic-bezier(0.16, 1, 0.3, 1) 660ms both !important;
+  }
+
+  .reclaim-main-v2 .hero-audit[data-audit-active='true'] .hero-audit-readiness b {
+    animation: reclaim-audit-amount-resolve 440ms cubic-bezier(0.16, 1, 0.3, 1) 1.32s both !important;
+  }
+}
+
+/* Workflow to proof: one compact, continuous reading sequence. This is kept
+   last so it replaces the earlier, abandoned tall-presentation treatments. */
+.reclaim-main-v2 .kinetic-frame:has(.accounting-fit),
+.reclaim-main-v2 .kinetic-frame:has(.portfolio-proof) {
+  background: #f3efe7 !important;
+}
+
+.reclaim-main-v2 .accounting-bento-chapter {
+  width: min(calc(100% - 4rem), 82rem) !important;
+  max-width: 82rem !important;
+  min-height: 0 !important;
+  padding: clamp(6.5rem, 8vw, 8.5rem) 0 clamp(4.5rem, 6vw, 6.5rem) !important;
+}
+
+.reclaim-main-v2 .accounting-fit-copy {
+  grid-template-columns: repeat(12, minmax(0, 1fr)) !important;
+  gap: 1.25rem clamp(1.25rem, 2vw, 2rem) !important;
+}
+
+.reclaim-main-v2 .accounting-fit-copy h2 {
+  grid-column: 1 / 8 !important;
+  max-width: 8.3ch;
+  font-size: clamp(3.3rem, 5.4vw, 5.85rem) !important;
+  line-height: 0.93;
+}
+
+.reclaim-main-v2 .accounting-fit-copy > p {
+  grid-column: 9 / -1 !important;
+  max-width: 20.5rem;
+  margin-bottom: 0.15rem !important;
+}
+
+.reclaim-main-v2 .accounting-bento {
+  grid-template-rows: auto minmax(20rem, auto) !important;
+  min-height: 0 !important;
+  gap: 1rem clamp(0.9rem, 1.7vw, 1.5rem) !important;
+  margin-top: clamp(3.25rem, 5vw, 4.75rem) !important;
+}
+
+.reclaim-main-v2 .accounting-sources {
+  grid-column: 1 / 7 !important;
+  grid-row: 1 !important;
+}
+
+.reclaim-main-v2 .accounting-records,
+.reclaim-main-v2 .accounting-reclaim-panel {
+  min-height: 20rem !important;
+  height: auto !important;
+  align-self: stretch;
+}
+
+.reclaim-main-v2 .accounting-records {
+  grid-column: 1 / 6 !important;
+  grid-row: 2 !important;
+}
+
+.reclaim-main-v2 .accounting-reclaim-panel {
+  grid-column: 7 / -1 !important;
+  grid-row: 2 !important;
+}
+
+.reclaim-main-v2 .accounting-reclaim-panel ol {
+  min-height: calc(20rem - 4.25rem) !important;
+}
+
+.reclaim-main-v2 .portfolio-proof {
+  position: relative;
+  display: grid !important;
+  grid-template-columns: repeat(12, minmax(0, 1fr)) !important;
+  grid-template-rows: auto auto auto !important;
+  width: min(calc(100% - 4rem), 82rem) !important;
+  max-width: 82rem !important;
+  min-height: 0 !important;
+  align-content: start !important;
+  gap: clamp(2.25rem, 4vw, 3.75rem) clamp(0.9rem, 1.7vw, 1.5rem) !important;
+  margin: 0 auto !important;
+  padding: clamp(4.75rem, 6vw, 6.5rem) 0 clamp(6.5rem, 8vw, 8.5rem) !important;
+  border-top: 1px solid rgb(23 26 23 / 0.14);
+  overflow: visible !important;
+}
+
+.reclaim-main-v2 .portfolio-proof::after {
+  display: none !important;
+}
+
+.reclaim-main-v2 .portfolio-proof-meta {
+  grid-column: 1 / 5 !important;
+  grid-row: 1 !important;
+  gap: 0.85rem;
+}
+
+.reclaim-main-v2 .portfolio-proof-meta p {
+  max-width: 18rem;
+  color: rgb(23 26 23 / 0.62) !important;
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+
+.reclaim-main-v2 .portfolio-proof-result {
+  grid-column: 1 / 9 !important;
+  grid-row: 2 !important;
+  display: grid !important;
+  gap: 0.75rem !important;
+  align-content: end;
+}
+
+.reclaim-main-v2 .portfolio-proof-result > span,
+.reclaim-main-v2 .portfolio-proof-count > span,
+.reclaim-main-v2 .portfolio-proof-count > small,
+.reclaim-main-v2 .portfolio-proof-note {
+  color: rgb(23 26 23 / 0.56) !important;
+  font-size: 0.64rem !important;
+  font-weight: 680;
+  letter-spacing: 0.07em;
+  line-height: 1.4;
+  text-transform: uppercase;
+}
+
+.reclaim-main-v2 .portfolio-proof-result strong {
+  color: #2c8c5a !important;
+  font-size: clamp(5.75rem, 10.3vw, 10.75rem) !important;
+  font-weight: 510;
+  line-height: 0.76 !important;
+  letter-spacing: -0.098em;
+  text-shadow: none !important;
+}
+
+.reclaim-main-v2 .portfolio-proof-result h2 {
+  max-width: 11ch;
+  margin: 0 !important;
+  color: var(--chapter-ink) !important;
+  font-family: inherit !important;
+  font-size: clamp(1.8rem, 3.2vw, 3.1rem) !important;
+  font-style: italic;
+  font-weight: 500;
+  line-height: 0.94;
+  letter-spacing: -0.07em;
+}
+
+.reclaim-main-v2 .portfolio-proof-count {
+  grid-column: 10 / -1 !important;
+  grid-row: 2 !important;
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  align-content: end;
+  align-self: end;
+  gap: 0.42rem !important;
+  min-height: 0 !important;
+  padding-top: 1rem !important;
+  border-top: 1px solid rgb(23 26 23 / 0.18) !important;
+}
+
+.reclaim-main-v2 .portfolio-proof-count strong {
+  color: var(--chapter-ink) !important;
+  font-size: clamp(3.6rem, 5vw, 5.6rem) !important;
+  font-weight: 510;
+  line-height: 0.78 !important;
+  letter-spacing: -0.085em;
+  text-shadow: none !important;
+}
+
+.reclaim-main-v2 .portfolio-proof-note {
+  grid-column: 1 / 7 !important;
+  grid-row: 3 !important;
+  margin-top: 0.25rem;
+}
+
+@media (max-width: 767px) {
+  .reclaim-main-v2 .accounting-bento-chapter,
+  .reclaim-main-v2 .portfolio-proof {
+    width: min(calc(100% - 2rem), 82rem) !important;
+  }
+
+  .reclaim-main-v2 .accounting-bento-chapter {
+    padding-block: 5.5rem 4.5rem !important;
+  }
+
+  .reclaim-main-v2 .accounting-fit-copy h2,
+  .reclaim-main-v2 .accounting-fit-copy > p {
+    grid-column: auto !important;
+  }
+
+  .reclaim-main-v2 .accounting-bento {
+    margin-top: 3rem !important;
+  }
+
+  .reclaim-main-v2 .accounting-records,
+  .reclaim-main-v2 .accounting-reclaim-panel {
+    min-height: 20rem !important;
+  }
+
+  .reclaim-main-v2 .portfolio-proof {
+    display: flex !important;
+    flex-direction: column;
+    gap: 2.5rem !important;
+    padding-block: 4.5rem 6rem !important;
+  }
+
+  .reclaim-main-v2 .portfolio-proof-result strong {
+    font-size: clamp(4.85rem, 21vw, 7.5rem) !important;
+  }
+
+  .reclaim-main-v2 .portfolio-proof-count {
+    width: min(100%, 14rem);
+    align-self: flex-start;
+  }
+}
+
+/* Recovery case: a compact editorial handoff. The attached amount slip is
+   evidence from the case, not a second floating feature card. */
+.reclaim-main-v2 .recovery-case-study {
+  width: min(calc(100% - 4rem), 82rem) !important;
+  max-width: 82rem !important;
+  min-height: 0 !important;
+  padding: clamp(6.5rem, 8vw, 8.5rem) 0 clamp(7rem, 9vw, 9.5rem) !important;
+}
+
+.reclaim-main-v2 .recovery-case-study .commercial-heading {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  align-items: end;
+  gap: 1.25rem clamp(1.25rem, 2vw, 2rem);
+}
+
+.reclaim-main-v2 .recovery-case-study .commercial-heading .reclaim-eyebrow {
+  grid-column: 1 / -1;
+}
+
+.reclaim-main-v2 .recovery-case-study .commercial-heading h2 {
+  grid-column: 1 / 8;
+  max-width: 9.5ch;
+  margin: 0;
+  color: var(--chapter-ink);
+  font-size: clamp(3.35rem, 5.4vw, 5.95rem) !important;
+  font-weight: 530;
+  line-height: 0.92;
+  letter-spacing: -0.082em;
+}
+
+.reclaim-main-v2 .recovery-case-study .commercial-heading h2 em {
+  color: inherit;
+  font-family: inherit;
+  font-style: italic;
+  font-weight: 500;
+}
+
+.reclaim-main-v2 .recovery-case-study .commercial-heading > p {
+  grid-column: 9 / -1;
+  max-width: 20rem;
+  margin: 0 0 0.2rem;
+  color: rgb(23 26 23 / 0.64);
+  font-size: 1rem;
+  line-height: 1.58;
+}
+
+.reclaim-main-v2 .recovery-case-study-grid {
+  display: grid !important;
+  grid-template-columns: repeat(12, minmax(0, 1fr)) !important;
+  align-items: end !important;
+  gap: clamp(1rem, 1.8vw, 1.5rem) !important;
+  margin-top: clamp(3.25rem, 5vw, 4.75rem) !important;
+}
+
+.reclaim-main-v2 .recovery-case-study-grid .recovery-case {
+  grid-column: 3 / -1 !important;
+  grid-row: 1 !important;
+  min-height: 20rem;
+  margin: 0 !important;
+  padding-left: 0 !important;
+  border: 1px solid rgb(255 255 255 / 0.12) !important;
+  border-radius: 1.35rem !important;
+  background: #111513 !important;
+  box-shadow: 0 2.4rem 5rem rgb(69 59 44 / 0.18), inset 0 1px rgb(255 255 255 / 0.07) !important;
+}
+
+.reclaim-main-v2 .recovery-proof-stat {
+  z-index: 2;
+  grid-column: 1 / 5 !important;
+  grid-row: 1 !important;
+  align-self: end;
+  width: auto;
+  min-height: 15.5rem !important;
+  margin: 0 0 2.15rem;
+  padding: 1.25rem !important;
+  border: 1px solid rgb(23 26 23 / 0.13) !important;
+  border-radius: 1.15rem !important;
+  background: #fbfaf6 !important;
+  box-shadow: 0 1.45rem 3.4rem rgb(73 62 46 / 0.16), inset 0 1px rgb(255 255 255 / 0.94) !important;
+}
+
+.reclaim-main-v2 .recovery-proof-stat > strong {
+  color: #2c8c5a !important;
+  font-size: clamp(3.35rem, 5.5vw, 5.4rem) !important;
+  line-height: 0.8 !important;
+}
+
+.reclaim-main-v2 .recovery-proof-stat > div {
+  gap: 0.4rem;
+}
+
+.reclaim-main-v2 .recovery-proof-stat > div span {
+  padding: 0.42rem 0.55rem;
+  border-color: rgb(23 26 23 / 0.12);
+  border-radius: 0.55rem;
+  background: #f0ede5;
+  color: rgb(23 26 23 / 0.66);
+  font-size: 0.6rem;
+}
+
+.reclaim-main-v2 .recovery-case > header {
+  min-height: 4.75rem;
+  padding-inline: 1.35rem;
+}
+
+.reclaim-main-v2 .recovery-case > header > b {
+  color: #74dda0;
+  font-size: clamp(2rem, 3.4vw, 3.25rem);
+}
+
+.reclaim-main-v2 .recovery-case-body {
+  min-height: 11rem;
+}
+
+.reclaim-main-v2 .recovery-lifecycle {
+  min-height: 3.75rem;
+}
+
+@media (max-width: 767px) {
+  .reclaim-main-v2 .recovery-case-study {
+    width: min(calc(100% - 2rem), 82rem) !important;
+    padding-block: 5.5rem 6rem !important;
+  }
+
+  .reclaim-main-v2 .recovery-case-study .commercial-heading {
+    display: block;
+  }
+
+  .reclaim-main-v2 .recovery-case-study .commercial-heading > p {
+    margin-top: 1.5rem;
+  }
+
+  .reclaim-main-v2 .recovery-case-study-grid {
+    display: flex !important;
+    flex-direction: column-reverse;
+    align-items: stretch !important;
+    margin-top: 3rem !important;
+  }
+
+  .reclaim-main-v2 .recovery-case-study-grid .recovery-case,
+  .reclaim-main-v2 .recovery-proof-stat {
+    width: 100%;
+    margin: 0;
+  }
+
+  .reclaim-main-v2 .recovery-case-study-grid .recovery-case {
+    min-height: auto;
+  }
+
+  .reclaim-main-v2 .recovery-proof-stat {
+    min-height: 14rem !important;
+  }
+}
+
+/* Pricing: one continuous outcome ledger on its own quiet limestone field.
+   The background is static; the case states supply the only motion and depth. */
+.reclaim-main-v2 .kinetic-frame:has(.outcome-pricing) {
+  background: #f3efe7 !important;
+}
+
+.reclaim-main-v2 .pricing-payoff {
+  position: relative;
+  isolation: isolate;
+  width: min(calc(100% - 4rem), 82rem) !important;
+  max-width: 82rem !important;
+  min-height: 0 !important;
+  padding: clamp(6.5rem, 8vw, 8.5rem) 0 clamp(7rem, 9vw, 9.5rem) !important;
+}
+
+.reclaim-main-v2 .pricing-promise {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  align-items: end;
+  gap: 1.25rem clamp(1.25rem, 2vw, 2rem);
+}
+
+.reclaim-main-v2 .pricing-promise .reclaim-eyebrow {
+  grid-column: 1 / -1;
+}
+
+.reclaim-main-v2 .pricing-promise h2 {
+  grid-column: 1 / 8;
+  max-width: 9.5ch;
+  margin: 0;
+  color: var(--chapter-ink);
+  font-size: clamp(3.35rem, 5.4vw, 5.95rem) !important;
+  font-weight: 530;
+  line-height: 0.92;
+  letter-spacing: -0.082em;
+}
+
+.reclaim-main-v2 .pricing-promise h2 em {
+  color: inherit;
+  font-family: inherit;
+  font-style: italic;
+  font-weight: 500;
+}
+
+.reclaim-main-v2 .pricing-promise > p {
+  grid-column: 9 / -1;
+  max-width: 20rem;
+  margin: 0 0 0.2rem;
+  color: rgb(23 26 23 / 0.64);
+  font-size: 1rem;
+  line-height: 1.58;
+}
+
+.reclaim-main-v2 .pricing-ledger {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  grid-template-rows: auto 1fr auto !important;
+  gap: 0.6rem !important;
+  min-height: 21rem !important;
+  margin-top: clamp(3.25rem, 5vw, 4.75rem) !important;
+  padding: 0.65rem !important;
+  border: 1px solid rgb(255 255 255 / 0.12) !important;
+  border-radius: 1.35rem !important;
+  background: #111513 !important;
+  box-shadow: 0 2.4rem 5.25rem rgb(69 59 44 / 0.2), inset 0 1px rgb(255 255 255 / 0.075) !important;
+}
+
+.reclaim-main-v2 .pricing-ledger > header {
+  grid-column: auto !important;
+  display: flex;
+  min-height: 3.35rem;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1rem;
+  border: 1px solid rgb(255 255 255 / 0.1) !important;
+  border-radius: 0.85rem;
+  background: rgb(255 255 255 / 0.026) !important;
+}
+
+.reclaim-main-v2 .pricing-ledger > header span,
+.reclaim-main-v2 .pricing-ledger > header strong,
+.reclaim-main-v2 .pricing-ledger-states small,
+.reclaim-main-v2 .pricing-ledger-states li > span,
+.reclaim-main-v2 .pricing-ledger > footer > span {
+  font-size: 0.64rem;
+  font-weight: 680;
+  letter-spacing: 0.065em;
+  text-transform: uppercase;
+}
+
+.reclaim-main-v2 .pricing-ledger > header span,
+.reclaim-main-v2 .pricing-ledger-states small,
+.reclaim-main-v2 .pricing-ledger-states li > span,
+.reclaim-main-v2 .pricing-ledger > footer > span {
+  color: rgb(238 241 236 / 0.53);
+}
+
+.reclaim-main-v2 .pricing-ledger > header strong {
+  color: #eef1ec;
+  font-size: 0.72rem;
+}
+
+.reclaim-main-v2 .pricing-ledger-states {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.reclaim-main-v2 .pricing-ledger-states li {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  gap: 1rem;
+  min-width: 0;
+  padding: 1rem;
+  border: 1px solid rgb(255 255 255 / 0.09);
+  border-radius: 0.95rem;
+  background: #171c19;
+  clip-path: inset(0 0 100% 0 round 0.95rem);
+  transform: translate3d(0, 0.7rem, 0);
+  transition: clip-path 520ms var(--ease-out), transform 520ms var(--ease-out), border-color 220ms var(--ease-out), background-color 220ms var(--ease-out);
+}
+
+.reclaim-main-v2 .pricing-ledger-states li > div {
+  display: grid;
+  align-content: end;
+  gap: 0.55rem;
+}
+
+.reclaim-main-v2 .pricing-ledger-states li strong {
+  color: #eef1ec;
+  font-size: clamp(1.25rem, 2vw, 1.9rem);
+  font-weight: 540;
+  line-height: 0.95;
+  letter-spacing: -0.055em;
+}
+
+.reclaim-main-v2 .pricing-ledger-states li p {
+  max-width: 17rem;
+  margin: 0;
+  color: rgb(238 241 236 / 0.54);
+  font-size: 0.72rem;
+  line-height: 1.45;
+}
+
+.reclaim-main-v2 .pricing-ledger-states li[data-recovered='true'] {
+  border-color: rgb(116 221 160 / 0.28);
+  background: #132018;
+}
+
+.reclaim-main-v2 .pricing-ledger-states li[data-recovered='true'] strong {
+  color: #74dda0;
+}
+
+.reclaim-main-v2 .pricing-ledger > footer {
+  grid-column: auto !important;
+  display: flex;
+  min-height: 3.75rem;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1rem;
+  border: 1px solid rgb(116 221 160 / 0.25) !important;
+  border-radius: 0.85rem;
+  background: #142018 !important;
+}
+
+.reclaim-main-v2 .pricing-ledger > footer strong {
+  color: #eef1ec;
+  font-size: 0.9rem;
+  font-weight: 620;
+}
+
+.reclaim-main-v2 .pricing-ledger > footer strong b {
+  color: #74dda0;
+  font-size: clamp(2rem, 3vw, 3.1rem);
+  font-weight: 520;
+  letter-spacing: -0.08em;
+}
+
+.reclaim-main-v2 .pricing-ledger .pricing-accessible {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.reclaim-main-v2 .outcome-pricing[data-awake='true'] .pricing-ledger-states li {
+  clip-path: inset(0 round 0.95rem);
+  transform: translate3d(0, 0, 0);
+}
+
+.reclaim-main-v2 .outcome-pricing[data-awake='true'] .pricing-ledger-states li:nth-child(1) { transition-delay: 120ms; }
+.reclaim-main-v2 .outcome-pricing[data-awake='true'] .pricing-ledger-states li:nth-child(2) { transition-delay: 185ms; }
+.reclaim-main-v2 .outcome-pricing[data-awake='true'] .pricing-ledger-states li:nth-child(3) { transition-delay: 250ms; }
+
+@media (max-width: 767px) {
+  .reclaim-main-v2 .pricing-payoff {
+    width: min(calc(100% - 2rem), 82rem) !important;
+    padding-block: 5.5rem 6rem !important;
+  }
+
+  .reclaim-main-v2 .pricing-promise {
+    display: block;
+  }
+
+  .reclaim-main-v2 .pricing-promise > p {
+    margin-top: 1.5rem;
+  }
+
+  .reclaim-main-v2 .pricing-ledger {
+    min-height: 0 !important;
+    margin-top: 3rem !important;
+  }
+
+  .reclaim-main-v2 .pricing-ledger > header {
+    align-items: flex-start;
+    flex-direction: column;
+    justify-content: center;
+    gap: 0.25rem;
+    padding-block: 0.75rem;
+  }
+
+  .reclaim-main-v2 .pricing-ledger-states {
+    grid-template-columns: 1fr;
+  }
+
+  .reclaim-main-v2 .pricing-ledger-states li {
+    min-height: 8.5rem;
+  }
+}
+
+/* About: a normal-flow closing statement. The same display face is revealed
+   line by line on arrival; the supporting thought settles as one centered lockup. */
+@keyframes reclaim-about-write-line {
+  from { clip-path: inset(-0.14em 100% -0.14em -0.08em); }
+  to { clip-path: inset(-0.14em -0.08em -0.14em -0.08em); }
+}
+
+.reclaim-main-v2 .about-reclaim {
+  display: grid !important;
+  grid-template-columns: repeat(12, minmax(0, 1fr)) !important;
+  align-content: start !important;
+  width: min(calc(100% - 4rem), 82rem) !important;
+  max-width: 82rem !important;
+  min-height: 0 !important;
+  gap: 1.25rem clamp(1.25rem, 2vw, 2rem) !important;
+  padding: clamp(7rem, 9vw, 10rem) 0 clamp(7.5rem, 10vw, 11rem) !important;
+}
+
+.reclaim-main-v2 .about-reclaim .about-index {
+  grid-column: 1 / 4 !important;
+  grid-row: 1;
+  align-self: start;
+  margin: 0;
+  color: rgb(23 26 23 / 0.56) !important;
+}
+
+.reclaim-main-v2 .about-reclaim .about-statement {
+  grid-column: 2 / 11 !important;
+  grid-row: 2;
+  width: auto !important;
+  margin: 0 !important;
+}
+
+.reclaim-main-v2 .about-reclaim h2 {
+  max-width: 10.6ch !important;
+  margin: 0 !important;
+  color: var(--chapter-ink) !important;
+  font-size: clamp(3.6rem, 6.1vw, 6.9rem) !important;
+  font-weight: 530;
+  line-height: 0.89 !important;
+  letter-spacing: -0.088em;
+}
+
+.reclaim-main-v2 .about-reclaim h2 em {
+  color: inherit !important;
+  font-family: inherit !important;
+  font-style: italic;
+  font-weight: 500;
+}
+
+.reclaim-main-v2 .about-ink-line {
+  display: block;
+  width: max-content;
+  max-width: 100%;
+  overflow: visible;
+  clip-path: inset(-0.14em 100% -0.14em -0.08em);
+  white-space: nowrap;
+  will-change: clip-path;
+}
+
+.reclaim-main-v2 .about-reclaim[data-awake='true'] .about-ink-line {
+  animation: reclaim-about-write-line 600ms steps(18, end) both;
+}
+
+.reclaim-main-v2 .about-reclaim[data-awake='true'] .about-ink-line:nth-child(2) { animation-delay: 230ms; }
+.reclaim-main-v2 .about-reclaim[data-awake='true'] .about-ink-line:nth-child(3) { animation-delay: 460ms; }
+.reclaim-main-v2 .about-reclaim[data-awake='true'] .about-ink-line:nth-child(4) { animation-delay: 690ms; }
+.reclaim-main-v2 .about-reclaim[data-awake='true'] .about-ink-line:nth-child(5) { animation-delay: 920ms; }
+.reclaim-main-v2 .about-reclaim[data-awake='true'] .about-ink-line:nth-child(6) { animation-delay: 1150ms; }
+
+.reclaim-main-v2 .about-support {
+  grid-column: 3 / 11;
+  grid-row: 3;
+  display: grid;
+  justify-items: center;
+  gap: 2rem;
+  margin-top: clamp(1.5rem, 3vw, 3rem);
+  text-align: center;
+}
+
+.reclaim-main-v2 .about-support > p {
+  max-width: 32rem !important;
+  margin: 0 !important;
+  color: rgb(23 26 23 / 0.63) !important;
+  font-size: 0.96rem;
+  line-height: 1.6;
+}
+
+.reclaim-main-v2 .about-support > aside {
+  display: grid !important;
+  width: min(100%, 18rem);
+  min-height: 6.8rem;
+  align-content: center;
+  justify-items: center;
+  gap: 0.18rem;
+  margin: 0 !important;
+  padding: 1.05rem 1.25rem;
+  border: 1px solid rgb(23 26 23 / 0.14) !important;
+  border-radius: 0.9rem !important;
+  background: rgb(251 250 246 / 0.9) !important;
+  box-shadow: 0 1.2rem 2.75rem rgb(69 59 44 / 0.1), inset 0 1px rgb(255 255 255 / 0.94) !important;
+  color: rgb(23 26 23 / 0.58) !important;
+  text-align: center;
+}
+
+.reclaim-main-v2 .about-support > aside strong {
+  color: var(--chapter-ink) !important;
+}
+
+.reclaim-main-v2 .about-statement > h2,
+.reclaim-main-v2 .about-support > p,
+.reclaim-main-v2 .about-support > aside {
+  clip-path: none !important;
+  transform: none !important;
+  transition: none !important;
+}
+
+@media (max-width: 767px) {
+  .reclaim-main-v2 .about-reclaim {
+    display: block !important;
+    width: min(calc(100% - 2rem), 82rem) !important;
+    padding-block: 5.75rem 6.5rem !important;
+  }
+
+  .reclaim-main-v2 .about-reclaim .about-index {
+    display: block;
+    margin-bottom: 2.75rem;
+  }
+
+  .reclaim-main-v2 .about-reclaim h2 {
+    max-width: 10.2ch !important;
+    font-size: clamp(3.15rem, 13.4vw, 4.65rem) !important;
+  }
+
+  .reclaim-main-v2 .about-support {
+    margin-top: 3rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reclaim-main-v2 .about-ink-line {
+    animation: none !important;
+    clip-path: none !important;
+    will-change: auto;
+  }
+}
+
+/* Density pass: bring the camera closer across the editorial chapters. The
+   hero and footer retain their larger stage; everything between them now hands
+   off sooner, with larger contained evidence and less empty runway. */
+.reclaim-main-v2 .kinetic-frame > .kinetic-plane > section {
+  width: min(calc(100% - 4rem), 88rem) !important;
+  max-width: 88rem !important;
+  padding-block: clamp(5.25rem, 7vw, 7.25rem) !important;
+}
+
+.reclaim-main-v2 .motto-interlude,
+.reclaim-main-v2 .motto-stage {
+  min-height: 74dvh !important;
+}
+
+.reclaim-main-v2 .motto-visual {
+  width: min(calc(100% - 4rem), 88rem) !important;
+  min-height: clamp(38rem, 74dvh, 50rem) !important;
+  padding-block: clamp(4.75rem, 7vw, 6.5rem) !important;
+}
+
+.reclaim-main-v2 .chapter-dark-ledger,
+.reclaim-main-v2 .accounting-bento-chapter,
+.reclaim-main-v2 .portfolio-proof,
+.reclaim-main-v2 .recovery-case-study,
+.reclaim-main-v2 .pricing-payoff,
+.reclaim-main-v2 .about-reclaim {
+  width: min(calc(100% - 4rem), 88rem) !important;
+  max-width: 88rem !important;
+}
+
+.reclaim-main-v2 .chapter-dark-ledger {
+  padding-block: clamp(5.75rem, 7.5vw, 7.5rem) !important;
+}
+
+.reclaim-main-v2 .accounting-bento-chapter {
+  padding: clamp(5.5rem, 7vw, 7.25rem) 0 clamp(4rem, 5.5vw, 5.5rem) !important;
+}
+
+.reclaim-main-v2 .accounting-bento,
+.reclaim-main-v2 .recovery-case-study-grid,
+.reclaim-main-v2 .pricing-ledger {
+  margin-top: clamp(2.75rem, 4vw, 3.75rem) !important;
+}
+
+.reclaim-main-v2 .portfolio-proof {
+  padding: clamp(3.75rem, 5vw, 5rem) 0 clamp(5rem, 6.5vw, 6.5rem) !important;
+}
+
+.reclaim-main-v2 .recovery-case-study,
+.reclaim-main-v2 .pricing-payoff {
+  padding: clamp(5.5rem, 7vw, 7.25rem) 0 clamp(5.75rem, 7vw, 7.5rem) !important;
+}
+
+.reclaim-main-v2 .about-reclaim {
+  padding: clamp(5.75rem, 7vw, 7.5rem) 0 clamp(6rem, 7.5vw, 8rem) !important;
+}
+
+.reclaim-main-v2 .about-support {
+  margin-top: clamp(1.25rem, 2.2vw, 2rem) !important;
+}
+
+@media (max-width: 767px) {
+  .reclaim-main-v2 .kinetic-frame > .kinetic-plane > section,
+  .reclaim-main-v2 .chapter-dark-ledger,
+  .reclaim-main-v2 .accounting-bento-chapter,
+  .reclaim-main-v2 .portfolio-proof,
+  .reclaim-main-v2 .recovery-case-study,
+  .reclaim-main-v2 .pricing-payoff,
+  .reclaim-main-v2 .about-reclaim,
+  .reclaim-main-v2 .motto-visual {
+    width: min(calc(100% - 2rem), 88rem) !important;
+  }
+
+  .reclaim-main-v2 .motto-interlude,
+  .reclaim-main-v2 .motto-stage {
+    min-height: auto !important;
+  }
+
+  .reclaim-main-v2 .motto-visual {
+    min-height: auto !important;
+    padding-block: 5rem !important;
+  }
+
+  .reclaim-main-v2 .kinetic-frame > .kinetic-plane > section {
+    padding-block: 4.5rem !important;
+  }
+
+  .reclaim-main-v2 .chapter-dark-ledger,
+  .reclaim-main-v2 .accounting-bento-chapter,
+  .reclaim-main-v2 .recovery-case-study,
+  .reclaim-main-v2 .pricing-payoff,
+  .reclaim-main-v2 .about-reclaim {
+    padding-block: 5rem !important;
+  }
+}
+
+/* Re-centre the relationship chapter as one composed product case. The
+   relationship is the visual subject; individual cards should not compete for
+   attention or appear to have landed at random around the page. */
+.reclaim-main-v2 .chapter-dark-ledger {
+  width: min(calc(100% - 4rem), 78rem) !important;
+  max-width: 78rem !important;
+  padding-block: clamp(5.75rem, 8vw, 8.5rem) !important;
+  color: #eef1ec !important;
+}
+
+.reclaim-main-v2 .ledger-contained-panel {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  grid-template-rows: auto auto auto !important;
+  gap: clamp(1.5rem, 2.8vw, 2.5rem) !important;
+  width: 100%;
+  margin: 0 auto;
+  padding: clamp(1.75rem, 4vw, 3.35rem) !important;
+  overflow: hidden !important;
+  border: 1px solid rgb(255 255 255 / 0.13) !important;
+  border-radius: 1.4rem !important;
+  background: #101412 !important;
+  box-shadow: 0 2.25rem 5.5rem rgb(38 34 27 / 0.19), inset 0 1px rgb(255 255 255 / 0.065) !important;
+}
+
+.reclaim-main-v2 .ledger-contained-panel::after {
+  content: '' !important;
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background-image: linear-gradient(rgb(255 255 255 / 0.022) 1px, transparent 1px), linear-gradient(90deg, rgb(255 255 255 / 0.022) 1px, transparent 1px);
+  background-size: 4.5rem 4.5rem;
+  pointer-events: none;
+}
+
+.reclaim-main-v2 .chapter-dark-ledger .ledger-intro {
+  grid-column: 1 !important;
+  grid-row: 1 !important;
+  display: grid !important;
+  justify-items: center;
+  gap: 1.25rem;
+  margin: 0 !important;
+  text-align: center;
+}
+
+.reclaim-main-v2 .chapter-dark-ledger .ledger-intro > div:first-child { max-width: 43rem !important; }
+
+.reclaim-main-v2 .ledger-kicker {
+  margin-bottom: 1rem !important;
+  color: rgb(238 241 236 / 0.54) !important;
+}
+
+.reclaim-main-v2 .chapter-dark-ledger .ledger-intro h2 {
+  max-width: 12ch !important;
+  margin-inline: auto;
+  color: #f0f2ed !important;
+  font-size: clamp(3.1rem, 5.5vw, 5.8rem) !important;
+  line-height: 0.9 !important;
+}
+
+.reclaim-main-v2 .chapter-dark-ledger .ledger-intro p {
+  max-width: 38rem !important;
+  margin: 1.35rem auto 0 !important;
+  color: rgb(238 241 236 / 0.68) !important;
+}
+
+.reclaim-main-v2 .chapter-dark-ledger .ledger-gap-proof {
+  display: inline-flex !important;
+  grid-column: auto !important;
+  grid-row: auto !important;
+  width: auto !important;
+  min-width: 0 !important;
+  align-items: baseline;
+  gap: 0.55rem;
+  align-self: auto !important;
+  padding: 0.7rem 1rem 0.65rem !important;
+  border-color: rgb(255 255 255 / 0.13) !important;
+  border-radius: 0.8rem !important;
+  background: rgb(255 255 255 / 0.035) !important;
+  box-shadow: inset 0 1px rgb(255 255 255 / 0.055) !important;
+}
+
+.reclaim-main-v2 .chapter-dark-ledger .ledger-gap-proof strong {
+  color: #f0f2ed !important;
+  font-size: clamp(2.45rem, 3.8vw, 3.55rem) !important;
+  line-height: 0.78 !important;
+}
+
+.reclaim-main-v2 .chapter-dark-ledger .ledger-gap-proof span {
+  margin: 0 !important;
+  color: rgb(238 241 236 / 0.58) !important;
+}
+
+.reclaim-main-v2 .ledger-contained-table {
+  grid-column: 1 !important;
+  grid-row: 2 !important;
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 0.75rem clamp(0.8rem, 1.8vw, 1.35rem) 1rem !important;
+  border-color: rgb(255 255 255 / 0.12) !important;
+  border-radius: 1rem !important;
+  background-color: rgb(5 8 7 / 0.46) !important;
+  box-shadow: inset 0 1px rgb(255 255 255 / 0.045) !important;
+}
+
+.reclaim-main-v2 .ledger-contained-table .ledger-row { min-height: 3.7rem !important; }
+.reclaim-main-v2 .ledger-contained-table .ledger-row-head { min-height: 2.9rem !important; }
+
+.reclaim-main-v2 .ledger-contained-panel .ledger-discovery {
+  grid-column: 1 !important;
+  grid-row: 3 !important;
+  display: flex !important;
+  width: 100% !important;
+  min-height: 0 !important;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 0 !important;
+  padding: 0.15rem 0.15rem 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+@media (max-width: 767px) {
+  .reclaim-main-v2 .chapter-dark-ledger {
+    width: min(calc(100% - 2rem), 78rem) !important;
+  }
+
+  .reclaim-main-v2 .ledger-contained-panel { padding: 1.25rem !important; }
+  .reclaim-main-v2 .chapter-dark-ledger .ledger-intro h2 { font-size: clamp(3rem, 13vw, 4.45rem) !important; }
+  .reclaim-main-v2 .ledger-contained-panel .ledger-discovery { align-items: flex-start; flex-direction: column; }
+}
+
+/* Export workflow: an editorial split on one quiet mineral field. The field
+   stays still; only the two software surfaces carry depth and sequencing. */
+.reclaim-main-v2 .kinetic-frame:has(.accounting-fit) { background: #f3efe7 !important; }
+
+.reclaim-main-v2 .accounting-bento-chapter {
+  position: relative;
+  isolation: isolate;
+  width: min(calc(100% - 4rem), 82rem) !important;
+  max-width: 82rem !important;
+  padding: clamp(8rem, 12vw, 12rem) 0 clamp(8rem, 11vw, 11rem) !important;
+}
+
+.reclaim-main-v2 .accounting-fit-copy {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 1.4rem clamp(1rem, 2vw, 2rem);
+  align-items: end;
+}
+
+.reclaim-main-v2 .accounting-fit-copy .reclaim-eyebrow { grid-column: 1 / -1; }
+
+.reclaim-main-v2 .accounting-fit-copy h2 {
+  grid-column: 1 / 9;
+  max-width: 8.8ch;
+  color: var(--chapter-ink);
+  font-size: clamp(3.85rem, 6.1vw, 6.75rem);
+  font-weight: 530;
+  line-height: 0.91;
+  letter-spacing: -0.083em;
+}
+
+.reclaim-main-v2 .accounting-fit-copy h2 em {
+  color: inherit;
+  font-family: inherit;
+  font-style: italic;
+  font-weight: 500;
+  letter-spacing: -0.08em;
+}
+
+.reclaim-main-v2 .accounting-fit-copy > p {
+  grid-column: 9 / -1;
+  max-width: 22rem;
+  margin: 0 0 0.35rem;
+  color: rgb(23 26 23 / 0.67);
+  font-size: 1rem;
+  line-height: 1.62;
+  letter-spacing: -0.018em;
+}
+
+.reclaim-main-v2 .accounting-bento {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  grid-template-rows: auto minmax(18.5rem, auto);
+  gap: 1.15rem clamp(0.9rem, 1.7vw, 1.6rem);
+  min-height: 0;
+  margin-top: clamp(4.5rem, 7vw, 6.75rem);
+}
+
+.reclaim-main-v2 .accounting-sources {
+  grid-column: 1 / 7;
+  grid-row: 1;
+  display: grid;
+  gap: 0.65rem;
+  align-self: end;
+}
+
+.reclaim-main-v2 .accounting-sources small {
+  color: rgb(23 26 23 / 0.54);
+  font-size: 0.67rem;
+  font-weight: 680;
+  letter-spacing: 0.055em;
+  text-transform: uppercase;
+}
+
+.reclaim-main-v2 .accounting-sources > div {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.9rem;
+}
+
+.reclaim-main-v2 .accounting-sources span {
+  padding: 0 0 0.7rem;
+  border-bottom: 1px solid rgb(23 26 23 / 0.16) !important;
+  color: rgb(23 26 23 / 0.73) !important;
+  font-size: 0.76rem;
+  font-weight: 620;
+}
+
+.reclaim-main-v2 .accounting-records,
+.reclaim-main-v2 .accounting-reclaim-panel {
+  min-height: 18.5rem;
+  overflow: hidden;
+  border: 1px solid rgb(255 255 255 / 0.13);
+  border-radius: 1.25rem;
+  background:
+    linear-gradient(135deg, rgb(121 217 155 / 0.045), transparent 42%),
+    #111513;
+  box-shadow: 0 2.2rem 5.2rem rgb(48 46 38 / 0.2), inset 0 1px rgb(255 255 255 / 0.065);
+}
+
+.reclaim-main-v2 .accounting-records { grid-column: 1 / 6; grid-row: 2; transform-origin: 85% 50%; }
+.reclaim-main-v2 .accounting-reclaim-panel { grid-column: 7 / -1; grid-row: 2; transform-origin: 15% 50%; }
+
+.reclaim-main-v2 .accounting-bento > i {
+  z-index: 1;
+  grid-column: 5 / 8;
+  grid-row: 2;
+  align-self: center;
+  justify-self: stretch;
+  width: auto;
+  height: 1px;
+  margin: 0;
+  background: linear-gradient(90deg, transparent, rgb(23 26 23 / 0.32) 23% 72%, transparent);
+}
+
+.reclaim-main-v2 .accounting-bento > i::after {
+  right: 22%;
+  width: 0.42rem;
+  height: 0.42rem;
+  border: solid rgb(23 26 23 / 0.66);
+  border-width: 0 1px 1px 0;
+  transform: translateY(-50%) rotate(-45deg);
+}
+
+.reclaim-main-v2 .accounting-records header,
+.reclaim-main-v2 .accounting-reclaim-panel > header { border-color: rgb(255 255 255 / 0.1); }
+
+.reclaim-main-v2 .accounting-reclaim-panel ol { min-height: 13.15rem; }
+.reclaim-main-v2 .accounting-reclaim-panel li { min-height: 100%; }
+
+@media (max-width: 900px) {
+  .reclaim-main-v2 .accounting-fit-copy h2 { grid-column: 1 / 9; }
+  .reclaim-main-v2 .accounting-fit-copy > p { grid-column: 9 / -1; }
+  .reclaim-main-v2 .accounting-records { grid-column: 1 / 7; }
+  .reclaim-main-v2 .accounting-reclaim-panel { grid-column: 7 / -1; }
+}
+
+@media (max-width: 767px) {
+  .reclaim-main-v2 .accounting-bento-chapter {
+    width: min(calc(100% - 2rem), 82rem) !important;
+    padding-block: 6rem 6.75rem !important;
+  }
+
+  .reclaim-main-v2 .accounting-fit-copy { display: block; }
+  .reclaim-main-v2 .accounting-fit-copy h2 { max-width: 9.2ch; font-size: clamp(3.15rem, 13.5vw, 4.6rem); }
+  .reclaim-main-v2 .accounting-fit-copy > p { max-width: 31rem; margin-top: 1.65rem; font-size: 0.98rem; }
+
+  .reclaim-main-v2 .accounting-bento {
+    display: flex;
+    min-height: 0;
+    flex-direction: column;
+    gap: 1.25rem;
+    margin-top: 4rem;
+  }
+
+  .reclaim-main-v2 .accounting-sources { order: 1; width: 100%; }
+  .reclaim-main-v2 .accounting-records { order: 2; width: 100%; min-height: 20rem; }
+  .reclaim-main-v2 .accounting-bento > i { order: 3; align-self: start; width: 1px; height: 2.4rem; margin-left: 1.3rem; background: linear-gradient(rgb(23 26 23 / 0.36), transparent); }
+  .reclaim-main-v2 .accounting-bento > i::after { top: auto; right: 50%; bottom: 0; transform: translateX(50%) rotate(45deg); }
+  .reclaim-main-v2 .accounting-reclaim-panel { order: 4; width: 100%; min-height: 20rem; }
+  .reclaim-main-v2 .accounting-sources > div { gap: 0.6rem; }
+}
+
+@keyframes reclaim-audit-evidence-trace {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+@keyframes reclaim-audit-amount-resolve {
+  0% { color: #24442f; transform: translate3d(0, 0.18rem, 0) scale(0.97); }
+  72% { color: #70d995; transform: translate3d(0, -0.04rem, 0) scale(1.025); }
+  100% { color: #5dc27f; transform: translate3d(0, 0, 0) scale(1); }
+}
+
+.reclaim-main-v2 .accounting-import-row strong {
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+}
+
+.reclaim-nav-wordmark {
+  min-height: 1.75rem;
+  align-items: center;
+  overflow: visible;
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .reclaim-main-v2 .evidence-question { background: var(--chapter-paper); backdrop-filter: none; }
+}
+
+/* The motto is a normal-flow autoplay moment, never a pinned scroll chapter. */
+.reclaim-main-v2 .motto-interlude,
+.reclaim-main-v2 .motto-interlude[data-stage],
+.reclaim-main-v2 .motto-interlude[data-stage='5'] {
+  position: relative !important;
+  min-height: auto !important;
+  height: auto !important;
+  overflow: clip;
+  background: transparent !important;
+}
+
+.reclaim-main-v2 .motto-stage,
+.reclaim-main-v2 .motto-interlude[data-stage='5'] .motto-stage {
+  position: relative !important;
+  top: auto !important;
+  min-height: auto !important;
+  padding: 0 !important;
+}
+
+.reclaim-main-v2 .motto-visual {
+  isolation: isolate;
+  min-height: clamp(43rem, 88dvh, 58rem) !important;
+}
+
+.reclaim-main-v2 .motto-visual::before {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  background: none;
+  content: '' !important;
+  pointer-events: none;
+}
+
+.reclaim-main-v2 .reclaim-paper-field-motto { display: none !important; }
+
+@keyframes reclaim-write-line {
+  from { clip-path: inset(-0.3em 100% -0.3em -0.22em); }
+  to { clip-path: inset(-0.3em -0.4em -0.3em -0.22em); }
+}
+
+.reclaim-main-v2 .motto-handwritten {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: min(100%, 19ch);
+  max-width: 19ch;
+  overflow: visible;
+}
+
+.reclaim-main-v2 .motto-ink-line {
+  display: block;
+  width: max-content;
+  max-width: 100%;
+  overflow: visible;
+  clip-path: inset(-0.3em 100% -0.3em -0.22em);
+  white-space: nowrap;
+}
+
+.reclaim-main-v2 .motto-interlude[data-stage='1'] .motto-ink-line {
+  animation: reclaim-write-line 720ms steps(18, end) both;
+}
+
+.reclaim-main-v2 .motto-interlude[data-stage='1'] .motto-ink-line:nth-child(2) { animation-delay: 520ms; }
+.reclaim-main-v2 .motto-interlude[data-stage='1'] .motto-ink-line:nth-child(3) { animation-delay: 1040ms; }
+.reclaim-main-v2 .motto-interlude[data-stage='1'] .motto-ink-line:nth-child(4) { animation-delay: 1560ms; }
+
+.reclaim-main-v2 .motto-interlude[data-stage='5'] .motto-ink-line {
+  animation: none;
+  clip-path: none;
+}
+
+/* Paper hierarchy: variable elevations, one consistent upper-left light source. */
+.reclaim-main-v2 .evidence-question,
+.reclaim-main-v2 .evidence-fragments article,
+.reclaim-main-v2 .security-controls article {
+  border-color: rgb(80 72 58 / 0.13);
+  background: #fbfaf6;
+  box-shadow:
+    0 1px 0 rgb(255 255 255 / 0.92) inset,
+    0 1.35rem 3.2rem rgb(78 67 49 / 0.13),
+    0 0.2rem 0.55rem rgb(78 67 49 / 0.07);
+}
+
+.reclaim-main-v2 .evidence-stage .commercial-value-grid {
+  grid-template-columns: 1.08fr 0.92fr 1fr;
+  align-items: start;
+  gap: clamp(0.85rem, 1.5vw, 1.4rem);
+  border-top: 0;
+}
+
+.reclaim-main-v2 .evidence-stage .commercial-value-grid article:nth-child(n) {
+  padding: 1.65rem;
+  border: 1px solid rgb(80 72 58 / 0.13);
+  border-radius: 1rem;
+  background: #fbfaf6;
+  box-shadow: 0 1px 0 rgb(255 255 255 / 0.94) inset, 0 1.5rem 3.6rem rgb(78 67 49 / 0.12);
+}
+
+.reclaim-main-v2 .evidence-stage .commercial-value-grid article:nth-child(1) { min-height: 19rem !important; transform: rotate(-0.45deg); }
+.reclaim-main-v2 .evidence-stage .commercial-value-grid article:nth-child(2) { min-height: 16.5rem !important; margin-top: 1.8rem; transform: rotate(0.35deg); }
+.reclaim-main-v2 .evidence-stage .commercial-value-grid article:nth-child(3) { min-height: 14.5rem !important; margin-top: 3.4rem; transform: rotate(-0.2deg); }
+
+/* Atmospheric imagery is reserved for the two brand moments. Product chapters
+   share one edge colour and build depth from contained CSS light and geometry,
+   so the page flows without stitched-image seams or decorative competition. */
+.reclaim-main-v2 .reclaim-hero-atmosphere,
+.reclaim-main-v2 .motto-visual::before {
+  background-color: #f3efe7 !important;
+  background-position: center !important;
+  background-size: cover !important;
+  background-repeat: no-repeat !important;
+}
+
+.reclaim-main-v2 .reclaim-hero-atmosphere {
+  background-image:
+    url('../../assets/landing/backgrounds/reclaim-bg-01-hero-v1.webp') !important;
+}
+
+.reclaim-main-v2 .motto-visual {
+  background: #f3efe7 !important;
+}
+
+.reclaim-main-v2 .motto-visual::before {
+  inset-block: 0;
+  right: auto;
+  left: 50%;
+  width: 100vw;
+  background-image:
+    url('../../assets/landing/backgrounds/reclaim-bg-02-motto-v1.webp') !important;
+  transform: translateX(-50%);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 3.5rem, #000 calc(100% - 3.5rem), transparent 100%);
+  mask-image: linear-gradient(to bottom, transparent 0, #000 3.5rem, #000 calc(100% - 3.5rem), transparent 100%);
+}
+
+.reclaim-main-v2 .kinetic-frame {
+  margin-top: -1px;
+  background: #f3efe7 !important;
+}
+
+/* Evidence: the cards are the material. A tight pool of light sits behind them
+   and resolves back to the common paper colour well before either edge. */
+.reclaim-main-v2 .kinetic-frame:has(.commercial-value) {
+  background:
+    radial-gradient(ellipse 54% 42% at 70% 56%, rgb(255 255 255 / 0.72), transparent 74%),
+    #f3efe7 !important;
+}
+
+/* Accounting: two blind-embossed ledger rules, kept inside the chapter. */
+.reclaim-main-v2 .kinetic-frame:has(.accounting-fit) {
+  background:
+    linear-gradient(108deg, transparent 0 26%, rgb(110 98 75 / 0.055) 26.08%, rgb(255 255 255 / 0.5) 26.18%, transparent 26.28% 100%),
+    linear-gradient(108deg, transparent 0 76%, rgb(110 98 75 / 0.04) 76.08%, rgb(255 255 255 / 0.42) 76.18%, transparent 76.28% 100%),
+    #f3efe7 !important;
+}
+
+/* Portfolio and recovery: soft contact shadows support the live compositions;
+   there is no scene image behind them. */
+.reclaim-main-v2 .kinetic-frame:has(.portfolio-proof) {
+  background:
+    radial-gradient(ellipse 48% 28% at 72% 69%, rgb(78 67 49 / 0.11), transparent 72%),
+    #f3efe7 !important;
+}
+
+.reclaim-main-v2 .kinetic-frame:has(.recovery-proof) {
+  background:
+    radial-gradient(ellipse 46% 30% at 34% 66%, rgb(78 67 49 / 0.09), transparent 74%),
+    #f3efe7 !important;
+}
+
+/* Security gets a single precision groove. The controls, not the wallpaper,
+   carry the hierarchy. */
+.reclaim-main-v2 .kinetic-frame:has(.security-boundary) {
+  background:
+    linear-gradient(101deg, transparent 0 63%, rgb(103 91 69 / 0.045) 63.08%, rgb(255 255 255 / 0.46) 63.18%, transparent 63.28% 100%),
+    #f3efe7 !important;
+}
+
+.reclaim-main-v2 .kinetic-frame:has(.outcome-pricing) {
+  background:
+    radial-gradient(ellipse 44% 32% at 54% 58%, rgb(255 255 255 / 0.62), transparent 76%),
+    #f3efe7 !important;
+}
+
+.reclaim-main-v2 .kinetic-frame:has(.about-reclaim) {
+  background:
+    linear-gradient(104deg, transparent 0 34%, rgb(110 98 75 / 0.04) 34.08%, rgb(255 255 255 / 0.45) 34.18%, transparent 34.28% 100%),
+    #f3efe7 !important;
+}
+
+.reclaim-main-v2 .kinetic-frame:has(.reclaim-faq) {
+  background: #f3efe7 !important;
+}
+
+/* The floating navigation crosses the contained dark ledger. Keep every state
+   legible for the entire morph, including the button while colors switch. */
+.reclaim-commercial-page .reclaim-product-nav[data-on-dark='true'] .reclaim-nav-brand,
+.reclaim-commercial-page .reclaim-product-nav[data-on-dark='true'] .reclaim-nav-links a,
+.reclaim-commercial-page .reclaim-product-nav[data-on-dark='true'] .reclaim-menu-button,
+.reclaim-commercial-page .reclaim-product-nav[data-on-dark='true'] .reclaim-wordmark {
+  color: #eef1ec !important;
+}
+
+.reclaim-commercial-page .reclaim-product-nav[data-on-dark='true'] .reclaim-nav-action .magnetic-control-surface {
+  color: #171a17 !important;
+  border-color: rgb(255 255 255 / 0.5) !important;
+  background: #f4f5f1 !important;
+}
+
+.reclaim-commercial-page .reclaim-product-nav[data-on-dark='true'] .reclaim-nav-action .magnetic-control-icon {
+  color: #171a17 !important;
+  background: rgb(23 26 23 / 0.06) !important;
+}
+
+/* Editorial type stays monochrome. Mint belongs to evidence and product states. */
+.reclaim-commercial-page .reclaim-main-v2 .reclaim-hero .reclaim-eyebrow,
+.reclaim-commercial-page .reclaim-main-v2 .chapter-ivory .reclaim-eyebrow,
+.reclaim-commercial-page .reclaim-main-v2 .accounting-fit-copy .reclaim-eyebrow,
+.reclaim-commercial-page .reclaim-main-v2 .pricing-promise .reclaim-eyebrow,
+.reclaim-commercial-page .reclaim-main-v2 .security-statement .reclaim-eyebrow,
+.reclaim-commercial-page .reclaim-main-v2 .reclaim-faq-intro .reclaim-eyebrow {
+  color: var(--chapter-ink) !important;
+  text-shadow: none !important;
+}
+
+.reclaim-commercial-page .reclaim-main-v2 .chapter-dark-ledger .reclaim-eyebrow {
+  color: #eef1ec !important;
+}
+
+@media (max-width: 767px) {
+  .reclaim-commercial-page .reclaim-product-nav { width: calc(100% - 1rem); }
+  .reclaim-commercial-page .reclaim-product-nav[data-condensed='true'],
+  .reclaim-commercial-page .reclaim-product-nav[data-menu-open='true'] { width: calc(100% - 2rem); }
+
+  .reclaim-main-v2 .motto-visual { min-height: auto !important; padding-block: 7rem 6rem; }
+  .reclaim-main-v2 .motto-handwritten { margin-block: 0 3.5rem; }
+
+  .reclaim-main-v2 .evidence-stage .commercial-value-grid {
+    grid-template-columns: 1fr;
+    width: 100%;
+    margin-inline: 0;
+    gap: 1rem;
+  }
+  .reclaim-main-v2 .evidence-stage .commercial-value-grid article:nth-child(n) {
+    min-height: auto !important;
+    margin-top: 0;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reclaim-commercial-page .reclaim-product-nav,
+  .reclaim-commercial-page .reclaim-product-nav::before,
+  .reclaim-commercial-page .reclaim-product-nav::after,
+  .reclaim-commercial-page .reclaim-nav-wordmark {
+    transition: none !important;
+  }
+
+  .reclaim-main-v2 .motto-ink-line,
+  .reclaim-main-v2 .motto-ink-line[data-written='true'] {
+    animation: none !important;
+    clip-path: none !important;
+  }
+}
+
+/* Final density layer: all interior chapters use the same closer camera. */
+.reclaim-main-v2 .kinetic-frame > .kinetic-plane > section,
+.reclaim-main-v2 .chapter-dark-ledger,
+.reclaim-main-v2 .accounting-bento-chapter,
+.reclaim-main-v2 .portfolio-proof,
+.reclaim-main-v2 .recovery-case-study,
+.reclaim-main-v2 .pricing-payoff,
+.reclaim-main-v2 .about-reclaim {
+  width: min(calc(100% - 4rem), 88rem) !important;
+  max-width: 88rem !important;
+}
+
+.reclaim-main-v2 .kinetic-frame > .kinetic-plane > section {
+  padding-block: clamp(5.25rem, 7vw, 7.25rem) !important;
+}
+
+.reclaim-main-v2 .motto-interlude,
+.reclaim-main-v2 .motto-stage {
+  min-height: 74dvh !important;
+}
+
+.reclaim-main-v2 .motto-visual {
+  width: min(calc(100% - 4rem), 88rem) !important;
+  min-height: clamp(38rem, 74dvh, 50rem) !important;
+  padding-block: clamp(4.75rem, 7vw, 6.5rem) !important;
+}
+
+.reclaim-main-v2 .chapter-dark-ledger {
+  padding-block: clamp(5.75rem, 7.5vw, 7.5rem) !important;
+}
+
+.reclaim-main-v2 .accounting-bento-chapter {
+  padding: clamp(5.5rem, 7vw, 7.25rem) 0 clamp(4rem, 5.5vw, 5.5rem) !important;
+}
+
+.reclaim-main-v2 .portfolio-proof {
+  padding: clamp(3.75rem, 5vw, 5rem) 0 clamp(5rem, 6.5vw, 6.5rem) !important;
+}
+
+.reclaim-main-v2 .recovery-case-study,
+.reclaim-main-v2 .pricing-payoff {
+  padding: clamp(5.5rem, 7vw, 7.25rem) 0 clamp(5.75rem, 7vw, 7.5rem) !important;
+}
+
+.reclaim-main-v2 .about-reclaim {
+  padding: clamp(5.75rem, 7vw, 7.5rem) 0 clamp(6rem, 7.5vw, 8rem) !important;
+}
+
+.reclaim-main-v2 .accounting-bento,
+.reclaim-main-v2 .recovery-case-study-grid,
+.reclaim-main-v2 .pricing-ledger {
+  margin-top: clamp(2.75rem, 4vw, 3.75rem) !important;
+}
+
+.reclaim-main-v2 .about-support {
+  margin-top: clamp(1.25rem, 2.2vw, 2rem) !important;
+}
+
+@media (max-width: 767px) {
+  .reclaim-main-v2 .kinetic-frame > .kinetic-plane > section,
+  .reclaim-main-v2 .chapter-dark-ledger,
+  .reclaim-main-v2 .accounting-bento-chapter,
+  .reclaim-main-v2 .portfolio-proof,
+  .reclaim-main-v2 .recovery-case-study,
+  .reclaim-main-v2 .pricing-payoff,
+  .reclaim-main-v2 .about-reclaim,
+  .reclaim-main-v2 .motto-visual {
+    width: min(calc(100% - 2rem), 88rem) !important;
+  }
+
+  .reclaim-main-v2 .motto-interlude,
+  .reclaim-main-v2 .motto-stage,
+  .reclaim-main-v2 .motto-visual {
+    min-height: auto !important;
+  }
+
+  .reclaim-main-v2 .motto-visual {
+    padding-block: 5rem !important;
+  }
+
+  .reclaim-main-v2 .kinetic-frame > .kinetic-plane > section,
+  .reclaim-main-v2 .chapter-dark-ledger,
+  .reclaim-main-v2 .accounting-bento-chapter,
+  .reclaim-main-v2 .recovery-case-study,
+  .reclaim-main-v2 .pricing-payoff,
+  .reclaim-main-v2 .about-reclaim {
+    padding-block: 5rem !important;
+  }
+}
