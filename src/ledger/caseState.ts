@@ -3,8 +3,9 @@ import type { Finding } from '@/types'
 /** The three outcomes a human can record against a case. */
 export type DecisionValue = 'confirmed' | 'needs_info' | 'expected'
 
-/** Where a confirmed case stands operationally. Terminal at 'resolved'. */
-export type RecoveryStage = 'ready_to_prepare' | 'ready_to_contact' | 'awaiting_response' | 'resolved'
+/** The real commercial lifecycle after a person confirms a potential case. */
+export type RecoveryStage = 'confirmed' | 'requested' | 'recovered' | 'not_recovered'
+export type RecoveryMethod = 'refund' | 'credit' | 'offset'
 
 /** Where an undecided (or needs-info) case sits in the Findings queue. */
 export type QueueGroup = 'ready_to_verify' | 'needs_context' | 'worth_noting'
@@ -14,14 +15,20 @@ export interface CaseState {
   reason: string | null
   decidedAt: number | null
   recoveryStage: RecoveryStage | null
-  /** User-edited recovery copy. Optional so persisted v1 ledgers remain compatible. */
+  /** User-edited recovery package fields. Optional so persisted ledgers remain compatible. */
   recoveryDraft?: string | null
+  recoverySubject?: string | null
+  requestedResolution?: RecoveryMethod | null
+  recoveryRequestedAt?: number | null
+  recoveryResolvedAt?: number | null
+  recoveredAmount?: number | null
+  recoveryOutcomeNote?: string | null
 }
 
 export const EMPTY_CASE_STATE: CaseState = { decision: null, reason: null, decidedAt: null, recoveryStage: null }
 
 export function confirmCase(reason: string | null): CaseState {
-  return { decision: 'confirmed', reason, decidedAt: Date.now(), recoveryStage: 'ready_to_prepare' }
+  return { decision: 'confirmed', reason, decidedAt: Date.now(), recoveryStage: 'confirmed' }
 }
 
 export function markNeedsInfo(reason: string | null): CaseState {
@@ -29,7 +36,7 @@ export function markNeedsInfo(reason: string | null): CaseState {
 }
 
 export function markExpected(reason: string | null): CaseState {
-  return { decision: 'expected', reason, decidedAt: Date.now(), recoveryStage: 'resolved' }
+  return { decision: 'expected', reason, decidedAt: Date.now(), recoveryStage: null }
 }
 
 /** Update supporting notes without resetting the decision timestamp or recovery progress. */
@@ -42,14 +49,37 @@ export function updateRecoveryDraft(state: CaseState, recoveryDraft: string): Ca
   return { ...state, recoveryDraft }
 }
 
-const RECOVERY_STAGE_ORDER: RecoveryStage[] = ['ready_to_prepare', 'ready_to_contact', 'awaiting_response', 'resolved']
+export function updateRecoveryPackage(
+  state: CaseState,
+  update: { subject?: string; body?: string; requestedResolution?: RecoveryMethod }
+): CaseState {
+  return {
+    ...state,
+    recoverySubject: update.subject ?? state.recoverySubject,
+    recoveryDraft: update.body ?? state.recoveryDraft,
+    requestedResolution: update.requestedResolution ?? state.requestedResolution,
+  }
+}
 
-/** Move a confirmed case to the next recovery stage. No-op once resolved or if never confirmed. */
-export function advanceRecoveryStage(state: CaseState): CaseState {
-  if (!state.recoveryStage) return state
-  const index = RECOVERY_STAGE_ORDER.indexOf(state.recoveryStage)
-  const next = RECOVERY_STAGE_ORDER[Math.min(index + 1, RECOVERY_STAGE_ORDER.length - 1)]
-  return { ...state, recoveryStage: next }
+export function markRecoveryRequested(state: CaseState): CaseState {
+  if (state.recoveryStage !== 'confirmed') return state
+  return { ...state, recoveryStage: 'requested', recoveryRequestedAt: Date.now() }
+}
+
+export function recordRecoveryOutcome(
+  state: CaseState,
+  outcome: 'recovered' | 'not_recovered',
+  recoveredAmount: number | null,
+  note: string | null
+): CaseState {
+  if (state.recoveryStage !== 'requested' && state.recoveryStage !== 'recovered' && state.recoveryStage !== 'not_recovered') return state
+  return {
+    ...state,
+    recoveryStage: outcome,
+    recoveredAmount: outcome === 'recovered' ? Math.max(0, recoveredAmount ?? 0) : null,
+    recoveryOutcomeNote: note,
+    recoveryResolvedAt: Date.now(),
+  }
 }
 
 export function queueGroupFor(finding: Finding, state: CaseState | undefined): QueueGroup {
@@ -66,10 +96,10 @@ export const QUEUE_GROUP_LABEL: Record<QueueGroup, string> = {
 }
 
 export const RECOVERY_STAGE_LABEL: Record<RecoveryStage, string> = {
-  ready_to_prepare: 'Ready to prepare',
-  ready_to_contact: 'Ready to contact',
-  awaiting_response: 'Awaiting response',
-  resolved: 'Resolved',
+  confirmed: 'Confirmed',
+  requested: 'Requested',
+  recovered: 'Recovered',
+  not_recovered: 'Not recovered',
 }
 
 export const DECISION_LABEL: Record<DecisionValue, string> = {
@@ -84,7 +114,18 @@ export function isInFindingsQueue(state: CaseState | undefined): boolean {
   return state.decision === 'needs_info'
 }
 
-/** Part of the Recovery track — confirmed (or resolved-as-expected) and carrying a stage. */
+/** Part of the Recovery track: confirmed and carrying an explicit recovery outcome. */
 export function isInRecoveryQueue(state: CaseState | undefined): boolean {
   return state?.recoveryStage != null
+}
+
+/** Normalize the temporary pre-commercial stage names saved by earlier builds. */
+export function normalizeCaseState(state: CaseState): CaseState {
+  const legacyStage = state.recoveryStage as string | null
+  const recoveryStage: RecoveryStage | null = legacyStage === 'ready_to_prepare' || legacyStage === 'ready_to_contact'
+    ? 'confirmed'
+    : legacyStage === 'awaiting_response' || legacyStage === 'resolved'
+      ? state.decision === 'expected' ? null : 'requested'
+      : legacyStage as RecoveryStage | null
+  return { ...state, recoveryStage }
 }

@@ -1,10 +1,10 @@
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
-import { ArrowRight, Plus, Save, Trash2 } from 'lucide-react'
+import { ArrowRight, Plus, Trash2 } from 'lucide-react'
 import type { CSSProperties } from 'react'
 import type { OverviewSummary, CaseView } from '@/ledger/views'
-import type { DecisionValue } from '@/ledger/caseState'
+import type { DecisionValue, RecoveryMethod } from '@/ledger/caseState'
 import { formatCurrency, formatDate } from '@/lib/format'
-import { QUEUE_GROUP_LABEL, queueGroupFor } from '@/ledger/caseState'
+import { QUEUE_GROUP_LABEL, RECOVERY_STAGE_LABEL, queueGroupFor } from '@/ledger/caseState'
 import { FINDING_TYPE_LABELS } from '@/lib/labels'
 import { FindingCase } from '@/components/audit/FindingCase'
 import { MOTION_SPRING } from '@/motion/system'
@@ -63,11 +63,11 @@ interface OverviewViewProps {
   onCloseCase?: () => void
   onOpenDraft?: () => void
   onDecide?: (findingId: string, value: DecisionValue, reason: string | null) => void
-  onAdvanceStage?: (findingId: string) => void
-  onDraftChange?: (findingId: string, text: string) => void
+  onPackageChange?: (findingId: string, update: { subject?: string; body?: string; requestedResolution?: RecoveryMethod }) => void
+  onMarkRequested?: (findingId: string, recoveryPackage: { subject: string; body: string; requestedResolution: RecoveryMethod }) => void
+  onRecordOutcome?: (findingId: string, outcome: 'recovered' | 'not_recovered', amount: number | null, note: string | null) => void
   onOpenImport: () => void
   onClearLedger: () => void
-  onSaveToHistory?: () => void
 }
 
 /** Overview lens: the standing ledger, compressed into the next useful move. */
@@ -79,15 +79,17 @@ export function OverviewView({
   onCloseCase,
   onOpenDraft,
   onDecide,
-  onAdvanceStage,
-  onDraftChange,
+  onPackageChange,
+  onMarkRequested,
+  onRecordOutcome,
   onOpenImport,
   onClearLedger,
-  onSaveToHistory,
 }: OverviewViewProps) {
-  const hasActiveWork = summary.readyToVerifyCount + summary.needsContextCount + summary.worthNotingCount > 0
+  const hasOpenFindings = summary.readyToVerifyCount + summary.needsContextCount + summary.worthNotingCount > 0
+  const hasActiveWork = hasOpenFindings || summary.recoveryActiveCount > 0
   const reduceMotion = useReducedMotion()
-  const recommended = summary.nextRecommendedCase
+  const recommended = summary.nextRecommendedCase ?? summary.nextRecoveryCase
+  const recoveryRecommended = !summary.nextRecommendedCase && Boolean(summary.nextRecoveryCase)
   const previewRecords = recommended?.finding.relatedRecords.slice(0, 2) ?? []
   const openCaseCount = summary.statusMix.reduce((sum, item) => sum + item.count, 0)
   const largestExposure = summary.exposureByType[0]?.dollarImpact ?? 0
@@ -107,18 +109,22 @@ export function OverviewView({
         <div className="audit-overview-heading">
           <span>Standing ledger</span>
           <OverviewTitle className="audit-overview-title">
-            {hasActiveWork ? 'Your payment recovery, summarized.' : 'Your ledger is current.'}
+            {hasActiveWork ? 'Your payment recovery, summarized.' : summary.recoveredCount > 0 ? 'Recovery outcomes, recorded.' : 'Your ledger is current.'}
           </OverviewTitle>
           <p>
             {summary.recordCount} records across {summary.vendorCount} vendors. Reclaim keeps the evidence and the next decision in the same view.
           </p>
         </div>
 
-        <div className="audit-overview-total" data-tone={hasActiveWork ? 'recovery' : 'quiet'} data-motion-value data-tutorial="overview-total">
-          <span>{hasActiveWork ? 'Open exposure' : 'Open recovery value'}</span>
-          <strong>{formatCurrency(hasActiveWork ? summary.worthInvestigatingTotal : 0)}</strong>
+        <div className="audit-overview-total" data-tone={hasActiveWork || summary.recoveredCount > 0 ? 'recovery' : 'quiet'} data-motion-value>
+          <span>{hasOpenFindings ? 'Open exposure' : summary.recoveryActiveCount > 0 ? 'Active recovery' : summary.recoveredCount > 0 ? 'Verified recovered' : 'Open recovery value'}</span>
+          <strong>{formatCurrency(hasOpenFindings ? summary.worthInvestigatingTotal : summary.recoveryActiveCount > 0 ? summary.recoveryActiveValue : summary.recoveredValue)}</strong>
           <small>
-            {openCaseCount} case{openCaseCount === 1 ? '' : 's'} awaiting a decision
+            {hasOpenFindings
+              ? `${openCaseCount} case${openCaseCount === 1 ? '' : 's'} awaiting a decision`
+              : summary.recoveryActiveCount > 0
+                ? `${summary.recoveryActiveCount} confirmed case${summary.recoveryActiveCount === 1 ? '' : 's'} awaiting an outcome`
+                : `${summary.recoveredCount} verified recovery outcome${summary.recoveredCount === 1 ? '' : 's'}`}
           </small>
           {summary.recoveryActiveCount > 0 && (
             <div className="audit-overview-total-secondary">
@@ -129,8 +135,8 @@ export function OverviewView({
         </div>
       </header>
 
-      {!activeCase && hasActiveWork && (
-        <section className="audit-summary-grid" data-reveal={revealData} aria-label="Ledger summary" data-tutorial="overview-summary">
+      {!activeCase && hasOpenFindings && (
+        <section className="audit-summary-grid" data-reveal={revealData} aria-label="Ledger summary">
           <div className="audit-summary-panel audit-summary-mix">
             <div className="audit-summary-panel-heading">
               <div>
@@ -213,7 +219,7 @@ export function OverviewView({
       )}
 
       <AnimatePresence mode="popLayout" initial={false}>
-        {activeCase && onCloseCase && onOpenDraft && onDecide && onAdvanceStage && onDraftChange ? (
+        {activeCase && onCloseCase && onOpenDraft && onDecide && onPackageChange && onMarkRequested && onRecordOutcome ? (
           <FindingCase
             key={activeCase.finding.id}
             finding={activeCase.finding}
@@ -222,15 +228,16 @@ export function OverviewView({
             draftOpen={draftOpen}
             onOpenDraft={onOpenDraft}
             onDecide={onDecide}
-            onAdvanceStage={onAdvanceStage}
-            onDraftChange={onDraftChange}
+            onPackageChange={onPackageChange}
+            onMarkRequested={onMarkRequested}
+            onRecordOutcome={onRecordOutcome}
             embedded
           />
         ) : recommended ? (
           <section className="audit-recommended" key="recommended">
             <div className="audit-recommended-intro">
-              <span>Recommended next</span>
-              <p>The clearest evidence and the largest recoverable amount rise first.</p>
+              <span>{recoveryRecommended ? 'Recovery next' : 'Recommended next'}</span>
+              <p>{recoveryRecommended ? 'Continue the confirmed case with the clearest next action.' : 'The clearest evidence and the largest recoverable amount rise first.'}</p>
             </div>
 
             <motion.button
@@ -246,7 +253,9 @@ export function OverviewView({
             >
               <div className="audit-recommended-summary">
                 <span className="audit-status-chip" data-class={recommended.finding.class}>
-                  {QUEUE_GROUP_LABEL[queueGroupFor(recommended.finding, recommended.state)]}
+                  {recoveryRecommended && recommended.state.recoveryStage
+                    ? RECOVERY_STAGE_LABEL[recommended.state.recoveryStage]
+                    : QUEUE_GROUP_LABEL[queueGroupFor(recommended.finding, recommended.state)]}
                 </span>
                 <span className="audit-recommended-title">{recommended.finding.title}</span>
                 <p>{recommended.finding.vendor}</p>
@@ -260,14 +269,18 @@ export function OverviewView({
                     <small>{formatDate(record.paymentDate)}</small>
                   </div>
                 ))}
-                <i>Matched vendor, invoice, and amount</i>
+                <div className="audit-recommended-link">
+                  <span aria-hidden="true" />
+                  <i>Vendor, invoice, and amount align</i>
+                  <span aria-hidden="true" />
+                </div>
               </div>
 
               <div className="audit-recommended-impact">
-                <span>Potential recovery</span>
+                <span>{recoveryRecommended ? 'Amount in recovery' : 'Potential recovery'}</span>
                 <strong>{formatCurrency(recommended.finding.dollarImpact)}</strong>
                 <span className="audit-recommended-open">
-                  Review evidence
+                  {recoveryRecommended ? 'Continue recovery' : 'Review evidence'}
                   <ArrowRight aria-hidden="true" />
                 </span>
               </div>
@@ -282,7 +295,7 @@ export function OverviewView({
       </AnimatePresence>
 
       {!activeCase && (
-        <footer className="audit-overview-footer" data-tutorial="overview-footer">
+        <footer className="audit-overview-footer">
           <button type="button" className="audit-btn" data-motion="pressable" data-motion-ray="true" data-variant="primary" onClick={onOpenImport}>
             <Plus aria-hidden="true" />
             Add records
@@ -291,12 +304,6 @@ export function OverviewView({
             <Trash2 aria-hidden="true" />
             Clear ledger
           </button>
-          {onSaveToHistory && (
-            <button type="button" className="audit-btn" data-motion="pressable" data-variant="ghost" onClick={onSaveToHistory}>
-              <Save aria-hidden="true" />
-              Save to history
-            </button>
-          )}
           {summary.recoveryActiveCount > 0 && (
             <span>
               {summary.recoveryActiveCount} case{summary.recoveryActiveCount === 1 ? '' : 's'} moving through recovery

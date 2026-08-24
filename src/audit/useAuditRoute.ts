@@ -4,6 +4,7 @@ export type RouteMode = 'overview' | 'findings' | 'recovery'
 export type EntryRoute = 'sample' | 'upload'
 
 export interface AuditRouteState {
+  projectId: string | null
   mode: RouteMode
   caseId: string | null
   draft: boolean
@@ -19,11 +20,15 @@ export function parseAuditRoute(search: string): AuditRouteState {
   const draft = caseId !== null && params.get('draft') === '1'
   const entryParam = params.get('entry')
   const entry: EntryRoute | null = entryParam === 'sample' || entryParam === 'upload' ? entryParam : null
-  return entry ? { mode: 'overview', caseId: null, draft: false, entry } : { mode, caseId, draft, entry: null }
+  const projectId = params.get('project')
+  return entry
+    ? { projectId, mode: 'overview', caseId: null, draft: false, entry }
+    : { projectId, mode, caseId, draft, entry: null }
 }
 
 export function buildAuditSearch(state: AuditRouteState): string {
   const params = new URLSearchParams()
+  if (state.projectId) params.set('project', state.projectId)
   if (state.entry) {
     params.set('entry', state.entry)
     return `?${params.toString()}`

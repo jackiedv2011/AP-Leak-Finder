@@ -9,13 +9,13 @@ interface RecoveryViewProps {
 }
 
 const STAGE_SUBTEXT: Record<RecoveryQueueGroup['stage'], string> = {
-  ready_to_prepare: 'Confirmed — a recovery package can be prepared',
-  ready_to_contact: 'Package prepared — ready to reach out',
-  awaiting_response: 'Outreach sent — waiting to hear back',
-  resolved: 'Settled, one way or another',
+  confirmed: 'Evidence confirmed and ready for a recovery request',
+  requested: 'Request recorded and awaiting a money outcome',
+  recovered: 'Refund, credit, or offset verified',
+  not_recovered: 'Closed without money returned',
 }
 
-/** Recovery lens — every confirmed (or resolved) case, grouped by operational stage. */
+/** Recovery lens: every confirmed case grouped by its explicit money outcome. */
 export function RecoveryView({ queue, onOpenCase }: RecoveryViewProps) {
   const totalCases = queue.reduce((sum, group) => sum + group.cases.length, 0)
   const reduceMotion = useReducedMotion()
@@ -26,7 +26,7 @@ export function RecoveryView({ queue, onOpenCase }: RecoveryViewProps) {
         <header className="audit-queue-header">
           <span>Recovery pipeline</span>
           <h1>Recovery</h1>
-          <p>Confirmed cases stay attached to their evidence through resolution.</p>
+          <p>Confirmed cases stay attached to their evidence until money is recovered or the case is closed.</p>
         </header>
         <div className="audit-empty-state">
           <h2>No cases in recovery yet</h2>
@@ -41,7 +41,7 @@ export function RecoveryView({ queue, onOpenCase }: RecoveryViewProps) {
       <header className="audit-queue-header">
         <span>Recovery pipeline</span>
         <h1>Recovery</h1>
-        <p>{totalCases} cases moving from confirmed evidence to a recorded outcome.</p>
+        <p>{totalCases} case{totalCases === 1 ? '' : 's'} moving from confirmed evidence to a recorded money outcome.</p>
       </header>
       <div className="audit-lanes">
         {queue.map((group) => (

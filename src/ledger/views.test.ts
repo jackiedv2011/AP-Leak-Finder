@@ -49,7 +49,7 @@ describe('views', () => {
     expect(worthNoting.cases.some((c) => c.finding.type === 'missed_discount')).toBe(true)
   })
 
-  it('confirming a case moves it out of Findings and into the Recovery queue at "ready to prepare"', () => {
+  it('confirming a case moves it out of Findings and into the confirmed Recovery lane', () => {
     let env = buildSampleEnv()
     const recoverable = env.result.findings.find((f) => f.class === 'recoverable')!
     env = setCaseState(env, recoverable.id, confirmCase('vendor confirmed'))
@@ -58,18 +58,17 @@ describe('views', () => {
     expect(stillInFindings).toBe(false)
 
     const recovery = recoveryQueue(env)
-    const prepareGroup = recovery.find((g) => g.stage === 'ready_to_prepare')!
+    const prepareGroup = recovery.find((g) => g.stage === 'confirmed')!
     expect(prepareGroup.cases.some((c) => c.finding.id === recoverable.id)).toBe(true)
     expect(overviewSummary(env).recoveryActiveValue).toBe(recoverable.dollarImpact)
   })
 
-  it('marking a case expected resolves it directly, visible in the Recovery "resolved" group', () => {
+  it('marking a case expected does not falsely place it in a recovery outcome lane', () => {
     let env = buildSampleEnv()
     const opportunity = env.result.findings.find((f) => f.class === 'opportunity')!
     env = setCaseState(env, opportunity.id, markExpected('one-time exception'))
 
-    const resolvedGroup = recoveryQueue(env).find((g) => g.stage === 'resolved')!
-    expect(resolvedGroup.cases.some((c) => c.finding.id === opportunity.id)).toBe(true)
+    expect(recoveryQueue(env).flatMap((group) => group.cases).some((c) => c.finding.id === opportunity.id)).toBe(false)
   })
 
   it('needs-information keeps the case out of Recovery and inside Findings under "needs context"', () => {

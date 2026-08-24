@@ -1,14 +1,16 @@
 import { describe, expect, it } from 'vitest'
 import {
-  advanceRecoveryStage,
   confirmCase,
   isInFindingsQueue,
   isInRecoveryQueue,
   markExpected,
   markNeedsInfo,
+  markRecoveryRequested,
+  recordRecoveryOutcome,
   queueGroupFor,
   updateCaseReason,
   updateRecoveryDraft,
+  updateRecoveryPackage,
 } from '@/ledger/caseState'
 import type { Finding } from '@/types'
 
@@ -28,20 +30,20 @@ function finding(overrides: Partial<Finding>): Finding {
 }
 
 describe('case-state transitions', () => {
-  it('confirming a case puts it straight into the recovery track at "ready to prepare"', () => {
+  it('confirming a case puts it into the real recovery lifecycle', () => {
     const state = confirmCase('vendor confirmed')
     expect(state.decision).toBe('confirmed')
-    expect(state.recoveryStage).toBe('ready_to_prepare')
+    expect(state.recoveryStage).toBe('confirmed')
     expect(isInFindingsQueue(state)).toBe(false)
     expect(isInRecoveryQueue(state)).toBe(true)
   })
 
-  it('marking a case expected resolves it immediately without a recovery track', () => {
+  it('marking a case expected closes the finding without inventing a recovery outcome', () => {
     const state = markExpected('scheduled split payment')
     expect(state.decision).toBe('expected')
-    expect(state.recoveryStage).toBe('resolved')
+    expect(state.recoveryStage).toBeNull()
     expect(isInFindingsQueue(state)).toBe(false)
-    expect(isInRecoveryQueue(state)).toBe(true)
+    expect(isInRecoveryQueue(state)).toBe(false)
   })
 
   it('needs-information keeps the case in the findings queue, not the recovery track', () => {
@@ -52,25 +54,30 @@ describe('case-state transitions', () => {
     expect(isInRecoveryQueue(state)).toBe(false)
   })
 
-  it('advances through the recovery stages in order and stops at resolved', () => {
+  it('records an explicit request and then the verified money outcome', () => {
     let state = confirmCase(null)
-    expect(state.recoveryStage).toBe('ready_to_prepare')
-    state = advanceRecoveryStage(state)
-    expect(state.recoveryStage).toBe('ready_to_contact')
-    state = advanceRecoveryStage(state)
-    expect(state.recoveryStage).toBe('awaiting_response')
-    state = advanceRecoveryStage(state)
-    expect(state.recoveryStage).toBe('resolved')
-    state = advanceRecoveryStage(state)
-    expect(state.recoveryStage).toBe('resolved')
+    expect(state.recoveryStage).toBe('confirmed')
+    state = markRecoveryRequested(state)
+    expect(state.recoveryStage).toBe('requested')
+    expect(state.recoveryRequestedAt).toBeTypeOf('number')
+    state = recordRecoveryOutcome(state, 'recovered', 85, 'Credit memo CM-42')
+    expect(state.recoveryStage).toBe('recovered')
+    expect(state.recoveredAmount).toBe(85)
+    expect(state.recoveryOutcomeNote).toBe('Credit memo CM-42')
+  })
+
+  it('can close a requested case without falsely recording recovered money', () => {
+    const state = recordRecoveryOutcome(markRecoveryRequested(confirmCase(null)), 'not_recovered', 100, 'Vendor rejected the request')
+    expect(state.recoveryStage).toBe('not_recovered')
+    expect(state.recoveredAmount).toBeNull()
   })
 
   it('updates a decision note without resetting recovery progress or its timestamp', () => {
-    const confirmed = advanceRecoveryStage(confirmCase(null))
+    const confirmed = markRecoveryRequested(confirmCase(null))
     const updated = updateCaseReason(confirmed, 'Verified against the vendor statement')
 
     expect(updated.reason).toBe('Verified against the vendor statement')
-    expect(updated.recoveryStage).toBe('ready_to_contact')
+    expect(updated.recoveryStage).toBe('requested')
     expect(updated.decidedAt).toBe(confirmed.decidedAt)
   })
 
@@ -80,7 +87,14 @@ describe('case-state transitions', () => {
 
     expect(updated.recoveryDraft).toBe('Custom recovery request')
     expect(updated.decision).toBe('confirmed')
-    expect(updated.recoveryStage).toBe('ready_to_prepare')
+    expect(updated.recoveryStage).toBe('confirmed')
+  })
+
+  it('stores the editable subject, body, and requested resolution together', () => {
+    const updated = updateRecoveryPackage(confirmCase(null), { subject: 'Invoice INV-1', body: 'Please review.', requestedResolution: 'credit' })
+    expect(updated.recoverySubject).toBe('Invoice INV-1')
+    expect(updated.recoveryDraft).toBe('Please review.')
+    expect(updated.requestedResolution).toBe('credit')
   })
 
   it('an undecided case is grouped by finding class', () => {

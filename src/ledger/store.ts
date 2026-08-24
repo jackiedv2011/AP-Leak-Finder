@@ -1,6 +1,6 @@
 import type { APRecord, DetectionResult, ParseResult } from '@/types'
 import { detectFindings } from '@/lib/detection'
-import { EMPTY_CASE_STATE, type CaseState } from '@/ledger/caseState'
+import { EMPTY_CASE_STATE, normalizeCaseState, type CaseState } from '@/ledger/caseState'
 
 export interface ImportBatch {
   id: string
@@ -50,6 +50,9 @@ export function deserializeEnvironment(json: string): LedgerEnvironment {
   return {
     ...parsed,
     records,
+    caseStates: Object.fromEntries(
+      Object.entries(parsed.caseStates ?? {}).map(([id, state]) => [id, normalizeCaseState(state as CaseState)])
+    ),
     result: {
       ...parsed.result,
       findings: (parsed.result.findings as Array<Record<string, unknown>>).map((f) => ({

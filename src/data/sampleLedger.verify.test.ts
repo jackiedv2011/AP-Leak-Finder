@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { getSampleLedger } from '@/data/sampleLedger'
 import { detectFindings } from '@/lib/detection'
+import { landingSamplePresentation } from '@/data/landingSamplePresentation'
 
 describe('sample ledger sanity check', () => {
   it('produces a believable spread of findings', () => {
@@ -35,6 +36,8 @@ describe('sample ledger sanity check', () => {
     expect(result.findings.filter((finding) => finding.class === 'review')).toHaveLength(7)
     expect(result.findings.filter((finding) => finding.class === 'opportunity')).toHaveLength(3)
     expect(result.findings.some((finding) => finding.type === 'exact_duplicate' && finding.dollarImpact === 6800)).toBe(true)
+    expect(landingSamplePresentation.recordCount).toBe(records.length)
+    expect(landingSamplePresentation.recoverableTotal).toBe(result.recoverableTotal)
 
     for (const type of [
       'exact_duplicate',

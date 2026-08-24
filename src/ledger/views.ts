@@ -59,8 +59,11 @@ export interface OverviewSummary {
   /** Confirmed cases still moving through recovery (not yet resolved). */
   recoveryActiveCount: number
   recoveryActiveValue: number
+  recoveredCount: number
+  recoveredValue: number
   newSinceLastVisitCount: number
   nextRecommendedCase: CaseView | null
+  nextRecoveryCase: CaseView | null
 }
 
 /** Overview lens — the environment compressed into what it means right now. */
@@ -84,12 +87,24 @@ export function overviewSummary(env: LedgerEnvironment): OverviewSummary {
   const worthInvestigatingTotal = active.reduce((sum, f) => sum + f.dollarImpact, 0)
   const recoveryActive = findings.filter((f) => {
     const state = getCaseState(env, f.id)
-    return isInRecoveryQueue(state) && state.recoveryStage !== 'resolved'
+    return state.recoveryStage === 'confirmed' || state.recoveryStage === 'requested'
   })
   const recoveryActiveCount = recoveryActive.length
   const recoveryActiveValue = recoveryActive.reduce((sum, finding) => sum + finding.dollarImpact, 0)
+  const recovered = findings.filter((finding) => getCaseState(env, finding.id).recoveryStage === 'recovered')
+  const recoveredCount = recovered.length
+  const recoveredValue = recovered.reduce((sum, finding) => {
+    const state = getCaseState(env, finding.id)
+    return sum + (state.recoveredAmount ?? finding.dollarImpact)
+  }, 0)
 
   const nextRecommended = pickNextRecommended(active)
+  const nextRecovery = recoveryActive
+    .toSorted((a, b) => {
+      const aStage = getCaseState(env, a.id).recoveryStage === 'confirmed' ? 0 : 1
+      const bStage = getCaseState(env, b.id).recoveryStage === 'confirmed' ? 0 : 1
+      return aStage - bStage || b.dollarImpact - a.dollarImpact
+    })[0]
 
   return {
     recordCount: stats.recordCount,
@@ -114,8 +129,11 @@ export function overviewSummary(env: LedgerEnvironment): OverviewSummary {
       .slice(0, 4),
     recoveryActiveCount,
     recoveryActiveValue,
+    recoveredCount,
+    recoveredValue,
     newSinceLastVisitCount: env.newFindingIds.length,
     nextRecommendedCase: nextRecommended ? toCaseView(env, nextRecommended) : null,
+    nextRecoveryCase: nextRecovery ? toCaseView(env, nextRecovery) : null,
   }
 }
 
@@ -145,9 +163,9 @@ export interface RecoveryQueueGroup {
   cases: CaseView[]
 }
 
-const RECOVERY_STAGE_ORDER: RecoveryStage[] = ['ready_to_prepare', 'ready_to_contact', 'awaiting_response', 'resolved']
+const RECOVERY_STAGE_ORDER: RecoveryStage[] = ['confirmed', 'requested', 'recovered', 'not_recovered']
 
-/** Recovery lens — every confirmed (or resolved-as-expected) case, grouped by operational stage. */
+/** Recovery lens: every confirmed case grouped by its explicit money outcome. */
 export function recoveryQueue(env: LedgerEnvironment): RecoveryQueueGroup[] {
   const inRecovery = env.result.findings.filter((f) => isInRecoveryQueue(getCaseState(env, f.id)))
   return RECOVERY_STAGE_ORDER.map((stage) => {

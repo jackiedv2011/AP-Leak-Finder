@@ -14,16 +14,22 @@
   --landing-dark: #101411;
   --landing-mint: #73d99a;
   --landing-page-gutter: clamp(1.25rem, 4vw, 4rem);
-  /* The page uses one generous rhythm, rather than per-section spacer hacks. */
-  --landing-section-space: clamp(5.1rem, 8.4vw, 8.4rem);
-  --landing-section-gap: clamp(2rem, 3.6vw, 3.6rem);
+  /* A closer editorial frame: generous, but without gallery-scale dead space. */
+  --landing-section-space: clamp(4.6rem, 6.4vw, 6.6rem);
+  --landing-section-gap: clamp(1.75rem, 3vw, 3rem);
+  --landing-copy-size: clamp(1.08rem, 1.18vw, 1.22rem);
+  --landing-copy-leading: 1.58;
   background: var(--landing-paper);
   overflow-x: clip;
 }
 
 /* One unambiguous layer model: background 0, content 1, fixed navigation 20. */
 .reclaim-reference-v3 {
-  background: var(--landing-paper) !important;
+  background-color: var(--landing-paper) !important;
+  background-image: url('../../assets/landing/backgrounds/reclaim-bg-05-portfolio-cotton-v1.webp') !important;
+  background-position: center top !important;
+  background-size: max(100vw, 96rem) auto !important;
+  background-repeat: repeat-y !important;
   overflow-x: clip;
 }
 
@@ -43,11 +49,28 @@
   --scene-position: center;
   --scene-size: cover;
   padding: var(--landing-section-y) var(--landing-page-gutter) !important;
-  background-color: var(--landing-paper) !important;
+  background-color: transparent !important;
   background-image: var(--scene-image) !important;
   background-position: var(--scene-position) !important;
   background-size: var(--scene-size) !important;
   background-repeat: no-repeat !important;
+}
+
+/* Supporting copy is part of the composition, not fine print. One shared
+ * measure keeps every chapter readable without introducing local overrides. */
+.reclaim-reference-v3 :is(
+  .reclaim-hero-pitch,
+  .ref-ledger-heading,
+  .commercial-heading,
+  .accounting-fit-copy,
+  .portfolio-proof-meta,
+  .security-statement,
+  .pricing-promise,
+  .about-support,
+  .reclaim-faq-intro
+) > p:not(.ref-about-principle) {
+  font-size: var(--landing-copy-size) !important;
+  line-height: var(--landing-copy-leading) !important;
 }
 
 /* Section plates meet directly. Legacy pseudo-elements used several competing
@@ -73,18 +96,18 @@
 
 /* No permanent white strip. Each material begins cleanly at the exact section
  * boundary, which is more stable than masking two independently cropped files. */
-.reclaim-reference-v3 .ref-ledger { --scene-image: url('../../assets/landing/backgrounds/reclaim-bg-03-workflow-mineral-v1.jpg'); }
+.reclaim-reference-v3 .ref-ledger { --scene-image: none; }
 .reclaim-reference-v3 .ref-evidence {
   --scene-image: url('../../assets/landing/scenes/reclaim-evidence-scene-v1-clean.webp');
 }
-.reclaim-reference-v3 .ref-workflow { --scene-image: url('../../assets/landing/backgrounds/reclaim-bg-03-workflow-mineral-v1.jpg'); }
-.reclaim-reference-v3 .ref-results { --scene-image: url('../../assets/landing/backgrounds/reclaim-bg-05-portfolio-cotton-v1.webp'); }
-.reclaim-reference-v3 .ref-recovery { --scene-image: url('../../assets/landing/backgrounds/reclaim-bg-06-recovery-chalk-v1.webp'); }
-.reclaim-reference-v3 .ref-security { --scene-image: url('../../assets/landing/backgrounds/reclaim-bg-07-security-linen-v1.webp'); }
+.reclaim-reference-v3 .ref-workflow { --scene-image: none; }
+.reclaim-reference-v3 .ref-results { --scene-image: none; }
+.reclaim-reference-v3 .ref-recovery { --scene-image: none; }
+.reclaim-reference-v3 .ref-security { --scene-image: none; }
 .reclaim-reference-v3 .ref-pricing {
   --scene-image: url('../../assets/landing/scenes/reclaim-pricing-plate-v2-clean.jpg');
 }
-.reclaim-reference-v3 .ref-about { --scene-image: url('../../assets/landing/backgrounds/reclaim-bg-08-about-deckle-v1.webp'); }
+.reclaim-reference-v3 .ref-about { --scene-image: none; }
 .reclaim-reference-v3 .ref-faq { --scene-image: url('../../assets/landing/scenes/reclaim-faq-table-scene-v2.png'); }
 
 /* Section boundaries are deliberately plain. Generated plates own their
@@ -201,8 +224,8 @@
 .reclaim-reference-v3 .reclaim-hero {
   position: relative !important;
   isolation: isolate;
-  min-height: max(75rem, 118dvh) !important;
-  padding: clamp(7.25rem, 10.5vw, 10rem) var(--landing-page-gutter) clamp(4rem, 6vw, 6rem) !important;
+  min-height: max(64rem, 100dvh) !important;
+  padding: clamp(7rem, 8vw, 8.5rem) var(--landing-page-gutter) clamp(4rem, 5vw, 5rem) !important;
   overflow: clip !important;
   background: var(--landing-paper) !important;
 }
@@ -245,41 +268,45 @@
 .reclaim-hero-inner {
   position: relative;
   z-index: 1;
-  width: min(100%, 86rem) !important;
+  display: block !important;
+  width: min(100%, 94rem) !important;
   margin: 0 auto !important;
+}
+
+.reclaim-reference-v3 .reclaim-hero-copy-new {
+  display: block !important;
+  width: 100%;
+}
+
+.reclaim-reference-v3 .reclaim-hero-heading {
+  max-width: 72rem;
+}
+
+.reclaim-reference-v3 .reclaim-hero-heading h1 {
+  max-width: 68rem;
+  font-size: clamp(4.5rem, 6.1vw, 6.4rem) !important;
+  text-wrap: balance;
+}
+
+.reclaim-reference-v3 .reclaim-hero-pitch {
+  max-width: 48rem;
+  padding-top: clamp(1.5rem, 2.5vw, 2.25rem);
 }
 
 /* The proof surface belongs below the action group. Keeping it in normal
  * flow gives the hero a deliberate handoff and removes the former crowding. */
 .reclaim-reference-v3 .hero-audit-kinetic {
   top: 0 !important;
-  margin: clamp(2.5rem, 3.8vw, 3.75rem) auto 0 !important;
+  width: min(100%, 94rem) !important;
+  margin: clamp(3rem, 4.5vw, 4.5rem) auto 0 !important;
 }
 
-/* Desktop hero: the genuine Reclaim case view carries the visual weight.
- * Keeping it beside the story makes the first screen about proof, not props. */
+/* The story leads, then hands off to a full-width proof surface. This remains
+ * a vertical composition at every size, so neither element competes for width. */
 @media (min-width: 1100px) {
   .reclaim-reference-v3 .reclaim-hero-inner {
-    display: grid !important;
-    grid-template-columns: minmax(0, 1fr) minmax(36rem, 0.98fr) !important;
-    align-items: start !important;
-    gap: clamp(2.5rem, 4vw, 4rem) !important;
-    min-height: min(62rem, calc(118dvh - clamp(11rem, 14vw, 13rem))) !important;
-  }
-
-  .reclaim-reference-v3 .reclaim-hero-copy-new {
     display: block !important;
-  }
-
-  .reclaim-reference-v3 .reclaim-hero-pitch {
-    max-width: 32rem;
-    padding-top: clamp(1.75rem, 3vw, 2.75rem);
-  }
-
-  .reclaim-reference-v3 .hero-audit-kinetic {
-    width: 100%;
-    margin: 0 !important;
-    align-self: center !important;
+    min-height: auto !important;
   }
 
   .reclaim-reference-v3 .hero-audit {
@@ -295,7 +322,7 @@
 
 .reclaim-reference-v3 .ref-ledger-heading,
 .reclaim-reference-v3 .ref-ledger-composition {
-  width: min(100%, 82rem) !important;
+  width: min(100%, 94rem) !important;
   margin-inline: auto !important;
 }
 
@@ -303,8 +330,8 @@
   display: grid !important;
   grid-template-columns: minmax(0, 1fr) minmax(18rem, 0.48fr) !important;
   align-items: end !important;
-  gap: clamp(1.8rem, 5vw, 5rem) !important;
-  margin-bottom: clamp(2.25rem, 3.75vw, 3.75rem) !important;
+  gap: clamp(1.8rem, 3.5vw, 3.5rem) !important;
+  margin-bottom: clamp(2rem, 2.8vw, 2.8rem) !important;
 }
 
 .reclaim-reference-v3 .ref-ledger-heading h2 {
@@ -381,7 +408,7 @@
   display: grid !important;
   grid-template-columns: minmax(0, 0.82fr) minmax(0, 1.18fr) !important;
   align-items: start !important;
-  gap: clamp(2.4rem, 5.8vw, 6.5rem) !important;
+  gap: clamp(2rem, 4vw, 4.5rem) !important;
   min-height: 0 !important;
 }
 
@@ -493,7 +520,7 @@
     "table table"
     "note note" !important;
   align-items: end !important;
-  gap: clamp(1.6rem, 3vw, 3rem) clamp(2.4rem, 5.8vw, 6.25rem) !important;
+  gap: clamp(1.5rem, 2.6vw, 2.6rem) clamp(2rem, 4vw, 4.5rem) !important;
   min-height: 0 !important;
 }
 
@@ -548,8 +575,9 @@
 
 @media (max-width: 820px) {
   .reclaim-page {
-    --landing-section-space: clamp(5rem, 14vw, 6rem);
-    --landing-section-gap: clamp(1.75rem, 7vw, 2.4rem);
+    --landing-section-space: clamp(4.25rem, 12vw, 5.25rem);
+    --landing-section-gap: clamp(1.5rem, 6vw, 2.1rem);
+    --landing-copy-size: clamp(1rem, 4.45vw, 1.12rem);
   }
 
   .reclaim-product-nav {
@@ -691,10 +719,10 @@
   display: grid !important;
   grid-template-columns: minmax(22rem, 0.78fr) minmax(34rem, 1.22fr) !important;
   grid-template-rows: auto 1fr;
-  column-gap: clamp(4rem, 8vw, 10rem) !important;
+  column-gap: clamp(3rem, 5vw, 6rem) !important;
   align-items: start !important;
-  min-height: clamp(62rem, 74vw, 76rem) !important;
-  padding: clamp(7rem, 9vw, 10rem) var(--landing-page-gutter) clamp(15rem, 18vw, 19rem) !important;
+  min-height: clamp(54rem, 64vw, 66rem) !important;
+  padding: clamp(5.5rem, 7vw, 7rem) var(--landing-page-gutter) clamp(11rem, 14vw, 14rem) !important;
 }
 
 .reclaim-reference-v3 .ref-faq .reclaim-faq-intro,
@@ -745,7 +773,7 @@
   .reclaim-reference-v3 .ref-faq {
     display: block !important;
     min-height: 0 !important;
-    padding: clamp(5.5rem, 16vw, 7rem) var(--landing-page-gutter) clamp(18rem, 56vw, 23rem) !important;
+    padding: clamp(5rem, 14vw, 6.25rem) var(--landing-page-gutter) clamp(15rem, 46vw, 19rem) !important;
   }
 
   .reclaim-reference-v3 .ref-faq .reclaim-faq-intro {
@@ -761,6 +789,49 @@
 
   .reclaim-reference-v3 .ref-faq .reclaim-faq-list {
     margin-top: 0 !important;
+  }
+}
+
+/* The About statement owns its height. Wrapped writing must stay in normal
+ * flow instead of being forced into one of the old fixed scene heights. */
+.reclaim-reference-v3 .ref-about {
+  display: block !important;
+  height: auto !important;
+  min-height: 0 !important;
+  overflow: visible !important;
+  padding-top: clamp(5.5rem, 7vw, 7.5rem) !important;
+  padding-bottom: clamp(6rem, 8vw, 8rem) !important;
+}
+
+.reclaim-reference-v3 .ref-about .about-statement h2 {
+  margin: 0 !important;
+  padding-block: 0.06em 0.16em !important;
+  overflow: visible !important;
+}
+
+.reclaim-reference-v3 .ref-about .about-ink-line {
+  display: block !important;
+  min-height: 1.04em;
+  overflow: visible !important;
+}
+
+.reclaim-reference-v3 .ref-about .about-ink-line:last-child {
+  padding-bottom: 0.08em;
+}
+
+.reclaim-reference-v3 .ref-about .about-support {
+  width: min(100%, 46rem) !important;
+  margin: clamp(2.5rem, 4vw, 3.5rem) auto 0 !important;
+}
+
+@media (max-width: 820px) {
+  .reclaim-reference-v3 .ref-about {
+    padding-top: clamp(4.5rem, 14vw, 6rem) !important;
+    padding-bottom: clamp(5rem, 15vw, 6.5rem) !important;
+  }
+
+  .reclaim-reference-v3 .ref-about .about-statement h2 {
+    line-height: 1 !important;
   }
 }
 

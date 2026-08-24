@@ -17,10 +17,10 @@ interface FieldRow {
 
 function buildFields(records: APRecord[]): FieldRow[] {
   const vendorValues = records.map((r) => r.vendor)
-  const invoiceValues = records.map((r) => r.invoiceNumber ?? '—')
+  const invoiceValues = records.map((r) => r.invoiceNumber ?? 'Not provided')
   const amountValues = records.map((r) => formatCurrency(r.amountPaid))
   const dateValues = records.map((r) => formatDate(r.paymentDate))
-  const bankValues = records.map((r) => r.bankAccountLast4 ?? '—')
+  const bankValues = records.map((r) => r.bankAccountLast4 ?? 'Not provided')
 
   const differs = (values: string[]) => new Set(values).size > 1
 
@@ -31,7 +31,7 @@ function buildFields(records: APRecord[]): FieldRow[] {
     { key: 'date', label: 'Payment date', values: dateValues, differs: differs(dateValues) },
   ]
 
-  if (bankValues.some((v) => v !== '—')) {
+  if (bankValues.some((v) => v !== 'Not provided')) {
     rows.push({ key: 'bankAccount', label: 'Bank account', values: bankValues, differs: differs(bankValues) })
   }
 
@@ -57,7 +57,7 @@ export function EvidenceComparison({ records, highlightedField }: EvidenceCompar
         {single && <div className="audit-evidence-col-label">Payment record</div>}
 
         {fields.map((field) => (
-          <div className="audit-evidence-field" key={field.key}>
+          <div className="audit-evidence-field" data-match={!field.differs && !single} data-field={field.key} key={field.key}>
             {field.values.map((value, index) => (
               <div
                 className="audit-evidence-cell"

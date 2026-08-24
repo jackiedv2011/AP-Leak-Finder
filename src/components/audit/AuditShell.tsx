@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { ReclaimMark, ReclaimWordmark } from '@/components/ReclaimLogo'
 import './audit-shell.css'
+import './app-world.css'
 
 interface AuditShellProps {
   children: ReactNode
@@ -8,12 +9,11 @@ interface AuditShellProps {
   variant?: 'full' | 'minimal'
   topBarRight?: ReactNode
   homeHref?: string
-  banner?: ReactNode
 }
 
-export function AuditShell({ children, variant = 'full', topBarRight, homeHref = '/', banner }: AuditShellProps) {
+export function AuditShell({ children, variant = 'full', topBarRight, homeHref = '/' }: AuditShellProps) {
   return (
-    <div className="reclaim-audit">
+    <div className="reclaim-audit" data-shell={variant}>
       <a className="audit-skip-link" href="#audit-main">
         Skip to main content
       </a>
@@ -24,7 +24,6 @@ export function AuditShell({ children, variant = 'full', topBarRight, homeHref =
         </a>
         {variant === 'full' && topBarRight && <div className="audit-topbar-right">{topBarRight}</div>}
       </header>
-      {variant === 'full' && banner}
       <main className="audit-main" id="audit-main">
         {children}
       </main>

@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react'
+import { motion } from 'motion/react'
 import { Upload, Sparkles, Download, HelpCircle, ShieldCheck, FileText, X } from 'lucide-react'
 import {
   Dialog,
@@ -22,6 +23,7 @@ export interface ImportInput {
 interface ImportPanelProps {
   /** Sample data is only offered where there's no ledger yet — see AuditEntry. */
   allowSample: boolean
+  animateEntry?: boolean
   autoFocusUpload?: boolean
   error: string | null
   onImport: (input: ImportInput) => void
@@ -59,12 +61,22 @@ function formatFileSize(bytes: number): string {
  * records" dialog for a returning user. Never gates a returning user; it
  * only ever produces an ImportInput for the caller to merge into the ledger.
  */
-export function ImportPanel({ allowSample, autoFocusUpload, error, onImport, onRunSample, intro, confirmLabel }: ImportPanelProps) {
+const ENTRY_EASE = [0.23, 1, 0.32, 1] as const
+
+export function ImportPanel({ allowSample, animateEntry = false, autoFocusUpload, error, onImport, onRunSample, intro, confirmLabel }: ImportPanelProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [formatOpen, setFormatOpen] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
   const [pending, setPending] = useState<PendingUpload | null>(null)
   const [parseError, setParseError] = useState<string | null>(null)
+
+  const reveal = (delay: number) => animateEntry
+    ? {
+        initial: { opacity: 0, transform: 'translate3d(0, 9px, 0)' },
+        animate: { opacity: 1, transform: 'translate3d(0, 0, 0)' },
+        transition: { delay, duration: 0.2, ease: ENTRY_EASE },
+      }
+    : {}
 
   async function handleFile(file: File) {
     setParseError(null)
@@ -78,7 +90,7 @@ export function ImportPanel({ allowSample, autoFocusUpload, error, onImport, onR
             guidance.detectedColumns.length > 0
               ? `We recognized ${guidance.detectedColumns.join(', ')}, but couldn't find ${guidance.missingRequiredColumns.join(
                   ', '
-                )} — Reclaim needs those to run an audit.`
+                )}. Reclaim needs those to run an audit.`
               : `We couldn't recognize any expected columns in this file's header row. Reclaim needs ${guidance.missingRequiredColumns.join(
                   ', '
                 )} at minimum.`
@@ -177,14 +189,14 @@ export function ImportPanel({ allowSample, autoFocusUpload, error, onImport, onR
   }
 
   return (
-    <div className="audit-entry-card">
-      <div className="audit-entry-body">
-        <div className="audit-entry-intro">
+      <div className="audit-entry-card">
+        <div className="audit-entry-body">
+        <motion.div className="audit-entry-intro" {...reveal(0.04)}>
           <h2 className="sr-only">Add records</h2>
           <p>{intro}</p>
-        </div>
+        </motion.div>
 
-        <div
+        <motion.div
           onDragOver={(e) => {
             e.preventDefault()
             setIsDragging(true)
@@ -193,6 +205,7 @@ export function ImportPanel({ allowSample, autoFocusUpload, error, onImport, onR
           onDrop={handleDrop}
           className="audit-dropzone"
           data-dragging={isDragging}
+          {...reveal(0.085)}
         >
           <span className="audit-dropzone-icon" aria-hidden="true">
             <Upload className="h-5 w-5" />
@@ -215,27 +228,26 @@ export function ImportPanel({ allowSample, autoFocusUpload, error, onImport, onR
             data-motion="pressable"
             data-motion-ray="true"
             data-variant="primary"
-            data-tutorial="entry-upload"
             autoFocus={autoFocusUpload}
             onClick={() => fileInputRef.current?.click()}
           >
             <Upload className="h-4 w-4" aria-hidden="true" />
             Upload CSV
           </button>
-        </div>
+        </motion.div>
 
         {allowSample && onRunSample && (
-          <>
+          <motion.div className="audit-entry-sample" {...reveal(0.13)}>
             <div className="audit-divider">or</div>
-            <button type="button" className="audit-link" data-motion="pressable" data-tutorial="entry-sample" style={{ width: '100%', justifyContent: 'center' }} onClick={onRunSample}>
+            <button type="button" className="audit-link" data-motion="pressable" style={{ width: '100%', justifyContent: 'center' }} onClick={onRunSample}>
               <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
               See how this works with sample data
             </button>
-          </>
+          </motion.div>
         )}
 
         {(error || parseError) && (
-          <div className="audit-error-banner" role="alert">
+          <motion.div className="audit-error-banner" role="alert" {...reveal(0.16)}>
             <p>{error ?? parseError}</p>
             <ul>
               <li>
@@ -249,10 +261,10 @@ export function ImportPanel({ allowSample, autoFocusUpload, error, onImport, onR
                 </a>
               </li>
             </ul>
-          </div>
+          </motion.div>
         )}
 
-        <div className="audit-entry-links">
+        <motion.div className="audit-entry-links" {...reveal(0.175)}>
           <a className="audit-link" data-motion="pressable" href="/sample-ledger.csv" download>
             <Download className="h-3.5 w-3.5" aria-hidden="true" />
             Download sample CSV
@@ -261,12 +273,12 @@ export function ImportPanel({ allowSample, autoFocusUpload, error, onImport, onR
             <HelpCircle className="h-3.5 w-3.5" aria-hidden="true" />
             See required format
           </button>
-        </div>
+        </motion.div>
 
-        <p className="audit-privacy-note">
+        <motion.p className="audit-privacy-note" {...reveal(0.21)}>
           <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" />
           This prototype runs entirely in your browser. Your ledger stays on your device.
-        </p>
+        </motion.p>
       </div>
 
       <Dialog open={formatOpen} onOpenChange={setFormatOpen}>

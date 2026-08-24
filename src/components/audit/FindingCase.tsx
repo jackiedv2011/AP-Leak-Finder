@@ -11,6 +11,7 @@ import {
   queueGroupFor,
   type CaseState,
   type DecisionValue,
+  type RecoveryMethod,
 } from '@/ledger/caseState'
 import { EvidenceComparison, type EvidenceFieldKey } from '@/components/audit/EvidenceComparison'
 import { RecoveryDraftPanel } from '@/components/audit/RecoveryDraftPanel'
@@ -23,8 +24,9 @@ interface FindingCaseProps {
   draftOpen: boolean
   onOpenDraft: () => void
   onDecide: (findingId: string, value: DecisionValue, reason: string | null) => void
-  onAdvanceStage: (findingId: string) => void
-  onDraftChange: (findingId: string, text: string) => void
+  onPackageChange: (findingId: string, update: { subject?: string; body?: string; requestedResolution?: RecoveryMethod }) => void
+  onMarkRequested: (findingId: string, recoveryPackage: { subject: string; body: string; requestedResolution: RecoveryMethod }) => void
+  onRecordOutcome: (findingId: string, outcome: 'recovered' | 'not_recovered', amount: number | null, note: string | null) => void
   embedded?: boolean
 }
 
@@ -36,16 +38,17 @@ function confirmLabel(finding: Finding): string {
 
 function caseStatusLabel(finding: Finding, state: CaseState): string {
   if (state.recoveryStage) return RECOVERY_STAGE_LABEL[state.recoveryStage]
+  if (state.decision === 'expected') return 'Expected'
   return QUEUE_GROUP_LABEL[queueGroupFor(finding, state)]
 }
 
 function findingContext(finding: Finding): string {
   const invoice = finding.relatedRecords.find((r) => r.invoiceNumber)?.invoiceNumber
-  return invoice ? `${finding.vendor} · Invoice ${invoice}` : finding.vendor
+  return invoice ? `${finding.vendor} / Invoice ${invoice}` : finding.vendor
 }
 
 const DECISION_CONSEQUENCE: Record<DecisionValue, (finding: Finding) => string> = {
-  confirmed: (finding) => `Moves this case to recovery, ready to prepare for the ${formatCurrency(finding.dollarImpact)} at issue.`,
+  confirmed: (finding) => `Moves this case into recovery with ${formatCurrency(finding.dollarImpact)} at issue.`,
   expected: (finding) => `Resolves this case and removes ${formatCurrency(finding.dollarImpact)} from what's worth investigating.`,
   needs_info: () => 'Keeps this case in Findings and shows what evidence would resolve it.',
 }
@@ -57,8 +60,9 @@ export function FindingCase({
   draftOpen,
   onOpenDraft,
   onDecide,
-  onAdvanceStage,
-  onDraftChange,
+  onPackageChange,
+  onMarkRequested,
+  onRecordOutcome,
   embedded = false,
 }: FindingCaseProps) {
   const [highlightedField, setHighlightedField] = useState<EvidenceFieldKey | null>(null)
@@ -70,9 +74,9 @@ export function FindingCase({
     caseRef.current?.scrollIntoView?.({ block: 'start', behavior: 'instant' })
   }, [finding.id])
 
-  const persistDraft = useCallback(
-    (text: string) => onDraftChange(finding.id, text),
-    [finding.id, onDraftChange]
+  const persistPackage = useCallback(
+    (update: { subject?: string; body?: string; requestedResolution?: RecoveryMethod }) => onPackageChange(finding.id, update),
+    [finding.id, onPackageChange]
   )
 
   const checklist = buildRuleChecklist(finding)
@@ -100,7 +104,7 @@ export function FindingCase({
       <header className="audit-case-header">
         <span className="audit-status-chip" data-class={finding.class}>
           {caseStatusLabel(finding, state)}
-          {isNew ? ' · New' : ''}
+          {isNew ? ' / New' : ''}
         </span>
         <h1>{finding.title}</h1>
         <p className="audit-case-context">{findingContext(finding)}</p>
@@ -137,11 +141,11 @@ export function FindingCase({
                     </span>
                     <span>
                       Invoice on file
-                      <strong>{record.invoiceNumber ?? '—'}</strong>
+                      <strong>{record.invoiceNumber ?? 'Not provided'}</strong>
                     </span>
                     <span>
                       Category
-                      <strong>{record.category ?? '—'}</strong>
+                      <strong>{record.category ?? 'Not provided'}</strong>
                     </span>
                   </div>
                 ))}
@@ -151,7 +155,7 @@ export function FindingCase({
 
           <div className="audit-panel">
             <h2>Why this was flagged</h2>
-            <p className="audit-panel-hint">Plain-language rule breakdown — not a confidence score.</p>
+            <p className="audit-panel-hint">Plain-language rule breakdown, not a confidence score.</p>
             <ul className="audit-rule-checklist">
               {checklist.map((check, index) => (
                 <motion.li
@@ -172,7 +176,7 @@ export function FindingCase({
 
           <div className="audit-panel">
             <h2>Your decision</h2>
-            <p className="audit-panel-hint">Reclaim surfaces the evidence — you decide what happens next.</p>
+            <p className="audit-panel-hint">Reclaim surfaces the evidence. You decide what happens next.</p>
             <div className="audit-decision-row" role="group" aria-label="Review decision">
               <div className="audit-decision-option">
                 <button
@@ -310,8 +314,9 @@ export function FindingCase({
                 finding={finding}
                 state={state}
                 onHighlightField={setHighlightedField}
-                onAdvanceStage={() => onAdvanceStage(finding.id)}
-                onDraftChange={persistDraft}
+                onPackageChange={persistPackage}
+                onMarkRequested={(recoveryPackage) => onMarkRequested(finding.id, recoveryPackage)}
+                onRecordOutcome={(outcome, amount, note) => onRecordOutcome(finding.id, outcome, amount, note)}
               />
             </motion.div>
           )}

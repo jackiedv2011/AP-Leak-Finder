@@ -44,7 +44,6 @@ export function LivingCapsule(props: LivingCapsuleProps) {
       {props.kind === 'ledger' ? (
         <motion.div
           className="audit-capsule-modes"
-          data-tutorial="mode-tabs"
           key="ledger"
           initial={reduceMotion ? { opacity: 0 } : { opacity: 0, transform: 'translate3d(-8px, 0, 0)' }}
           animate={{ opacity: 1, transform: 'translate3d(0, 0, 0)' }}

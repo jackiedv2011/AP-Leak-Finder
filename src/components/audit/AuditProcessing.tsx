@@ -56,7 +56,7 @@ export function AuditProcessing({ phase }: AuditProcessingProps) {
               <Link2 /><span>Vendor, invoice, and amount match</span><Check />
             </div>
           </div>
-          <div className="audit-processing-progress" aria-hidden="true"><i style={{ width: `${copy.progress}%` }} /></div>
+          <div className="audit-processing-progress" aria-hidden="true"><i style={{ transform: `scaleX(${copy.progress / 100})` }} /></div>
         </div>
       </div>
     </section>

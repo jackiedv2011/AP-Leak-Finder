@@ -6,32 +6,32 @@
  * three in sync if the palette changes.
  */
 .reclaim-theme {
-  --bg: #0a1220;
-  --bg-soft: #0c1626;
-  --surface: #101d33;
-  --surface-raised: #14263f;
+  --bg: #090b0c;
+  --bg-soft: #0d100f;
+  --surface: #121715;
+  --surface-raised: #181d1a;
   --paper: #eef0eb;
   --paper-ink: #151a17;
   --text: #eef1ec;
-  --text-soft: #aab6cc;
-  --text-faint: #7d8aa3;
-  --line: rgb(215 224 245 / 0.1);
-  --line-strong: rgb(215 224 245 / 0.18);
+  --text-soft: #b7bdb6;
+  --text-faint: #878f88;
+  --line: rgb(238 241 236 / 0.1);
+  --line-strong: rgb(238 241 236 / 0.18);
   --recovery: #79d99b;
   --recovery-strong: #8bdca8;
   --review: #d1a15e;
-  --future: #6f9fdc;
+  --future: #a8ad91;
   --danger: #e08585;
-  --accent: #5b7cfa;
-  --accent-strong: #4863e0;
-  --accent-soft: rgb(91 124 250 / 0.16);
+  --accent: #79d99b;
+  --accent-strong: #8be5ac;
+  --accent-soft: rgb(121 217 155 / 0.14);
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
   --control-edge: rgb(255 255 255 / 0.14);
   --control-shadow: 0 0.7rem 1.4rem rgb(0 0 0 / 0.14), inset 0 1px 0 rgb(255 255 255 / 0.82), inset 0 -1px 0 rgb(0 0 0 / 0.14);
   --control-shadow-hover: 0 0.95rem 2rem rgb(0 0 0 / 0.2), inset 0 1px 0 rgb(255 255 255 / 0.92), inset 0 -1px 0 rgb(0 0 0 / 0.12);
-  --control-shadow-blue: 0 0.7rem 1.6rem rgb(72 99 224 / 0.35), inset 0 1px 0 rgb(255 255 255 / 0.22), inset 0 -1px 0 rgb(0 0 0 / 0.18);
-  --control-shadow-blue-hover: 0 0.95rem 2.2rem rgb(72 99 224 / 0.46), inset 0 1px 0 rgb(255 255 255 / 0.3), inset 0 -1px 0 rgb(0 0 0 / 0.16);
+  --control-shadow-accent: 0 0.7rem 1.6rem rgb(20 56 34 / 0.34), inset 0 1px 0 rgb(255 255 255 / 0.22), inset 0 -1px 0 rgb(0 0 0 / 0.18);
+  --control-shadow-accent-hover: 0 0.95rem 2.2rem rgb(20 56 34 / 0.42), inset 0 1px 0 rgb(255 255 255 / 0.3), inset 0 -1px 0 rgb(0 0 0 / 0.16);
   --radius-sm: 0.6rem;
   --radius-md: 0.85rem;
   --radius-lg: 1.1rem;
@@ -41,7 +41,7 @@
   overflow-x: clip;
   color: var(--text);
   color-scheme: dark;
-  background: linear-gradient(180deg, #0a1220 0%, #0b1a2e 46%, #091121 100%);
+  background: linear-gradient(180deg, #090b0c 0%, #0d100f 48%, #080a09 100%);
 }
 
 .reclaim-theme *,

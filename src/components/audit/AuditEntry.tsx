@@ -1,5 +1,5 @@
 import { ImportPanel, type ImportInput } from '@/components/audit/ImportPanel'
-import { TutorialTour, type TutorialStep } from '@/components/tutorial/TutorialTour'
+import { motion, useReducedMotion } from 'motion/react'
 
 interface AuditEntryProps {
   error: string | null
@@ -8,35 +8,21 @@ interface AuditEntryProps {
   variant?: 'default' | 'upload'
 }
 
-const ENTRY_TOUR_STEPS: TutorialStep[] = [
-  {
-    id: 'welcome',
-    title: 'Welcome to Reclaim',
-    body: 'An audit scans a payments ledger for duplicate payments, overpayments, and other recoverable money — then shows you the exact evidence behind every flag.',
-  },
-  {
-    id: 'upload',
-    title: 'Upload your ledger',
-    body: 'Drop a CSV export from QuickBooks, Xero, or your own AP system here, or click Upload CSV to choose a file.',
-    target: '[data-tutorial="entry-upload"]',
-    placement: 'top',
-  },
-  {
-    id: 'sample',
-    title: 'No file yet? Try the sample',
-    body: 'This runs the same detection rules on a bundled sample ledger, so you can see exactly how Reclaim works before uploading your own.',
-    target: '[data-tutorial="entry-sample"]',
-    placement: 'top',
-  },
-]
-
 /** First-time entry — the only moment that feels like a threshold, since there's no ledger yet. */
 export function AuditEntry({ error, onRunSample, onImport, variant = 'default' }: AuditEntryProps) {
   const isUpload = variant === 'upload'
+  const reduceMotion = useReducedMotion()
   return (
-    <div className="audit-entry">
+    <motion.div
+      className="audit-entry"
+      data-entry-state="arriving"
+      initial={reduceMotion ? { opacity: 0 } : { opacity: 0, transform: 'translate3d(0, 12px, 0) scale(0.985)' }}
+      animate={{ opacity: 1, transform: 'translate3d(0, 0, 0) scale(1)' }}
+      transition={reduceMotion ? { duration: 0.08 } : { duration: 0.24, ease: [0.23, 1, 0.32, 1] }}
+    >
       <ImportPanel
         allowSample
+        animateEntry={!reduceMotion}
         autoFocusUpload
         error={error}
         onImport={onImport}
@@ -44,7 +30,6 @@ export function AuditEntry({ error, onRunSample, onImport, variant = 'default' }
         intro={isUpload ? 'Start with your own ledger, then follow each finding back to its original records.' : 'Identify potential payment errors and review the evidence behind them.'}
         confirmLabel={isUpload ? 'Add to my ledger' : 'Start the ledger'}
       />
-      {!isUpload && <TutorialTour tourId="entry" steps={ENTRY_TOUR_STEPS} />}
-    </div>
+    </motion.div>
   )
 }

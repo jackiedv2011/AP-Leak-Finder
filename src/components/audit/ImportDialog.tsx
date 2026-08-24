@@ -16,7 +16,7 @@ export function ImportDialog({ open, onOpenChange, onImport, error }: ImportDial
         <DialogHeader>
           <DialogTitle style={{ color: '#eef1ec' }}>Add records to the ledger</DialogTitle>
           <DialogDescription style={{ color: '#9aa39d' }}>
-            New records merge into your existing ledger — nothing already reviewed is reset.
+            New records merge into your existing ledger. Nothing already reviewed is reset.
           </DialogDescription>
         </DialogHeader>
         <ImportPanel

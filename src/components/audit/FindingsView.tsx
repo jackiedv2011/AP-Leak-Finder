@@ -9,7 +9,7 @@ interface FindingsViewProps {
 }
 
 const GROUP_SUBTEXT: Record<FindingsQueueGroup['group'], string> = {
-  ready_to_verify: 'Strong evidence · one decision could move this forward',
+  ready_to_verify: 'Strong evidence. One decision could move this forward',
   needs_context: 'A pattern exists, but evidence or a decision is still missing',
   worth_noting: 'Prevention, not a past loss',
 }
