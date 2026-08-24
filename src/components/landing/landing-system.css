@@ -98,12 +98,21 @@
 /* The motto now follows the same one-plate rule as every other chapter. */
 .reclaim-reference-v3.reclaim-main-v2 > section.motto-interlude {
   --scene-image: url('../../assets/landing/backgrounds/reclaim-bg-02-motto-v1.webp');
+  /* Pull the following chapter up to the hero's visual edge. The legacy hero
+   * reserved an empty lower gutter, which showed up as the wide pale bar. */
+  margin-top: clamp(-4.75rem, -5vw, -3.5rem) !important;
   --scene-position: center;
   background-color: var(--landing-paper) !important;
   background-image: var(--scene-image) !important;
   background-position: var(--scene-position) !important;
   background-size: cover !important;
   background-repeat: no-repeat !important;
+}
+
+@media (max-width: 820px) {
+  .reclaim-reference-v3.reclaim-main-v2 > section.motto-interlude {
+    margin-top: -3rem !important;
+  }
 }
 
 .reclaim-reference-v3 .motto-stage {
@@ -113,6 +122,18 @@
 .reclaim-reference-v3 .motto-visual::before {
   display: none !important;
   content: none !important;
+}
+
+/* The motto plate starts immediately at the chapter boundary.  The former
+ * top-edge mask exposed the flat paper beneath it as a visible horizontal bar
+ * before the photograph began. */
+.reclaim-reference-v3 .motto-visual {
+  background: transparent !important;
+}
+
+.reclaim-reference-v3 .motto-visual::before {
+  -webkit-mask-image: none !important;
+  mask-image: none !important;
 }
 
 /* Transparent at the hero. The existing motion state still controls the

@@ -2954,8 +2954,10 @@
   background-image:
     url('../../assets/landing/backgrounds/reclaim-bg-02-motto-v1.webp') !important;
   transform: translateX(-50%);
-  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 3.5rem, #000 calc(100% - 3.5rem), transparent 100%);
-  mask-image: linear-gradient(to bottom, transparent 0, #000 3.5rem, #000 calc(100% - 3.5rem), transparent 100%);
+  /* Start the paper scene at the section edge. A faded top edge leaves a
+     conspicuous flat strip between the hero and this section. */
+  -webkit-mask-image: none;
+  mask-image: none;
 }
 
 .reclaim-main-v2 .kinetic-frame {
