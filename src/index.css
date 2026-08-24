@@ -97,12 +97,12 @@ html:has(.reclaim-audit) body {
 .reclaim-spread {
   transform-box: fill-box;
   transform-origin: center;
-  transform: scale(0.14);
+  transform: scale(1);
   transition: transform 440ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .reclaim-mark[data-active='true'] .reclaim-spread {
-  transform: scale(1.12);
+  transform: scale(1.04);
 }
 
 .reclaim-mark[data-active='true'] .reclaim-recovery {

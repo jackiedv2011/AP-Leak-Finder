@@ -3577,7 +3577,7 @@
 
 .motto-interlude[data-stage='4'] .motto-logo-lockup .reclaim-spread,
 .motto-interlude[data-stage='5'] .motto-logo-lockup .reclaim-spread {
-  transform: scale(1.12);
+  transform: scale(1);
   transition-delay: 140ms;
 }
 
@@ -4031,7 +4031,7 @@
   }
 
   .motto-logo-lockup .reclaim-spread {
-    transform: scale(1.12);
+    transform: scale(1);
   }
 
   .motto-logo-mark,
@@ -4046,7 +4046,7 @@
 
   .motto-logo-mark .reclaim-spread,
   .motto-interlude[data-stage] .motto-logo-mark .reclaim-spread {
-    transform: scale(1.12);
+    transform: scale(1);
     transition: none;
   }
 
@@ -4347,7 +4347,7 @@
   }
 
   .motto-logo-lockup .reclaim-spread {
-    transform: scale(1.12);
+    transform: scale(1);
   }
 
   .intake-band,

@@ -23,21 +23,8 @@ type ReclaimLogoProps = ReclaimMarkProps & {
  */
 export function ReclaimMark({ size = 40, interactive = false, className = '', tone = 'auto' }: ReclaimMarkProps) {
   const [isActive, setIsActive] = useState(false)
-  const maskId = useId().replace(/:/g, '')
-  const filterId = useId().replace(/:/g, '')
-  const spreadId = useId().replace(/:/g, '')
   const accentId = useId().replace(/:/g, '')
-
-  if (tone === 'ink') {
-    return (
-      <span className={`inline-flex ${className}`}>
-        <svg aria-hidden="true" className="reclaim-mark reclaim-mark-ink" width={size} height={size} viewBox="0 0 48 48" fill="none">
-          <path d="M13 39V9h11.3c6.7 0 10.7 3.4 10.7 9.2 0 4.25-2.15 7.15-5.85 8.42L38 39h-7.1l-7.8-11.35H19.4V39H13Zm6.4-16.42h4.25c3.15 0 4.95-1.5 4.95-4.12 0-2.68-1.8-4.12-4.95-4.12H19.4v8.24Z" fill="currentColor" />
-          <circle className="reclaim-mark-dot" cx="16.2" cy="43" r="2.25" fill="#79D99B" />
-        </svg>
-      </span>
-    )
-  }
+  const inkColor = tone === 'ink' ? '#171717' : 'currentColor'
 
   return (
     <span
@@ -55,35 +42,16 @@ export function ReclaimMark({ size = 40, interactive = false, className = '', to
         fill="none"
       >
         <defs>
-          <linearGradient id={maskId} x1="0" y1="6" x2="0" y2="43" gradientUnits="userSpaceOnUse">
-            <stop offset="0.72" stopColor="white" />
-            <stop offset="1" stopColor="white" stopOpacity="0.52" />
-          </linearGradient>
-          <linearGradient id={accentId} x1="25" y1="26" x2="38" y2="39" gradientUnits="userSpaceOnUse">
-            <stop offset="0.52" stopColor="currentColor" />
-            <stop offset="0.525" stopColor="#79D99B" />
+          <linearGradient id={accentId} x1="26.7" y1="33" x2="38" y2="39" gradientUnits="userSpaceOnUse">
+            <stop stopColor="#58D783" />
             <stop offset="1" stopColor="#79D99B" />
           </linearGradient>
-          <filter id={filterId} x="4" y="3" width="42" height="44" filterUnits="userSpaceOnUse">
-            <feDropShadow dx="1.2" dy="2" stdDeviation="1.25" floodColor="#000000" floodOpacity="0.28" />
-          </filter>
-          <clipPath id={spreadId}>
-            <circle className="reclaim-spread" cx="32" cy="36.5" r="27" />
-          </clipPath>
         </defs>
-
-        <g filter={`url(#${filterId})`} mask={`url(#${maskId})`}>
-          <path
-            d="M13 39V9h11.3c6.7 0 10.7 3.4 10.7 9.2 0 4.25-2.15 7.15-5.85 8.42L38 39h-7.1l-7.8-11.35H19.4V39H13Zm6.4-16.42h4.25c3.15 0 4.95-1.5 4.95-4.12 0-2.68-1.8-4.12-4.95-4.12H19.4v8.24Z"
-            fill={`url(#${accentId})`}
-          />
-          <g clipPath={`url(#${spreadId})`}>
-            <path
-              d="M13 39V9h11.3c6.7 0 10.7 3.4 10.7 9.2 0 4.25-2.15 7.15-5.85 8.42L38 39h-7.1l-7.8-11.35H19.4V39H13Zm6.4-16.42h4.25c3.15 0 4.95-1.5 4.95-4.12 0-2.68-1.8-4.12-4.95-4.12H19.4v8.24Z"
-              fill="#79D99B"
-            />
-          </g>
-        </g>
+        <path
+          d="M13 39V9h11.3c6.7 0 10.7 3.4 10.7 9.2 0 4.25-2.15 7.15-5.85 8.42L38 39h-7.1l-7.8-11.35H19.4V39H13Zm6.4-16.42h4.25c3.15 0 4.95-1.5 4.95-4.12 0-2.68-1.8-4.12-4.95-4.12H19.4v8.24Z"
+          fill={inkColor}
+        />
+        <path className="reclaim-spread" d="M26.74 32.94 30.9 39H38l-4.01-5.6-7.25-.46Z" fill={`url(#${accentId})`} />
       </svg>
     </span>
   )
