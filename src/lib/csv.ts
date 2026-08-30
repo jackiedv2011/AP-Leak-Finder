@@ -1,6 +1,7 @@
 import Papa from 'papaparse'
 import type { APRecord, ParseResult } from '@/types'
 import { parseCurrency, parseDate } from '@/lib/format'
+import { resolveVendors } from '@/lib/vendorResolution'
 
 const COLUMN_ALIASES: Record<string, string> = {
   vendor: 'vendor',
@@ -74,6 +75,13 @@ export function parseCsv(csvText: string): ParseResult {
       rowIndex: index,
     })
   })
+
+  const vendorResolution = resolveVendors(
+    records.map((r) => ({ vendor: r.vendor, bankAccountLast4: r.bankAccountLast4 }))
+  )
+  for (const record of records) {
+    record.vendor = vendorResolution.resolveVendorName(record.vendor)
+  }
 
   const fields = parsed.meta.fields ?? []
   const detectedColumns = fields.filter((f) => CANONICAL_COLUMNS.has(f))
