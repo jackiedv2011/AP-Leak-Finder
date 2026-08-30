@@ -12,8 +12,8 @@ export function ClearLedgerDialog({ open, onOpenChange, onConfirm }: ClearLedger
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="audit-dialog-content">
         <DialogHeader>
-          <DialogTitle style={{ color: '#eef1ec' }}>Clear this ledger?</DialogTitle>
-          <DialogDescription style={{ color: '#9aa39d' }}>
+          <DialogTitle style={{ color: '#171917' }}>Clear this ledger?</DialogTitle>
+          <DialogDescription style={{ color: '#5f625d' }}>
             This permanently deletes every imported record and decision on this device. This cannot be undone.
           </DialogDescription>
         </DialogHeader>

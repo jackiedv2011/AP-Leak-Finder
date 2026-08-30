@@ -284,25 +284,25 @@ export function ImportPanel({ allowSample, animateEntry = false, autoFocusUpload
       <Dialog open={formatOpen} onOpenChange={setFormatOpen}>
         <DialogContent className="audit-dialog-content">
           <DialogHeader>
-            <DialogTitle style={{ color: '#eef1ec' }}>Required CSV format</DialogTitle>
-            <DialogDescription style={{ color: '#9aa39d' }}>
+            <DialogTitle style={{ color: '#171917' }}>Required CSV format</DialogTitle>
+            <DialogDescription style={{ color: '#5f625d' }}>
               Column headers are matched case-insensitively. Currency values may include $ and commas.
             </DialogDescription>
           </DialogHeader>
           <Table>
             <TableHeader>
               <TableRow style={{ borderColor: 'rgb(238 241 236 / 0.18)' }}>
-                <TableHead style={{ color: '#9aa39d' }}>Column</TableHead>
-                <TableHead style={{ color: '#9aa39d' }}>Notes</TableHead>
+                <TableHead style={{ color: '#5f625d' }}>Column</TableHead>
+                <TableHead style={{ color: '#5f625d' }}>Notes</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {REQUIRED_COLUMNS.map((col) => (
                 <TableRow key={col.name} style={{ borderColor: 'rgb(238 241 236 / 0.1)' }}>
-                  <TableCell className="font-mono text-xs" style={{ color: '#eef1ec' }}>
+                  <TableCell className="font-mono text-xs" style={{ color: '#171917' }}>
                     {col.name}
                   </TableCell>
-                  <TableCell className="text-sm" style={{ color: '#9aa39d' }}>
+                  <TableCell className="text-sm" style={{ color: '#5f625d' }}>
                     {col.description}
                   </TableCell>
                 </TableRow>

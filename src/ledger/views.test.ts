@@ -39,13 +39,13 @@ describe('views', () => {
   it('findings queue groups undecided cases by readiness, sorted by dollar impact', () => {
     const env = buildSampleEnv()
     const queue = findingsQueue(env)
-    const readyToVerify = queue.find((g) => g.group === 'ready_to_verify')!
+    const readyToVerify = queue.find((g) => g.group === 'claim')!
     expect(readyToVerify.cases.every((c) => c.finding.class === 'recoverable')).toBe(true)
 
-    const needsContext = queue.find((g) => g.group === 'needs_context')!
+    const needsContext = queue.find((g) => g.group === 'check')!
     expect(needsContext.cases.some((c) => c.finding.type === 'bank_account_change')).toBe(true)
 
-    const worthNoting = queue.find((g) => g.group === 'worth_noting')!
+    const worthNoting = queue.find((g) => g.group === 'prevent')!
     expect(worthNoting.cases.some((c) => c.finding.type === 'missed_discount')).toBe(true)
   })
 
@@ -79,7 +79,7 @@ describe('views', () => {
     const inRecovery = recoveryQueue(env).flatMap((g) => g.cases).some((c) => c.finding.id === review.id)
     expect(inRecovery).toBe(false)
 
-    const needsContext = findingsQueue(env).find((g) => g.group === 'needs_context')!
+    const needsContext = findingsQueue(env).find((g) => g.group === 'check')!
     expect(needsContext.cases.some((c) => c.finding.id === review.id)).toBe(true)
   })
 

@@ -12,8 +12,8 @@ export function GuestGateDialog({ open, onOpenChange, feature = 'Saving audit hi
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="audit-dialog-content">
         <DialogHeader>
-          <DialogTitle style={{ color: '#eef1ec' }}>Create a free account</DialogTitle>
-          <DialogDescription style={{ color: '#9aa39d' }}>
+          <DialogTitle style={{ color: '#171917' }}>Create a free account</DialogTitle>
+          <DialogDescription style={{ color: '#5f625d' }}>
             {feature} needs an account so Reclaim knows where to keep it. Guest audits stay only for this browser session.
           </DialogDescription>
         </DialogHeader>

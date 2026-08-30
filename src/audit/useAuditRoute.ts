@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
-export type RouteMode = 'overview' | 'findings' | 'recovery'
+export type RouteMode = 'overview' | 'findings' | 'recovery' | 'records' | 'settings'
 export type EntryRoute = 'sample' | 'upload'
 
 export interface AuditRouteState {
@@ -15,7 +15,10 @@ export interface AuditRouteState {
 export function parseAuditRoute(search: string): AuditRouteState {
   const params = new URLSearchParams(search)
   const modeParam = params.get('mode')
-  const mode: RouteMode = modeParam === 'findings' || modeParam === 'recovery' ? modeParam : 'overview'
+  const mode: RouteMode =
+    modeParam === 'findings' || modeParam === 'recovery' || modeParam === 'records' || modeParam === 'settings'
+      ? modeParam
+      : 'overview'
   const caseId = params.get('case')
   const draft = caseId !== null && params.get('draft') === '1'
   const entryParam = params.get('entry')

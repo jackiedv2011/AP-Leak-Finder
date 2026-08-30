@@ -46,7 +46,7 @@ const originToFlip = (origin: NonNullable<SideRaysProps['origin']>): [number, nu
 export function SideRays({
   speed = 1,
   rayColor1 = '#ffffff',
-  rayColor2 = '#79d99b',
+  rayColor2 = '#8bc34a',
   intensity = 1,
   spread = 1,
   origin = 'bottom-right',

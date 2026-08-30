@@ -1,14 +1,19 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { LayoutGroup, motion, useReducedMotion } from 'motion/react'
+import { ArrowLeft } from 'lucide-react'
 import { AuditShell } from '@/components/audit/AuditShell'
+import { UpgradeDialog } from '@/components/billing/UpgradeDialog'
+import { useEntitlement } from '@/billing/useEntitlement'
+import { lockedSummary } from '@/billing/entitlement'
 import { AuditEntry } from '@/components/audit/AuditEntry'
 import { AuditLaunch } from '@/components/audit/AuditLaunch'
 import { AuditProcessing, type SampleAuditPhase } from '@/components/audit/AuditProcessing'
 import { IngestStatus } from '@/components/audit/IngestStatus'
-import { LivingCapsule } from '@/components/audit/LivingCapsule'
 import { OverviewView } from '@/components/audit/OverviewView'
 import { FindingsView } from '@/components/audit/FindingsView'
 import { RecoveryView } from '@/components/audit/RecoveryView'
+import { RecordsView } from '@/components/audit/RecordsView'
+import { SettingsView } from '@/components/audit/SettingsView'
 import { FindingCase } from '@/components/audit/FindingCase'
 import { ImportDialog } from '@/components/audit/ImportDialog'
 import { ClearLedgerDialog } from '@/components/audit/ClearLedgerDialog'
@@ -40,16 +45,23 @@ import {
   markRecoveryRequested,
   recordRecoveryOutcome,
   updateCaseReason,
+  updateDismissal,
   updateRecoveryPackage,
+  updateRequestedEvidence,
   type DecisionValue,
+  type DismissalTag,
   type RecoveryMethod,
 } from '@/ledger/caseState'
 import { overviewSummary, findingsQueue, recoveryQueue, findCaseView } from '@/ledger/views'
 import { getSampleLedger } from '@/data/sampleLedger'
 import type { ImportInput } from '@/components/audit/ImportPanel'
+import type { Finding } from '@/types'
 import { MOTION_TRANSITION, sceneVariants } from '@/motion/system'
 
-const MODE_POSITION = { overview: 0, findings: 1, recovery: 2 } as const
+const MODE_POSITION = { overview: 0, findings: 1, recovery: 2, records: 3, settings: 4 } as const
+
+/** Stable identity so the entitlement memo doesn't rebuild on every render. */
+const NO_FINDINGS: Finding[] = []
 
 function sampleImportInput(): MergeImportInput {
   return { sourceLabel: 'Sample payment ledger', mode: 'sample', parsed: getSampleLedger() }
@@ -70,7 +82,14 @@ export function AuditApp() {
   const [clearDialogOpen, setClearDialogOpen] = useState(false)
   const [sampleSession, setSampleSession] = useState(false)
   const [sampleAuditPhase, setSampleAuditPhase] = useState<SampleAuditPhase | null>(null)
+  const [upgradeOpen, setUpgradeOpen] = useState(false)
   const reduceMotion = useReducedMotion()
+
+  // Entitlement is derived above every early return so hook order stays stable
+  // across the entry, processing, and workspace renders.
+  const findings = environment?.result.findings ?? NO_FINDINGS
+  const { plan, entitlement, upgrade, downgrade } = useEntitlement(findings)
+  const locked = useMemo(() => lockedSummary(entitlement, findings), [entitlement, findings])
 
   const environmentRef = useRef(environment)
   const projectRef = useRef(project)
@@ -263,6 +282,10 @@ export function AuditApp() {
     navigate({ draft: true }, { replace: true })
   }, [navigate])
 
+  const handleCloseDraft = useCallback(() => {
+    navigate({ draft: false }, { replace: true })
+  }, [navigate])
+
   const handleDecide = useCallback((findingId: string, value: DecisionValue, reason: string | null) => {
     const env = environmentRef.current
     if (!env) return
@@ -299,11 +322,23 @@ export function AuditApp() {
     setEnvironment(next)
   }, [])
 
-  const handlePackageChange = useCallback((findingId: string, update: { subject?: string; body?: string; requestedResolution?: RecoveryMethod }) => {
+  const handlePackageChange = useCallback((findingId: string, update: { subject?: string; body?: string; recipientEmail?: string; requestedResolution?: RecoveryMethod }) => {
     persistCaseState(findingId, (current) => updateRecoveryPackage(current, update))
   }, [persistCaseState])
 
-  const handleMarkRequested = useCallback((findingId: string, recoveryPackage: { subject: string; body: string; requestedResolution: RecoveryMethod }) => {
+  // Dismissing a finding always asks why first — see FindingCase's dismiss
+  // prompt. This commits it once the reviewer actually picks a reason.
+  const handleDismiss = useCallback((findingId: string, tag: DismissalTag, reason: string | null) => {
+    persistCaseState(findingId, (current) =>
+      current.decision === 'expected' ? updateDismissal(current, tag, reason) : markExpected(reason, tag)
+    )
+  }, [persistCaseState])
+
+  const handleUpdateRequestedEvidence = useCallback((findingId: string, requestedEvidence: string[], reason: string | null) => {
+    persistCaseState(findingId, (current) => updateRequestedEvidence(current, requestedEvidence, reason))
+  }, [persistCaseState])
+
+  const handleMarkRequested = useCallback((findingId: string, recoveryPackage: { subject: string; body: string; recipientEmail?: string; requestedResolution: RecoveryMethod }) => {
     persistCaseState(findingId, (current) => markRecoveryRequested(updateRecoveryPackage(current, recoveryPackage)))
   }, [persistCaseState])
 
@@ -405,6 +440,11 @@ export function AuditApp() {
   }
 
   const overview = overviewSummary(environment)
+  // Rows referenced by at least one finding — the Records view marks these so
+  // "links back to the exact source rows" is checkable, not just claimed.
+  const flaggedRecordIds = new Set(
+    environment.result.findings.flatMap((finding) => finding.relatedRecords.map((record) => record.id))
+  )
   const findingsCount = overview.readyToVerifyCount + overview.needsContextCount + overview.worthNotingCount
   const caseIndex = activeCase ? environment.result.findings.findIndex((finding) => finding.id === activeCase.finding.id) : -1
   const capsuleAction = activeCase
@@ -415,51 +455,73 @@ export function AuditApp() {
         : null
     : null
 
+  const MODE_TITLE = {
+    overview: 'Dashboard',
+    findings: 'Money found',
+    recovery: 'Claims',
+    records: 'Records',
+    settings: 'Settings',
+  } as const
+
   return (
     <AuditShell
       variant="full"
+      mode={route.mode}
+      onModeChange={(mode) => navigate({ mode, caseId: null, draft: false })}
+      findingsCount={findingsCount}
+      recoveryCount={overview.recoveryActiveCount}
+      recordCount={overview.recordCount}
+      plan={plan}
+      lockedCount={locked.lockedCount}
+      lockedValue={locked.lockedValue}
+      onUpgrade={() => setUpgradeOpen(true)}
+      topBar={
+        activeCase ? (
+          <>
+            <button type="button" className="rc-btn" data-variant="ghost" data-size="sm" onClick={handleCloseCase}>
+              <ArrowLeft aria-hidden="true" />
+              {MODE_TITLE[route.mode]}
+            </button>
+            <div className="rc-topbar-title">
+              <span>{caseIndex >= 0 ? `Case ${caseIndex + 1} of ${environment.result.findings.length}` : 'Case'}</span>
+              <strong>{activeCase.finding.vendor}</strong>
+            </div>
+          </>
+        ) : (
+          <div className="rc-topbar-title">
+            <span>{project?.sourceLabel ?? (sampleSession ? 'Sample ledger' : 'Review')}</span>
+            <strong>{MODE_TITLE[route.mode]}</strong>
+          </div>
+        )
+      }
       topBarRight={
         <>
-          {project && projects.length > 0 && (
+          {activeCase && capsuleAction && (
+            <button type="button" className="rc-btn" data-variant="mint" data-size="sm" onClick={capsuleAction.run}>
+              {capsuleAction.label}
+            </button>
+          )}
+          {!activeCase && project && projects.length > 0 && (
             <ProjectSwitcher projects={projects} value={project.id} onValueChange={handleSwitchProject} />
           )}
-          <button
-            className="audit-btn"
-            data-motion="pressable"
-            data-variant="ghost"
-            data-size="sm"
-            type="button"
-            onClick={() => navigate({ projectId: null, mode: 'overview', caseId: null, draft: false, entry: 'upload' })}
-          >
-            New review
-          </button>
+          {!activeCase && (
+            <button
+              className="rc-btn"
+              data-variant="outline"
+              data-size="sm"
+              type="button"
+              onClick={() => navigate({ projectId: null, mode: 'overview', caseId: null, draft: false, entry: 'upload' })}
+            >
+              New review
+            </button>
+          )}
         </>
       }
     >
       <LayoutGroup id="audit-scene">
-        {activeCase ? (
-          <LivingCapsule
-            kind="case"
-            backLabel={route.mode === 'recovery' ? 'Recovery' : route.mode === 'findings' ? 'Findings' : 'Overview'}
-            vendor={activeCase.finding.vendor}
-            positionLabel={caseIndex >= 0 ? `${caseIndex + 1} of ${environment.result.findings.length}` : 'Case'}
-            actionLabel={capsuleAction?.label}
-            onBack={handleCloseCase}
-            onAction={capsuleAction?.run}
-          />
-        ) : (
-          <LivingCapsule
-            kind="ledger"
-            mode={route.mode}
-            findingsCount={findingsCount}
-            recoveryCount={overview.recoveryActiveCount}
-            onModeChange={(mode) => navigate({ mode, caseId: null, draft: false })}
-          />
-        )}
-
-        <div className="audit-scene" data-depth={activeCase ? (route.draft ? 'action' : 'case') : 'ledger'}>
+        <div className="rc-scene" data-depth={activeCase ? (route.draft ? 'action' : 'case') : 'ledger'}>
           <motion.div
-            className="audit-scene-frame"
+            className="rc-scene-frame"
             key={activeCase ? `case-${activeCase.finding.id}` : `ledger-${route.mode}`}
             custom={modeDirection}
             variants={reduceMotion ? undefined : sceneVariants}
@@ -470,17 +532,24 @@ export function AuditApp() {
               {route.mode === 'overview' && (
                 <OverviewView
                   summary={overview}
+                  entitlement={entitlement}
+                  locked={locked}
+                  onUpgrade={() => setUpgradeOpen(true)}
                   activeCase={activeCase}
                   draftOpen={route.draft}
                   onOpenCase={handleOpenCase}
                   onCloseCase={handleCloseCase}
                   onOpenDraft={handleOpenDraft}
+                  onCloseDraft={handleCloseDraft}
                   onDecide={handleDecide}
+                  onDismiss={handleDismiss}
+                  onUpdateRequestedEvidence={handleUpdateRequestedEvidence}
                   onPackageChange={handlePackageChange}
                   onMarkRequested={handleMarkRequested}
                   onRecordOutcome={handleRecordOutcome}
                   onOpenImport={() => setImportDialogOpen(true)}
                   onClearLedger={() => setClearDialogOpen(true)}
+                  onGoToFindings={() => navigate({ mode: 'findings', caseId: null, draft: false })}
                 />
               )}
               {route.mode !== 'overview' && activeCase && (
@@ -491,20 +560,60 @@ export function AuditApp() {
                   isNew={activeCase.isNew}
                   draftOpen={route.draft}
                   onOpenDraft={handleOpenDraft}
+                  onCloseDraft={handleCloseDraft}
                   onDecide={handleDecide}
+                  onDismiss={handleDismiss}
+                  onUpdateRequestedEvidence={handleUpdateRequestedEvidence}
                   onPackageChange={handlePackageChange}
                   onMarkRequested={handleMarkRequested}
                   onRecordOutcome={handleRecordOutcome}
                 />
               )}
-              {route.mode === 'findings' && !activeCase && <FindingsView queue={findingsQueue(environment)} onOpenCase={handleOpenCase} />}
+              {route.mode === 'findings' && !activeCase && (
+                <FindingsView
+                  queue={findingsQueue(environment)}
+                  entitlement={entitlement}
+                  locked={locked}
+                  onOpenCase={handleOpenCase}
+                  onUpgrade={() => setUpgradeOpen(true)}
+                />
+              )}
               {route.mode === 'recovery' && !activeCase && <RecoveryView queue={recoveryQueue(environment)} onOpenCase={handleOpenCase} />}
+              {route.mode === 'records' && !activeCase && (
+                <RecordsView
+                  records={environment.records}
+                  flaggedRecordIds={flaggedRecordIds}
+                  onOpenImport={() => setImportDialogOpen(true)}
+                />
+              )}
+              {route.mode === 'settings' && !activeCase && (
+                <SettingsView
+                  plan={plan}
+                  locked={locked}
+                  recordCount={overview.recordCount}
+                  vendorCount={overview.vendorCount}
+                  importCount={overview.importCount}
+                  sourceLabel={overview.lastImportLabel}
+                  recoveredValue={overview.recoveredValue}
+                  onUpgrade={() => setUpgradeOpen(true)}
+                  onDowngrade={downgrade}
+                  onClearLedger={() => setClearDialogOpen(true)}
+                  onOpenImport={() => setImportDialogOpen(true)}
+                />
+              )}
           </motion.div>
         </div>
       </LayoutGroup>
 
       <ImportDialog open={importDialogOpen} onOpenChange={setImportDialogOpen} onImport={handleImport} error={entryError} />
       <ClearLedgerDialog open={clearDialogOpen} onOpenChange={setClearDialogOpen} onConfirm={handleClearLedger} />
+      <UpgradeDialog
+        open={upgradeOpen}
+        onOpenChange={setUpgradeOpen}
+        onConfirm={upgrade}
+        lockedCount={locked.lockedCount}
+        lockedValue={locked.lockedValue}
+      />
     </AuditShell>
   )
 }

@@ -1,0 +1,3670 @@
+/*
+ * Reclaim workspace — light "paper" surface.
+ *
+ * Tokens are lifted verbatim from the landing page system (landing-system.css /
+ * landing-reference.css) so the marketing site and the product read as one
+ * material. Layout borrows the Polar dashboard pattern: a persistent nav rail,
+ * and a metric grid divided by hairlines rather than gaps.
+ *
+ * Loaded after audit-shell.css, so these rules intentionally win over the older
+ * dark treatment for anything still carrying legacy class names.
+ */
+
+.reclaim-audit {
+  --rc-paper: #f3efe7;
+  --rc-paper-deep: #e9e3d8;
+  --rc-surface: #fbfaf6;
+  --rc-surface-soft: #ebe8df;
+
+  --rc-ink: #171917;
+  --rc-copy: #5f625d;
+  --rc-muted: #7a7d76;
+
+  --rc-rule: rgb(23 25 23 / 0.15);
+  --rc-rule-soft: rgb(23 25 23 / 0.08);
+  --rc-rule-strong: rgb(23 25 23 / 0.26);
+
+  --rc-mint: #73d99a;
+  --rc-green: #2c8b58;
+  --rc-dark: #101411;
+
+  --rc-amber: #a8762a;
+  --rc-slate: #5b6d7a;
+
+  --rc-shadow-card: 0 1px 2px rgb(63 56 43 / 0.05), 0 8px 24px rgb(63 56 43 / 0.05);
+  --rc-shadow-pop: 0 2rem 6rem rgb(63 56 43 / 0.16);
+
+  --rc-serif: Georgia, 'Times New Roman', serif;
+  --rc-rail: 16.5rem;
+  --rc-radius: 0.85rem;
+  --rc-ease: cubic-bezier(0.23, 1, 0.32, 1);
+
+  min-height: 100dvh;
+  background: var(--rc-paper);
+  color: var(--rc-ink);
+  color-scheme: light;
+  font-feature-settings: 'cv02', 'cv03', 'cv04';
+}
+
+/* audit-shell.css sets color-scheme: dark on this same selector — it loses the
+   cascade since workspace.css imports last, but native form controls (date
+   pickers, scrollbars) read color-scheme from the computed value at paint
+   time, not import order alone in every engine, so pin it explicitly. */
+.reclaim-audit,
+.audit-dialog-content {
+  color-scheme: light;
+}
+
+/*
+ * app-world.css paints two fixed layers behind the workspace — a dark
+ * "evidence room" photograph and a near-black scrim. Both belong to the old
+ * dark treatment and would sit on top of the paper surface, so they are
+ * retired here rather than edited out of that file (which still serves the
+ * legacy panels until they are migrated).
+ */
+.reclaim-audit::before,
+.reclaim-audit::after {
+  content: none;
+}
+
+.reclaim-audit *:focus-visible {
+  outline: 2px solid var(--rc-green);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ── Shell ─────────────────────────────────────────────────────────── */
+
+.rc-shell {
+  display: grid;
+  grid-template-columns: var(--rc-rail) minmax(0, 1fr);
+  min-height: 100dvh;
+}
+
+.rc-shell[data-variant='minimal'] {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.rc-skip {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 100;
+  padding: 0.75rem 1.1rem;
+  border-radius: 0 0 var(--rc-radius) 0;
+  background: var(--rc-dark);
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.rc-skip:focus {
+  left: 0;
+}
+
+/* ── Nav rail ──────────────────────────────────────────────────────── */
+
+.rc-rail {
+  position: sticky;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  height: 100dvh;
+  padding: 1.15rem 0.8rem 1rem;
+  border-right: 1px solid var(--rc-rule);
+  background: var(--rc-surface-soft);
+}
+
+.rc-rail-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.35rem 0.5rem 0.9rem;
+  color: var(--rc-ink);
+  text-decoration: none;
+}
+
+/* The logo inherits `--foreground`, which the dark theme set to near-white. */
+.rc-rail-brand .reclaim-mark,
+.rc-rail-brand .reclaim-wordmark {
+  color: var(--rc-ink);
+}
+
+.rc-rail-group {
+  display: grid;
+  gap: 0.12rem;
+  margin-top: 0.35rem;
+}
+
+.rc-rail-label {
+  padding: 0.85rem 0.65rem 0.4rem;
+  color: var(--rc-muted);
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.rc-rail-item {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  width: 100%;
+  padding: 0.56rem 0.65rem;
+  border: 1px solid transparent;
+  border-radius: 0.6rem;
+  background: none;
+  color: var(--rc-copy);
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 500;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 160ms var(--rc-ease), color 160ms var(--rc-ease), border-color 160ms var(--rc-ease);
+}
+
+.rc-rail-item svg {
+  width: 1.02rem;
+  height: 1.02rem;
+  flex-shrink: 0;
+  opacity: 0.75;
+}
+
+.rc-rail-item:hover {
+  background: rgb(23 25 23 / 0.05);
+  color: var(--rc-ink);
+}
+
+.rc-rail-item[aria-current='page'] {
+  border-color: var(--rc-rule);
+  background: var(--rc-surface);
+  color: var(--rc-ink);
+  font-weight: 640;
+  box-shadow: var(--rc-shadow-card);
+}
+
+.rc-rail-item[aria-current='page'] svg {
+  opacity: 1;
+  color: var(--rc-green);
+}
+
+.rc-rail-count {
+  margin-left: auto;
+  padding: 0.08rem 0.42rem;
+  border-radius: 999px;
+  background: rgb(23 25 23 / 0.07);
+  color: var(--rc-copy);
+  font-size: 0.7rem;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+
+.rc-rail-item[aria-current='page'] .rc-rail-count {
+  background: var(--rc-mint);
+  color: #10321f;
+}
+
+.rc-rail-spacer {
+  flex: 1;
+  min-height: 1rem;
+}
+
+.rc-rail-foot {
+  display: grid;
+  gap: 0.55rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--rc-rule);
+}
+
+/* Plan card pinned to the bottom of the rail. */
+.rc-plan-card {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.8rem;
+  border: 1px solid var(--rc-rule);
+  border-radius: 0.72rem;
+  background: var(--rc-surface);
+}
+
+.rc-plan-card[data-plan='pro'] {
+  border-color: rgb(44 139 88 / 0.32);
+  background: linear-gradient(180deg, rgb(115 217 154 / 0.14), var(--rc-surface));
+}
+
+.rc-plan-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.rc-plan-card-top strong {
+  font-size: 0.8rem;
+  font-weight: 680;
+  letter-spacing: -0.01em;
+}
+
+.rc-plan-card p {
+  margin: 0;
+  color: var(--rc-copy);
+  font-size: 0.74rem;
+  line-height: 1.45;
+}
+
+/* ── Main column ───────────────────────────────────────────────────── */
+
+.rc-main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.rc-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 3.85rem;
+  padding: 0.7rem clamp(1rem, 2.6vw, 2.1rem);
+  border-bottom: 1px solid var(--rc-rule);
+  background: rgb(243 239 231 / 0.86);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.rc-topbar-title {
+  display: grid;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.rc-topbar-title span {
+  color: var(--rc-muted);
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.rc-topbar-title strong {
+  font-size: 0.98rem;
+  font-weight: 650;
+  letter-spacing: -0.015em;
+}
+
+.rc-topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-left: auto;
+}
+
+.rc-content {
+  flex: 1;
+  width: 100%;
+  max-width: 78rem;
+  margin: 0 auto;
+  padding: clamp(1.5rem, 3vw, 2.6rem) clamp(1rem, 2.6vw, 2.1rem) 5rem;
+}
+
+/*
+ * Scene wrappers. The old .audit-scene reserved 5.25rem of top padding for the
+ * floating capsule that the nav rail replaced, so these start from zero.
+ */
+.rc-scene {
+  min-width: 0;
+}
+
+.rc-scene-frame {
+  width: 100%;
+  min-width: 0;
+}
+
+.rc-view {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/* ── Buttons ───────────────────────────────────────────────────────── */
+
+.rc-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  padding: 0.56rem 1rem;
+  border: 1px solid transparent;
+  border-radius: 0.6rem;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 620;
+  line-height: 1;
+  white-space: nowrap;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 150ms var(--rc-ease), border-color 150ms var(--rc-ease),
+    color 150ms var(--rc-ease), transform 150ms var(--rc-ease), box-shadow 150ms var(--rc-ease);
+}
+
+.rc-btn svg {
+  width: 0.95rem;
+  height: 0.95rem;
+}
+
+.rc-btn:active {
+  transform: translateY(1px);
+}
+
+.rc-btn[data-variant='primary'] {
+  background: var(--rc-dark);
+  color: #f6f7f4;
+}
+
+.rc-btn[data-variant='primary']:hover {
+  background: #1e2620;
+}
+
+.rc-btn[data-variant='mint'] {
+  background: var(--rc-mint);
+  color: #10321f;
+}
+
+.rc-btn[data-variant='mint']:hover {
+  background: #86e3a9;
+}
+
+.rc-btn[data-variant='outline'] {
+  border-color: var(--rc-rule-strong);
+  background: var(--rc-surface);
+  color: var(--rc-ink);
+}
+
+.rc-btn[data-variant='outline']:hover {
+  background: #fff;
+  border-color: var(--rc-ink);
+}
+
+.rc-btn[data-variant='ghost'] {
+  background: none;
+  color: var(--rc-copy);
+}
+
+.rc-btn[data-variant='ghost']:hover {
+  background: rgb(23 25 23 / 0.06);
+  color: var(--rc-ink);
+}
+
+.rc-btn[data-size='sm'] {
+  padding: 0.42rem 0.75rem;
+  font-size: 0.79rem;
+}
+
+.rc-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* ── Page header ───────────────────────────────────────────────────── */
+
+.rc-page-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1.5rem;
+  margin-bottom: clamp(1.5rem, 2.6vw, 2.25rem);
+}
+
+.rc-eyebrow {
+  color: var(--rc-muted);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.rc-page-head h1 {
+  margin: 0.5rem 0 0;
+  max-width: 22ch;
+  font-size: clamp(2.1rem, 3.6vw, 3.15rem);
+  font-weight: 600;
+  line-height: 1.02;
+  letter-spacing: -0.045em;
+  text-wrap: balance;
+}
+
+.rc-page-head h1 em {
+  font-family: var(--rc-serif);
+  font-style: italic;
+  font-weight: 400;
+}
+
+.rc-page-head > div > p {
+  margin: 0.85rem 0 0;
+  max-width: 46ch;
+  color: var(--rc-copy);
+  font-size: 0.95rem;
+  line-height: 1.55;
+}
+
+.rc-headline-figure {
+  display: grid;
+  gap: 0.25rem;
+  justify-items: end;
+  text-align: right;
+}
+
+.rc-headline-figure span {
+  color: var(--rc-muted);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.rc-headline-figure strong {
+  font-size: clamp(2.1rem, 3.4vw, 2.9rem);
+  font-weight: 500;
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+}
+
+.rc-headline-figure small {
+  color: var(--rc-muted);
+  font-size: 0.78rem;
+}
+
+/* ── Metric grid (Polar-style hairline cells) ──────────────────────── */
+
+.rc-grid {
+  overflow: hidden;
+  border: 1px solid var(--rc-rule);
+  border-radius: var(--rc-radius);
+  background: var(--rc-surface);
+  box-shadow: var(--rc-shadow-card);
+}
+
+.rc-grid-row {
+  display: grid;
+  grid-template-columns: repeat(var(--cols, 2), minmax(0, 1fr));
+}
+
+.rc-grid-row + .rc-grid-row {
+  border-top: 1px solid var(--rc-rule);
+}
+
+.rc-cell {
+  min-width: 0;
+  padding: clamp(1.1rem, 1.9vw, 1.6rem);
+}
+
+.rc-cell + .rc-cell {
+  border-left: 1px solid var(--rc-rule);
+}
+
+.rc-cell-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.55rem;
+}
+
+.rc-cell-head h2,
+.rc-cell-head h3 {
+  margin: 0;
+  font-size: 0.92rem;
+  font-weight: 620;
+  letter-spacing: -0.012em;
+}
+
+.rc-cell-head small {
+  color: var(--rc-muted);
+  font-size: 0.72rem;
+  text-align: right;
+}
+
+.rc-metric {
+  display: block;
+  font-size: clamp(2.2rem, 4vw, 3.1rem);
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: -0.045em;
+  font-variant-numeric: tabular-nums;
+}
+
+.rc-metric[data-tone='positive'] {
+  color: var(--rc-green);
+}
+
+.rc-metric-note {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.6rem;
+  color: var(--rc-copy);
+  font-size: 0.78rem;
+}
+
+.rc-metric-note::before {
+  content: '';
+  width: 0.56rem;
+  height: 0.56rem;
+  border: 2px solid var(--rc-green);
+  border-radius: 50%;
+}
+
+/* Donut + legend */
+
+.rc-mix {
+  display: flex;
+  align-items: center;
+  gap: clamp(1rem, 2.4vw, 2rem);
+  flex-wrap: wrap;
+}
+
+.rc-donut {
+  position: relative;
+  flex-shrink: 0;
+  width: 8.4rem;
+  height: 8.4rem;
+}
+
+.rc-donut svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.rc-donut-track {
+  fill: none;
+  stroke: rgb(23 25 23 / 0.09);
+  stroke-width: 11;
+}
+
+.rc-donut-seg {
+  fill: none;
+  stroke-width: 11;
+  stroke-linecap: round;
+}
+
+.rc-donut-seg[data-group='claim'] { stroke: var(--rc-green); }
+.rc-donut-seg[data-group='check'] { stroke: var(--rc-amber); }
+.rc-donut-seg[data-group='prevent'] { stroke: var(--rc-slate); }
+
+.rc-donut-center {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 0.1rem;
+  text-align: center;
+}
+
+.rc-donut-center strong {
+  font-size: 1.9rem;
+  font-weight: 500;
+  letter-spacing: -0.04em;
+  line-height: 1;
+}
+
+.rc-donut-center span {
+  color: var(--rc-muted);
+  font-size: 0.71rem;
+}
+
+.rc-legend {
+  display: grid;
+  gap: 0.72rem;
+  flex: 1;
+  min-width: 11rem;
+}
+
+.rc-legend-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.rc-legend-key {
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 3px;
+}
+
+.rc-legend-row[data-group='claim'] .rc-legend-key { background: var(--rc-green); }
+.rc-legend-row[data-group='check'] .rc-legend-key { background: var(--rc-amber); }
+.rc-legend-row[data-group='prevent'] .rc-legend-key { background: var(--rc-slate); }
+
+.rc-legend-row p {
+  margin: 0;
+  font-size: 0.83rem;
+  font-weight: 550;
+}
+
+.rc-legend-row small {
+  display: block;
+  color: var(--rc-muted);
+  font-size: 0.73rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.rc-legend-row strong {
+  font-size: 0.95rem;
+  font-weight: 620;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Exposure bars */
+
+.rc-bars {
+  display: grid;
+  gap: 0.95rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rc-bar-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.4rem;
+}
+
+.rc-bar-top span {
+  font-size: 0.83rem;
+  font-weight: 550;
+}
+
+.rc-bar-top strong {
+  font-size: 0.87rem;
+  font-weight: 640;
+  font-variant-numeric: tabular-nums;
+}
+
+.rc-bar-track {
+  display: block;
+  height: 0.34rem;
+  border-radius: 999px;
+  background: rgb(23 25 23 / 0.08);
+  overflow: hidden;
+}
+
+.rc-bar-fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--rc-green);
+}
+
+.rc-bars small {
+  display: block;
+  margin-top: 0.35rem;
+  color: var(--rc-muted);
+  font-size: 0.73rem;
+}
+
+/* Pipeline stat tiles */
+
+.rc-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+.rc-stat {
+  padding: 0.8rem 0.9rem;
+  border: 1px solid var(--rc-rule);
+  border-radius: 0.62rem;
+  background: var(--rc-paper);
+}
+
+.rc-stat[data-emphasis='true'] {
+  border-color: rgb(44 139 88 / 0.35);
+  background: rgb(115 217 154 / 0.13);
+}
+
+.rc-stat strong {
+  display: block;
+  font-size: 1.5rem;
+  font-weight: 500;
+  line-height: 1.1;
+  letter-spacing: -0.035em;
+  font-variant-numeric: tabular-nums;
+}
+
+.rc-stat span {
+  color: var(--rc-muted);
+  font-size: 0.74rem;
+}
+
+/* ── Finding cards ─────────────────────────────────────────────────── */
+
+.rc-section {
+  margin-top: clamp(1.5rem, 2.6vw, 2.25rem);
+}
+
+.rc-section-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.9rem;
+}
+
+.rc-section-head h2 {
+  margin: 0;
+  font-size: 1.02rem;
+  font-weight: 640;
+  letter-spacing: -0.02em;
+}
+
+.rc-section-head p {
+  margin: 0.25rem 0 0;
+  color: var(--rc-copy);
+  font-size: 0.85rem;
+}
+
+.rc-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 19rem), 1fr));
+  gap: 0.75rem;
+}
+
+.rc-card {
+  position: relative;
+  display: grid;
+  gap: 0.42rem;
+  padding: 1.05rem 1.15rem;
+  border: 1px solid var(--rc-rule);
+  border-radius: var(--rc-radius);
+  background: var(--rc-surface);
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  transition: border-color 160ms var(--rc-ease), box-shadow 160ms var(--rc-ease), transform 160ms var(--rc-ease);
+}
+
+.rc-card:hover {
+  border-color: var(--rc-rule-strong);
+  box-shadow: var(--rc-shadow-card);
+  transform: translateY(-1px);
+}
+
+.rc-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+.rc-card-vendor {
+  color: var(--rc-muted);
+  font-size: 0.76rem;
+  font-weight: 550;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rc-card strong {
+  font-size: 0.95rem;
+  font-weight: 620;
+  line-height: 1.32;
+  letter-spacing: -0.012em;
+}
+
+.rc-card-amount {
+  margin-top: 0.15rem;
+  color: var(--rc-green);
+  font-size: 1.02rem;
+  font-weight: 640;
+  font-variant-numeric: tabular-nums;
+}
+
+.rc-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.28rem;
+  padding: 0.16rem 0.5rem;
+  border-radius: 999px;
+  background: rgb(23 25 23 / 0.07);
+  color: var(--rc-copy);
+  font-size: 0.68rem;
+  font-weight: 650;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+.rc-chip[data-tone='new'] {
+  background: var(--rc-mint);
+  color: #10321f;
+}
+
+.rc-chip[data-tone='locked'] {
+  background: rgb(23 25 23 / 0.08);
+  color: var(--rc-muted);
+}
+
+.rc-chip[data-tone='free'] {
+  background: rgb(44 139 88 / 0.14);
+  color: var(--rc-green);
+}
+
+.rc-chip svg {
+  width: 0.7rem;
+  height: 0.7rem;
+}
+
+/* Locked card: the shape and the signal type stay legible, the money does not. */
+
+.rc-card[data-locked='true'] {
+  cursor: pointer;
+  background: repeating-linear-gradient(
+    -45deg,
+    var(--rc-surface),
+    var(--rc-surface) 7px,
+    var(--rc-paper) 7px,
+    var(--rc-paper) 14px
+  );
+}
+
+.rc-card[data-locked='true'] .rc-card-title-lock,
+.rc-card[data-locked='true'] .rc-card-amount {
+  color: var(--rc-muted);
+  filter: blur(5px);
+  user-select: none;
+  pointer-events: none;
+}
+
+.rc-card-lockbar {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.35rem;
+  padding-top: 0.6rem;
+  border-top: 1px dashed var(--rc-rule);
+  color: var(--rc-copy);
+  font-size: 0.76rem;
+  font-weight: 570;
+}
+
+.rc-card-lockbar svg {
+  width: 0.85rem;
+  height: 0.85rem;
+  color: var(--rc-muted);
+}
+
+/* ── Paywall banner ────────────────────────────────────────────────── */
+
+.rc-paywall {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: clamp(1rem, 2.5vw, 2.25rem);
+  padding: clamp(1.2rem, 2.4vw, 1.75rem) clamp(1.25rem, 2.6vw, 1.9rem);
+  border: 1px solid rgb(44 139 88 / 0.28);
+  border-radius: var(--rc-radius);
+  background: linear-gradient(135deg, rgb(115 217 154 / 0.16), rgb(251 250 246 / 0.9) 62%);
+  box-shadow: var(--rc-shadow-card);
+}
+
+.rc-paywall-copy h2 {
+  margin: 0.5rem 0 0;
+  font-size: clamp(1.25rem, 2.1vw, 1.6rem);
+  font-weight: 620;
+  letter-spacing: -0.03em;
+}
+
+.rc-paywall-copy h2 em {
+  font-family: var(--rc-serif);
+  font-style: italic;
+  font-weight: 400;
+}
+
+.rc-paywall-copy p {
+  margin: 0.6rem 0 0;
+  max-width: 52ch;
+  color: var(--rc-copy);
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+
+.rc-paywall-figures {
+  display: flex;
+  gap: 1.75rem;
+  margin-top: 1rem;
+}
+
+.rc-paywall-figures > div {
+  display: grid;
+  gap: 0.1rem;
+}
+
+.rc-paywall-figures strong {
+  font-size: 1.5rem;
+  font-weight: 550;
+  letter-spacing: -0.035em;
+  font-variant-numeric: tabular-nums;
+}
+
+.rc-paywall-figures span {
+  color: var(--rc-muted);
+  font-size: 0.74rem;
+}
+
+.rc-paywall-action {
+  display: grid;
+  gap: 0.5rem;
+  justify-items: stretch;
+}
+
+.rc-paywall-action small {
+  color: var(--rc-muted);
+  font-size: 0.72rem;
+  text-align: center;
+}
+
+/* ── Group accordion (Findings) ────────────────────────────────────── */
+
+.rc-groups {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.rc-group {
+  overflow: hidden;
+  border: 1px solid var(--rc-rule);
+  border-radius: var(--rc-radius);
+  background: var(--rc-surface);
+}
+
+.rc-group-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  width: 100%;
+  padding: 1rem 1.15rem;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.rc-group-toggle:hover {
+  background: rgb(23 25 23 / 0.02);
+}
+
+.rc-group-toggle h2 {
+  margin: 0;
+  font-size: 0.96rem;
+  font-weight: 640;
+  letter-spacing: -0.015em;
+}
+
+.rc-group-toggle h2::before {
+  content: '';
+  display: inline-block;
+  width: 0.55rem;
+  height: 0.55rem;
+  margin-right: 0.5rem;
+  border-radius: 2px;
+  vertical-align: middle;
+}
+
+.rc-group[data-group='claim'] h2::before { background: var(--rc-green); }
+.rc-group[data-group='check'] h2::before { background: var(--rc-amber); }
+.rc-group[data-group='prevent'] h2::before { background: var(--rc-slate); }
+.rc-group[data-group='confirmed'] h2::before { background: var(--rc-green); }
+.rc-group[data-group='requested'] h2::before { background: var(--rc-amber); }
+.rc-group[data-group='recovered'] h2::before { background: var(--rc-mint); }
+.rc-group[data-group='not_recovered'] h2::before { background: var(--rc-slate); }
+
+.rc-group-toggle > div > span {
+  display: block;
+  margin-top: 0.22rem;
+  color: var(--rc-copy);
+  font-size: 0.81rem;
+}
+
+.rc-group-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  flex-shrink: 0;
+  text-align: right;
+}
+
+.rc-group-meta strong {
+  font-size: 0.95rem;
+  font-weight: 640;
+  font-variant-numeric: tabular-nums;
+}
+
+.rc-group-meta span {
+  display: block;
+  color: var(--rc-muted);
+  font-size: 0.74rem;
+}
+
+.rc-group-chevron {
+  width: 1.05rem;
+  height: 1.05rem;
+  color: var(--rc-muted);
+  transition: transform 220ms var(--rc-ease);
+}
+
+.rc-group[data-open='true'] .rc-group-chevron {
+  transform: rotate(180deg);
+}
+
+.rc-group-panel {
+  overflow: hidden;
+}
+
+.rc-group-body {
+  padding: 0 1.15rem 1.15rem;
+  border-top: 1px solid var(--rc-rule-soft);
+  padding-top: 1.05rem;
+}
+
+.rc-group-empty {
+  margin: 0;
+  color: var(--rc-muted);
+  font-size: 0.85rem;
+}
+
+/* ── Empty state ───────────────────────────────────────────────────── */
+
+.rc-empty {
+  display: grid;
+  gap: 0.6rem;
+  justify-items: start;
+  padding: clamp(2rem, 4vw, 3.25rem);
+  border: 1px dashed var(--rc-rule-strong);
+  border-radius: var(--rc-radius);
+  background: var(--rc-surface);
+}
+
+.rc-empty h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 620;
+  letter-spacing: -0.025em;
+}
+
+.rc-empty p {
+  margin: 0;
+  max-width: 48ch;
+  color: var(--rc-copy);
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+
+/* ── Upgrade dialog (Wise-style stepper) ───────────────────────────── */
+
+.rc-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 1.25rem;
+  background: rgb(16 20 17 / 0.44);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+}
+
+.rc-modal {
+  width: min(100%, 40rem);
+  max-height: min(90dvh, 46rem);
+  overflow: auto;
+  border: 1px solid var(--rc-rule);
+  border-radius: 1.1rem;
+  background: var(--rc-surface);
+  box-shadow: var(--rc-shadow-pop);
+}
+
+.rc-modal-head {
+  position: sticky;
+  top: 0;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.1rem 1.35rem;
+  border-bottom: 1px solid var(--rc-rule);
+  background: var(--rc-surface);
+}
+
+.rc-modal-head h2 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+}
+
+.rc-modal-close {
+  margin-left: auto;
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border: 0;
+  border-radius: 0.5rem;
+  background: none;
+  color: var(--rc-copy);
+  cursor: pointer;
+}
+
+.rc-modal-close:hover {
+  background: rgb(23 25 23 / 0.07);
+  color: var(--rc-ink);
+}
+
+.rc-modal-close svg {
+  width: 1.05rem;
+  height: 1.05rem;
+}
+
+.rc-steps {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.95rem 1.35rem;
+  border-bottom: 1px solid var(--rc-rule);
+}
+
+.rc-step {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: var(--rc-muted);
+  font-size: 0.79rem;
+  font-weight: 600;
+}
+
+.rc-step-dot {
+  display: grid;
+  place-items: center;
+  width: 1.32rem;
+  height: 1.32rem;
+  border: 1.5px solid var(--rc-rule-strong);
+  border-radius: 50%;
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+.rc-step[data-state='current'] {
+  color: var(--rc-ink);
+}
+
+.rc-step[data-state='current'] .rc-step-dot {
+  border-color: var(--rc-green);
+  background: var(--rc-green);
+  color: #fff;
+}
+
+.rc-step[data-state='done'] {
+  color: var(--rc-green);
+}
+
+.rc-step[data-state='done'] .rc-step-dot {
+  border-color: var(--rc-green);
+  background: rgb(115 217 154 / 0.24);
+  color: var(--rc-green);
+}
+
+.rc-step-line {
+  flex: 1;
+  height: 1px;
+  background: var(--rc-rule);
+}
+
+.rc-step-line[data-done='true'] {
+  background: var(--rc-green);
+}
+
+.rc-modal-body {
+  padding: 1.35rem;
+}
+
+.rc-modal-body > p {
+  margin: 0 0 1.1rem;
+  color: var(--rc-copy);
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+
+.rc-modal-foot {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 1.1rem 1.35rem;
+  border-top: 1px solid var(--rc-rule);
+}
+
+.rc-modal-foot .rc-btn:last-child {
+  margin-left: auto;
+}
+
+/* Plan chooser */
+
+.rc-plans {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.rc-plan-option {
+  display: grid;
+  gap: 0.5rem;
+  padding: 1.05rem 1.15rem;
+  border: 1.5px solid var(--rc-rule);
+  border-radius: 0.8rem;
+  background: var(--rc-paper);
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  transition: border-color 150ms var(--rc-ease), background-color 150ms var(--rc-ease);
+}
+
+.rc-plan-option:hover {
+  border-color: var(--rc-rule-strong);
+}
+
+.rc-plan-option[aria-pressed='true'] {
+  border-color: var(--rc-green);
+  background: rgb(115 217 154 / 0.11);
+}
+
+.rc-plan-option-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.rc-plan-option-top strong {
+  font-size: 0.95rem;
+  font-weight: 650;
+}
+
+.rc-plan-price {
+  font-size: 1.35rem;
+  font-weight: 550;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+
+.rc-plan-price span {
+  margin-left: 0.3rem;
+  color: var(--rc-muted);
+  font-size: 0.78rem;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
+.rc-plan-option ul {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0.25rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rc-plan-option li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.45rem;
+  color: var(--rc-copy);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.rc-plan-option li svg {
+  flex-shrink: 0;
+  width: 0.85rem;
+  height: 0.85rem;
+  margin-top: 0.18rem;
+  color: var(--rc-green);
+}
+
+/* Inputs */
+
+.rc-input {
+  width: 100%;
+  padding: 0.62rem 0.8rem;
+  border: 1.5px solid var(--rc-rule);
+  border-radius: 0.6rem;
+  background: var(--rc-paper);
+  color: var(--rc-ink);
+  font: inherit;
+  font-size: 0.88rem;
+  transition: border-color 150ms var(--rc-ease), background-color 150ms var(--rc-ease);
+}
+
+.rc-input::placeholder {
+  color: var(--rc-muted);
+}
+
+.rc-input:hover {
+  border-color: var(--rc-rule-strong);
+}
+
+.rc-input:focus {
+  outline: none;
+  border-color: var(--rc-green);
+  background: #fff;
+}
+
+/* Stripe card entry */
+
+.rc-card-element {
+  padding: 0.85rem 0.9rem;
+  border: 1.5px solid var(--rc-rule);
+  border-radius: 0.6rem;
+  background: var(--rc-paper);
+  transition: border-color 150ms var(--rc-ease);
+}
+
+.rc-card-element:focus-within {
+  border-color: var(--rc-green);
+  background: #fff;
+}
+
+.rc-card-element[data-invalid='true'] {
+  border-color: #a8442e;
+}
+
+.rc-card-element-error {
+  margin: -0.4rem 0 0;
+  color: #a8442e;
+  font-size: 0.78rem;
+}
+
+.rc-card-element-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  margin: 0;
+  color: var(--rc-muted);
+  font-size: 0.76rem;
+  line-height: 1.5;
+}
+
+.rc-card-element-hint code {
+  padding: 0.05rem 0.3rem;
+  border-radius: 0.3rem;
+  background: rgb(23 25 23 / 0.07);
+  font-size: 0.74rem;
+  /* A card number split across two lines is unreadable as a number. */
+  white-space: nowrap;
+}
+
+.rc-card-saved {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--rc-rule);
+  border-radius: 0.7rem;
+  background: var(--rc-paper);
+}
+
+.rc-card-saved-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.rc-card-saved-chip {
+  display: grid;
+  place-items: center;
+  width: 2.3rem;
+  height: 2.3rem;
+  border-radius: 0.5rem;
+  background: var(--rc-mint);
+  color: #10321f;
+}
+
+.rc-card-saved-chip svg {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+.rc-card-saved-row strong {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 640;
+}
+
+.rc-card-saved-row span {
+  display: block;
+  margin-top: 0.1rem;
+  color: var(--rc-muted);
+  font-size: 0.78rem;
+}
+
+/* Review + summary rows */
+
+.rc-rows {
+  display: grid;
+  border: 1px solid var(--rc-rule);
+  border-radius: 0.7rem;
+  overflow: hidden;
+}
+
+.rc-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.82rem 1rem;
+  font-size: 0.86rem;
+}
+
+.rc-row + .rc-row {
+  border-top: 1px solid var(--rc-rule);
+}
+
+.rc-row span {
+  color: var(--rc-copy);
+}
+
+.rc-row strong {
+  font-weight: 640;
+  font-variant-numeric: tabular-nums;
+}
+
+.rc-row[data-total='true'] {
+  background: var(--rc-paper);
+}
+
+.rc-note {
+  display: flex;
+  gap: 0.55rem;
+  margin-top: 1rem;
+  padding: 0.8rem 0.95rem;
+  border-left: 3px solid var(--rc-amber);
+  border-radius: 0 0.5rem 0.5rem 0;
+  background: rgb(168 118 42 / 0.09);
+  color: var(--rc-copy);
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+.rc-note strong {
+  color: var(--rc-ink);
+}
+
+/* Success */
+
+.rc-success {
+  display: grid;
+  justify-items: center;
+  gap: 0.7rem;
+  padding: 1.5rem 0 0.5rem;
+  text-align: center;
+}
+
+.rc-success-mark {
+  display: grid;
+  place-items: center;
+  width: 3.4rem;
+  height: 3.4rem;
+  border-radius: 50%;
+  background: var(--rc-mint);
+  color: #10321f;
+}
+
+.rc-success-mark svg {
+  width: 1.6rem;
+  height: 1.6rem;
+}
+
+.rc-success h3 {
+  margin: 0;
+  font-size: 1.28rem;
+  font-weight: 620;
+  letter-spacing: -0.028em;
+}
+
+.rc-success p {
+  margin: 0;
+  max-width: 40ch;
+  color: var(--rc-copy);
+  font-size: 0.88rem;
+  line-height: 1.55;
+}
+
+/* ── The decision ──────────────────────────────────────────────────── */
+
+.rc-decide-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.1rem;
+}
+
+.reclaim-audit .rc-decide-head h2 {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 650;
+  letter-spacing: -0.025em;
+}
+
+.rc-decide-stake {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.rc-decide-stake span {
+  display: block;
+  color: var(--rc-muted);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.rc-decide-stake strong {
+  font-size: 1.5rem;
+  font-weight: 550;
+  letter-spacing: -0.035em;
+  color: var(--rc-green);
+  font-variant-numeric: tabular-nums;
+}
+
+.rc-decide-actions {
+  display: grid;
+  gap: 0.65rem;
+}
+
+/*
+ * The claim action is the answer most cases want, so it's visually larger —
+ * but it must look exactly as "off" as the other two options until it's
+ * actually selected. It used to carry a permanent green tint at rest, which
+ * made it look selected/checked even when it wasn't and made switching to
+ * another option look like nothing had happened.
+ */
+.reclaim-audit .rc-decide-primary {
+  display: grid;
+  gap: 0.28rem;
+  width: 100%;
+  padding: 1rem 1.15rem;
+  border: 1.5px solid var(--rc-rule);
+  border-radius: 0.75rem;
+  background: var(--rc-paper);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 150ms var(--rc-ease), background-color 150ms var(--rc-ease), transform 150ms var(--rc-ease);
+}
+
+.reclaim-audit .rc-decide-primary:hover {
+  border-color: var(--rc-rule-strong);
+  background: var(--rc-surface);
+}
+
+.reclaim-audit .rc-decide-primary[data-selected='true'] {
+  border-color: var(--rc-green);
+  background: rgb(115 217 154 / 0.16);
+  box-shadow: inset 0 0 0 1px rgb(44 139 88 / 0.3);
+}
+
+.rc-decide-primary-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--rc-ink);
+  font-size: 1rem;
+  font-weight: 680;
+  letter-spacing: -0.015em;
+}
+
+.reclaim-audit .rc-decide-primary[data-selected='true'] .rc-decide-primary-label {
+  color: var(--rc-green);
+}
+
+.rc-decide-primary-label svg {
+  width: 1.05rem;
+  height: 1.05rem;
+  color: var(--rc-muted);
+}
+
+.reclaim-audit .rc-decide-primary[data-selected='true'] .rc-decide-primary-label svg {
+  color: var(--rc-green);
+}
+
+.rc-decide-primary-note {
+  color: var(--rc-copy);
+  font-size: 0.86rem;
+  line-height: 1.45;
+}
+
+.rc-decide-secondary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
+  gap: 0.55rem;
+}
+
+.reclaim-audit .rc-decide-alt {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  width: 100%;
+  padding: 0.8rem 0.9rem;
+  border: 1px solid var(--rc-rule);
+  border-radius: 0.7rem;
+  background: var(--rc-paper);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 150ms var(--rc-ease), background-color 150ms var(--rc-ease);
+}
+
+.reclaim-audit .rc-decide-alt:hover {
+  border-color: var(--rc-rule-strong);
+  background: var(--rc-surface);
+}
+
+/* Each "no" reads differently: needs-info stays open (amber, matches the
+   Check queue elsewhere), not-an-error closes the case (slate, matches
+   Prevent) — so the two never render with the same selected color. */
+.reclaim-audit .rc-decide-alt[data-tone='needs_info'][data-selected='true'] {
+  border-color: var(--rc-amber);
+  background: rgb(168 118 42 / 0.1);
+}
+
+.reclaim-audit .rc-decide-alt[data-tone='expected'][data-selected='true'] {
+  border-color: var(--rc-slate);
+  background: rgb(100 110 120 / 0.12);
+}
+
+.rc-decide-alt > svg {
+  flex-shrink: 0;
+  width: 1.05rem;
+  height: 1.05rem;
+  margin-top: 0.1rem;
+  color: var(--rc-muted);
+}
+
+.rc-decide-alt[data-tone='needs_info'][data-selected='true'] > svg {
+  color: var(--rc-amber);
+}
+
+.rc-decide-alt[data-tone='expected'][data-selected='true'] > svg {
+  color: var(--rc-slate);
+}
+
+.rc-decide-alt strong {
+  display: block;
+  font-size: 0.88rem;
+  font-weight: 640;
+  color: var(--rc-ink);
+}
+
+.rc-decide-alt em {
+  display: block;
+  margin-top: 0.15rem;
+  color: var(--rc-copy);
+  font-style: normal;
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+/* ── Dismiss feedback + evidence checklist ────────────────────────── */
+
+.audit-dismiss-prompt {
+  display: grid;
+  gap: 0.9rem;
+  padding: 1.1rem 1.2rem;
+  margin-top: 1rem;
+  border: 1px solid rgb(168 118 42 / 0.3);
+  border-radius: var(--rc-radius);
+  background: rgb(168 118 42 / 0.06);
+}
+
+.audit-dismiss-prompt-head {
+  display: flex;
+  gap: 0.7rem;
+  align-items: flex-start;
+}
+
+.audit-dismiss-prompt-head svg {
+  flex-shrink: 0;
+  width: 1.2rem;
+  height: 1.2rem;
+  margin-top: 0.1rem;
+  color: var(--rc-amber);
+}
+
+.audit-dismiss-prompt-head strong {
+  display: block;
+  font-size: 0.92rem;
+  font-weight: 640;
+  color: var(--rc-ink);
+}
+
+.audit-dismiss-prompt-head p {
+  margin: 0.3rem 0 0;
+  color: var(--rc-copy);
+  font-size: 0.84rem;
+  line-height: 1.5;
+}
+
+.audit-dismiss-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.audit-dismiss-tag {
+  padding: 0.42rem 0.75rem;
+  border: 1.5px solid var(--rc-rule-strong);
+  border-radius: 999px;
+  background: var(--rc-surface);
+  color: var(--rc-copy);
+  font-size: 0.8rem;
+  font-weight: 550;
+  cursor: pointer;
+  transition: border-color 150ms var(--rc-ease), background-color 150ms var(--rc-ease), color 150ms var(--rc-ease);
+}
+
+.audit-dismiss-tag:hover {
+  border-color: var(--rc-ink);
+}
+
+.audit-dismiss-tag[data-selected='true'] {
+  border-color: var(--rc-amber);
+  background: rgb(168 118 42 / 0.14);
+  color: #8a6222;
+  font-weight: 650;
+}
+
+.audit-dismiss-actions {
+  display: flex;
+  gap: 0.6rem;
+  justify-content: flex-end;
+}
+
+.audit-dismiss-ack {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.9rem 1.1rem;
+  margin-top: 1rem;
+  border: 1px solid var(--rc-rule);
+  border-radius: var(--rc-radius);
+  background: var(--rc-paper);
+}
+
+.audit-dismiss-ack strong {
+  display: block;
+  font-size: 0.88rem;
+  font-weight: 620;
+  color: var(--rc-ink);
+}
+
+.audit-dismiss-ack p {
+  margin: 0.25rem 0 0;
+  color: var(--rc-copy);
+  font-size: 0.82rem;
+}
+
+.audit-evidence-gap {
+  display: block;
+  cursor: pointer;
+}
+
+.audit-evidence-gap-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.audit-evidence-gap-check input[type='checkbox'] {
+  width: 1rem;
+  height: 1rem;
+  accent-color: var(--rc-green);
+  cursor: pointer;
+}
+
+.audit-evidence-gap[data-checked='true'] {
+  border-color: rgb(44 139 88 / 0.4);
+  background: rgb(115 217 154 / 0.08);
+}
+
+.audit-evidence-gaps-summary {
+  margin: 0.7rem 0 0;
+  color: var(--rc-green);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+/* ── Dashboard hero ────────────────────────────────────────────────── */
+
+.rc-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(15rem, 0.65fr);
+  gap: clamp(1.5rem, 4vw, 3.5rem);
+  align-items: start;
+  padding-bottom: clamp(1.5rem, 3vw, 2.5rem);
+  border-bottom: 1px solid var(--rc-rule);
+}
+
+.rc-hero-main h1 {
+  margin: 0.5rem 0 0;
+  font-size: clamp(2rem, 3.6vw, 3.1rem);
+  font-weight: 600;
+  line-height: 1.05;
+  letter-spacing: -0.045em;
+  text-wrap: balance;
+}
+
+.rc-hero-main h1 em {
+  font-family: var(--rc-serif);
+  font-style: italic;
+  font-weight: 400;
+  color: var(--rc-green);
+}
+
+.rc-hero-main > p {
+  margin: 0.85rem 0 0;
+  max-width: 46ch;
+  color: var(--rc-copy);
+  font-size: 0.95rem;
+  line-height: 1.55;
+}
+
+.rc-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 1.35rem;
+}
+
+.rc-hero-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid var(--rc-rule);
+  border-radius: var(--rc-radius);
+  background: var(--rc-rule);
+}
+
+.rc-hero-stats > div {
+  padding: 0.85rem 0.95rem;
+  background: var(--rc-surface);
+}
+
+.rc-hero-stats > div[data-tone='active'] {
+  background: rgb(168 118 42 / 0.09);
+}
+
+.rc-hero-stats > div[data-tone='good'] {
+  background: rgb(115 217 154 / 0.13);
+}
+
+.rc-hero-stats dt {
+  color: var(--rc-muted);
+  font-size: 0.7rem;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.rc-hero-stats dd {
+  margin: 0.2rem 0 0;
+  font-size: 1.35rem;
+  font-weight: 550;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+
+.rc-hero-stats small {
+  display: block;
+  margin-top: 0.3rem;
+  color: var(--rc-muted);
+  font-size: 0.68rem;
+  line-height: 1.4;
+}
+
+/* ── The paywall gate ──────────────────────────────────────────────── */
+
+.rc-gate {
+  overflow: hidden;
+  margin-top: clamp(1.5rem, 3vw, 2.25rem);
+  border: 1.5px solid rgb(44 139 88 / 0.35);
+  border-radius: var(--rc-radius);
+  background: var(--rc-surface);
+  box-shadow: var(--rc-shadow-card);
+}
+
+/* One bar, to scale: what you can see versus what is being withheld. */
+.rc-gate-bar {
+  display: flex;
+  height: 0.5rem;
+}
+
+.rc-gate-bar-open {
+  background: var(--rc-green);
+}
+
+.rc-gate-bar-locked {
+  background: repeating-linear-gradient(
+    -45deg,
+    rgb(23 25 23 / 0.16),
+    rgb(23 25 23 / 0.16) 5px,
+    rgb(23 25 23 / 0.08) 5px,
+    rgb(23 25 23 / 0.08) 10px
+  );
+}
+
+.rc-gate-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: clamp(1.25rem, 3vw, 2.5rem);
+  align-items: center;
+  padding: clamp(1.2rem, 2.5vw, 1.75rem);
+}
+
+.rc-gate-body h2 {
+  margin: 0.45rem 0 0;
+  font-size: clamp(1.2rem, 2vw, 1.55rem);
+  font-weight: 620;
+  letter-spacing: -0.03em;
+  text-wrap: balance;
+}
+
+.rc-gate-body h2 em {
+  font-family: var(--rc-serif);
+  font-style: italic;
+  font-weight: 400;
+  color: var(--rc-amber);
+}
+
+.rc-gate-body > div > p {
+  margin: 0.6rem 0 0;
+  max-width: 62ch;
+  color: var(--rc-copy);
+  font-size: 0.88rem;
+  line-height: 1.6;
+}
+
+.rc-gate-action {
+  display: grid;
+  gap: 0.6rem;
+  justify-items: stretch;
+  text-align: center;
+}
+
+.rc-gate-action > small {
+  color: var(--rc-muted);
+  font-size: 0.72rem;
+}
+
+.rc-gate-figure {
+  padding: 0.75rem 1rem;
+  border: 1px dashed var(--rc-rule-strong);
+  border-radius: 0.65rem;
+  background: var(--rc-paper);
+}
+
+.rc-gate-figure span {
+  display: block;
+  color: var(--rc-muted);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.rc-gate-figure strong {
+  display: block;
+  margin: 0.15rem 0;
+  font-size: 1.6rem;
+  font-weight: 550;
+  letter-spacing: -0.035em;
+  font-variant-numeric: tabular-nums;
+}
+
+.rc-gate-figure small {
+  color: var(--rc-muted);
+  font-size: 0.74rem;
+}
+
+/* ── "Start here" next action ──────────────────────────────────────── */
+
+.rc-next {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 1.5rem;
+  align-items: center;
+  width: 100%;
+  padding: 1.15rem 1.25rem;
+  border: 1px solid var(--rc-rule);
+  border-radius: var(--rc-radius);
+  background: var(--rc-surface);
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  transition: border-color 160ms var(--rc-ease), box-shadow 160ms var(--rc-ease), transform 160ms var(--rc-ease);
+}
+
+.rc-next:hover {
+  border-color: var(--rc-rule-strong);
+  box-shadow: var(--rc-shadow-card);
+  transform: translateY(-1px);
+}
+
+.rc-next[data-locked='true'] {
+  background: repeating-linear-gradient(
+    -45deg,
+    var(--rc-surface),
+    var(--rc-surface) 7px,
+    var(--rc-paper) 7px,
+    var(--rc-paper) 14px
+  );
+}
+
+/*
+ * A locked "Start here" card must withhold the same things a locked row does:
+ * vendor and the exact finding text. The title is now generic placeholder
+ * copy (not the real finding.title), so it reads as muted text rather than
+ * blurred — only the dollar amount is real data and needs the blur.
+ */
+.rc-next[data-locked='true'] .rc-card-title-lock {
+  color: var(--rc-muted);
+  font-style: italic;
+  font-weight: 550;
+}
+
+.rc-next[data-locked='true'] .rc-next-money > strong {
+  color: var(--rc-muted);
+  filter: blur(6px);
+  user-select: none;
+  pointer-events: none;
+}
+
+.rc-next-top {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.4rem;
+}
+
+.rc-next-body > strong {
+  display: block;
+  font-size: 1.08rem;
+  font-weight: 640;
+  line-height: 1.3;
+  letter-spacing: -0.02em;
+}
+
+.rc-next-body > p {
+  margin: 0.35rem 0 0;
+  max-width: 58ch;
+  color: var(--rc-copy);
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.rc-next-money {
+  display: grid;
+  gap: 0.15rem;
+  justify-items: end;
+  text-align: right;
+}
+
+.rc-next-money > span:first-child {
+  color: var(--rc-muted);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.rc-next-money > strong {
+  font-size: 1.75rem;
+  font-weight: 550;
+  letter-spacing: -0.035em;
+  color: var(--rc-green);
+  font-variant-numeric: tabular-nums;
+}
+
+.rc-next-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-top: 0.25rem;
+  color: var(--rc-copy);
+  font-size: 0.8rem;
+  font-weight: 620;
+}
+
+.rc-next-cta svg {
+  width: 0.85rem;
+  height: 0.85rem;
+}
+
+/* ── Dashboard breakdown ───────────────────────────────────────────── */
+
+.rc-split {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
+  gap: 0.85rem;
+}
+
+.rc-panel {
+  padding: 1.15rem 1.25rem;
+  border: 1px solid var(--rc-rule);
+  border-radius: var(--rc-radius);
+  background: var(--rc-surface);
+}
+
+.rc-panel h3 {
+  margin: 0 0 0.9rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--rc-muted);
+}
+
+.rc-groupbars {
+  display: grid;
+  gap: 0.45rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rc-groupbars button {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 0.7rem;
+  align-items: start;
+  width: 100%;
+  padding: 0.65rem 0.7rem;
+  border: 1px solid transparent;
+  border-radius: 0.6rem;
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 150ms var(--rc-ease), border-color 150ms var(--rc-ease);
+}
+
+.rc-groupbars button:hover {
+  border-color: var(--rc-rule);
+  background: var(--rc-paper);
+}
+
+.rc-groupbars-key {
+  width: 0.55rem;
+  height: 0.55rem;
+  margin-top: 0.35rem;
+  border-radius: 2px;
+}
+
+.rc-groupbars li[data-group='claim'] .rc-groupbars-key { background: var(--rc-green); }
+.rc-groupbars li[data-group='check'] .rc-groupbars-key { background: var(--rc-amber); }
+.rc-groupbars li[data-group='prevent'] .rc-groupbars-key { background: var(--rc-slate); }
+
+.rc-groupbars strong {
+  display: block;
+  font-size: 0.88rem;
+  font-weight: 640;
+}
+
+.rc-groupbars small {
+  display: block;
+  margin-top: 0.15rem;
+  color: var(--rc-muted);
+  font-size: 0.76rem;
+  line-height: 1.45;
+}
+
+.rc-groupbars-money {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.rc-groupbars-money b {
+  font-size: 0.95rem;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+
+.rc-typebars {
+  display: grid;
+  gap: 0.95rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rc-typebars small {
+  display: block;
+  margin-top: 0.3rem;
+  color: var(--rc-muted);
+  font-size: 0.74rem;
+}
+
+.rc-typebars li[data-empty='true'] {
+  opacity: 0.5;
+}
+
+.rc-panel-sub {
+  margin: -0.4rem 0 0.9rem;
+  color: var(--rc-muted);
+  font-size: 0.76rem;
+  line-height: 1.45;
+}
+
+.rc-view-footer {
+  display: flex;
+  gap: 0.6rem;
+  margin-top: clamp(1.5rem, 3vw, 2.25rem);
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--rc-rule);
+}
+
+/* ── Findings rows ─────────────────────────────────────────────────── */
+
+.rc-findings {
+  display: grid;
+  gap: clamp(1.25rem, 2.5vw, 2rem);
+}
+
+.rc-findings-group-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 0.65rem;
+  margin-bottom: 0.55rem;
+  border-bottom: 1px solid var(--rc-rule);
+}
+
+.rc-findings-group-head h2 {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+}
+
+.rc-findings-key {
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 2px;
+}
+
+.rc-findings-group[data-group='claim'] .rc-findings-key { background: var(--rc-green); }
+.rc-findings-group[data-group='check'] .rc-findings-key { background: var(--rc-amber); }
+.rc-findings-group[data-group='prevent'] .rc-findings-key { background: var(--rc-slate); }
+
+.rc-findings-group-head p {
+  margin: 0.3rem 0 0;
+  max-width: 62ch;
+  color: var(--rc-copy);
+  font-size: 0.84rem;
+  line-height: 1.5;
+}
+
+.rc-findings-group-total {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.rc-findings-group-total strong {
+  display: block;
+  font-size: 1.1rem;
+  font-weight: 620;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.rc-findings-group-total span {
+  color: var(--rc-muted);
+  font-size: 0.76rem;
+}
+
+.rc-rowlist {
+  display: grid;
+  gap: 0.3rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rc-row {
+  display: grid;
+  grid-template-columns: 11rem minmax(0, 1fr) auto auto;
+  gap: 1rem;
+  align-items: center;
+  width: 100%;
+  padding: 0.8rem 0.95rem;
+  border: 1px solid var(--rc-rule);
+  border-radius: 0.7rem;
+  background: var(--rc-surface);
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 150ms var(--rc-ease), background-color 150ms var(--rc-ease);
+}
+
+.rc-row:hover {
+  border-color: var(--rc-rule-strong);
+  background: #fff;
+}
+
+.rc-row[data-locked='true'] {
+  background: repeating-linear-gradient(
+    -45deg,
+    var(--rc-surface),
+    var(--rc-surface) 7px,
+    var(--rc-paper) 7px,
+    var(--rc-paper) 14px
+  );
+}
+
+.rc-row-type {
+  color: var(--rc-muted);
+  font-size: 0.72rem;
+  font-weight: 650;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rc-row-vendor {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: var(--rc-muted);
+  font-size: 0.76rem;
+  font-weight: 550;
+}
+
+.rc-row-title {
+  display: block;
+  margin-top: 0.15rem;
+  font-size: 0.92rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+/* Locked row: only the check type is real signal. The vendor and the exact
+   finding text are exactly what the paywall is holding back, so they're
+   replaced outright rather than just blurred — a blur still leaks the vendor
+   name's shape and word count. */
+.rc-row-title-locked {
+  color: var(--rc-muted);
+  font-style: italic;
+  font-weight: 550;
+}
+
+.rc-row-amount {
+  font-size: 1.05rem;
+  font-weight: 650;
+  color: var(--rc-green);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.rc-row-amount[data-locked='true'] {
+  color: var(--rc-muted);
+  filter: blur(5px);
+  user-select: none;
+}
+
+.rc-row-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: var(--rc-copy);
+  font-size: 0.78rem;
+  font-weight: 620;
+  white-space: nowrap;
+}
+
+.rc-row-cta svg {
+  width: 0.8rem;
+  height: 0.8rem;
+}
+
+/* ── Claim header (recovery panel) ─────────────────────────────────── */
+
+.rc-claimhead {
+  padding-bottom: 1.1rem;
+  margin-bottom: 1.15rem;
+  border-bottom: 1px solid var(--rc-rule);
+}
+
+.rc-claimhead-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.reclaim-audit .rc-claimhead h2 {
+  margin: 0.35rem 0 0;
+  font-size: 1.15rem;
+  font-weight: 650;
+  letter-spacing: -0.025em;
+}
+
+.rc-claimhead-line {
+  margin: 0.6rem 0 0;
+  color: var(--rc-copy);
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+
+.rc-claimhead-line strong {
+  color: var(--rc-ink);
+  font-weight: 640;
+}
+
+.rc-claimhead-money {
+  color: var(--rc-green) !important;
+  font-variant-numeric: tabular-nums;
+}
+
+.rc-recovery-linked {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.85rem;
+}
+
+.rc-recovery-linked > span:first-child {
+  color: var(--rc-muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.reclaim-audit .rc-chip-link {
+  border: 1px solid var(--rc-rule);
+  background: var(--rc-paper);
+  cursor: help;
+}
+
+.reclaim-audit .rc-chip-link:hover {
+  border-color: var(--rc-green);
+  background: rgb(115 217 154 / 0.16);
+  color: var(--rc-green);
+}
+
+/* Fee split shown against the amount just entered. */
+.rc-feesplit {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  margin: 0.85rem 0;
+  overflow: hidden;
+  border: 1px solid var(--rc-rule);
+  border-radius: 0.65rem;
+  background: var(--rc-rule);
+}
+
+.rc-feesplit > div {
+  padding: 0.7rem 0.8rem;
+  background: var(--rc-surface);
+}
+
+.rc-feesplit > div[data-tone='net'] {
+  background: rgb(115 217 154 / 0.14);
+}
+
+.rc-feesplit span {
+  display: block;
+  color: var(--rc-muted);
+  font-size: 0.68rem;
+  font-weight: 650;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.rc-feesplit strong {
+  display: block;
+  margin-top: 0.15rem;
+  font-size: 1.05rem;
+  font-weight: 620;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.rc-feesplit > div[data-tone='net'] strong {
+  color: var(--rc-green);
+}
+
+/* ── Recovery economics ────────────────────────────────────────────── */
+
+.rc-ledgerbar {
+  margin-bottom: clamp(1.25rem, 2.5vw, 1.85rem);
+  border: 1px solid var(--rc-rule);
+  border-radius: var(--rc-radius);
+  background: var(--rc-surface);
+  overflow: hidden;
+}
+
+.rc-ledgerbar-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 11rem), 1fr));
+  gap: 1px;
+  background: var(--rc-rule);
+}
+
+.rc-ledgerbar-row > div {
+  padding: 0.95rem 1.05rem;
+  background: var(--rc-surface);
+}
+
+.rc-ledgerbar-row > div[data-tone='good'] {
+  background: rgb(115 217 154 / 0.12);
+}
+
+.rc-ledgerbar-row > div[data-tone='net'] {
+  background: rgb(44 139 88 / 0.08);
+}
+
+.rc-ledgerbar-row span {
+  display: block;
+  color: var(--rc-muted);
+  font-size: 0.7rem;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.rc-ledgerbar-row strong {
+  display: block;
+  margin: 0.2rem 0 0.1rem;
+  font-size: 1.4rem;
+  font-weight: 550;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+
+.rc-ledgerbar-row > div[data-tone='net'] strong {
+  color: var(--rc-green);
+}
+
+.rc-ledgerbar-row small {
+  color: var(--rc-muted);
+  font-size: 0.73rem;
+}
+
+.rc-ledgerbar-note {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+  margin: 0;
+  padding: 0.75rem 1.05rem;
+  border-top: 1px solid var(--rc-rule);
+  background: var(--rc-paper);
+  color: var(--rc-copy);
+  font-size: 0.79rem;
+  line-height: 1.5;
+}
+
+.rc-ledgerbar-note svg {
+  flex-shrink: 0;
+  width: 0.95rem;
+  height: 0.95rem;
+  margin-top: 0.1rem;
+  color: var(--rc-muted);
+}
+
+/* ── Claims pipeline ───────────────────────────────────────────────── */
+
+.rc-claims {
+  display: grid;
+  gap: clamp(1.25rem, 2.5vw, 2rem);
+}
+
+.rc-claims-group-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 0.65rem;
+  margin-bottom: 0.55rem;
+  border-bottom: 1px solid var(--rc-rule);
+}
+
+.rc-claims-group-head h2 {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+}
+
+.rc-claims-step {
+  display: grid;
+  place-items: center;
+  width: 1.45rem;
+  height: 1.45rem;
+  border-radius: 50%;
+  background: rgb(23 25 23 / 0.08);
+  color: var(--rc-copy);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.rc-claims-group[data-stage='confirmed'] .rc-claims-step { background: rgb(115 217 154 / 0.3); color: #10321f; }
+.rc-claims-group[data-stage='requested'] .rc-claims-step { background: rgb(168 118 42 / 0.22); color: #8a6222; }
+.rc-claims-group[data-stage='recovered'] .rc-claims-step { background: var(--rc-green); color: #fff; }
+
+.rc-claims-group-head p {
+  margin: 0.3rem 0 0;
+  max-width: 62ch;
+  color: var(--rc-copy);
+  font-size: 0.84rem;
+  line-height: 1.5;
+}
+
+.rc-claims-group-total {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.rc-claims-group-total strong {
+  display: block;
+  font-size: 1.1rem;
+  font-weight: 620;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.rc-claims-group-total span {
+  color: var(--rc-muted);
+  font-size: 0.76rem;
+}
+
+.rc-row-claim {
+  grid-template-columns: minmax(0, 1fr) auto auto;
+}
+
+.rc-claim-money {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.rc-claim-money b {
+  display: block;
+  font-size: 1.05rem;
+  font-weight: 650;
+  color: var(--rc-green);
+  font-variant-numeric: tabular-nums;
+}
+
+.rc-claim-money b[data-muted='true'] {
+  color: var(--rc-muted);
+}
+
+.rc-claim-money small {
+  color: var(--rc-muted);
+  font-size: 0.73rem;
+}
+
+/* ── Fee worked example ────────────────────────────────────────────── */
+
+.rc-feeexample {
+  margin-top: 1rem;
+  padding: 0.95rem 1.05rem;
+  border: 1px solid rgb(44 139 88 / 0.28);
+  border-radius: 0.7rem;
+  background: rgb(115 217 154 / 0.08);
+}
+
+.rc-feeexample-rows {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0.6rem 0;
+}
+
+.rc-feeexample-rows > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  font-size: 0.86rem;
+}
+
+.rc-feeexample-rows > div[data-tone='net'] {
+  padding-top: 0.4rem;
+  border-top: 1px solid rgb(44 139 88 / 0.25);
+  font-weight: 650;
+}
+
+.rc-feeexample-rows span {
+  color: var(--rc-copy);
+}
+
+.rc-feeexample-rows strong {
+  font-variant-numeric: tabular-nums;
+}
+
+.rc-feeexample-rows > div[data-tone='net'] strong {
+  color: var(--rc-green);
+  font-size: 1rem;
+}
+
+.rc-feeexample > small {
+  display: block;
+  color: var(--rc-muted);
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+
+/* ── Records table ─────────────────────────────────────────────────── */
+
+.rc-records-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-bottom: 1rem;
+}
+
+.rc-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 14rem;
+}
+
+.rc-search svg {
+  position: absolute;
+  left: 0.7rem;
+  width: 0.95rem;
+  height: 0.95rem;
+  color: var(--rc-muted);
+  pointer-events: none;
+}
+
+.rc-search .rc-input {
+  padding-left: 2.1rem;
+}
+
+.rc-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--rc-rule);
+  border-radius: var(--rc-radius);
+  background: var(--rc-surface);
+}
+
+.rc-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.rc-table th {
+  position: sticky;
+  top: 0;
+  padding: 0.7rem 0.9rem;
+  border-bottom: 1px solid var(--rc-rule);
+  background: var(--rc-paper);
+  color: var(--rc-muted);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.rc-table td {
+  padding: 0.65rem 0.9rem;
+  border-bottom: 1px solid var(--rc-rule-soft);
+  white-space: nowrap;
+}
+
+.rc-table tr:last-child td {
+  border-bottom: 0;
+}
+
+.rc-table tr[data-flagged='true'] td {
+  background: rgb(168 118 42 / 0.07);
+}
+
+.rc-table-muted {
+  color: var(--rc-muted);
+}
+
+.rc-table-num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+/* ── Settings ──────────────────────────────────────────────────────── */
+
+.rc-settings-block {
+  margin-bottom: 1rem;
+  padding: 1.25rem 1.35rem;
+  border: 1px solid var(--rc-rule);
+  border-radius: var(--rc-radius);
+  background: var(--rc-surface);
+}
+
+.rc-settings-block[data-tone='danger'] {
+  border-color: rgb(168 68 46 / 0.3);
+  background: rgb(168 68 46 / 0.04);
+}
+
+.rc-settings-block-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.7rem;
+}
+
+.rc-settings-block-head h2 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+}
+
+.rc-settings-copy {
+  margin: 0;
+  max-width: 62ch;
+  color: var(--rc-copy);
+  font-size: 0.88rem;
+  line-height: 1.6;
+}
+
+.rc-settings-list {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0.85rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rc-settings-list li {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  color: var(--rc-copy);
+  font-size: 0.85rem;
+}
+
+.rc-settings-list svg {
+  width: 0.9rem;
+  height: 0.9rem;
+  color: var(--rc-green);
+}
+
+.rc-settings-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 1rem;
+}
+
+.rc-settings-fine {
+  margin: 0.85rem 0 0;
+  max-width: 68ch;
+  color: var(--rc-muted);
+  font-size: 0.76rem;
+  line-height: 1.55;
+}
+
+.rc-settings-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: 0.6rem;
+  margin: 0;
+}
+
+.rc-settings-facts > div {
+  padding: 0.7rem 0.85rem;
+  border: 1px solid var(--rc-rule);
+  border-radius: 0.6rem;
+  background: var(--rc-paper);
+}
+
+.rc-settings-facts dt {
+  color: var(--rc-muted);
+  font-size: 0.7rem;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.rc-settings-facts dd {
+  margin: 0.2rem 0 0;
+  font-size: 0.95rem;
+  font-weight: 620;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rc-btn[data-variant='danger'] {
+  background: #8c2f1c;
+  color: #fdf6f4;
+}
+
+.rc-btn[data-variant='danger']:hover {
+  background: #a0361f;
+}
+
+/* ── Recovery request package ──────────────────────────────────────── */
+
+.rc-recovery-package {
+  display: grid;
+  gap: 1.1rem;
+  padding: 1.35rem;
+  border: 1px solid var(--rc-rule);
+  border-radius: var(--rc-radius);
+  background: var(--rc-surface);
+  box-shadow: var(--rc-shadow-card);
+}
+
+.rc-recovery-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.rc-recovery-head h2 {
+  margin: 0.3rem 0 0;
+  font-size: 1.05rem;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+}
+
+.rc-recovery-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem;
+}
+
+.rc-recovery-summary > div {
+  padding: 0.65rem 0.8rem;
+  border: 1px solid var(--rc-rule);
+  border-radius: 0.6rem;
+  background: var(--rc-paper);
+}
+
+.rc-recovery-summary span {
+  display: block;
+  color: var(--rc-muted);
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.rc-recovery-summary strong {
+  display: block;
+  margin-top: 0.2rem;
+  font-size: 0.92rem;
+  font-weight: 620;
+}
+
+.rc-recovery-summary-amount {
+  color: var(--rc-green);
+}
+
+.rc-recovery-linked {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.rc-recovery-linked > span {
+  color: var(--rc-muted);
+  font-size: 0.78rem;
+}
+
+.rc-chip-link {
+  border: 0;
+  cursor: pointer;
+}
+
+.rc-chip-link:hover {
+  background: rgb(44 139 88 / 0.14);
+  color: var(--rc-green);
+}
+
+.rc-recovery-tabs {
+  display: inline-flex;
+  gap: 0.2rem;
+  padding: 0.2rem;
+  border: 1px solid var(--rc-rule);
+  border-radius: 0.6rem;
+  background: var(--rc-paper);
+  width: max-content;
+}
+
+.rc-recovery-tabs button {
+  padding: 0.4rem 0.9rem;
+  border: 0;
+  border-radius: 0.45rem;
+  background: none;
+  color: var(--rc-copy);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 150ms var(--rc-ease), color 150ms var(--rc-ease);
+}
+
+.rc-recovery-tabs button[data-active='true'] {
+  background: var(--rc-surface);
+  color: var(--rc-ink);
+  box-shadow: var(--rc-shadow-card);
+}
+
+.rc-recovery-form {
+  display: grid;
+  gap: 0.95rem;
+}
+
+/*
+ * Drafting a request used to render as a narrow sidebar next to the evidence
+ * column, half the width of the screen — cramped for a form with this many
+ * fields. The evidence column is removed from the DOM while drafting (see
+ * FindingCase), so this spans the full grid and reads as its own page.
+ */
+.audit-draft-decide-recap {
+  margin-bottom: 1rem;
+  border: 1px solid var(--rc-rule);
+  border-radius: 0.75rem;
+  background: var(--rc-surface);
+}
+
+.audit-draft-decide-recap > summary {
+  padding: 0.75rem 1rem;
+  font-size: 0.82rem;
+  font-weight: 620;
+  color: var(--rc-ink);
+  cursor: pointer;
+  list-style: none;
+}
+
+.audit-draft-decide-recap > summary::-webkit-details-marker {
+  display: none;
+}
+
+.audit-draft-decide-recap[open] > summary {
+  border-bottom: 1px solid var(--rc-rule);
+}
+
+.audit-draft-decide-recap .rc-decide {
+  border: 0;
+}
+
+.audit-action-column-full {
+  grid-column: 1 / -1 !important;
+  position: static !important;
+  border-left: 0 !important;
+  max-width: 42rem;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.rc-field-group {
+  display: grid;
+  gap: 0.3rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--rc-rule);
+  border-radius: 0.65rem;
+  background: var(--rc-paper);
+}
+
+.rc-field-group-label {
+  font-size: 0.82rem;
+  font-weight: 620;
+  color: var(--rc-ink);
+}
+
+.rc-field-group-hint {
+  margin: 0 0 0.4rem;
+  color: var(--rc-muted);
+  font-size: 0.76rem;
+  line-height: 1.4;
+}
+
+.rc-field-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: 0.75rem;
+}
+
+.rc-field {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.rc-field > span:first-child {
+  font-size: 0.82rem;
+  font-weight: 620;
+  color: var(--rc-ink);
+}
+
+.rc-field-error {
+  color: #a8442e;
+  font-size: 0.74rem;
+}
+
+.rc-textarea {
+  resize: vertical;
+  font-family: inherit;
+  line-height: 1.55;
+}
+
+.rc-method-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: 0.55rem;
+}
+
+.rc-method-option {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.6rem 0.75rem;
+  border: 1.5px solid var(--rc-rule);
+  border-radius: 0.55rem;
+  background: var(--rc-paper);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 150ms var(--rc-ease), background-color 150ms var(--rc-ease);
+}
+
+.rc-method-option:hover {
+  border-color: var(--rc-rule-strong);
+}
+
+.rc-method-option[data-selected='true'] {
+  border-color: var(--rc-green);
+  background: rgb(115 217 154 / 0.11);
+}
+
+.rc-method-option-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+}
+
+.rc-method-option-check {
+  width: 0.95rem;
+  height: 0.95rem;
+  color: var(--rc-green);
+  flex-shrink: 0;
+}
+
+.rc-method-option strong {
+  font-size: 0.84rem;
+  font-weight: 640;
+}
+
+.rc-method-option span {
+  display: block;
+  margin-top: 0.1rem;
+  color: var(--rc-muted);
+  font-size: 0.74rem;
+}
+
+.rc-recovery-evidence {
+  border: 1px solid var(--rc-rule);
+  border-radius: 0.6rem;
+  background: var(--rc-paper);
+  overflow: hidden;
+}
+
+.rc-recovery-evidence summary {
+  padding: 0.65rem 0.85rem;
+  color: var(--rc-copy);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.rc-recovery-evidence-rows {
+  display: grid;
+  gap: 0.4rem;
+  padding: 0 0.85rem 0.8rem;
+}
+
+.rc-recovery-evidence-row {
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr) auto;
+  gap: 0.7rem;
+  align-items: baseline;
+  font-size: 0.78rem;
+}
+
+.rc-recovery-evidence-row span {
+  color: var(--rc-muted);
+}
+
+.rc-recovery-evidence-row time {
+  color: var(--rc-copy);
+}
+
+.rc-recovery-evidence-row strong {
+  font-weight: 600;
+}
+
+.rc-recovery-evidence-row b {
+  color: var(--rc-green);
+  font-weight: 650;
+  text-align: right;
+}
+
+/* Letter preview: reads like an actual outgoing message. */
+
+.rc-letter-preview {
+  border: 1px solid var(--rc-rule);
+  border-radius: 0.7rem;
+  background: var(--rc-paper);
+  overflow: hidden;
+}
+
+.rc-letter-preview-meta {
+  display: grid;
+  gap: 0.45rem;
+  padding: 0.9rem 1.1rem;
+  border-bottom: 1px solid var(--rc-rule);
+  background: var(--rc-surface);
+}
+
+.rc-letter-preview-meta > div {
+  display: flex;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.rc-letter-preview-meta span {
+  flex-shrink: 0;
+  width: 3.5rem;
+  color: var(--rc-muted);
+  font-weight: 600;
+}
+
+.rc-letter-preview-meta strong {
+  font-weight: 620;
+}
+
+.rc-letter-preview-body {
+  padding: 1.1rem;
+  max-height: 22rem;
+  overflow-y: auto;
+  font-family: var(--rc-serif);
+  font-size: 0.92rem;
+  line-height: 1.6;
+}
+
+.rc-letter-preview-body p {
+  margin: 0 0 0.75rem;
+}
+
+.rc-letter-preview-body p:last-child {
+  margin-bottom: 0;
+}
+
+.rc-recovery-status {
+  min-height: 1.2rem;
+}
+
+.rc-recovery-status span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--rc-green);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.rc-recovery-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.rc-recovery-stage {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.9rem 1.05rem;
+  border: 1px solid rgb(44 139 88 / 0.3);
+  border-radius: 0.65rem;
+  background: rgb(115 217 154 / 0.1);
+}
+
+.rc-recovery-stage strong {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 650;
+}
+
+.rc-recovery-stage p {
+  margin: 0.2rem 0 0;
+  color: var(--rc-copy);
+  font-size: 0.8rem;
+}
+
+.rc-recovery-outcome {
+  display: grid;
+  gap: 0.9rem;
+  padding: 1rem 1.1rem;
+  border: 1px solid var(--rc-rule);
+  border-radius: 0.65rem;
+  background: var(--rc-paper);
+}
+
+.rc-recovery-outcome-head span {
+  display: block;
+  color: var(--rc-muted);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.rc-recovery-outcome-head strong {
+  display: block;
+  margin-top: 0.2rem;
+  font-size: 0.94rem;
+  font-weight: 640;
+}
+
+.rc-recovery-outcome-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+/* ── Legacy panel light skin ───────────────────────────────────────── */
+
+/*
+ * FindingCase, ImportPanel, RecoveryDraftPanel and the dialogs still render the
+ * `audit-*` markup styled by audit-shell.css / app-world.css. Both stylesheets
+ * are token-driven, so re-pointing the tokens re-skins every one of those
+ * panels at once — far safer than rewriting three large, well-tested
+ * components. The handful of hardcoded dark surfaces are corrected below.
+ */
+.reclaim-audit {
+  --surface: var(--rc-surface);
+  --paper-ink: var(--rc-surface);
+  --ink: var(--rc-paper);
+  --ink-soft: var(--rc-paper);
+  --ink-raised: var(--rc-surface);
+  --text: var(--rc-ink);
+  --text-soft: var(--rc-copy);
+  --text-faint: var(--rc-muted);
+  --line: var(--rc-rule);
+  --line-strong: var(--rc-rule-strong);
+  --recovery: var(--rc-green);
+  --recovery-strong: #1f6f43;
+  --review: var(--rc-amber);
+  --future: var(--rc-slate);
+  --control-edge: var(--rc-rule-strong);
+  --control-shadow: var(--rc-shadow-card);
+  --control-shadow-hover: var(--rc-shadow-pop);
+}
+
+/* Hardcoded dark fills that the tokens above cannot reach. */
+.reclaim-audit .audit-case,
+.reclaim-audit .audit-panel,
+.reclaim-audit .audit-entry-card,
+.reclaim-audit .audit-launch-shell,
+.reclaim-audit .audit-processing-shell,
+.reclaim-audit .audit-dialog-content,
+.reclaim-audit .audit-outcome-panel,
+.reclaim-audit .audit-package-summary,
+.reclaim-audit .audit-package-evidence,
+.reclaim-audit .audit-evidence-gap,
+.reclaim-audit .audit-decision-option,
+.reclaim-audit .audit-confirm-file,
+.reclaim-audit .audit-draft-textarea,
+.reclaim-audit .audit-decision-reason,
+.reclaim-audit .audit-evidence-cell {
+  background: var(--rc-surface);
+  color: var(--rc-ink);
+  border-color: var(--rc-rule);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.reclaim-audit .audit-dropzone {
+  background: var(--rc-paper);
+  border-color: var(--rc-rule-strong);
+  color: var(--rc-copy);
+}
+
+/* A dark 46%-opacity tint meant to sit over the old glass card; on the paper
+   surface it just reads as a muddy gray patch. */
+.reclaim-audit .audit-launch-preview {
+  background: var(--rc-paper);
+}
+
+.reclaim-audit .audit-case-amount,
+.reclaim-audit .audit-linked-chip {
+  color: var(--rc-green);
+}
+
+/*
+ * Pale text colours picked for the old near-black cards. On paper they are
+ * effectively invisible — the selected decision button and the import error
+ * banner both disappeared entirely.
+ */
+.reclaim-audit .audit-decision-btn[data-selected='true'] {
+  color: var(--rc-green);
+  border-color: rgb(44 139 88 / 0.45);
+  background: rgb(115 217 154 / 0.16);
+  box-shadow: inset 0 0 0 1px rgb(44 139 88 / 0.2);
+  font-weight: 660;
+}
+
+.reclaim-audit .audit-error-banner {
+  color: #8c2f1c;
+  border-color: rgb(168 68 46 / 0.4);
+  background: rgb(168 68 46 / 0.08);
+}
+
+.reclaim-audit .audit-badge[data-tone='sample'] {
+  color: var(--rc-slate);
+  border-color: rgb(91 109 122 / 0.4);
+  background: rgb(91 109 122 / 0.1);
+}
+
+.reclaim-audit .audit-evidence-cell[data-diff='true'] .audit-evidence-value {
+  color: #8a6222;
+  background: rgb(168 118 42 / 0.14);
+}
+
+.reclaim-audit .audit-evidence-cell[data-linked='true'] .audit-evidence-value {
+  color: var(--rc-green);
+  background: rgb(115 217 154 / 0.18);
+  box-shadow: 0 0 0 1px rgb(44 139 88 / 0.3);
+}
+
+/* Matched evidence used a pale mint tuned for a near-black card. */
+.reclaim-audit .audit-evidence-field[data-match='true'] .audit-evidence-value {
+  color: var(--rc-green);
+}
+
+/* Buttons: match the new rc-btn language rather than the dark pill treatment. */
+.reclaim-audit .audit-btn {
+  border-radius: 0.6rem;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.reclaim-audit .audit-btn[data-variant='primary'] {
+  background: var(--rc-dark);
+  border-color: var(--rc-dark);
+  color: #f6f7f4;
+}
+
+.reclaim-audit .audit-btn[data-variant='ghost'] {
+  background: none;
+  border-color: transparent;
+  color: var(--rc-copy);
+}
+
+.reclaim-audit .audit-btn[data-variant='ghost']:hover {
+  background: rgb(23 25 23 / 0.06);
+  color: var(--rc-ink);
+}
+
+.reclaim-audit .audit-btn:not([data-variant]),
+.reclaim-audit .audit-btn[data-variant='secondary'] {
+  background: var(--rc-surface);
+  border-color: var(--rc-rule-strong);
+  color: var(--rc-ink);
+}
+
+/* The old chrome reserved space for a floating capsule that no longer exists. */
+.reclaim-audit .audit-case,
+.reclaim-audit .audit-entry {
+  padding-top: 0;
+}
+
+.reclaim-audit .audit-topbar,
+.reclaim-audit .audit-capsule,
+.reclaim-audit .audit-skip-link {
+  display: none;
+}
+
+/* ── Responsive ────────────────────────────────────────────────────── */
+
+@media (max-width: 62rem) {
+  .rc-shell {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .rc-rail {
+    position: static;
+    height: auto;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.35rem;
+    overflow-x: auto;
+    padding: 0.6rem 0.8rem;
+    border-right: 0;
+    border-bottom: 1px solid var(--rc-rule);
+  }
+
+  .rc-rail-brand {
+    padding: 0 0.6rem 0 0.25rem;
+  }
+
+  .rc-rail-group {
+    display: flex;
+    margin-top: 0;
+  }
+
+  .rc-rail-label,
+  .rc-rail-spacer,
+  .rc-rail-foot {
+    display: none;
+  }
+
+  .rc-grid-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .rc-cell + .rc-cell {
+    border-left: 0;
+    border-top: 1px solid var(--rc-rule);
+  }
+
+  .rc-paywall,
+  .rc-hero,
+  .rc-gate-body,
+  .rc-next {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .rc-next-money {
+    justify-items: start;
+    text-align: left;
+  }
+
+  /* Type label and CTA fold away; vendor + title + amount stay. */
+  .rc-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .rc-row-type,
+  .rc-row-cta {
+    display: none;
+  }
+
+  .rc-page-head {
+    align-items: flex-start;
+  }
+
+  .rc-headline-figure {
+    justify-items: start;
+    text-align: left;
+  }
+}
+
+@media (max-width: 34rem) {
+  .rc-stats {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .rc-paywall-figures {
+    gap: 1.15rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reclaim-audit *,
+  .reclaim-audit *::before,
+  .reclaim-audit *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}

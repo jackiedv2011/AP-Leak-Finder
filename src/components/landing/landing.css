@@ -6126,8 +6126,8 @@
 .reclaim-footer-scrim {
   z-index: 1;
   background:
-    radial-gradient(74% 62% at 50% 38%, rgb(10 12 13 / 0.34), rgb(7 8 9 / 0.86) 84%),
-    linear-gradient(180deg, rgb(6 7 8 / 0.12), rgb(6 7 8 / 0.78));
+    radial-gradient(74% 62% at 50% 38%, rgb(10 12 13 / 0.12), rgb(7 8 9 / 0.32) 84%),
+    linear-gradient(180deg, rgb(6 7 8 / 0.04), rgb(6 7 8 / 0.3));
 }
 
 .reclaim-footer-shell {
@@ -6138,10 +6138,10 @@
   overflow: hidden;
   border: 1px solid rgb(237 241 237 / 0.2);
   border-radius: 1.35rem;
-  background: rgb(9 11 12 / 0.84);
+  background: rgb(9 11 12 / 0.3);
   box-shadow: 0 1.5rem 5rem rgb(0 0 0 / 0.25), inset 0 1px rgb(255 255 255 / 0.045);
-  backdrop-filter: blur(9px);
-  -webkit-backdrop-filter: blur(9px);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
 }
 
 .reclaim-footer-cta {
@@ -6432,7 +6432,7 @@
   }
 }
 
-.reclaim-commercial-page .reclaim-footer-dither { opacity: 0.38; }
+.reclaim-commercial-page .reclaim-footer-dither { opacity: 0.94; }
 
 .chapter-ivory {
   --text: var(--ivory-ink);

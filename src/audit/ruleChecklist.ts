@@ -73,6 +73,13 @@ export function buildRuleChecklist(finding: Finding): RuleCheck[] {
         { label: "Well above this vendor's typical payment", matched: false },
       ]
     }
+
+    case 'shared_invoice_number': {
+      return [
+        { label: 'Same invoice number', matched: true },
+        { label: 'Different vendor on file', matched: false },
+      ]
+    }
   }
 }
 

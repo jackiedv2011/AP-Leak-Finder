@@ -369,6 +369,40 @@ function detectAmountOutliers(records: APRecord[]): Finding[] {
   return findings
 }
 
+// Rule 8 — Invoice number reused across different vendors (review, high)
+function detectSharedInvoiceNumbers(records: APRecord[]): Finding[] {
+  const findings: Finding[] = []
+  const withInvoice = records.filter((r) => r.invoiceNumber !== null)
+  const groups = groupBy(withInvoice, (r) => normalizeInvoiceNumber(r.invoiceNumber!))
+
+  for (const group of groups.values()) {
+    const vendorsInGroup = groupBy(group, (r) => normalizeVendor(r.vendor))
+    if (vendorsInGroup.size < 2) continue
+
+    const sorted = [...group].sort((a, b) => a.paymentDate.getTime() - b.paymentDate.getTime())
+    const vendorNames = Array.from(new Set(sorted.map((r) => r.vendor))).join(', ')
+    const dollarImpact = sorted.reduce((sum, r) => sum + r.amountPaid, 0)
+
+    findings.push(
+      makeFinding({
+        id: `shared_invoice_number-${sorted.map((r) => r.id).join('-')}`,
+        type: 'shared_invoice_number',
+        class: 'review',
+        severity: 'high',
+        vendor: vendorNames,
+        dollarImpact,
+        title: `Invoice ${sorted[0].invoiceNumber} used by more than one vendor`,
+        explanation: `Invoice number ${sorted[0].invoiceNumber} appears on payments to ${vendorsInGroup.size} different vendors (${vendorNames}), totaling ${formatCurrency(
+          dollarImpact
+        )}. That's either a coincidental numbering overlap or a data-entry/vendor-identity issue worth confirming before treating either payment as routine.`,
+        relatedRecords: sorted,
+      })
+    )
+  }
+
+  return findings
+}
+
 /** Keep the higher-dollar finding when a record is claimed by more than one recoverable finding. */
 function dedupeRecoverable(candidates: FindingWithImpactRows[]): Finding[] {
   const sorted = [...candidates].sort((a, b) => b.finding.dollarImpact - a.finding.dollarImpact)
@@ -402,6 +436,7 @@ export function detectFindings(records: APRecord[]): DetectionResult {
   const missedDiscounts = detectMissedDiscounts(records)
   const bankAccountChanges = detectBankAccountChanges(records)
   const amountOutliers = detectAmountOutliers(records)
+  const sharedInvoiceNumbers = detectSharedInvoiceNumbers(records)
 
   const findings = [
     ...recoverableFindings,
@@ -409,6 +444,7 @@ export function detectFindings(records: APRecord[]): DetectionResult {
     ...missedDiscounts,
     ...bankAccountChanges,
     ...amountOutliers,
+    ...sharedInvoiceNumbers,
   ].sort(
     (a, b) => {
       const severityDiff = SEVERITY_RANK[a.severity] - SEVERITY_RANK[b.severity]

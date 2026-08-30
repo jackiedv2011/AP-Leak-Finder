@@ -30,6 +30,7 @@ export type FindingType =
   | 'missed_discount'
   | 'bank_account_change'
   | 'amount_outlier'
+  | 'shared_invoice_number'
 
 export type FindingClass = 'recoverable' | 'review' | 'opportunity'
 

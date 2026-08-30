@@ -1963,29 +1963,31 @@
 }
 
 /* ---------- Dialog override (radix portals render outside .reclaim-audit,
-   so custom properties don't cascade — hardcode the palette here) ---------- */
+   so custom properties don't cascade — hardcode the palette here). Matches
+   the paper workspace, not the old dark theme — see workspace.css's own
+   token block for the source of truth these values are copied from. ---------- */
 
 .audit-dialog-content {
-  --paper-ink: #151a17;
-  --text: #eef1ec;
-  --text-soft: #b3bbb5;
-  --control-edge: rgb(255 255 255 / 0.14);
-  --control-shadow: 0 0.7rem 1.4rem rgb(0 0 0 / 0.14), inset 0 1px 0 rgb(255 255 255 / 0.82), inset 0 -1px 0 rgb(0 0 0 / 0.14);
-  --control-shadow-hover: 0 0.95rem 2rem rgb(0 0 0 / 0.2), inset 0 1px 0 rgb(255 255 255 / 0.92), inset 0 -1px 0 rgb(0 0 0 / 0.12);
-  border-color: rgb(238 241 236 / 0.18) !important;
-  background: #12161a !important;
-  color: #eef1ec !important;
+  --paper-ink: #171917;
+  --text: #171917;
+  --text-soft: #5f625d;
+  --control-edge: rgb(23 25 23 / 0.26);
+  --control-shadow: 0 1px 2px rgb(63 56 43 / 0.05), 0 8px 24px rgb(63 56 43 / 0.05);
+  --control-shadow-hover: 0 2rem 6rem rgb(63 56 43 / 0.16);
+  border-color: rgb(23 25 23 / 0.15) !important;
+  background: #fbfaf6 !important;
+  color: #171917 !important;
   overscroll-behavior: contain;
 }
 
 .audit-dialog-content button:focus-visible,
 .audit-dialog-content input:focus-visible {
-  outline: 2px solid #79d99b;
+  outline: 2px solid #2c8b58;
   outline-offset: 3px;
 }
 
 .audit-dialog-content table {
-  color: #eef1ec;
+  color: #171917;
 }
 
 @media (prefers-contrast: more) {

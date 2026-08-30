@@ -1,5 +1,6 @@
 import type { Finding, FindingClass } from '@/types'
 import { computeAuditStats } from '@/audit/deriveStats'
+import { FINDING_TYPE_ORDER } from '@/lib/labels'
 import type { LedgerEnvironment } from '@/ledger/store'
 import { getCaseState } from '@/ledger/store'
 import {
@@ -61,6 +62,8 @@ export interface OverviewSummary {
   recoveryActiveValue: number
   recoveredCount: number
   recoveredValue: number
+  /** Reclaim's original estimate for the cases that closed as recovered. */
+  recoveredEstimate: number
   newSinceLastVisitCount: number
   nextRecommendedCase: CaseView | null
   nextRecoveryCase: CaseView | null
@@ -73,8 +76,8 @@ export function overviewSummary(env: LedgerEnvironment): OverviewSummary {
   const findings = env.result.findings
 
   const active = findings.filter((f) => isInFindingsQueue(getCaseState(env, f.id)))
-  const groupCounts: Record<QueueGroup, number> = { ready_to_verify: 0, needs_context: 0, worth_noting: 0 }
-  const groupValue: Record<QueueGroup, number> = { ready_to_verify: 0, needs_context: 0, worth_noting: 0 }
+  const groupCounts: Record<QueueGroup, number> = { claim: 0, check: 0, prevent: 0 }
+  const groupValue: Record<QueueGroup, number> = { claim: 0, check: 0, prevent: 0 }
   const exposureByType = new Map<Finding['type'], { count: number; dollarImpact: number }>()
   for (const f of active) {
     const group = queueGroupFor(f, getCaseState(env, f.id))
@@ -97,6 +100,10 @@ export function overviewSummary(env: LedgerEnvironment): OverviewSummary {
     const state = getCaseState(env, finding.id)
     return sum + (state.recoveredAmount ?? finding.dollarImpact)
   }, 0)
+  // What Reclaim originally estimated for the cases that have since closed as
+  // recovered. Shown beside the actual figure so the business can judge how
+  // close the estimates run — the performance fee is charged on actual only.
+  const recoveredEstimate = recovered.reduce((sum, finding) => sum + finding.dollarImpact, 0)
 
   const nextRecommended = pickNextRecommended(active)
   const nextRecovery = recoveryActive
@@ -115,22 +122,26 @@ export function overviewSummary(env: LedgerEnvironment): OverviewSummary {
     lastImportLabel: env.imports.at(-1)?.sourceLabel ?? null,
     totalFindingCount: findings.length,
     worthInvestigatingTotal,
-    readyToVerifyCount: groupCounts.ready_to_verify,
-    needsContextCount: groupCounts.needs_context,
-    worthNotingCount: groupCounts.worth_noting,
+    readyToVerifyCount: groupCounts.claim,
+    needsContextCount: groupCounts.check,
+    worthNotingCount: groupCounts.prevent,
     statusMix: [
-      { group: 'ready_to_verify', count: groupCounts.ready_to_verify, dollarImpact: groupValue.ready_to_verify },
-      { group: 'needs_context', count: groupCounts.needs_context, dollarImpact: groupValue.needs_context },
-      { group: 'worth_noting', count: groupCounts.worth_noting, dollarImpact: groupValue.worth_noting },
+      { group: 'claim', count: groupCounts.claim, dollarImpact: groupValue.claim },
+      { group: 'check', count: groupCounts.check, dollarImpact: groupValue.check },
+      { group: 'prevent', count: groupCounts.prevent, dollarImpact: groupValue.prevent },
     ],
-    exposureByType: [...exposureByType.entries()]
-      .map(([type, value]) => ({ type, ...value }))
-      .sort((a, b) => b.dollarImpact - a.dollarImpact || b.count - a.count)
-      .slice(0, 4),
+    // Every check Reclaim runs, in a fixed order — including the ones that
+    // found nothing, so the business can see the full audit that ran, not
+    // just the rules that happened to trigger.
+    exposureByType: FINDING_TYPE_ORDER.map((type) => {
+      const value = exposureByType.get(type)
+      return { type, count: value?.count ?? 0, dollarImpact: value?.dollarImpact ?? 0 }
+    }),
     recoveryActiveCount,
     recoveryActiveValue,
     recoveredCount,
     recoveredValue,
+    recoveredEstimate,
     newSinceLastVisitCount: env.newFindingIds.length,
     nextRecommendedCase: nextRecommended ? toCaseView(env, nextRecommended) : null,
     nextRecoveryCase: nextRecovery ? toCaseView(env, nextRecovery) : null,
@@ -143,7 +154,7 @@ export interface FindingsQueueGroup {
   cases: CaseView[]
 }
 
-const QUEUE_GROUP_ORDER: QueueGroup[] = ['ready_to_verify', 'needs_context', 'worth_noting']
+const QUEUE_GROUP_ORDER: QueueGroup[] = ['claim', 'check', 'prevent']
 
 /** Findings lens — every undecided (or needs-info) case, grouped by decision readiness. */
 export function findingsQueue(env: LedgerEnvironment): FindingsQueueGroup[] {

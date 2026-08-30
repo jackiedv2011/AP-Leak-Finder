@@ -14,8 +14,8 @@ export function ImportDialog({ open, onOpenChange, onImport, error }: ImportDial
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="audit-dialog-content">
         <DialogHeader>
-          <DialogTitle style={{ color: '#eef1ec' }}>Add records to the ledger</DialogTitle>
-          <DialogDescription style={{ color: '#9aa39d' }}>
+          <DialogTitle style={{ color: '#171917' }}>Add records to the ledger</DialogTitle>
+          <DialogDescription style={{ color: '#5f625d' }}>
             New records merge into your existing ledger. Nothing already reviewed is reset.
           </DialogDescription>
         </DialogHeader>

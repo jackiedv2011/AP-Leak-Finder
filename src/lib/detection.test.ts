@@ -282,6 +282,39 @@ describe('Rule 7 — payment amount outlier', () => {
   })
 })
 
+describe('Rule 8 — invoice number shared across vendors', () => {
+  it('flags an invoice number that appears under more than one vendor', () => {
+    const records = [
+      makeRecord({ vendor: 'Northwind Traders', invoiceNumber: 'INV-9001', amountPaid: 450, paymentDate: d(2025, 1, 1) }),
+      makeRecord({ vendor: 'Contoso Supply', invoiceNumber: 'INV-9001', amountPaid: 275, paymentDate: d(2025, 1, 12) }),
+    ]
+    const result = detectFindings(records)
+    const finding = result.findings.find((f) => f.type === 'shared_invoice_number')
+    expect(finding).toBeDefined()
+    expect(finding!.class).toBe('review')
+    expect(finding!.severity).toBe('high')
+    expect(finding!.dollarImpact).toBe(725)
+    expect(finding!.relatedRecords).toHaveLength(2)
+  })
+
+  it('does not flag an invoice number reused by the same vendor', () => {
+    const records = [
+      makeRecord({ vendor: 'Northwind Traders', invoiceNumber: 'INV-9002', amountPaid: 450, paymentDate: d(2025, 1, 1) }),
+      makeRecord({ vendor: 'northwind traders', invoiceNumber: 'INV-9002', amountPaid: 450, paymentDate: d(2025, 1, 1) }),
+    ]
+    const result = detectFindings(records)
+    expect(result.findings.find((f) => f.type === 'shared_invoice_number')).toBeUndefined()
+  })
+
+  it('does not flag a unique invoice number used by only one vendor', () => {
+    const records = [
+      makeRecord({ vendor: 'Solo Vendor', invoiceNumber: 'INV-9003', amountPaid: 200, paymentDate: d(2025, 1, 1) }),
+    ]
+    const result = detectFindings(records)
+    expect(result.findings.find((f) => f.type === 'shared_invoice_number')).toBeUndefined()
+  })
+})
+
 describe('No double-counting across recoverable findings', () => {
   it('does not let the same row drive two recoverable findings', () => {
     // Same invoice paid twice AND both payments exceed the invoice amount, so the

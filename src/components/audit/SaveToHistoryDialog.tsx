@@ -22,8 +22,8 @@ export function SaveToHistoryDialog({ open, onOpenChange, onSave, defaultName }:
       <DialogContent className="audit-dialog-content">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle style={{ color: '#eef1ec' }}>Save this audit</DialogTitle>
-            <DialogDescription style={{ color: '#9aa39d' }}>
+            <DialogTitle style={{ color: '#171917' }}>Save this audit</DialogTitle>
+            <DialogDescription style={{ color: '#5f625d' }}>
               Give it a name you&apos;ll recognize in your audit history. You can rename it later.
             </DialogDescription>
           </DialogHeader>

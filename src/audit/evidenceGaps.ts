@@ -69,6 +69,14 @@ export function buildEvidenceGaps(finding: Finding): EvidenceGap[] {
       break
     case 'missed_discount':
       break
+    case 'shared_invoice_number':
+      gaps.push({
+        label: 'Vendor master record',
+        whyItMatters: 'Confirms whether these are genuinely two different vendors or one vendor entered twice under different names.',
+        source: 'internal',
+        nextStep: 'Check the vendor master file for duplicate vendor records or a recent renumbering.',
+      })
+      break
   }
 
   if (finding.relatedRecords.some((r) => r.category === null)) {
