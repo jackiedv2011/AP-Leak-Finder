@@ -1,7 +1,10 @@
 import type { APRecord, Finding, FindingClass, DetectionResult } from '@/types'
 import { normalizeVendor, daysBetween, parseTerms, formatCurrency, formatDate } from '@/lib/format'
+import { damerauLevenshteinDistance } from '@/lib/stringDistance'
 
 const EPSILON = 0.01
+/** Max Damerau-Levenshtein distance between normalized invoice numbers to count as "near-identical" for Rule 2. */
+const MAX_NEAR_DUPLICATE_INVOICE_DISTANCE = 2
 
 function normalizeInvoiceNumber(invoiceNumber: string): string {
   return invoiceNumber.toLowerCase().trim().replace(/\s+/g, ' ')
@@ -132,6 +135,12 @@ function detectNearDuplicates(
         if (earlier.invoiceNumber === null) continue
         if (earlier.invoiceNumber === later.invoiceNumber) continue
         if (Math.abs(earlier.amountPaid - later.amountPaid) > EPSILON) continue
+
+        const invoiceDistance = damerauLevenshteinDistance(
+          normalizeInvoiceNumber(earlier.invoiceNumber),
+          normalizeInvoiceNumber(later.invoiceNumber)
+        )
+        if (invoiceDistance > MAX_NEAR_DUPLICATE_INVOICE_DISTANCE) continue
 
         const gap = Math.abs(daysBetween(earlier.paymentDate, later.paymentDate))
         if (gap > 45) continue

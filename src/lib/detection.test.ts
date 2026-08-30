@@ -100,6 +100,31 @@ describe('Rule 2 — near-duplicate payment', () => {
     const finding = result.findings.find((f) => f.type === 'near_duplicate')
     expect(finding).toBeUndefined()
   })
+
+  it('ignores pairs whose invoice numbers are not near-identical, even with matching amount and date gap', () => {
+    const records = [
+      makeRecord({ vendor: 'Blue Bag Packaging', invoiceNumber: 'INV-1001', amountPaid: 400, paymentDate: d(2025, 2, 1) }),
+      makeRecord({ vendor: 'Blue Bag Packaging', invoiceNumber: 'PO-9284', amountPaid: 400, paymentDate: d(2025, 2, 15) }),
+    ]
+    const result = detectFindings(records)
+    const finding = result.findings.find((f) => f.type === 'near_duplicate')
+    expect(finding).toBeUndefined()
+  })
+
+  it('uses Damerau-Levenshtein so an adjacent-digit transposition still counts as near-identical', () => {
+    // 'INV-1234' vs 'INV-2143' differs by two independent adjacent-digit swaps:
+    // Damerau-Levenshtein distance is 2, but plain Levenshtein distance is 4 —
+    // a threshold tuned for the Damerau-Levenshtein distance would miss this
+    // pair under plain Levenshtein.
+    const records = [
+      makeRecord({ vendor: 'Riverstone Supply', invoiceNumber: 'INV-1234', amountPaid: 275, paymentDate: d(2025, 4, 1) }),
+      makeRecord({ vendor: 'Riverstone Supply', invoiceNumber: 'INV-2143', amountPaid: 275, paymentDate: d(2025, 4, 11) }),
+    ]
+    const result = detectFindings(records)
+    const finding = result.findings.find((f) => f.type === 'near_duplicate')
+    expect(finding).toBeDefined()
+    expect(finding!.dollarImpact).toBe(275)
+  })
 })
 
 describe('Rule 3 — overpayment vs invoice', () => {
