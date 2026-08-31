@@ -1,7 +1,7 @@
 import { lazy, Suspense, type ReactElement } from 'react'
 
-const LandingPage = lazy(() =>
-  import('@/components/landing/LandingPage').then((module) => ({ default: module.LandingPage }))
+const SiteLanding = lazy(() =>
+  import('@/components/site/SiteLanding').then((module) => ({ default: module.SiteLanding }))
 )
 
 const AuditApp = lazy(() =>
@@ -20,7 +20,7 @@ function RouteFallback({ light = false }: { light?: boolean }) {
 }
 
 const ROUTES: Record<string, () => ReactElement> = {
-  '/': () => <LandingPage />,
+  '/': () => <SiteLanding />,
   '/audit': () => <AuditApp />,
 }
 

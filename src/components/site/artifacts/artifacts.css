@@ -1,0 +1,475 @@
+/*
+ * Reclaim's evidence objects.
+ *
+ * These are the page's physical layer: payment slips, ledger sheets, import
+ * receipts, finding cards and recovery drafts. They behave like paper — they
+ * overlap, rotate a degree or two, run past the content column, and cast a
+ * shadow because paper casts a shadow. Everything else on the page stays flat.
+ *
+ * All figures rendered inside them come from the bundled sample export
+ * (`src/data/sample-ledger-source.csv`), which is demo data, not a customer.
+ */
+
+.paper {
+  position: relative;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-card);
+  background: var(--paper);
+  box-shadow: var(--shadow-paper);
+}
+
+.paper-label {
+  font-size: 11px;
+  line-height: 18px;
+  letter-spacing: 0.22px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--fog);
+}
+
+.paper-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--hairline-soft);
+}
+
+/* ------------------------------------------------------- csv strip (raw) */
+
+.csv-strip {
+  width: 520px;
+  padding: 18px 0 20px;
+  overflow: hidden;
+}
+
+.csv-strip-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 20px 14px;
+  border-bottom: 1px solid var(--hairline-soft);
+}
+
+.csv-strip-head strong {
+  font-size: 14px;
+  letter-spacing: -0.28px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.csv-strip-rows {
+  display: block;
+  padding-top: 12px;
+  font-size: 11px;
+  line-height: 22px;
+  color: var(--smoke);
+  white-space: nowrap;
+}
+
+.csv-strip-rows span {
+  display: block;
+  padding: 0 20px;
+}
+
+.csv-strip-rows span[data-mark] {
+  background: var(--recover-wash);
+  color: var(--recover-ink);
+  font-weight: 600;
+}
+
+/* --------------------------------------------------------- payment slips */
+
+.slip {
+  width: 340px;
+  padding: 18px 20px 20px;
+}
+
+.slip-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--hairline-soft);
+}
+
+.slip-vendor {
+  font-size: 16px;
+  line-height: 24px;
+  letter-spacing: -0.32px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.slip-rows {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding-top: 14px;
+}
+
+.slip-rows > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.slip-rows dt {
+  font-size: 13px;
+  line-height: 20px;
+  letter-spacing: -0.26px;
+  font-weight: 500;
+  color: var(--fog);
+}
+
+.slip-rows dd {
+  margin: 0;
+  font-size: 14px;
+  line-height: 20px;
+  letter-spacing: -0.28px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.slip-rows > div[data-match] dd { color: var(--recover-ink); }
+
+.slip-amount {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--hairline-soft);
+}
+
+.slip-amount strong {
+  font-size: 24px;
+  line-height: 32px;
+  letter-spacing: -0.72px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+/* --------------------------------------------------------- ledger sheets */
+
+.ledger {
+  width: 560px;
+  overflow: hidden;
+}
+
+.ledger-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  line-height: 20px;
+  letter-spacing: -0.26px;
+}
+
+.ledger-table th {
+  padding: 10px 20px;
+  border-bottom: 1px solid var(--hairline-soft);
+  font-size: 11px;
+  line-height: 18px;
+  letter-spacing: 0.22px;
+  font-weight: 700;
+  text-transform: uppercase;
+  text-align: left;
+  color: var(--fog);
+}
+
+.ledger-table td {
+  padding: 11px 20px;
+  border-bottom: 1px solid var(--hairline-soft);
+  font-weight: 500;
+  color: var(--smoke);
+}
+
+.ledger-table td:first-child { font-weight: 600; color: var(--ink); }
+.ledger-table td:last-child { text-align: right; font-weight: 600; color: var(--ink); }
+.ledger-table tr:last-child td { border-bottom: 0; }
+
+.ledger-table tr[data-mark] td { background: var(--recover-wash); color: var(--recover-ink); }
+.ledger-table tr[data-mark] td:first-child,
+.ledger-table tr[data-mark] td:last-child { color: var(--recover-ink); }
+
+/* ---------------------------------------------------------- finding card */
+
+.finding {
+  width: 380px;
+  padding: 20px;
+}
+
+.finding-title {
+  margin-top: 10px;
+  font-size: 20px;
+  line-height: 28px;
+  letter-spacing: -0.6px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.finding-sub {
+  margin-top: 4px;
+  font-size: 14px;
+  line-height: 20px;
+  letter-spacing: -0.28px;
+  font-weight: 500;
+  color: var(--smoke);
+}
+
+.finding-checks {
+  display: grid;
+  gap: 10px;
+  margin: 18px 0 0;
+  padding: 16px 0 0;
+  list-style: none;
+  border-top: 1px solid var(--hairline-soft);
+}
+
+.finding-checks li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  line-height: 20px;
+  letter-spacing: -0.28px;
+  font-weight: 500;
+  color: var(--smoke);
+}
+
+.finding-checks li[data-matched='true'] { color: var(--ink); font-weight: 600; }
+
+.finding-foot {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--hairline-soft);
+}
+
+.finding-foot strong {
+  font-size: 20px;
+  line-height: 28px;
+  letter-spacing: -0.6px;
+  font-weight: 700;
+  color: var(--recover-ink);
+}
+
+/* -------------------------------------------------------- import receipt */
+
+.receipt {
+  width: 340px;
+  padding: 20px;
+}
+
+.receipt-stats {
+  display: grid;
+  gap: 12px;
+  margin: 16px 0 0;
+  padding-top: 16px;
+  border-top: 1px solid var(--hairline-soft);
+}
+
+.receipt-stats > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.receipt-stats dt {
+  font-size: 14px;
+  line-height: 20px;
+  letter-spacing: -0.28px;
+  font-weight: 500;
+  color: var(--fog);
+}
+
+.receipt-stats dd {
+  margin: 0;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.receipt-foot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--hairline-soft);
+  font-size: 13px;
+  line-height: 20px;
+  letter-spacing: -0.26px;
+  font-weight: 600;
+  color: var(--recover-ink);
+}
+
+/* ------------------------------------------------------- recovery letter */
+
+.letter {
+  width: 460px;
+  padding: 28px 30px 30px;
+}
+
+.letter-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--hairline-soft);
+}
+
+.letter-subject {
+  margin-top: 18px;
+  font-size: 16px;
+  line-height: 24px;
+  letter-spacing: -0.32px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.letter-body {
+  margin-top: 12px;
+  font-size: 14px;
+  line-height: 24px;
+  letter-spacing: -0.28px;
+  font-weight: 500;
+  color: var(--smoke);
+}
+
+.letter-body em {
+  font-style: normal;
+  color: var(--ink);
+  font-weight: 600;
+  background: var(--recover-wash);
+  border-radius: 3px;
+  padding: 0 3px;
+}
+
+.letter-sign {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--hairline-soft);
+}
+
+/* --------------------------------------------------------- workspace UI */
+
+/* A frame of the actual product surface, not a laptop mockup. */
+.workspace {
+  width: 100%;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-visual);
+  background: var(--paper);
+  box-shadow: var(--shadow-lift);
+  overflow: hidden;
+}
+
+.workspace-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--hairline-soft);
+  background: var(--snow);
+}
+
+.workspace-bar b {
+  font-size: 14px;
+  letter-spacing: -0.28px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.workspace-bar span {
+  font-size: 13px;
+  letter-spacing: -0.26px;
+  font-weight: 500;
+  color: var(--fog);
+}
+
+.workspace-tabs {
+  display: flex;
+  gap: 4px;
+  margin-left: auto;
+}
+
+.workspace-tabs span {
+  padding: 5px 12px;
+  border-radius: var(--radius-pill);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--fog);
+}
+
+.workspace-tabs span[data-active='true'] {
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: inset 0 0 0 1px var(--hairline);
+}
+
+.workspace-body { padding: 20px; }
+
+.workspace-rows { display: grid; gap: 8px; }
+
+.workspace-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 16px;
+  border: 1px solid var(--hairline-soft);
+  border-radius: 12px;
+}
+
+.workspace-row[data-active='true'] {
+  border-color: var(--recover);
+  background: rgb(121 217 155 / 0.07);
+}
+
+.workspace-row strong {
+  display: block;
+  font-size: 15px;
+  line-height: 22px;
+  letter-spacing: -0.3px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.workspace-row small {
+  display: block;
+  font-size: 13px;
+  line-height: 20px;
+  letter-spacing: -0.26px;
+  font-weight: 500;
+  color: var(--fog);
+}
+
+.workspace-row b {
+  font-size: 15px;
+  line-height: 22px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+/* --------------------------------------------------------------- staging */
+
+/* Wrapper that lets an artifact sit off-axis without affecting layout flow. */
+.stage {
+  position: relative;
+  isolation: isolate;
+}
+
+.stage-item {
+  position: absolute;
+  transform-origin: center;
+}

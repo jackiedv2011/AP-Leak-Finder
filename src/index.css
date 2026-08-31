@@ -1,4 +1,6 @@
 @import "@fontsource-variable/manrope/index.css";
+@import "@fontsource-variable/newsreader/wght.css";
+@import "@fontsource-variable/newsreader/wght-italic.css";
 @import "./motion/motion.css";
 
 @tailwind base;
