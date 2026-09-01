@@ -19,6 +19,8 @@ function realSampleResult() {
 async function renderAtSample() {
   setLocation('/audit?sample=1')
   render(<AuditApp />)
+  await waitFor(() => expect(screen.getByRole('heading', { name: /scan complete/i })).toBeInTheDocument())
+  fireEvent.click(screen.getByRole('button', { name: /open overview/i }))
   await waitFor(() => expect(screen.getByText(/payment recovery, summarized|every case has a decision/i)).toBeInTheDocument())
 }
 
@@ -34,6 +36,8 @@ async function renderAtUploadedDuplicate() {
   fireEvent.change(input, { target: { files: [new File([csv], 'sierra.csv', { type: 'text/csv' })] } })
   await waitFor(() => expect(screen.getByText('sierra.csv')).toBeInTheDocument())
   fireEvent.click(screen.getByRole('button', { name: /add to my ledger/i }))
+  await waitFor(() => expect(screen.getByRole('heading', { name: /scan complete/i })).toBeInTheDocument())
+  fireEvent.click(screen.getByRole('button', { name: /open overview/i }))
   await waitFor(() => expect(screen.getByText(/payment recovery, summarized/i)).toBeInTheDocument())
 }
 
@@ -67,11 +71,11 @@ describe('AuditApp', () => {
     expect(screen.queryByText(/payment recovery, summarized/i)).not.toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: /run the sample audit/i }))
-    expect(screen.getByText(/preparing sample ledger/i)).toBeInTheDocument()
-    await waitFor(
-      () => expect(screen.getByText(/payment recovery, summarized|every case has a decision/i)).toBeInTheDocument(),
-      { timeout: 3000 }
-    )
+    await waitFor(() => expect(screen.getByRole('heading', { name: /scan complete/i })).toBeInTheDocument())
+    expect(screen.getAllByText('Sample payment ledger').length).toBeGreaterThan(0)
+    expect(screen.getByText('7 of 7')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: /open overview/i }))
+    await waitFor(() => expect(screen.getByText(/payment recovery, summarized|every case has a decision/i)).toBeInTheDocument())
   })
 
   it('the upload entry route stays on the import screen even if a ledger already exists', async () => {
@@ -205,6 +209,7 @@ describe('AuditApp', () => {
     fireEvent.click(screen.getByRole('button', { name: /add to ledger/i }))
 
     await waitFor(() => expect(loadProject(projectId)?.environment.imports).toHaveLength(2))
+    fireEvent.click(screen.getByRole('button', { name: /open overview/i }))
 
     // Radix's tab-trigger pointer handling isn't reliably exercised by jsdom's
     // synthetic click event, so verify the mode switch through the same route
@@ -248,10 +253,9 @@ describe('AuditApp', () => {
     fireEvent.click(sampleLink)
     fireEvent.click(sampleLink)
 
-    await waitFor(
-      () => expect(screen.getByText(/payment recovery, summarized|every case has a decision/i)).toBeInTheDocument(),
-      { timeout: 3000 }
-    )
+    await waitFor(() => expect(screen.getByRole('heading', { name: /scan complete/i })).toBeInTheDocument())
+    fireEvent.click(screen.getByRole('button', { name: /open overview/i }))
+    await waitFor(() => expect(screen.getByText(/payment recovery, summarized|every case has a decision/i)).toBeInTheDocument())
 
     const result = realSampleResult()
     expect(
@@ -259,5 +263,55 @@ describe('AuditApp', () => {
     ).toBeInTheDocument()
     // exactly one import happened, not three
     expect(window.localStorage.getItem('reclaim.projects.index.v1')).toBeNull()
+  })
+  it('shows a truthful receipt for a full-column upload and retains it in Overview', async () => {
+    setLocation('/audit?entry=upload')
+    render(<AuditApp />)
+    const csv = [
+      'vendor,invoice_number,invoice_date,payment_date,invoice_amount,amount_paid,terms,bank_account_last4,category',
+      'Northstar Paper,INV-10,2025-01-01,2025-01-05,100,98,2/10 net 30,4455,Office',
+      'Northstar Paper,INV-11,2025-02-01,2025-02-05,200,196,2/10 net 30,4455,Office',
+    ].join('\n')
+    fireEvent.change(screen.getByLabelText(/upload a csv ledger/i), { target: { files: [new File([csv], 'northstar.csv')] } })
+    await waitFor(() => expect(screen.getByText('northstar.csv')).toBeInTheDocument())
+    fireEvent.click(screen.getByRole('button', { name: /add to my ledger/i }))
+
+    await waitFor(() => expect(screen.getByRole('heading', { name: /scan complete/i })).toBeInTheDocument())
+    expect(screen.getByText('7 of 7')).toBeInTheDocument()
+    expect(screen.getByText('The scan completed successfully with no findings.')).toBeInTheDocument()
+    expect(screen.queryByText('Sierra Coffee Supply')).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: /open overview/i }))
+    expect(screen.getByText('Last scan')).toBeInTheDocument()
+    expect(screen.getByText(/2 records · 7 of 7 checks · 0 findings/i)).toBeInTheDocument()
+  })
+
+  it('explains missing optional-column coverage and skipped rows on the receipt', async () => {
+    setLocation('/audit?entry=upload')
+    render(<AuditApp />)
+    const csv = [
+      'vendor,payment_date,amount_paid',
+      'Minimal Vendor,2025-01-05,100',
+      'Broken Vendor,,',
+    ].join('\n')
+    fireEvent.change(screen.getByLabelText(/upload a csv ledger/i), { target: { files: [new File([csv], 'minimal.csv')] } })
+    await waitFor(() => expect(screen.getByText('minimal.csv')).toBeInTheDocument())
+    fireEvent.click(screen.getByRole('button', { name: /add to my ledger/i }))
+
+    await waitFor(() => expect(screen.getByRole('heading', { name: /scan complete/i })).toBeInTheDocument())
+    expect(screen.getByText('1 of 7')).toBeInTheDocument()
+    expect(screen.getByText(/no bank-account column was provided/i)).toBeInTheDocument()
+    expect(screen.getByText(/payment terms, invoice dates, invoice amounts/i)).toBeInTheDocument()
+    const skipped = screen.getByText('Rows skipped').closest('div')
+    expect(skipped).toHaveTextContent('1')
+  })
+
+  it('restores the compact scan receipt with its persisted project after reload', async () => {
+    await renderAtUploadedDuplicate()
+    cleanup()
+    setLocation('/audit')
+    render(<AuditApp />)
+
+    await waitFor(() => expect(screen.getByText('Last scan')).toBeInTheDocument())
+    expect(screen.getByText('sierra.csv')).toBeInTheDocument()
   })
 })

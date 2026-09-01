@@ -1,12 +1,13 @@
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { ArrowRight, Plus, Trash2 } from 'lucide-react'
 import type { CSSProperties } from 'react'
-import type { OverviewSummary, CaseView } from '@/ledger/views'
+import type { OverviewSummary, CaseView, ScanReceiptSummary } from '@/ledger/views'
 import type { DecisionValue, RecoveryMethod } from '@/ledger/caseState'
 import { formatCurrency, formatDate } from '@/lib/format'
 import { QUEUE_GROUP_LABEL, RECOVERY_STAGE_LABEL, queueGroupFor } from '@/ledger/caseState'
 import { FINDING_TYPE_LABELS } from '@/lib/labels'
 import { FindingCase } from '@/components/audit/FindingCase'
+import { ScanReceipt } from '@/components/audit/ScanReceipt'
 import { MOTION_SPRING } from '@/motion/system'
 import { useMeaningfulReveal } from '@/motion/useMeaningfulReveal'
 
@@ -57,6 +58,7 @@ function CaseMixDonut({ summary }: { summary: OverviewSummary }) {
 
 interface OverviewViewProps {
   summary: OverviewSummary
+  receipt: ScanReceiptSummary | null
   activeCase?: CaseView | null
   draftOpen?: boolean
   onOpenCase: (findingId: string) => void
@@ -73,6 +75,7 @@ interface OverviewViewProps {
 /** Overview lens: the standing ledger, compressed into the next useful move. */
 export function OverviewView({
   summary,
+  receipt,
   activeCase = null,
   draftOpen = false,
   onOpenCase,
@@ -105,6 +108,8 @@ export function OverviewView({
 
   return (
     <div className="audit-workspace audit-overview" data-case-open={Boolean(activeCase)}>
+      {!activeCase && receipt && <ScanReceipt summary={receipt} variant="compact" />}
+
       <header className="audit-overview-hero">
         <div className="audit-overview-heading">
           <span>Standing ledger</span>

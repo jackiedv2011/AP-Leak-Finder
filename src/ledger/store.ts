@@ -9,6 +9,10 @@ export interface ImportBatch {
   importedAt: number
   recordCount: number
   skippedCount: number
+  /** Recognized source columns, retained so coverage remains explainable after reload. */
+  detectedColumns?: string[]
+  /** Findings first surfaced by this scan, retained independently of the new-badge lifecycle. */
+  findingIds?: string[]
 }
 
 /**
@@ -145,6 +149,8 @@ export function mergeImport(env: LedgerEnvironment | null, input: MergeImportInp
     importedAt: Date.now(),
     recordCount: newRecords.length,
     skippedCount: input.parsed.skippedCount,
+    detectedColumns: [...input.parsed.detectedColumns],
+    findingIds: newFindingIds,
   }
 
   return {
