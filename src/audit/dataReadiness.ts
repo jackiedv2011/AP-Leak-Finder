@@ -1,5 +1,5 @@
 import type { APRecord, ParseResult } from '@/types'
-import { formatDate } from '@/lib/format'
+import { formatDate, parseTerms } from '@/lib/format'
 
 const REQUIRED_COLUMNS = ['vendor', 'payment_date', 'amount_paid']
 
@@ -13,6 +13,8 @@ export interface DataReadiness {
   dateRangeLabel: string | null
   skippedCount: number
   missingInvoiceRefCount: number
+  availableCheckCount: number
+  totalCheckCount: 7
   weakerChecks: WeakerCheck[]
 }
 
@@ -28,27 +30,74 @@ function dateRangeLabel(records: APRecord[]): string | null {
   return `${formatDate(min)} – ${formatDate(max)}`
 }
 
-/** A truthful summary of what Reclaim understood from a parsed file, and which checks will be weaker because of what's missing — derived only from the parsed records themselves. */
-export function assessDataReadiness(parsed: ParseResult): DataReadiness {
-  const { records, skippedCount } = parsed
+/**
+ * A truthful summary of the records a single import contributed and the
+ * coverage those records can support. Column metadata is optional so older
+ * persisted ledgers can still produce a receipt from their usable values.
+ */
+export function assessRecordReadiness(
+  records: APRecord[],
+  skippedCount: number,
+  detectedColumns?: string[]
+): DataReadiness {
   const vendorCount = new Set(records.map((r) => r.vendor)).size
   const missingInvoiceRefCount = records.filter((r) => r.invoiceNumber === null).length
-  const missingBankAccount = records.every((r) => r.bankAccountLast4 === null)
-  const missingTerms = records.every((r) => r.terms === null)
-
+  const hasInvoiceReferences = records.some((r) => r.invoiceNumber !== null)
+  const hasInvoiceAmounts = records.some((r) => r.invoiceAmount !== null)
+  const hasBankAccounts = records.some((r) => r.bankAccountLast4 !== null)
+  const hasDiscountReadyRecord = records.some(
+    (r) => parseTerms(r.terms) !== null && r.invoiceDate !== null && r.invoiceAmount !== null
+  )
+  const provided = new Set(detectedColumns)
+  const knowsColumns = detectedColumns !== undefined
   const weakerChecks: WeakerCheck[] = []
-  if (missingInvoiceRefCount > 0) {
+  let availableCheckCount = 7
+
+  if (!hasInvoiceReferences) {
+    availableCheckCount -= 2
+    weakerChecks.push({
+      label: knowsColumns && !provided.has('invoice_number')
+        ? 'Exact and near-duplicate detection are unavailable because no invoice-reference column was provided.'
+        : 'Exact and near-duplicate detection are unavailable because no usable invoice references were found.',
+    })
+  } else if (missingInvoiceRefCount > 0) {
     weakerChecks.push({
       label: `Duplicate-invoice detection will be less precise for ${missingInvoiceRefCount} record${
         missingInvoiceRefCount === 1 ? '' : 's'
       } missing an invoice reference.`,
     })
   }
-  if (records.length > 0 && missingBankAccount) {
-    weakerChecks.push({ label: 'Bank-account-change detection is unavailable — no bank account column was found.' })
+
+  if (!hasInvoiceAmounts) {
+    availableCheckCount -= 1
+    weakerChecks.push({
+      label: knowsColumns && !provided.has('invoice_amount')
+        ? 'Overpayment detection is unavailable because no invoice-amount column was provided.'
+        : 'Overpayment detection is unavailable because no usable invoice amounts were found.',
+    })
   }
-  if (records.length > 0 && missingTerms) {
-    weakerChecks.push({ label: 'Early-payment discount checks are unavailable — no payment-terms column was found.' })
+
+  if (!hasBankAccounts) {
+    availableCheckCount -= 1
+    weakerChecks.push({
+      label: knowsColumns && !provided.has('bank_account_last4')
+        ? 'Bank-account-change detection is unavailable because no bank-account column was provided.'
+        : 'Bank-account-change detection is unavailable because no usable bank-account values were found.',
+    })
+  }
+
+  if (!hasDiscountReadyRecord) {
+    availableCheckCount -= 2
+    const missingColumns = [
+      knowsColumns && !provided.has('terms') ? 'payment terms' : null,
+      knowsColumns && !provided.has('invoice_date') ? 'invoice dates' : null,
+      knowsColumns && !provided.has('invoice_amount') ? 'invoice amounts' : null,
+    ].filter((value): value is string => value !== null)
+    weakerChecks.push({
+      label: missingColumns.length > 0
+        ? `Early-payment discount checks are unavailable because the file did not provide ${missingColumns.join(', ')}.`
+        : 'Early-payment discount checks are unavailable because no rows had usable discount terms, invoice dates, and invoice amounts together.',
+    })
   }
 
   return {
@@ -57,8 +106,15 @@ export function assessDataReadiness(parsed: ParseResult): DataReadiness {
     dateRangeLabel: dateRangeLabel(records),
     skippedCount,
     missingInvoiceRefCount,
+    availableCheckCount,
+    totalCheckCount: 7,
     weakerChecks,
   }
+}
+
+/** A truthful summary of what Reclaim understood from a newly parsed file. */
+export function assessDataReadiness(parsed: ParseResult): DataReadiness {
+  return assessRecordReadiness(parsed.records, parsed.skippedCount, parsed.detectedColumns)
 }
 
 export interface FatalFileGuidance {

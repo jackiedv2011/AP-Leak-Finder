@@ -1,5 +1,6 @@
 import type { Finding, FindingClass } from '@/types'
-import { computeAuditStats } from '@/audit/deriveStats'
+import { computeAuditStats, summarizeFindingClasses } from '@/audit/deriveStats'
+import { assessRecordReadiness, type WeakerCheck } from '@/audit/dataReadiness'
 import { FINDING_TYPE_ORDER } from '@/lib/labels'
 import type { LedgerEnvironment } from '@/ledger/store'
 import { getCaseState } from '@/ledger/store'
@@ -70,6 +71,52 @@ export interface OverviewSummary {
 }
 
 /** Overview lens — the environment compressed into what it means right now. */
+export interface ScanReceiptSummary {
+  sourceLabel: string
+  mode: 'sample' | 'upload'
+  importedAt: number
+  recordCount: number
+  vendorCount: number
+  skippedCount: number
+  availableCheckCount: number
+  totalCheckCount: 7
+  limitations: WeakerCheck[]
+  totalFindingCount: number
+  recoverableCount: number
+  recoverableTotal: number
+  reviewCount: number
+  reviewTotal: number
+  opportunityCount: number
+  opportunityTotal: number
+}
+
+export function lastScanReceipt(env: LedgerEnvironment): ScanReceiptSummary | null {
+  const batch = env.imports.at(-1)
+  if (!batch) return null
+
+  const records = env.records.filter((record) => record.importBatchId === batch.id)
+  const readiness = assessRecordReadiness(records, batch.skippedCount, batch.detectedColumns)
+  const fallbackFindingIds = env.result.findings
+    .filter((finding) => finding.relatedRecords.some((record) => record.importBatchId === batch.id))
+    .map((finding) => finding.id)
+  const findingIds = new Set(batch.findingIds ?? fallbackFindingIds)
+  const findings = env.result.findings.filter((finding) => findingIds.has(finding.id))
+  const classes = summarizeFindingClasses(findings)
+
+  return {
+    sourceLabel: batch.sourceLabel,
+    mode: batch.mode,
+    importedAt: batch.importedAt,
+    recordCount: readiness.recordCount,
+    vendorCount: readiness.vendorCount,
+    skippedCount: readiness.skippedCount,
+    availableCheckCount: readiness.availableCheckCount,
+    totalCheckCount: readiness.totalCheckCount,
+    limitations: readiness.weakerChecks,
+    ...classes,
+  }
+}
+
 export function overviewSummary(env: LedgerEnvironment): OverviewSummary {
   const skippedCount = env.imports.reduce((sum, batch) => sum + batch.skippedCount, 0)
   const stats = computeAuditStats(env.records, skippedCount, env.result)

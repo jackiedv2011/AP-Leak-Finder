@@ -7,8 +7,7 @@ import { useEntitlement } from '@/billing/useEntitlement'
 import { lockedSummary } from '@/billing/entitlement'
 import { AuditEntry } from '@/components/audit/AuditEntry'
 import { AuditLaunch } from '@/components/audit/AuditLaunch'
-import { AuditProcessing, type SampleAuditPhase } from '@/components/audit/AuditProcessing'
-import { IngestStatus } from '@/components/audit/IngestStatus'
+import { AuditProcessing, type AuditProcessingPhase } from '@/components/audit/AuditProcessing'
 import { OverviewView } from '@/components/audit/OverviewView'
 import { FindingsView } from '@/components/audit/FindingsView'
 import { RecoveryView } from '@/components/audit/RecoveryView'
@@ -52,13 +51,23 @@ import {
   type DismissalTag,
   type RecoveryMethod,
 } from '@/ledger/caseState'
-import { overviewSummary, findingsQueue, recoveryQueue, findCaseView } from '@/ledger/views'
+import { overviewSummary, findingsQueue, recoveryQueue, findCaseView, lastScanReceipt, type ScanReceiptSummary } from '@/ledger/views'
+import { assessDataReadiness, type DataReadiness } from '@/audit/dataReadiness'
 import { getSampleLedger } from '@/data/sampleLedger'
 import type { ImportInput } from '@/components/audit/ImportPanel'
 import type { Finding } from '@/types'
 import { MOTION_TRANSITION, sceneVariants } from '@/motion/system'
 
 const MODE_POSITION = { overview: 0, findings: 1, recovery: 2, records: 3, settings: 4 } as const
+
+interface ProcessingRun {
+  phase: AuditProcessingPhase
+  sourceLabel: string
+  mode: 'sample' | 'upload'
+  readiness: DataReadiness
+  receipt?: ScanReceiptSummary
+  error?: string
+}
 
 /** Stable identity so the entitlement memo doesn't rebuild on every render. */
 const NO_FINDINGS: Finding[] = []
@@ -76,12 +85,11 @@ export function AuditApp() {
   })
   const [environment, setEnvironment] = useState<LedgerEnvironment | null>(() => project?.environment ?? null)
   const [projects, setProjects] = useState(() => listProjects())
-  const [ingestLabel, setIngestLabel] = useState<string | null>(null)
+  const [processing, setProcessing] = useState<ProcessingRun | null>(null)
   const [entryError, setEntryError] = useState<string | null>(null)
   const [importDialogOpen, setImportDialogOpen] = useState(false)
   const [clearDialogOpen, setClearDialogOpen] = useState(false)
   const [sampleSession, setSampleSession] = useState(false)
-  const [sampleAuditPhase, setSampleAuditPhase] = useState<SampleAuditPhase | null>(null)
   const [upgradeOpen, setUpgradeOpen] = useState(false)
   const reduceMotion = useReducedMotion()
 
@@ -93,7 +101,7 @@ export function AuditApp() {
 
   const environmentRef = useRef(environment)
   const projectRef = useRef(project)
-  const sampleAuditRunRef = useRef(0)
+  const processingActiveRef = useRef(false)
   environmentRef.current = environment
   projectRef.current = project
   const caseOriginRef = useRef<{ mode: typeof route.mode; y: number }>({ mode: route.mode, y: 0 })
@@ -104,18 +112,14 @@ export function AuditApp() {
     previousModeRef.current = route.mode
   }, [route.mode])
 
-  useEffect(() => () => {
-    // A pending sample launch must not pull someone back into the audit if
-    // they used browser Back to leave the route mid-sequence.
-    sampleAuditRunRef.current += 1
-  }, [])
-
   const runImport = useCallback(
     async (input: MergeImportInput, options: { replaceEnvironment?: boolean; persist?: boolean } = {}) => {
+      if (processingActiveRef.current) return
+      processingActiveRef.current = true
+      const readiness = assessDataReadiness(input.parsed)
       setEntryError(null)
       setImportDialogOpen(false)
-      const count = input.parsed.records.length
-      setIngestLabel(`Reading ${count} record${count === 1 ? '' : 's'}…`)
+      setProcessing({ phase: 'running', sourceLabel: input.sourceLabel, mode: input.mode, readiness })
       // Yield one tick so the ingest label actually paints before the
       // (synchronous) merge/detection work runs — honest for large files,
       // imperceptible for small ones. No artificial minimum duration. A
@@ -142,54 +146,32 @@ export function AuditApp() {
         } else {
           navigate({ projectId: null, mode: 'overview', caseId: null, draft: false, entry: null }, { replace: true })
         }
+        environmentRef.current = next
         setEnvironment(next)
         setSampleSession(options.persist === false)
+        const receipt = lastScanReceipt(next)
+        if (!receipt) throw new Error('Scan receipt could not be derived')
+        setProcessing({ phase: 'complete', sourceLabel: input.sourceLabel, mode: input.mode, readiness, receipt })
       } catch (err) {
         console.error('Reclaim: import failed', err)
-        setEntryError('Something went wrong reading that file. Please try again.')
-      } finally {
-        setIngestLabel(null)
+        const message = 'Something went wrong processing that file. No scan results were saved.'
+        setEntryError(message)
+        setProcessing({ phase: 'failed', sourceLabel: input.sourceLabel, mode: input.mode, readiness, error: message })
       }
     },
     [navigate]
   )
 
-  const runSampleAudit = useCallback(async () => {
-    const runId = sampleAuditRunRef.current + 1
-    sampleAuditRunRef.current = runId
-    const isCurrentRun = () => sampleAuditRunRef.current === runId
-    const pause = (duration: number) => new Promise((resolve) => window.setTimeout(resolve, duration))
+  const runSampleAudit = useCallback(() => {
+    void runImport(sampleImportInput(), { replaceEnvironment: true, persist: false })
+  }, [runImport])
 
-    setEntryError(null)
-    setImportDialogOpen(false)
-    setSampleAuditPhase('reading')
-    try {
-      // Let the first progress state paint, then do the real detection work.
-      // The remaining sequence explains what just happened; it is not idle
-      // time placed in front of the computation.
-      await pause(80)
-      const next = mergeImport(null, sampleImportInput())
-      if (!isCurrentRun()) return
-
-      setSampleAuditPhase('matching')
-      await pause(280)
-      if (!isCurrentRun()) return
-
-      setSampleAuditPhase('ready')
-      await pause(260)
-      if (!isCurrentRun()) return
-
-      environmentRef.current = next
-      setEnvironment(next)
-      setSampleSession(true)
-      navigate({ projectId: null, mode: 'overview', caseId: null, draft: false, entry: null }, { replace: true })
-    } catch (err) {
-      console.error('Reclaim: sample audit failed', err)
-      setEntryError('Something went wrong reading the sample ledger. Please try again.')
-    } finally {
-      if (isCurrentRun()) setSampleAuditPhase(null)
-    }
-  }, [navigate])
+  const handleProcessingContinue = useCallback(() => {
+    const retryExistingLedger = processing?.phase === 'failed' && environmentRef.current && route.entry !== 'upload'
+    processingActiveRef.current = false
+    setProcessing(null)
+    if (retryExistingLedger) setImportDialogOpen(true)
+  }, [processing?.phase, route.entry])
 
   // One-time bootstrap: honor a first-time `?sample=1` CTA from the landing
   // page, and restore the last working context on a bare reload (no query
@@ -391,18 +373,10 @@ export function AuditApp() {
     goBack()
   }, [goBack])
 
-  if (sampleAuditPhase) {
+  if (processing) {
     return (
       <AuditShell variant="minimal">
-        <AuditProcessing phase={sampleAuditPhase} />
-      </AuditShell>
-    )
-  }
-
-  if (ingestLabel) {
-    return (
-      <AuditShell variant="minimal">
-        <IngestStatus label={ingestLabel} />
+        <AuditProcessing {...processing} onContinue={handleProcessingContinue} />
       </AuditShell>
     )
   }
@@ -440,6 +414,7 @@ export function AuditApp() {
   }
 
   const overview = overviewSummary(environment)
+  const receipt = lastScanReceipt(environment)
   // Rows referenced by at least one finding — the Records view marks these so
   // "links back to the exact source rows" is checkable, not just claimed.
   const flaggedRecordIds = new Set(
@@ -532,6 +507,7 @@ export function AuditApp() {
               {route.mode === 'overview' && (
                 <OverviewView
                   summary={overview}
+                  receipt={receipt}
                   entitlement={entitlement}
                   locked={locked}
                   onUpgrade={() => setUpgradeOpen(true)}

@@ -3,6 +3,44 @@ import { normalizeVendor, parseTerms, formatDate } from '@/lib/format'
 import type { AuditStats } from '@/audit/types'
 
 const CLASS_PRIORITY: FindingClass[] = ['recoverable', 'review', 'opportunity']
+export interface FindingClassSummary {
+  recoverableCount: number
+  reviewCount: number
+  opportunityCount: number
+  recoverableTotal: number
+  reviewTotal: number
+  opportunityTotal: number
+  totalFindingCount: number
+}
+
+/** One shared classification rollup for Overview, receipts, and tests. */
+export function summarizeFindingClasses(findings: Finding[]): FindingClassSummary {
+  return findings.reduce<FindingClassSummary>(
+    (summary, finding) => {
+      summary.totalFindingCount += 1
+      if (finding.class === 'recoverable') {
+        summary.recoverableCount += 1
+        summary.recoverableTotal += finding.dollarImpact
+      } else if (finding.class === 'review') {
+        summary.reviewCount += 1
+        summary.reviewTotal += finding.dollarImpact
+      } else {
+        summary.opportunityCount += 1
+        summary.opportunityTotal += finding.dollarImpact
+      }
+      return summary
+    },
+    {
+      recoverableCount: 0,
+      reviewCount: 0,
+      opportunityCount: 0,
+      recoverableTotal: 0,
+      reviewTotal: 0,
+      opportunityTotal: 0,
+      totalFindingCount: 0,
+    }
+  )
+}
 
 function pickStrongestFinding(findings: Finding[]): Finding | null {
   for (const cls of CLASS_PRIORITY) {
@@ -47,9 +85,7 @@ export function computeAuditStats(records: APRecord[], skippedCount: number, res
   const { groupCount, candidateRecordCount } = countInvoiceGroups(records)
   const termsRecordCount = records.filter((record) => parseTerms(record.terms) !== null).length
 
-  const recoverableCount = result.findings.filter((finding) => finding.class === 'recoverable').length
-  const reviewCount = result.findings.filter((finding) => finding.class === 'review').length
-  const opportunityCount = result.findings.filter((finding) => finding.class === 'opportunity').length
+  const findingSummary = summarizeFindingClasses(result.findings)
 
   return {
     recordCount: records.length,
@@ -60,13 +96,7 @@ export function computeAuditStats(records: APRecord[], skippedCount: number, res
     duplicateCandidateCount: candidateRecordCount,
     termsRecordCount,
     dateRangeLabel: dateRangeLabel(records),
-    recoverableCount,
-    reviewCount,
-    opportunityCount,
-    recoverableTotal: result.recoverableTotal,
-    reviewTotal: result.reviewTotal,
-    opportunityTotal: result.opportunityTotal,
-    totalFindingCount: result.findings.length,
+    ...findingSummary,
     strongestFinding: pickStrongestFinding(result.findings),
   }
 }

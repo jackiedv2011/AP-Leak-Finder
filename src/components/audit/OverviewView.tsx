@@ -1,5 +1,5 @@
 import { ArrowRight, Lock, Plus, Sparkles, Trash2 } from 'lucide-react'
-import type { OverviewSummary, CaseView } from '@/ledger/views'
+import type { OverviewSummary, CaseView, ScanReceiptSummary } from '@/ledger/views'
 import type { DecisionValue, DismissalTag, RecoveryMethod } from '@/ledger/caseState'
 import type { Entitlement, LockedSummary } from '@/billing/entitlement'
 import { isUnlocked, recoveryEconomics } from '@/billing/entitlement'
@@ -7,9 +7,11 @@ import { formatCurrency } from '@/lib/format'
 import { QUEUE_GROUP_LABEL, QUEUE_GROUP_SUBTEXT, queueGroupFor, recoveryStageLabel } from '@/ledger/caseState'
 import { FINDING_TYPE_LABELS } from '@/lib/labels'
 import { FindingCase } from '@/components/audit/FindingCase'
+import { ScanReceipt } from '@/components/audit/ScanReceipt'
 
 interface OverviewViewProps {
   summary: OverviewSummary
+  receipt: ScanReceiptSummary | null
   entitlement: Entitlement
   locked: LockedSummary
   onUpgrade: () => void
@@ -39,6 +41,7 @@ interface OverviewViewProps {
  */
 export function OverviewView({
   summary,
+  receipt,
   entitlement,
   locked,
   onUpgrade,
@@ -93,6 +96,7 @@ export function OverviewView({
 
   return (
     <div className="rc-view">
+      {!activeCase && receipt && <ScanReceipt summary={receipt} variant="compact" />}
       {/* ── The money, stated once ───────────────────────────────── */}
       <section className="rc-hero">
         <div className="rc-hero-main">

@@ -46,6 +46,8 @@ async function renderAtSample({ subscribed = true }: { subscribed?: boolean } = 
   setPlan(subscribed ? 'pro' : 'free')
   setLocation('/audit?sample=1')
   render(<AuditApp />)
+  await waitFor(() => expect(screen.getByRole('button', { name: /open overview/i })).toBeInTheDocument())
+  fireEvent.click(screen.getByRole('button', { name: /open overview/i }))
   await waitFor(() => expect(screen.getByRole('heading', { name: /worth checking|you've recovered|ledger is clean/i })).toBeInTheDocument())
 }
 
@@ -62,6 +64,8 @@ async function renderAtUploadedDuplicate({ subscribed = true }: { subscribed?: b
   fireEvent.change(input, { target: { files: [new File([csv], 'sierra.csv', { type: 'text/csv' })] } })
   await waitFor(() => expect(screen.getByText('sierra.csv')).toBeInTheDocument())
   fireEvent.click(screen.getByRole('button', { name: /add to my ledger/i }))
+  await waitFor(() => expect(screen.getByRole('button', { name: /open overview/i })).toBeInTheDocument())
+  fireEvent.click(screen.getByRole('button', { name: /open overview/i }))
   await waitFor(() => expect(screen.getByRole('heading', { name: /worth checking|you've recovered|ledger is clean/i })).toBeInTheDocument())
 }
 
@@ -96,7 +100,8 @@ describe('AuditApp', () => {
     expect(screen.queryByRole('heading', { name: /worth checking|you've recovered|ledger is clean/i })).not.toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: /run the sample audit/i }))
-    expect(screen.getByText(/preparing sample ledger/i)).toBeInTheDocument()
+    await waitFor(() => expect(screen.getByRole('button', { name: /open overview/i })).toBeInTheDocument())
+    fireEvent.click(screen.getByRole('button', { name: /open overview/i }))
     await waitFor(
       () => expect(screen.getByRole('heading', { name: /worth checking|you've recovered|ledger is clean/i })).toBeInTheDocument(),
       { timeout: 3000 }
@@ -349,6 +354,8 @@ describe('AuditApp', () => {
     fireEvent.click(screen.getByRole('button', { name: /add to ledger/i }))
 
     await waitFor(() => expect(loadProject(projectId)?.environment.imports).toHaveLength(2))
+    await waitFor(() => expect(screen.getByRole('button', { name: /open overview/i })).toBeInTheDocument())
+    fireEvent.click(screen.getByRole('button', { name: /open overview/i }))
 
     // Radix's tab-trigger pointer handling isn't reliably exercised by jsdom's
     // synthetic click event, so verify the mode switch through the same route
@@ -368,10 +375,7 @@ describe('AuditApp', () => {
 
     setLocation('/audit')
     render(<AuditApp />)
-    await waitFor(
-      () => expect(screen.getByRole('heading', { name: /worth checking|you've recovered|ledger is clean/i })).toBeInTheDocument(),
-      { timeout: 3000 }
-    )
+    await waitFor(() => expect(screen.getByRole('heading', { name: /worth checking|you've recovered|ledger is clean/i })).toBeInTheDocument())
     expect(screen.queryByText(/drop a csv here/i)).not.toBeInTheDocument()
   })
 
@@ -392,10 +396,9 @@ describe('AuditApp', () => {
     fireEvent.click(sampleLink)
     fireEvent.click(sampleLink)
 
-    await waitFor(
-      () => expect(screen.getByRole('heading', { name: /worth checking|you've recovered|ledger is clean/i })).toBeInTheDocument(),
-      { timeout: 3000 }
-    )
+    await waitFor(() => expect(screen.getByRole('button', { name: /open overview/i })).toBeInTheDocument(), { timeout: 3000 })
+    fireEvent.click(screen.getByRole('button', { name: /open overview/i }))
+    await waitFor(() => expect(screen.getByRole('heading', { name: /worth checking|you've recovered|ledger is clean/i })).toBeInTheDocument())
 
     const result = realSampleResult()
     expect(
