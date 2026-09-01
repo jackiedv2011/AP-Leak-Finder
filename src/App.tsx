@@ -11,6 +11,13 @@ const NotFoundPage = lazy(() =>
   import('@/components/NotFoundPage').then((module) => ({ default: module.NotFoundPage }))
 )
 
+function ScannerRoute() {
+  if (window.location.pathname !== '/audit' || window.location.search !== '?entry=upload') {
+    window.history.replaceState({}, '', '/audit?entry=upload')
+  }
+  return <AuditApp />
+}
+
 function RouteFallback({ light = false }: { light?: boolean }) {
   return (
     <main className={`grid min-h-[100dvh] place-items-center ${light ? 'bg-[#f2f0e9] text-[#171a17]' : 'bg-[#090b0c] text-[#eef1ec]'}`} aria-busy="true">
@@ -22,6 +29,7 @@ function RouteFallback({ light = false }: { light?: boolean }) {
 const ROUTES: Record<string, () => ReactElement> = {
   '/': () => <SiteLanding />,
   '/audit': () => <AuditApp />,
+  '/scanner': () => <ScannerRoute />,
 }
 
 function App() {
