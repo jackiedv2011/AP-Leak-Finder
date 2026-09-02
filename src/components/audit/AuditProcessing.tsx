@@ -1,6 +1,7 @@
 import { AlertTriangle, Check, CircleDashed, Database } from 'lucide-react'
 import type { DataReadiness } from '@/audit/dataReadiness'
 import type { ScanReceiptSummary } from '@/ledger/views'
+import type { Entitlement } from '@/billing/entitlement'
 import { ScanReceipt } from '@/components/audit/ScanReceipt'
 
 export type AuditProcessingPhase = 'running' | 'complete' | 'failed'
@@ -11,6 +12,7 @@ interface AuditProcessingProps {
   mode: 'sample' | 'upload'
   readiness: DataReadiness
   receipt?: ScanReceiptSummary
+  entitlement?: Entitlement
   error?: string
   onContinue: () => void
 }
@@ -18,7 +20,7 @@ interface AuditProcessingProps {
 const steps = ['Reading the ledger', 'Validating the data', 'Connecting vendor identities', 'Running payment checks', 'Building evidence-backed cases', 'Complete']
 
 /** One truthful processing surface for sample and real ledgers—without invented percentages or delays. */
-export function AuditProcessing({ phase, sourceLabel, mode, readiness, receipt, error, onContinue }: AuditProcessingProps) {
+export function AuditProcessing({ phase, sourceLabel, mode, readiness, receipt, entitlement, error, onContinue }: AuditProcessingProps) {
   const running = phase === 'running'
   const failed = phase === 'failed'
   const title = failed ? 'This scan could not be completed.' : running ? 'Running the payment checks.' : 'Scan complete. Your review is ready.'
@@ -32,20 +34,29 @@ export function AuditProcessing({ phase, sourceLabel, mode, readiness, receipt, 
           <h1 id="audit-processing-title">{title}</h1><p>{detail}</p>
         </header>
         {!failed && (
-          <div className="audit-processing-ledger" aria-label="Ledger processing status">
+          <div className="audit-processing-ledger" data-phase={phase} aria-label="Ledger processing status">
             <div className="audit-processing-ledger-top"><span><Database aria-hidden="true" /> <strong title={sourceLabel}>{sourceLabel}</strong></span><small>{mode === 'sample' ? 'Included sample' : 'CSV upload'}</small></div>
-            <div className="audit-processing-stats"><span><strong>{readiness.recordCount}</strong> valid records</span><span><strong>{readiness.vendorCount}</strong> vendors</span><span><strong>{readiness.skippedCount}</strong> rows skipped</span></div>
-            <ol className="audit-processing-steps">
-              {steps.map((step, index) => {
-                const isActive = running && index === 3
-                const isDone = phase === 'complete' || (running && index < 3)
-                return <li key={step} data-state={isDone ? 'done' : isActive ? 'active' : 'pending'}><span aria-hidden="true">{isDone ? <Check /> : <CircleDashed />}</span>{step}{isActive && <small>Current phase</small>}</li>
-              })}
-            </ol>
+            {phase === 'complete' ? (
+              <div className="audit-processing-complete-summary">
+                <span aria-hidden="true"><Check /></span>
+                <div><strong>Ledger scan finished</strong><p>{readiness.availableCheckCount} checks completed across {readiness.recordCount} valid records.</p></div>
+              </div>
+            ) : (
+              <>
+                <div className="audit-processing-stats"><span><strong>{readiness.recordCount}</strong> valid records</span><span><strong>{readiness.vendorCount}</strong> vendors</span><span><strong>{readiness.skippedCount}</strong> rows skipped</span></div>
+                <ol className="audit-processing-steps">
+                  {steps.map((step, index) => {
+                    const isActive = index === 3
+                    const isDone = index < 3
+                    return <li key={step} data-state={isDone ? 'done' : isActive ? 'active' : 'pending'}><span aria-hidden="true">{isDone ? <Check /> : <CircleDashed />}</span>{step}{isActive && <small>Current phase</small>}</li>
+                  })}
+                </ol>
+              </>
+            )}
           </div>
         )}
         {failed && <div className="audit-processing-error" role="alert"><AlertTriangle aria-hidden="true" /><p>{detail}</p></div>}
-        {phase === 'complete' && receipt && <ScanReceipt summary={receipt} />}
+        {phase === 'complete' && receipt && <ScanReceipt summary={receipt} entitlement={entitlement} />}
         {phase !== 'running' && <div className="audit-processing-actions"><button type="button" className="audit-btn" data-variant="primary" data-motion="pressable" onClick={onContinue}>{failed ? 'Choose another file' : 'Open Overview'}</button></div>}
       </div>
     </section>

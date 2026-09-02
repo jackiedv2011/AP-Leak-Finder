@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { AuditApp } from '@/AuditApp'
-import { getSampleLedger } from '@/data/sampleLedger'
+import { getSampleLedger, sampleLedgerCsv } from '@/data/sampleLedger'
 import { detectFindings } from '@/lib/detection'
 import { formatCurrency } from '@/lib/format'
 import { clearEnvironment } from '@/ledger/store'
@@ -116,6 +116,32 @@ describe('AuditApp', () => {
 
     expect(screen.getByText(/drop a csv here/i)).toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: /worth checking|you've recovered|ledger is clean/i })).not.toBeInTheDocument()
+  })
+
+  it('keeps the completed scan receipt visible after file confirmation and before the dashboard', async () => {
+    setPlan('free')
+    setLocation('/audit?entry=upload')
+    render(<AuditApp />)
+
+    const input = screen.getByLabelText(/upload a csv ledger/i) as HTMLInputElement
+    fireEvent.change(input, {
+      target: { files: [new File([sampleLedgerCsv], 'company-ledger.csv', { type: 'text/csv' })] },
+    })
+
+    await waitFor(() => expect(screen.getByText('company-ledger.csv')).toBeInTheDocument())
+    fireEvent.click(screen.getByRole('button', { name: /add to my ledger/i }))
+
+    const result = realSampleResult()
+    const lockedCount = result.findings.length - FREE_PREVIEW_COUNT
+    await waitFor(() => expect(screen.getByRole('heading', { name: /what was scanned/i })).toBeInTheDocument())
+    expect(screen.getByText(new RegExp(`${FREE_PREVIEW_COUNT} findings are included in your free plan`, 'i'))).toBeInTheDocument()
+    expect(screen.getByText(new RegExp(`${lockedCount} additional findings require an upgrade`, 'i'))).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: /worth checking|you've recovered|ledger is clean/i })).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: /open overview/i }))
+    await waitFor(() =>
+      expect(screen.getByRole('heading', { name: /worth checking|you've recovered|ledger is clean/i })).toBeInTheDocument()
+    )
   })
 
   it('opening the strongest case shows evidence and a plain-language rule checklist — no confidence score', async () => {
