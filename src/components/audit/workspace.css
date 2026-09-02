@@ -3485,6 +3485,18 @@
   background: var(--rc-paper);
 }
 
+/* The active scanner uses a subdued surface. Once complete, keep the result
+   on the same warm paper palette as the receipt instead of a disabled gray. */
+.reclaim-audit .audit-processing-ledger[data-phase='complete'] {
+  border-color: var(--rc-rule);
+  background: #f5f3ec;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.72);
+}
+
+.reclaim-audit .audit-processing-ledger[data-phase='complete'] .audit-processing-ledger-top {
+  background: rgb(255 255 255 / 0.34);
+}
+
 .reclaim-audit .audit-case-amount,
 .reclaim-audit .audit-linked-chip {
   color: var(--rc-green);

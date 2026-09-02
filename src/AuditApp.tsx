@@ -376,7 +376,7 @@ export function AuditApp() {
   if (processing) {
     return (
       <AuditShell variant="minimal">
-        <AuditProcessing {...processing} onContinue={handleProcessingContinue} />
+        <AuditProcessing {...processing} entitlement={entitlement} onContinue={handleProcessingContinue} />
       </AuditShell>
     )
   }

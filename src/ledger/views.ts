@@ -77,10 +77,13 @@ export interface ScanReceiptSummary {
   importedAt: number
   recordCount: number
   vendorCount: number
+  dateRangeLabel: string | null
   skippedCount: number
   availableCheckCount: number
   totalCheckCount: 7
   limitations: WeakerCheck[]
+  /** Findings created by this import, used to explain scan-specific access. */
+  findingIds: string[]
   totalFindingCount: number
   recoverableCount: number
   recoverableTotal: number
@@ -109,10 +112,12 @@ export function lastScanReceipt(env: LedgerEnvironment): ScanReceiptSummary | nu
     importedAt: batch.importedAt,
     recordCount: readiness.recordCount,
     vendorCount: readiness.vendorCount,
+    dateRangeLabel: readiness.dateRangeLabel,
     skippedCount: readiness.skippedCount,
     availableCheckCount: readiness.availableCheckCount,
     totalCheckCount: readiness.totalCheckCount,
     limitations: readiness.weakerChecks,
+    findingIds: [...findingIds],
     ...classes,
   }
 }

@@ -96,7 +96,7 @@ export function OverviewView({
 
   return (
     <div className="rc-view">
-      {!activeCase && receipt && <ScanReceipt summary={receipt} variant="compact" />}
+      {!activeCase && receipt && <ScanReceipt summary={receipt} entitlement={entitlement} variant="compact" />}
       {/* ── The money, stated once ───────────────────────────────── */}
       <section className="rc-hero">
         <div className="rc-hero-main">
