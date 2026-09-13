@@ -1,0 +1,365 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reclaim — Find the loss. Get the money back.</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Barlow+Condensed:wght@700&family=Bebas+Neue&family=Inter:ital,opsz,wght@0,14..32,300..800;1,14..32,300..800&family=JetBrains+Mono:wght@400;500&display=block" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11.2.6/swiper-bundle.min.css">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-arrow" viewBox="0 0 16 16"><path d="M8 13.5V2.5M3 7.5 8 2.5l5 5" fill="none" stroke="currentColor" stroke-width="1.5"/></symbol>
+  <symbol id="i-arrow-ur" viewBox="0 0 40 40"><path d="M11 29 29 11M13.5 11H29v15.5" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
+  <symbol id="i-play" viewBox="0 0 12 12"><path d="M2.5 1.2v9.6L10.5 6z" fill="currentColor"/></symbol>
+  <symbol id="i-pause" viewBox="0 0 12 12"><path d="M2.5 1.5h2.4v9H2.5zM7.1 1.5h2.4v9H7.1z" fill="currentColor"/></symbol>
+  <symbol id="i-replay" viewBox="0 0 16 16"><path d="M3.2 8a4.8 4.8 0 1 0 1.5-3.5M3.2 2.2v2.8H6" fill="none" stroke="currentColor" stroke-width="1.5"/></symbol>
+  <symbol id="i-chat" viewBox="0 0 24 24"><path d="M4.5 5.5h15v10h-8l-4.5 3.5v-3.5H4.5z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><circle cx="9" cy="10.5" r="1" fill="currentColor"/><circle cx="12" cy="10.5" r="1" fill="currentColor"/><circle cx="15" cy="10.5" r="1" fill="currentColor"/></symbol>
+  <symbol id="i-yt" viewBox="0 0 36 36"><rect x="9" y="11.5" width="18" height="13" rx="3.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M16 15.2v5.6l4.8-2.8z" fill="currentColor"/></symbol>
+  <symbol id="i-li" viewBox="0 0 36 36"><rect x="10" y="10" width="16" height="16" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M14 16.5v5.5M14 13.6v.1M17.5 22v-5.5m0 2.4c0-1.5 1-2.5 2.2-2.5 1.3 0 2 .9 2 2.5V22" fill="none" stroke="currentColor" stroke-width="1.5"/></symbol>
+  <symbol id="i-x" viewBox="0 0 36 36"><path d="M11 11l14 14M25 11 11 25" fill="none" stroke="currentColor" stroke-width="1.5"/></symbol>
+  <symbol id="hx-wheel" viewBox="-13 -11.5 26 23">
+    <path d="M-2.056,-4.6 L-5.751,-11 L5.751,-11 L2.056,-4.6 Z"/><path d="M2.956,-4.081 L6.651,-10.481 L12.402,-0.520 L5.012,-0.520 Z"/><path d="M5.012,0.520 L12.402,0.520 L6.651,10.481 L2.956,4.081 Z"/><path d="M2.056,4.6 L5.751,11 L-5.751,11 L-2.056,4.6 Z"/><path d="M-2.956,4.081 L-6.651,10.481 L-12.402,0.520 L-5.012,0.520 Z"/><path d="M-5.012,-0.520 L-12.402,-0.520 L-6.651,-10.481 L-2.956,-4.081 Z"/>
+  </symbol>
+</svg>
+
+<!-- intro -->
+<div class="site-in" aria-hidden="true"><div class="flash"></div><div class="mask"></div></div>
+
+<!-- nav template: cloned into every section so the nav re-themes at section edges -->
+<template id="nav-tpl">
+  <header class="the-nav">
+    <div class="backdrop"></div>
+    <div class="the-container">
+      <div class="left">
+        <a href="#" class="hx-logo" aria-label="Reclaim home"><svg class="wheel" viewBox="0 0 26 23" fill="currentColor"><use href="#hx-wheel"/></svg><span class="word"><span class="letter">R</span><span class="letter">e</span><span class="letter">c</span><span class="letter">l</span><span class="letter">a</span><span class="letter">i</span><span class="letter">m</span></span></a>
+      </div>
+      <nav class="center">
+        <ul class="nav-bar type-body-xs">
+          <li class="group"><span class="link"><span class="label">Platform</span></span>
+            <div class="nav-bar-submenu"><div class="inner"><a class="item" href="#"><span class="hover-loop"><span class="inner">Ledger Audit</span></span></a><a class="item" href="#"><span class="hover-loop"><span class="inner">Recovery Cases</span></span></a><a class="item" href="#"><span class="hover-loop"><span class="inner">Recovery Tracking</span></span></a></div></div></li>
+          <li class="group"><span class="link"><span class="label">Recovery</span></span>
+            <div class="nav-bar-submenu"><div class="inner"><a class="item" href="#"><span class="hover-loop"><span class="inner">Duplicate Payments</span></span></a><a class="item" href="#"><span class="hover-loop"><span class="inner">Duplicate Bills</span></span></a><a class="item" href="#"><span class="hover-loop"><span class="inner">Overpayments</span></span></a><a class="item" href="#"><span class="hover-loop"><span class="inner">Vendor Credits</span></span></a><a class="item" href="#"><span class="hover-loop"><span class="inner">Payment Mismatches</span></span></a></div></div></li>
+          <li class="group"><a class="link" href="#"><span class="label">Use Cases</span></a></li>
+          <li class="group"><span class="link"><span class="label">Resources</span></span>
+            <div class="nav-bar-submenu"><div class="inner"><a class="item" href="#"><span class="hover-loop"><span class="inner">Case Studies</span></span></a><a class="item" href="#"><span class="hover-loop"><span class="inner">Guides</span></span></a><a class="item" href="#"><span class="hover-loop"><span class="inner">Security</span></span></a></div></div></li>
+          <li class="group"><a class="link" href="#"><span class="label">Pricing</span></a></li>
+          <li class="group"><a class="link" href="#"><span class="label">Partners</span></a></li>
+          <li class="group"><span class="link"><span class="label">Company</span></span>
+            <div class="nav-bar-submenu"><div class="inner"><a class="item" href="#"><span class="hover-loop"><span class="inner">About</span></span></a><a class="item" href="#"><span class="hover-loop"><span class="inner">Careers</span></span></a><a class="item" href="#"><span class="hover-loop"><span class="inner">Contact</span></span></a><a class="item" href="#"><span class="hover-loop"><span class="inner">Privacy</span></span></a></div></div></li>
+        </ul>
+      </nav>
+      <div class="right">
+        <a href="#" class="cta cta-button" size="small" theme="black"><span class="hover-loop"><span class="inner">Start an Audit</span></span></a>
+        <button type="button" class="menu-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="mobile-menu"><span class="bar"></span><span class="bar"></span></button>
+      </div>
+    </div>
+  </header>
+</template>
+
+<main class="page">
+
+  <!-- HERO -->
+  <section class="hero-home" theme="grey">
+    <div class="clip"><div class="nav-slot" data-theme="grey"></div></div>
+    <div class="bg">
+      <div class="bg-wrap the-grid"><div class="wrap"><video data-reel src="media/hero.webm" autoplay loop muted playsinline preload="auto" aria-hidden="true"></video></div></div>
+    </div>
+    <div class="content the-grid">
+      <h1 class="heading heading1 type-h1" data-split="h1">Find the loss.<br>Build the case.<br>Get the money<br>back.</h1>
+      <p class="desc type-body-large">Upload your transaction data. Reclaim audits it for high-confidence issues, builds the evidence behind each case, pursues the money and confirms what actually came back. Finding the problem is only the beginning.</p>
+    </div>
+  </section>
+
+  <!-- ROUNDED 1 (black) -->
+  <div class="rounded-section shouldAnimate has-next-rounded" theme="black" style="clip-path:inset(0)">
+    <div class="bg bg-top" theme="grey"></div>
+    <div class="bg bg-bottom" theme="black"></div>
+    <div class="nav-slot" data-theme="black"></div>
+    <div class="rs-scale" theme="black">
+
+      <section class="section content-columns" theme="black">
+        <div class="the-grid">
+          <div class="columns">
+            <div class="content-column"><h3 class="heading type-h3" data-split="h2">Find.</h3><p class="desc type-body-medium">Duplicate payments, duplicate bills, overpayments and unused credits, surfaced only where your own records support them. No endless anomaly feed.</p></div>
+            <div class="content-column"><h3 class="heading type-h3" data-split="h2">Prove.</h3><p class="desc type-body-medium">A suspicious transaction is not a case. Reclaim reconstructs what happened, calculates the amount and shows the evidence behind every conclusion.</p></div>
+            <div class="content-column"><h3 class="heading type-h3" data-split="h2">Recover.</h3><p class="desc type-body-medium">Reclaim drafts the claim, tracks every vendor reply and confirms the refund or credit actually arrived. A promise is not a recovery.</p></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section content-columns statement" theme="black">
+        <div class="the-grid">
+          <div class="header" theme="black" style="grid-column-end:span 8">
+            <h2 class="heading type-h2" data-split="h2">Finding lost money<br>isn't the hard part.<br>Getting it back is.</h2>
+            <div class="desc type-body-large">
+              <p>Most audits stop at the finding: possible duplicate, possible overpayment.</p>
+              <p>Then the work lands back on your team.</p>
+              <p>Nobody matches the payment, contacts the vendor and checks whether the refund ever arrived.</p>
+              <p>Reclaim does. It owns everything between ‘we found something’ and ‘the money came back’.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section content1" theme="black">
+        <div class="the-grid">
+          <div class="header" theme="black" style="grid-column-end:span 5">
+            <h2 class="heading type-h2" data-split="h2">Introducing<br>Reclaim.</h2>
+            <div class="desc type-body-large">
+              <p>A recovery system with an audit layer built in, not a dashboard that lists what you lost.</p>
+              <p>Reclaim starts with the records you already have: accounting exports, bill lists, payment histories and vendor-credit files. It audits them for focused, high-confidence opportunities and turns each supported finding into a structured case: what happened, how much is involved, what evidence supports it and what is still missing.</p>
+              <p>Reclaim assesses how recoverable each case is, recommends the next step and pursues it with your team through to resolution. Every claim is reviewable, and no message reaches a vendor until you approve it. Not just money found. Money followed through.</p>
+            </div>
+            <a href="#" class="cta cta-button" size="large" theme="white"><span class="hover-loop"><span class="inner">Start an audit</span></span></a>
+          </div>
+          <div class="image">
+            <div class="wrap">
+              <div class="laptop" aria-hidden="true">
+                <div class="screen">
+                  <div class="notch"></div>
+                  <div class="app">
+                    <aside class="app-side">
+                      <div class="app-brand"><svg viewBox="0 0 26 23" fill="currentColor"><use href="#hx-wheel"/></svg>Reclaim<span class="kbd">⌘K</span></div>
+                      <div class="app-new"><b>+</b>New audit</div>
+                      <div class="app-label">Cases</div>
+                      <div class="app-link"><i style="--c:var(--cl-blue-1)"></i>Needs review<b>4</b></div>
+                      <div class="app-link"><i style="--c:var(--cl-reclaim)"></i>Ready to claim<b>7</b></div>
+                      <div class="app-link"><i style="--c:var(--cl-orange-1)"></i>Awaiting vendor<b>5</b></div>
+                      <div class="app-link"><i style="--c:var(--cl-pink-1)"></i>Promised<b>3</b></div>
+                      <div class="app-link"><i style="--c:var(--cl-green-1)"></i>Recovered<b>18</b></div>
+                      <div class="app-label">Recent cases</div>
+                      <div class="app-recent">Duplicate bill — Halden Supply</div>
+                      <div class="app-recent">Payment mismatch — Orbit</div>
+                      <div class="app-label">Ask Reclaim</div>
+                      <div class="app-recent">How much can we support?</div>
+                      <div class="app-recent">What do we ask the vendor?</div>
+                      <div class="app-recent">Has this refund been received?</div>
+                      <div class="app-user"><span class="av">PS</span><span>Priya S.<small>AP lead · Finance</small></span></div>
+                    </aside>
+                    <div class="app-main">
+                      <div class="app-top"><span class="app-pill">Potential found <b>$212.4k</b></span><span class="app-pill">Supported <b>$96.8k</b></span><span class="app-pill">Claimed <b>$71.3k</b></span><span class="app-pill">Accepted <b>$52.6k</b></span><span class="app-pill"><i></i>Recovered <b>$41.9k</b></span></div>
+                      <div class="app-hello">Morning, Priya. $41,870 recovered this quarter.<br><span>7 cases are ready to claim.</span></div>
+                      <ul class="app-list">
+                        <li><i style="--c:var(--cl-orange-1)"></i><div><b>Duplicate vendor payment — Halden Supply</b><small>Invoice #4471 paid twice · $8,420 · evidence complete</small></div><span class="chip go">Approve claim</span></li>
+                        <li><i style="--c:var(--cl-blue-1)"></i><div><b>Invoice overpayment — Kestrel Packaging</b><small>$2,310 above bill · 1 document missing</small></div><span class="chip">Review case</span></li>
+                        <li><i style="--c:var(--cl-green-1)"></i><div><b>Unused supplier credit — Northgate Freight</b><small>$3,150 credit applied · confirmed on statement</small></div><span class="chip ok">View recovery</span></li>
+                        <li><i style="--c:var(--cl-pink-1)"></i><div><b>Partial refund outstanding — Arden Office</b><small>$1,200 of $2,900 promised · follow-up due Thu</small></div><span class="chip">Draft vendor message</span></li>
+                      </ul>
+                      <div class="app-suggest"><span>Why was this payment flagged?</span><span>Show me the evidence</span><span>What proof is missing?</span></div>
+                      <div class="app-input">How can I help?<span class="send">↑</span></div>
+                    </div>
+                  </div>
+                </div>
+                <div class="base"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section entry-solutions" theme="black">
+        <div class="the-grid">
+          <div class="header" theme="black" style="grid-column-end:span 6">
+            <h2 class="heading type-quote upper" data-split="h2">From ledger entry<br>to recovery case.</h2>
+            <p class="desc type-body-large">A finding should never be a dead end. Reclaim turns the records you already keep into a complete recovery workflow.</p>
+            <a href="#" class="cta cta-button has-arrow" size="large" theme="dark-grey"><span class="hover-loop"><span class="inner">See how it works<svg class="icon"><use href="#i-arrow"/></svg></span></span></a>
+          </div>
+          <div class="columns">
+            <a href="#" class="entry-solution"><div class="media-wrap"><div class="media"><video data-reel src="media/find.webm" loop muted playsinline preload="auto" aria-hidden="true"></video></div></div><h4 class="heading type-h4" data-split="h2">Find</h4><p class="desc type-body-medium">Duplicate payments, duplicate bills, overpayments, mismatches and unused credits. Not as many alerts as possible, just the cases worth pursuing.</p></a>
+            <a href="#" class="entry-solution"><div class="media-wrap"><div class="media"><video data-reel src="media/build.webm" loop muted playsinline preload="auto" aria-hidden="true"></video></div></div><h4 class="heading type-h4" data-split="h2">Build</h4><p class="desc type-body-medium">Reclaim reconstructs what happened, calculates the supported amount and organizes invoices, payments and credits into evidence, flagging what is still missing.</p></a>
+            <a href="#" class="entry-solution"><div class="media-wrap"><div class="media"><video data-reel src="media/recover.webm" loop muted playsinline preload="auto" aria-hidden="true"></video></div></div><h4 class="heading type-h4" data-split="h2">Recover</h4><p class="desc type-body-medium">Reclaim recommends the recovery path, drafts the vendor message, handles requests for documentation and confirms whether the money came back.</p></a>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </div>
+
+  <!-- ROUNDED 2 (white) -->
+  <div class="rounded-section shouldAnimate" theme="white" style="clip-path:inset(0)">
+    <div class="bg bg-top" theme="black"></div>
+    <div class="bg bg-bottom" theme="white"></div>
+    <div class="nav-slot" data-theme="white"></div>
+    <div class="rs-scale" theme="white">
+
+      <section class="section carousel1 use-cases" theme="white">
+        <div class="the-grid">
+          <div class="header" style="grid-column-end:span 6">
+            <h2 class="heading type-quote upper" data-split="h2">Start with the cases<br>that can be proven.</h2>
+            <p class="desc type-body-large">Reclaim focuses on recovery opportunities where the ledger holds enough evidence to build a real case.</p>
+          </div>
+        </div>
+        <div class="carousel-wrapper">
+          <div class="swiper">
+            <div class="swiper-wrapper">
+              <div class="swiper-slide"><div class="carousel-cell"><a href="#" class="carousel-item-case-study">
+                <div class="left">
+                  <div class="meta"><span class="tag-mint">Duplicate Payments</span><span class="label-mono">Use case 01 / 04</span></div>
+                  <h4 class="heading type-h4">Paid twice? Prove it. Pursue it.</h4>
+                  <p class="desc type-body-small">A duplicate payment is only worth finding if someone follows through. Reclaim matches the payments, bills, amounts, dates and vendor, then builds the case, drafts the recovery request, tracks the response and confirms whether the money came back.</p>
+                  <span class="cta cta-button" size="large" theme="black"><span class="hover-loop"><span class="inner">More details</span></span></span>
+                </div>
+                <div class="right"><img src="assets/cs-1.png" alt="" loading="lazy"></div>
+              </a></div></div>
+              <div class="swiper-slide"><div class="carousel-cell"><a href="#" class="carousel-item-case-study">
+                <div class="left">
+                  <div class="meta"><span class="tag-mint">Overpayments</span><span class="label-mono">Use case 02 / 04</span></div>
+                  <h4 class="heading type-h4">When the payment doesn't match the bill.</h4>
+                  <p class="desc type-body-small">Reclaim shows the exact gap between what was paid and what the records justify, calculates the supported claim and helps pursue the difference.</p>
+                  <span class="cta cta-button" size="large" theme="black"><span class="hover-loop"><span class="inner">More details</span></span></span>
+                </div>
+                <div class="right"><img src="assets/cs-2.png" alt="" loading="lazy"></div>
+              </a></div></div>
+              <div class="swiper-slide"><div class="carousel-cell"><a href="#" class="carousel-item-case-study">
+                <div class="left">
+                  <div class="meta"><span class="tag-mint">Vendor Credits</span><span class="label-mono">Use case 03 / 04</span></div>
+                  <h4 class="heading type-h4">A credit isn't value until you use it.</h4>
+                  <p class="desc type-body-small">Supported unused credits are tied to vendor history, requested as an application or refund, and tracked until they land.</p>
+                  <span class="cta cta-button" size="large" theme="black"><span class="hover-loop"><span class="inner">More details</span></span></span>
+                </div>
+                <div class="right"><img src="assets/cs-3.png" alt="" loading="lazy"></div>
+              </a></div></div>
+              <div class="swiper-slide"><div class="carousel-cell"><a href="#" class="carousel-item-case-study">
+                <div class="left">
+                  <div class="meta"><span class="tag-mint">Duplicate Bills</span><span class="label-mono">Use case 04 / 04</span></div>
+                  <h4 class="heading type-h4">The same obligation shouldn't be paid twice.</h4>
+                  <p class="desc type-body-small">Reclaim surfaces bills that appear to represent the same underlying obligation, and shows exactly why.</p>
+                  <span class="cta cta-button" size="large" theme="black"><span class="hover-loop"><span class="inner">More details</span></span></span>
+                </div>
+                <div class="right"><img src="assets/cs-2.png" alt="" loading="lazy"></div>
+              </a></div></div>
+            </div>
+          </div>
+          <div class="carousel-play-controls">
+            <button type="button" aria-label="Play"></button>
+            <div class="pagination"><span class="dot"><span class="base"></span><span class="progress"></span></span><span class="dot"><span class="base"></span><span class="progress"></span></span><span class="dot"><span class="base"></span><span class="progress"></span></span><span class="dot"><span class="base"></span><span class="progress"></span></span></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section grid1" theme="white">
+        <div class="the-grid">
+          <div class="header" style="grid-column-end:span 8">
+            <h2 class="heading type-h2" data-split="h2">Bring the ledger.<br>Reclaim builds<br>the case.</h2>
+            <p class="desc type-body-headline">Accounting exports, bills, invoices, payment histories and vendor credits already hold most of the story. Reclaim brings them together around the one case your team can act on.</p>
+          </div>
+          <ul class="content">
+            <li class="grid-item-wrap"><div class="grid-item grid-item-brand" idx="0"><div class="m3d"><div class="rotate"><div class="wrap"><span class="wm wm-quickbooks">quickbooks</span></div></div></div></div></li>
+            <li class="grid-item-wrap"><div class="grid-item grid-item-brand" idx="1"><div class="m3d"><div class="rotate"><div class="wrap"><span class="wm wm-xero">XERO</span></div></div></div></div></li>
+            <li class="grid-item-wrap"><div class="grid-item grid-item-brand" idx="2"><div class="m3d"><div class="rotate"><div class="wrap"><span class="wm wm-stripe">stripe</span></div></div></div></div></li>
+            <li class="grid-item-wrap"><div class="grid-item grid-item-brand" idx="3"><div class="m3d"><div class="rotate"><div class="wrap"><span class="wm wm-ramp">ramp</span></div></div></div></div></li>
+            <li class="grid-item-wrap"><div class="grid-item grid-item-brand" idx="4"><div class="m3d"><div class="rotate"><div class="wrap"><span class="wm wm-brex">BREX</span></div></div></div></div></li>
+            <li class="grid-item-wrap"><div class="grid-item grid-item-brand" idx="0"><div class="m3d"><div class="rotate"><div class="wrap"><span class="wm wm-bill">bill</span></div></div></div></div></li>
+            <li class="grid-item-wrap"><div class="grid-item grid-item-brand" idx="1"><div class="m3d"><div class="rotate"><div class="wrap"><span class="wm wm-netsuite">NETSUITE</span></div></div></div></div></li>
+            <li class="grid-item-wrap"><div class="grid-item grid-item-brand" idx="2"><div class="m3d"><div class="rotate"><div class="wrap"><span class="wm wm-plaid">plaid</span></div></div></div></div></li>
+          </ul>
+        </div>
+      </section>
+
+    </div>
+  </div>
+
+  <!-- DEPARTMENTS (grey) -->
+  <section class="section carousel1 departments" theme="grey">
+    <div class="nav-slot" data-theme="grey"></div>
+    <div class="the-grid">
+      <div class="header" theme="grey" style="grid-column-end:span 8">
+        <h2 class="heading type-h2" data-split="h2">Recovery shouldn't<br>require a recovery<br>department.</h2>
+        <p class="desc type-body-headline">You shouldn't need a specialist audit team to pursue a duplicate payment. Reclaim gives lean finance teams the workflow to investigate, support, pursue and track recoveries without a manual project.</p>
+      </div>
+    </div>
+    <div class="carousel-wrapper">
+      <div class="swiper">
+        <div class="swiper-wrapper">
+          <div class="swiper-slide"><div class="carousel-cell"><a href="#" class="carousel-item-card"><div class="image"><img src="assets/dept-inventory.png" alt="" loading="lazy"></div><div class="details"><div><h5 class="type-body-small">Finance</h5><p class="desc type-body-small">See potential losses, supporting evidence, open claims, vendor responses and actual dollars recovered in one place.</p></div><span class="cta cta-button" size="small" theme="grey"><span class="hover-loop"><span class="inner">More details</span></span></span></div></a></div></div>
+          <div class="swiper-slide"><div class="carousel-cell"><a href="#" class="carousel-item-card"><div class="image"><img src="assets/dept-freight.png" alt="" loading="lazy"></div><div class="details"><div><h5 class="type-body-small">Accounts Payable</h5><p class="desc type-body-small">Turn duplicate bills, duplicate payments, overpayments and vendor credits into structured cases your team can resolve.</p></div><span class="cta cta-button" size="small" theme="grey"><span class="hover-loop"><span class="inner">More details</span></span></span></div></a></div></div>
+          <div class="swiper-slide"><div class="carousel-cell"><a href="#" class="carousel-item-card"><div class="image"><img src="assets/dept-procurement.png" alt="" loading="lazy"></div><div class="details"><div><h5 class="type-body-small">Operations</h5><p class="desc type-body-small">Keep recovery work organized across people, vendors, evidence, deadlines and follow-ups, without another shared spreadsheet.</p></div><span class="cta cta-button" size="small" theme="grey"><span class="hover-loop"><span class="inner">More details</span></span></span></div></a></div></div>
+          <div class="swiper-slide"><div class="carousel-cell"><a href="#" class="carousel-item-card"><div class="image"><img src="assets/dept-warehousing.png" alt="" loading="lazy"></div><div class="details"><div><h5 class="type-body-small">Founders</h5><p class="desc type-body-small">Know which issues are worth pursuing and whether the money came back, without managing every email yourself.</p></div><span class="cta cta-button" size="small" theme="grey"><span class="hover-loop"><span class="inner">More details</span></span></span></div></a></div></div>
+          <div class="swiper-slide"><div class="carousel-cell"><a href="#" class="carousel-item-card"><div class="image"><img src="assets/dept-finance.png" alt="" loading="lazy"></div><div class="details"><div><h5 class="type-body-small">Bookkeepers</h5><p class="desc type-body-small">Run the same audit across every client ledger and hand over documented cases, not a spreadsheet of maybes.</p></div><span class="cta cta-button" size="small" theme="grey"><span class="hover-loop"><span class="inner">More details</span></span></span></div></a></div></div>
+        </div>
+      </div>
+      <div class="carousel-prev-next-controls">
+        <button type="button" class="cta-button-square prev" size="medium" theme="white" aria-label="Previous"><svg class="icon"><use href="#i-arrow"/></svg></button>
+        <button type="button" class="cta-button-square next" size="medium" theme="white" aria-label="Next"><svg class="icon"><use href="#i-arrow"/></svg></button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ENTRY1 (white) -->
+  <section class="section entry1" theme="white">
+    <div class="nav-slot" data-theme="white"></div>
+    <ul class="items">
+      <li><a href="#" class="entry-item1" idx="0">
+        <div class="bg"></div>
+        <div class="top">
+          <div class="heading-container">
+            <h3 class="heading type-h3" data-split="h2">Start<br>an audit</h3>
+            <div class="button"><span class="hover-loop up-right" data-duration=".9"><span class="inner"><svg class="arrow"><use href="#i-arrow-ur"/></svg></span></span></div>
+          </div>
+        </div>
+        <p class="desc type-body-small">Don't just find the money. Reclaim it. Upload your records today.</p>
+      </a></li>
+      <li><a href="#" class="entry-item1" idx="1">
+        <div class="bg"></div>
+        <div class="top">
+          <div class="heading-container">
+            <h3 class="heading type-h3" data-split="h2">Our<br>story</h3>
+            <div class="button"><span class="hover-loop up-right" data-duration=".9"><span class="inner"><svg class="arrow"><use href="#i-arrow-ur"/></svg></span></span></div>
+          </div>
+        </div>
+        <p class="desc type-body-small">Why recovery shouldn't depend on having the staff to chase every mistake by hand.</p>
+      </a></li>
+    </ul>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="the-footer" theme="black">
+    <div class="nav-slot" data-theme="black"></div>
+    <div class="wrap">
+      <div class="the-grid top">
+        <div class="left">
+          <a href="#" class="hx-logo" aria-label="Reclaim"><svg class="wheel" viewBox="0 0 26 23" fill="currentColor"><use href="#hx-wheel"/></svg><span class="word"><span class="letter">R</span><span class="letter">e</span><span class="letter">c</span><span class="letter">l</span><span class="letter">a</span><span class="letter">i</span><span class="letter">m</span></span></a>
+          <div class="mail">
+            <div class="line1">Found something that doesn't look right?</div>
+            <div class="line2">Build the case <a href="mailto:hello@reclaim.example" class="cta"><span class="cta-button" theme="none"><span class="hover-loop"><span class="inner">hello@reclaim.example</span></span></span></a></div>
+          </div>
+          <div class="community">
+            <div class="kicker type-mono">Finance community</div>
+            <a href="#" class="forum-cta"><svg><use href="#i-chat"/></svg>Join the recovery forum</a>
+          </div>
+        </div>
+        <div class="right">
+          <div class="groups">
+            <div class="group"><div class="label">Product</div><div class="links"><a href="#"><span class="hover-loop"><span class="inner">Ledger Audit</span></span></a><a href="#"><span class="hover-loop"><span class="inner">Recovery Cases</span></span></a><a href="#"><span class="hover-loop"><span class="inner">Evidence</span></span></a><a href="#"><span class="hover-loop"><span class="inner">Vendor Responses</span></span></a><a href="#"><span class="hover-loop"><span class="inner">Recovery Tracking</span></span></a></div></div>
+            <div class="group"><div class="label">Solutions</div><div class="links"><a href="#"><span class="hover-loop"><span class="inner">Duplicate Payments</span></span></a><a href="#"><span class="hover-loop"><span class="inner">Duplicate Bills</span></span></a><a href="#"><span class="hover-loop"><span class="inner">Overpayments</span></span></a><a href="#"><span class="hover-loop"><span class="inner">Vendor Credits</span></span></a><a href="#"><span class="hover-loop"><span class="inner">Payment Mismatches</span></span></a></div></div>
+            <div class="group"><div class="label">Resources</div><div class="links"><a href="#"><span class="hover-loop"><span class="inner">Use Cases</span></span></a><a href="#"><span class="hover-loop"><span class="inner">Case Studies</span></span></a><a href="#"><span class="hover-loop"><span class="inner">Guides</span></span></a><a href="#"><span class="hover-loop"><span class="inner">Partners</span></span></a><a href="#"><span class="hover-loop"><span class="inner">Security</span></span></a></div></div>
+            <div class="group"><div class="label">Company</div><div class="links"><a href="#"><span class="hover-loop"><span class="inner">About</span></span></a><a href="#"><span class="hover-loop"><span class="inner">Careers</span></span></a><a href="#"><span class="hover-loop"><span class="inner">Contact</span></span></a><a href="#"><span class="hover-loop"><span class="inner">Security</span></span></a><a href="#"><span class="hover-loop"><span class="inner">Privacy</span></span></a></div></div>
+          </div>
+        </div>
+      </div>
+      <div class="the-grid bottom">
+        <div class="left">
+          <a href="#" class="cta-scroll"><span class="wrap"><span class="hover-loop"><span class="inner"><svg class="icon"><use href="#i-arrow"/></svg></span></span></span><span class="label">Back to top</span></a>
+          <div class="legal">Reclaim © 2026</div>
+        </div>
+        <div class="socials"><a href="#" aria-label="YouTube"><svg><use href="#i-yt"/></svg></a><a href="#" aria-label="LinkedIn"><svg><use href="#i-li"/></svg></a><a href="#" aria-label="X"><svg><use href="#i-x"/></svg></a></div>
+        <div class="legalLinks"><a href="#"><span class="hover-loop"><span class="inner">Terms of Service</span></span></a><a href="#"><span class="hover-loop"><span class="inner">Privacy Notice</span></span></a></div>
+      </div>
+    </div>
+  </footer>
+
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.13.0/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.13.0/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.3.4/dist/lenis.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/swiper@11.2.6/swiper-bundle.min.js"></script>
+<script src="main.js"></script>
+<script src="reels.js"></script>
+</body>
+</html>
