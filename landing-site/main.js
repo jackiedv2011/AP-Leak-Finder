@@ -630,7 +630,7 @@
   }
 
   // ---------- laptop mock: on narrow screens lay the app out at its desktop width, then scale it to fit ----------
-  $$('.laptop .app').forEach(app => {
+  $$('.laptop .app, [data-fit-always] .app').forEach(app => {
     const base = parseFloat(app.dataset.baseWidth || 86.5);   // the app's width inside the laptop at 1440px, in rem
     const fitApp = () => {
       app.style.cssText = '';
