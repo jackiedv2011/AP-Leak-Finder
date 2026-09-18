@@ -11,7 +11,7 @@
 // The React app (/audit, /scanner, everything else) is untouched: requests that
 // don't match a landing-site route just call next() and Vite handles them as before.
 import { spawn, execFileSync, type ChildProcess } from 'node:child_process'
-import { existsSync, readFileSync, statSync } from 'node:fs'
+import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import { extname, join, normalize } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import type { Plugin, ViteDevServer } from 'vite'
@@ -65,6 +65,28 @@ let watcher: ChildProcess | null = null
 export function landingSitePlugin(): Plugin {
   return {
     name: 'reclaim-landing-site',
+    closeBundle() {
+      if (process.env.VITEST) return
+
+      // Vercel runs the production build without Vite's dev middleware. Copy the
+      // generated static site into dist so clean landing routes work in production,
+      // while retaining the compiled React app for /audit and /scanner.
+      const distRoot = join(process.cwd(), 'dist')
+      const reactIndex = readFileSync(join(distRoot, 'index.html'))
+      execFileSync(process.execPath, ['build.cjs'], { cwd: LANDING_ROOT, stdio: 'inherit' })
+
+      const excluded = new Set(['src', 'blender', 'notes', 'README.md', 'BEFORE-DEPLOY.md', 'build.cjs', 'serve.cjs'])
+      for (const entry of readdirSync(LANDING_ROOT, { withFileTypes: true })) {
+        if (excluded.has(entry.name)) continue
+        cpSync(join(LANDING_ROOT, entry.name), join(distRoot, entry.name), { recursive: true, force: true })
+      }
+
+      for (const route of ['audit', 'scanner']) {
+        const routeDir = join(distRoot, route)
+        mkdirSync(routeDir, { recursive: true })
+        writeFileSync(join(routeDir, 'index.html'), reactIndex)
+      }
+    },
     configureServer(server: ViteDevServer) {
       // Vitest reuses this same Vite config to power its own module server, which
       // also invokes configureServer — without this guard, every `npm test` run
