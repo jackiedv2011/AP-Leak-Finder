@@ -1,0 +1,293 @@
+---
+title: Exporting from NetSuite — Reclaim
+description: How to export the bills, payments, vendors and credits Reclaim reads out of NetSuite, and what each file is for.
+folder: guides
+template: guide
+---
+  <!-- NETSUITE EXPORT GUIDE.
+       The menu names and report names below follow NetSuite as we understand it today. Every step is
+       listed in scratchpad/unverified.md and has to be checked against NetSuite's own documentation
+       (NetSuite Help Center: reports and saved searches, https://docs.oracle.com/en/cloud/saas/netsuite/) before this page is deployed. -->
+  <div class="guide-page">
+    <div class="nav-slot" data-theme="white"></div>
+    <div class="the-container">
+      <div class="the-grid">
+        <div class="guide-layout">
+
+          <aside class="guide-toc">
+            <div class="sticky">
+              <p class="label guides-kicker"><span class="mark" aria-hidden="true"></span>Contents</p>
+              <ul>
+                <li><a href="#what">What Reclaim reads</a></li>
+                <li><a href="#before">Before you begin</a></li>
+                <li><a href="#step-1">1. Decide: reports or saved searches</a></li>
+                <li><a href="#step-2">2. Set the date range and filters</a></li>
+                <li><a href="#step-3">3. Export your bills</a></li>
+                <li><a href="#step-4">4. Export your payments</a></li>
+                <li><a href="#step-5">5. Export your vendor list</a></li>
+                <li><a href="#step-6">6. Export open credits</a></li>
+                <li><a href="#step-7">7. Check the files before you upload</a></li>
+                <li><a href="#troubleshooting">Troubleshooting</a></li>
+              </ul>
+            </div>
+          </aside>
+
+          <div class="guide-content">
+
+            <header class="guide-head">
+              <a href="/guides" class="cta cta-button button-back" size="large" theme="grey"><span class="hover-loop left"><span class="inner"><svg class="icon"><use href="#i-arrow"/></svg>All guides</span></span></a>
+              <h1 class="title">Exporting from NetSuite</h1>
+              <p class="lede">NetSuite can produce exactly what Reclaim needs, either from the standard payables reports or from four saved searches.</p>
+            </header>
+
+            <section id="what">
+              <h2 class="blockhead">What Reclaim reads</h2>
+              <div class="prose">
+                <p>Reclaim works from four exports out of NetSuite: your bills, the payments that went against them, your vendor list, and any credits. Nothing is connected to your account, and nothing is changed inside it. You export the files, you upload them, and you decide what to do with what comes back.</p>
+                <p>The four files do different jobs, and the comparison only works when all four are there. A duplicate payment is invisible in the bill file alone; an unused credit is invisible in the payment file alone.</p>
+              </div>
+              <div class="tier" role="group" aria-label="The four exports">
+                <div class="tier__col">
+                  <p class="tier__tag">Files</p>
+                  <h3 class="tier__name">What to export</h3>
+                  <ul>
+                    <li>Transaction Detail (bills)</li>
+                    <li>Transaction Detail (payments)</li>
+                    <li>Vendor list</li>
+                    <li>Open vendor credits</li>
+                  </ul>
+                </div>
+                <div class="tier__col">
+                  <p class="tier__tag">Purpose</p>
+                  <h3 class="tier__name">What each one does</h3>
+                  <ul>
+                    <li>Bills give every invoice its vendor, number, date and amount</li>
+                    <li>Payments show what actually left, and against which bill</li>
+                    <li>Vendors let two spellings of one supplier be recognised</li>
+                    <li>Credits show money already owed back to you</li>
+                  </ul>
+                </div>
+              </div>
+              <p class="kicker--foot">Reading time about four minutes · Export time about fifteen</p>
+            </section>
+
+            <section id="before">
+              <h2 class="blockhead">Before you begin</h2>
+              <div class="callout">
+                <p class="callout__label"><span class="mark" aria-hidden="true"></span>What you need</p>
+                <p>A NetSuite login with permission to run and export reports.</p>
+                <p>A date range in mind — two years is a good first pass.</p>
+                <p>Somewhere to put four files while you work.</p>
+              </div>
+              <div class="callout callout--warning">
+                <p class="callout__label"><span class="mark" aria-hidden="true"></span>Export permission is separate</p>
+                <p>In most systems, being able to see a report and being able to export it are two different permissions. If the export control is missing rather than greyed out, it is a permission question for whoever administers your account, not a problem with the report.</p>
+              </div>
+            </section>
+
+          <section id="step-1" class="step">
+            <header class="step__head">
+              <span class="step__num">01</span>
+              <h2 class="step__title">Decide: reports or saved searches</h2>
+            </header>
+            <div class="step__body">
+              <div class="prose">
+                <p>NetSuite gives you two routes to the same files. The standard payables reports under <strong>Reports</strong> are quicker. A saved search under <strong>Lists → Search</strong> gives you exact control over the columns, which is worth it if your account has heavy customisation.</p>
+                <p>Either works. If you already have saved searches your team uses for payables, start from those — the columns are usually right already.</p>
+              </div>
+              <pre class="code"><span class="cm"># the two routes</span>
+Reports → Vendors/Payables → <span class="hl">Transaction Detail</span>
+Lists → Search → Saved Searches → <span class="hl">New</span></pre>
+              
+              <div class="callout">
+                  <p class="callout__label"><span class="mark" aria-hidden="true"></span>One subsidiary at a time</p>
+                  <p>In OneWorld accounts, export per subsidiary unless you genuinely want them compared together. Intercompany activity across subsidiaries can read as duplication when it is nothing of the kind.</p>
+                </div>
+            </div>
+          </section>
+
+          <section id="step-2" class="step">
+            <header class="step__head">
+              <span class="step__num">02</span>
+              <h2 class="step__title">Set the date range and filters</h2>
+            </header>
+            <div class="step__body">
+              <div class="prose">
+                <p>Set the period on the report footer or in the search criteria, and use the same range for every export.</p>
+                <p>Filter to posting transactions. Reclaim is comparing money that moved against bills that were raised, so memorised transactions, templates and unapproved records add noise without adding information.</p>
+              </div>
+              
+              
+              <div class="callout-grid">
+                <div class="callout">
+                  <p class="callout__label"><span class="mark" aria-hidden="true"></span>Two years, accrual</p>
+                  <p>A two-year window catches the duplicates that sit months apart. Keep the basis on accrual so unpaid bills stay in the population.</p>
+                </div>
+                <div class="callout">
+                  <p class="callout__label"><span class="mark" aria-hidden="true"></span>Watch the row limit</p>
+                  <p>NetSuite exports can be capped by your account settings. If a file comes out suspiciously round — exactly 10,000 rows, say — split the range in half and export twice.</p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section id="step-3" class="step">
+            <header class="step__head">
+              <span class="step__num">03</span>
+              <h2 class="step__title">Export your bills</h2>
+            </header>
+            <div class="step__body">
+              <div class="prose">
+                <p>Run the transaction detail report filtered to <strong>Vendor Bill</strong>, or run a transaction saved search with the same type filter.</p>
+                <p>Use the CSV export control on the report or search results. Include the internal ID column if it is available: it is the cleanest way for Reclaim to point a result back at a specific record in your account.</p>
+              </div>
+              <pre class="code"><span class="cm"># columns worth having</span>
+internal id · vendor · date · <span class="hl">document number</span> · reference · amount · status</pre>
+              <div class="shot">
+                <div class="shot__frame">
+                  <table>
+                    <thead><tr><th>Internal ID</th><th>Vendor</th><th>Date</th><th>Document no.</th><th>Amount</th><th>Status</th></tr></thead>
+                    <tbody><tr><td>184220</td><td>Northwind Packaging</td><td>3/12/2025</td><td>INV-4471</td><td>2,480.00</td><td>Paid In Full</td></tr><tr><td>184981</td><td>Northwind Packaging</td><td>3/12/2025</td><td>INV4471</td><td>2,480.00</td><td>Paid In Full</td></tr><tr><td>186703</td><td>Harbour Freight Co</td><td>1/9/2026</td><td>88213</td><td>915.40</td><td>Open</td></tr></tbody>
+                  </table>
+                </div>
+                <p class="shot__cap"><span class="shot__cap-id">FILE-01</span><span>Vendor bills, with the internal ID that ties a result back to a record.</span></p>
+              </div>
+              
+            </div>
+          </section>
+
+          <section id="step-4" class="step">
+            <header class="step__head">
+              <span class="step__num">04</span>
+              <h2 class="step__title">Export your payments</h2>
+            </header>
+            <div class="step__body">
+              <div class="prose">
+                <p>Repeat the export with the type filter set to <strong>Bill Payment</strong>, and include the applied-to document so each payment carries the bill it settled.</p>
+                <p>That link is the whole point. A payment with no applied bill, or two payments applied to the same bill, is the shape of almost everything Reclaim reports.</p>
+              </div>
+              
+              <div class="shot">
+                <div class="shot__frame">
+                  <table>
+                    <thead><tr><th>Date</th><th>Document no.</th><th>Vendor</th><th>Applied to</th><th>Method</th><th>Amount</th></tr></thead>
+                    <tbody><tr><td>12/28/2025</td><td>BP-10442</td><td>Northwind Packaging</td><td>INV-4471</td><td>ACH</td><td>2,480.00</td></tr><tr><td>1/4/2026</td><td>BP-10513</td><td>Northwind Packaging</td><td>INV4471</td><td>Check</td><td>2,480.00</td></tr><tr><td>2/6/2026</td><td>BP-10517</td><td>Harbour Freight Co</td><td>88213</td><td>ACH</td><td>915.40</td></tr></tbody>
+                  </table>
+                </div>
+                <p class="shot__cap"><span class="shot__cap-id">FILE-02</span><span>Bill payments with the document each one was applied to.</span></p>
+              </div>
+              <div class="callout">
+                  <p class="callout__label"><span class="mark" aria-hidden="true"></span>Include every payment method</p>
+                  <p>Checks, ACH, wires and credit card payments all sit in the same transaction type family. Filtering to one method is the most common reason a duplicate stays hidden.</p>
+                </div>
+            </div>
+          </section>
+
+          <section id="step-5" class="step">
+            <header class="step__head">
+              <span class="step__num">05</span>
+              <h2 class="step__title">Export your vendor list</h2>
+            </header>
+            <div class="step__body">
+              <div class="prose">
+                <p>Go to <strong>Lists → Relationships → Vendors</strong> and export the list.</p>
+                <p>Duplicate vendor records are unusually common in NetSuite because the same supplier can be created separately in different subsidiaries or by different teams. Each copy carries its own bills, and nothing compares them until something does.</p>
+              </div>
+              
+              <div class="shot">
+                <div class="shot__frame">
+                  <table>
+                    <thead><tr><th>Internal ID</th><th>Vendor</th><th>Subsidiary</th><th>Status</th></tr></thead>
+                    <tbody><tr><td>3021</td><td>Northwind Packaging</td><td>Parent Co</td><td>Active</td></tr><tr><td>4417</td><td>Northwind Pkg</td><td>Parent Co UK</td><td>Inactive</td></tr><tr><td>3388</td><td>Harbour Freight Co</td><td>Parent Co</td><td>Active</td></tr></tbody>
+                  </table>
+                </div>
+                <p class="shot__cap"><span class="shot__cap-id">FILE-03</span><span>Vendors across subsidiaries. The same supplier can exist more than once.</span></p>
+              </div>
+              <div class="callout">
+                  <p class="callout__label"><span class="mark" aria-hidden="true"></span>Include inactive vendors</p>
+                  <p>Inactive records still hold history. A vendor deactivated after a merge is exactly the record that explains why two bills never got matched.</p>
+                </div>
+            </div>
+          </section>
+
+          <section id="step-6" class="step">
+            <header class="step__head">
+              <span class="step__num">06</span>
+              <h2 class="step__title">Export open credits</h2>
+            </header>
+            <div class="step__body">
+              <div class="prose">
+                <p>Export <strong>Vendor Credit</strong> transactions with their applied and unapplied amounts, either from the payables reports or from a saved search.</p>
+                <p>What you want is the remaining balance per credit, not just the original amount. A credit that has been half applied is still money sitting on the account.</p>
+              </div>
+              <pre class="code"><span class="cm"># the rows that matter here</span>
+type = <span class="hl">Vendor Credit</span>
+unapplied amount <span class="hl">&gt; 0</span></pre>
+              <div class="shot">
+                <div class="shot__frame">
+                  <table>
+                    <thead><tr><th>Vendor</th><th>Date</th><th>Document no.</th><th>Amount</th><th>Unapplied</th></tr></thead>
+                    <tbody><tr><td>Harbour Freight Co</td><td>3/14/2025</td><td>VC-221</td><td>640.00</td><td>640.00</td></tr><tr><td>Delta Print Services</td><td>11/2/2025</td><td>VC-318</td><td>2,000.00</td><td>1,225.00</td></tr><tr><td>Delta Print Services</td><td>1/22/2026</td><td>VC-402</td><td>480.00</td><td>0.00</td></tr></tbody>
+                  </table>
+                </div>
+                <p class="shot__cap"><span class="shot__cap-id">FILE-04</span><span>Vendor credits with what is left on them, not just what they started at.</span></p>
+              </div>
+              
+            </div>
+          </section>
+
+          <section id="step-7" class="step">
+            <header class="step__head">
+              <span class="step__num">07</span>
+              <h2 class="step__title">Check the files before you upload</h2>
+            </header>
+            <div class="step__body">
+              <div class="prose">
+                <p>Open each CSV once. Three things, a minute in total.</p>
+                <p>That the header row is the header and not a report title. That amounts are numbers rather than text with currency symbols baked in. And that the row count looks like the volume you expected rather than a truncated export.</p>
+              </div>
+              
+              
+              <div class="callout">
+                  <p class="callout__label"><span class="mark" aria-hidden="true"></span>Send them unedited</p>
+                  <p>Every result Reclaim reports points at a row in the file you uploaded. Cleaning the file up first breaks that link, which is the part that makes a finding checkable.</p>
+                </div>
+            </div>
+          </section>
+
+            <section id="troubleshooting">
+              <h2 class="blockhead">Troubleshooting</h2>
+              <div class="acc">
+                <details open class="is-open">
+                  <summary>I don't have permission to export</summary>
+                  <div class="panel"><div class="prose"><p>Export permissions in NetSuite are role-based, and reporting roles often have them where data-entry roles do not. Your administrator can grant export on the specific reports or searches rather than opening anything broader.</p></div></div>
+                </details>
+                <details>
+                  <summary>Which is better, a report or a saved search?</summary>
+                  <div class="panel"><div class="prose"><p>A saved search, if your account is customised. It gives you the exact columns, it reruns identically next time, and it is easier to hand to someone else. The standard reports are faster for a first pass.</p></div></div>
+                </details>
+                <details>
+                  <summary>My export is missing the applied document</summary>
+                  <div class="panel"><div class="prose"><p>Add the applying transaction column to the search, or export the bill payment application detail alongside it. Without that link Reclaim can still match on amount and vendor, but with it the evidence is much stronger.</p></div></div>
+                </details>
+                <details>
+                  <summary>Do I need to export journals too?</summary>
+                  <div class="panel"><div class="prose"><p>Not for a first audit. Bills, payments, vendors and credits cover the population. Journals matter when a specific finding needs explaining, and you can pull those individually at that point.</p></div></div>
+                </details>
+                <details>
+                  <summary>Can Reclaim connect to NetSuite directly instead?</summary>
+                  <div class="panel"><div class="prose"><p>Not today. Reclaim works from exports you upload. That keeps it out of your account entirely, which is usually the easier conversation with whoever owns NetSuite security.</p></div></div>
+                </details>
+              </div>
+            </section>
+
+            <div class="guide-foot">
+              <a href="/guides" class="cta cta-button" size="large" theme="grey"><span class="hover-loop"><span class="inner">All guides</span></span></a>
+              <a href="#contact" class="cta cta-button has-arrow" size="large" theme="black" data-modal="talk"><span class="hover-loop right"><span class="inner">Ask us instead<svg class="icon"><use href="#i-arrow"/></svg></span></span></a>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>

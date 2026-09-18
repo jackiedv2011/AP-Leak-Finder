@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{title}}</title>
+<meta name="description" content="{{description}}">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Barlow+Condensed:wght@700&family=Bebas+Neue&family=Inter:ital,opsz,wght@0,14..32,300..800;1,14..32,300..800&family=JetBrains+Mono:wght@400;500&display=block" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11.2.6/swiper-bundle.min.css">
+<link rel="stylesheet" href="/styles.css">
+<link rel="stylesheet" href="/pages.css">
+<script>try{if(sessionStorage.getItem('rc-visited'))document.documentElement.classList.add('is-return')}catch(e){}</script>
+</head>
+<body data-folder="{{folder}}" data-template="{{template}}">
+
+<!-- @include sprite -->
+
+<!-- intro (first page of a visit only) -->
+<div class="site-in" aria-hidden="true"><div class="flash"></div><div class="mask"></div></div>
+
+<!-- nav template: cloned into every section so the nav re-themes at section edges -->
+<!-- @include nav -->
+
+<main class="page">
+
+{{content}}
+
+<!-- @include footer -->
+
+</main>
+
+<!-- @include modal -->
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.13.0/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.13.0/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.3.4/dist/lenis.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/swiper@11.2.6/swiper-bundle.min.js"></script>
+<script src="/main.js"></script>
+<script src="/reels.js"></script>
+</body>
+</html>

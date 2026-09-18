@@ -1,0 +1,85 @@
+<!-- start-an-audit / talk-to-us popup (front end only: nothing is sent yet) -->
+<div class="modal" id="modal" hidden>
+  <div class="wrap">
+    <button type="button" class="underlay" tabindex="-1" aria-label="Close"></button>
+    <div class="modal-scroll" data-lenis-prevent>
+      <div class="modal-content">
+        <div class="wrapper modal-box">
+          <div class="form-intro" role="dialog" aria-modal="true" aria-labelledby="modal-heading">
+            <div class="header">
+              <p class="heading modal-mob" aria-hidden="true" data-modal-heading>Start<br>an audit</p>
+              <button type="button" class="hover-loop cta-button-square close" theme="outline" size="medium" aria-label="Close"><span class="inner"><svg class="icon"><use href="#i-close"/></svg></span></button>
+            </div>
+            <div class="wrapper">
+              <h2 class="heading modal-desk" id="modal-heading" data-modal-heading>Start<br>an audit</h2>
+              <form class="formkit-form" novalidate>
+                <div class="form-group form-group--top">
+                  <div class="formkit-outer" data-field="name">
+                    <div class="formkit-wrapper"><label class="formkit-label" for="m-name">Full name</label><div class="formkit-inner"><input class="formkit-input" id="m-name" name="name" type="text" placeholder="Name" autocomplete="name"></div></div>
+                    <ul class="formkit-messages" aria-live="polite"></ul>
+                  </div>
+                  <div class="formkit-outer" data-field="email">
+                    <div class="formkit-wrapper"><label class="formkit-label" for="m-email">Work email</label><div class="formkit-inner"><input class="formkit-input" id="m-email" name="email" type="email" placeholder="email@company.com" autocomplete="email"></div></div>
+                    <ul class="formkit-messages" aria-live="polite"></ul>
+                  </div>
+                </div>
+                <div class="form-group form-group--bottom">
+                  <div class="formkit-outer" data-field="role">
+                    <div class="formkit-wrapper"><span class="formkit-label" id="m-role-label">Your role</span><div class="formkit-inner">
+                      <div class="dropdown" data-name="role">
+                        <button type="button" class="dropdown-button" aria-haspopup="listbox" aria-expanded="false" aria-labelledby="m-role-label m-role-text"><span class="dropdown-button-text" id="m-role-text" data-placeholder="Select role">Select role</span></button>
+                        <ul class="dropdown-list" role="listbox" aria-labelledby="m-role-label" tabindex="-1" hidden>
+                          <li class="dropdown-item" role="option" aria-selected="false">Founder / Owner</li>
+                          <li class="dropdown-item" role="option" aria-selected="false">CEO / General Manager</li>
+                          <li class="dropdown-item" role="option" aria-selected="false">CFO / Finance Leader</li>
+                          <li class="dropdown-item" role="option" aria-selected="false">Controller</li>
+                          <li class="dropdown-item" role="option" aria-selected="false">Accounts Payable</li>
+                          <li class="dropdown-item" role="option" aria-selected="false">Accountant / Bookkeeper</li>
+                          <li class="dropdown-item" role="option" aria-selected="false">Operations</li>
+                          <li class="dropdown-item" role="option" aria-selected="false">Other</li>
+                        </ul>
+                      </div>
+                    </div></div>
+                    <ul class="formkit-messages" aria-live="polite"></ul>
+                  </div>
+                  <div class="formkit-outer" data-field="systems">
+                    <div class="formkit-wrapper"><span class="formkit-label" id="m-sys-label">Systems used by your company</span><div class="formkit-inner">
+                      <div class="dropdown" data-name="systems" data-multi>
+                        <button type="button" class="dropdown-button" aria-haspopup="listbox" aria-expanded="false" aria-labelledby="m-sys-label m-sys-text"><span class="dropdown-button-text" id="m-sys-text" data-placeholder="Select systems">Select systems</span></button>
+                        <ul class="dropdown-list" role="listbox" aria-labelledby="m-sys-label" aria-multiselectable="true" tabindex="-1" hidden>
+                          <li class="dropdown-item multiselect" role="option" aria-selected="false"><span class="checkbox multiselect" aria-hidden="true"></span>QuickBooks</li>
+                          <li class="dropdown-item multiselect" role="option" aria-selected="false"><span class="checkbox multiselect" aria-hidden="true"></span>Xero</li>
+                          <li class="dropdown-item multiselect" role="option" aria-selected="false"><span class="checkbox multiselect" aria-hidden="true"></span>NetSuite</li>
+                          <li class="dropdown-item multiselect" role="option" aria-selected="false"><span class="checkbox multiselect" aria-hidden="true"></span>Bill</li>
+                          <li class="dropdown-item multiselect" role="option" aria-selected="false"><span class="checkbox multiselect" aria-hidden="true"></span>Ramp</li>
+                          <li class="dropdown-item multiselect" role="option" aria-selected="false"><span class="checkbox multiselect" aria-hidden="true"></span>Brex</li>
+                          <li class="dropdown-item multiselect" role="option" aria-selected="false"><span class="checkbox multiselect" aria-hidden="true"></span>Stripe</li>
+                          <li class="dropdown-item multiselect" role="option" aria-selected="false"><span class="checkbox multiselect" aria-hidden="true"></span>Spreadsheets / CSV</li>
+                        </ul>
+                      </div>
+                    </div></div>
+                    <ul class="formkit-messages" aria-live="polite"></ul>
+                  </div>
+                </div>
+                <div class="error-message" hidden><ul class="formkit-messages" role="alert"><li class="formkit-message">Please check the highlighted fields.</li></ul></div>
+                <div class="footer">
+                  <div class="wrapper-submit">
+                    <button type="submit" class="hover-loop cta-button submit" theme="black" size="large"><span class="inner" data-modal-submit>Start an Audit</span></button>
+                    <span class="spinner" aria-hidden="true"></span>
+                  </div>
+                </div>
+              </form>
+            </div>
+          </div>
+          <div class="success-message" role="dialog" aria-modal="true" aria-labelledby="modal-success-heading" hidden>
+            <button type="button" class="hover-loop cta-button-square close" theme="outline" size="medium" aria-label="Close"><span class="inner"><svg class="icon"><use href="#i-close"/></svg></span></button>
+            <svg class="icon-check" aria-hidden="true"><use href="#i-check-circle"/></svg>
+            <h2 class="heading" id="modal-success-heading">Thanks,<br>we have it</h2>
+            <p class="desc">We'll email you about next steps, including which records to export.</p>
+            <button type="button" class="hover-loop cta-button submit done" theme="black" size="large"><span class="inner">Back to the site</span></button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

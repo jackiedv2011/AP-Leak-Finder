@@ -1,0 +1,28 @@
+<template id="nav-tpl">
+  <header class="the-nav">
+    <div class="backdrop"></div>
+    <div class="the-container">
+      <div class="left">
+        <a href="/" class="hx-logo" aria-label="Reclaim home"><svg class="wheel" viewBox="0 0 26 23" fill="currentColor"><use href="#hx-wheel"/></svg><span class="word"><span class="letter">R</span><span class="letter">e</span><span class="letter">c</span><span class="letter">l</span><span class="letter">a</span><span class="letter">i</span><span class="letter">m</span></span></a>
+      </div>
+      <nav class="center" aria-label="Main">
+        <ul class="nav-bar type-body-xs">
+          <li class="group" data-folder="platform"><span class="link"><span class="label">Platform</span></span>
+            <div class="nav-bar-submenu"><div class="inner"><a class="item" href="/platform/upload"><span class="hover-loop"><span class="inner">Upload</span></span></a><a class="item" href="/platform/find"><span class="hover-loop"><span class="inner">Find</span></span></a><a class="item" href="/platform/evidence"><span class="hover-loop"><span class="inner">Evidence</span></span></a></div></div></li>
+          <li class="group" data-folder="what-it-finds"><span class="link"><span class="label">What It Finds</span></span>
+            <div class="nav-bar-submenu"><div class="inner"><a class="item" href="/what-it-finds/duplicate-payments"><span class="hover-loop"><span class="inner">Duplicate Payments</span></span></a><a class="item" href="/what-it-finds/duplicate-bills"><span class="hover-loop"><span class="inner">Duplicate Bills</span></span></a><a class="item" href="/what-it-finds/overpayments"><span class="hover-loop"><span class="inner">Overpayments</span></span></a><a class="item" href="/what-it-finds/unused-credits"><span class="hover-loop"><span class="inner">Unused Credits</span></span></a><a class="item" href="/what-it-finds/payment-mismatches"><span class="hover-loop"><span class="inner">Payment Mismatches</span></span></a></div></div></li>
+          <li class="group" data-folder="research"><a class="link" href="/research"><span class="label">Research</span></a></li>
+          <li class="group" data-folder="guides"><a class="link" href="/guides"><span class="label">Guides</span></a></li>
+          <li class="group" data-folder="security"><a class="link" href="/security"><span class="label">Security</span></a></li>
+          <li class="group" data-folder="pricing"><a class="link" href="#"><span class="label">Pricing</span></a></li>
+          <li class="group" data-folder="company"><span class="link"><span class="label">Company</span></span>
+            <div class="nav-bar-submenu"><div class="inner"><a class="item" href="/company"><span class="hover-loop"><span class="inner">About</span></span></a><a class="item" href="#contact" data-modal="talk"><span class="hover-loop"><span class="inner">Contact</span></span></a></div></div></li>
+        </ul>
+      </nav>
+      <div class="right">
+        <a href="#start" class="cta cta-button" size="small" theme="black" data-modal="audit"><span class="hover-loop"><span class="inner">Start an Audit</span></span></a>
+        <button type="button" class="menu-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="mobile-menu"><span class="bar"></span><span class="bar"></span></button>
+      </div>
+    </div>
+  </header>
+</template>

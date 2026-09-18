@@ -1,6 +1,6 @@
-"""Find / Build / Recover loops for the black 'entry solutions' band.
+"""Upload / Find / Build / Recover loops for the black 'how it works' band.
 Same materials and light as the hero; floating objects, transparent film, motion blur.
-Run: blender -b --factory-startup --python solutions.py -- scene=find|build|recover out=DIR
+Run: blender -b --factory-startup --python solutions.py -- scene=upload|find|build|recover out=DIR
      [res=720 spp=64 frames=1,40,80|all bg=000000 loop=150]"""
 import bpy, bmesh, math, random, os, sys
 from mathutils import Vector, Quaternion
@@ -157,6 +157,41 @@ elif SCENE == 'recover':
         ball.rotation_quaternion = top.rotation_quaternion
         keyall(f + 1)
     target, el, az, dist = (-.45, .3, .75), 40, -58, float(A.get('dist', 12.5))
+
+# ------------------------------------------------------------------ UPLOAD
+# Five record slabs drift in loose and tilted, settle into one neat stack
+# (bottom first), hold, then lift apart again (top first).
+elif SCENE == 'upload':
+    W, D, T, g, cr = 1.24, .9, .11, .014, .09
+
+    def rrect(w, d, r, seg=6):
+        pts = []
+        for cx, cy, a0 in ((w / 2 - r, d / 2 - r, 0), (-w / 2 + r, d / 2 - r, 90), (-w / 2 + r, -d / 2 + r, 180), (w / 2 - r, -d / 2 + r, 270)):
+            for i in range(seg + 1):
+                a = math.radians(a0 + 90 * i / seg)
+                pts.append(Vector((cx + r * math.cos(a), cy + r * math.sin(a))))
+        return pts
+
+    spec = [('ply', None), ('terr', None), ('taupe', None), ('ply', 'c_cyan'), ('terr', 'c_green')]
+    slabs = []
+    z = 0.0
+    for k, (body, cap) in enumerate(spec):
+        ob, c = block(f's{k}', rrect(W, D, cr), T, body, cap, cap_h=.03, bevel=.016)
+        stack = Vector((0, 0, z + T / 2))
+        z += T + g + (.032 if cap else 0)
+        loose = Vector((rnd.uniform(-.34, .34), rnd.uniform(-.28, .28), .5 + k * .36))
+        axis = Vector((rnd.uniform(-1, 1), rnd.uniform(-1, 1), 0)).normalized()
+        q = Quaternion(ZAX, math.radians(rnd.uniform(-34, 34))) @ Quaternion(axis, math.radians(rnd.uniform(8, 16)))
+        slabs.append((ob, stack, stack + loose, q, k))
+    n = len(slabs)
+    for f in range(LOOP + 1):
+        t = f / LOOP
+        for ob, stack, loose, q, k in slabs:
+            e = min(1.0, max(0.0, cycle(t, .08 + k * .055, .60 + (n - 1 - k) * .045, .22)))
+            ob.location = loose.lerp(stack, e)
+            ob.rotation_quaternion = q.slerp(Quaternion(), e)
+        keyall(f + 1)
+    target, el, az, dist = (0, 0, .95), 34, -58, float(A.get('dist', 13))
 
 K.camera(sc, target, dist, float(A.get('el', el)), float(A.get('az', az)), lens=float(A.get('lens', 100)))
 K.render(sc, OUT, SCENE, A.get('frames', '1,40,80'), A.get('bg'))

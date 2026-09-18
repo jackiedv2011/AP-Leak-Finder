@@ -1,4 +1,5 @@
-// Tiny static server for the Hexis design study (no dependencies).
+// Tiny static server for the Reclaim site (no dependencies).
+// Clean URLs: /platform/upload serves platform/upload/index.html.
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
@@ -15,15 +16,27 @@ const types = {
   '.jpg': 'image/jpeg',
   '.svg': 'image/svg+xml',
   '.webp': 'image/webp',
+  '.webm': 'video/webm',
   '.mp4': 'video/mp4',
 };
 
+const resolve = url => {
+  const file = path.normalize(path.join(root, url));
+  if (!file.startsWith(root)) return null;
+  try {
+    if (fs.statSync(file).isDirectory()) return path.join(file, 'index.html');
+  } catch (e) { /* not found: fall through */ }
+  return file;
+};
+
 http.createServer((req, res) => {
-  const url = decodeURIComponent(req.url.split('?')[0]);
-  let file = path.normalize(path.join(root, url === '/' ? 'index.html' : url));
-  if (!file.startsWith(root)) { res.writeHead(403); return res.end(); }
+  const url = decodeURIComponent(req.url.split('?')[0].split('#')[0]);
+  // source files are not part of the site
+  if (/^\/(src|blender)(\/|$)/.test(url)) { res.writeHead(404); return res.end('Not found'); }
+  const file = resolve(url);
+  if (!file) { res.writeHead(403); return res.end(); }
   fs.readFile(file, (err, buf) => {
-    if (err) { res.writeHead(404); return res.end('Not found'); }
+    if (err) { res.writeHead(404, { 'Content-Type': 'text/plain' }); return res.end('Not found'); }
     const type = types[path.extname(file)] || 'application/octet-stream';
     // byte ranges, so <video loop> can seek like it would on a real host
     const m = /^bytes=(\d*)-(\d*)$/.exec(req.headers.range || '');
@@ -37,4 +50,4 @@ http.createServer((req, res) => {
     res.writeHead(200, { 'Content-Type': type, 'Accept-Ranges': 'bytes', 'Content-Length': buf.length, 'Cache-Control': 'no-store' });
     res.end(buf);
   });
-}).listen(port, () => console.log(`Hexis study on http://localhost:${port}`));
+}).listen(port, () => console.log(`Reclaim site on http://localhost:${port}`));

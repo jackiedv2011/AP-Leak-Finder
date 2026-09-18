@@ -7,8 +7,8 @@ baked in for Safari (`reels.js` swaps it in).
 | file | what |
 |---|---|
 | `looklib.py` | shared look: materials (terrazzo, oak, plywood, dark wood, accents), sun + fill, render settings |
-| `hero.py` | hero column, 240 frames (8 s) |
-| `solutions.py` | `scene=find\|build\|recover`, 150 frames (5 s) each |
+| `hero.py` | hero column, 240 frames (8 s); a few blocks carry tiny printed record marks (invoice, payment, credit memo, source names), see `LABELS` |
+| `solutions.py` | `scene=find\|build\|recover` (plus an unused `upload`), 150 frames (5 s) each |
 | `encode.py` | PNG frames -> `.webm` (alpha) or, with `bg=RRGGBB`, `.mp4` |
 | `compare.py` | side-by-side sheet vs reference frames (`path@x0,y0,x1,y1` crops) |
 
@@ -23,9 +23,12 @@ B="/c/Program Files/Blender Foundation/Blender 5.2/blender.exe"
 # quick look (writes *_test_NNNN.png and *_bg.png composites)
 "$B" -b --factory-startup --python hero.py -- out=out/t res=960 spp=64 frames=1,70,110 bg=e5e5e5 overwrite=1 topdrop=.58
 # final
-"$B" -b --factory-startup --python hero.py -- out=out/hero_final3 res=1920 spp=128 frames=all topdrop=.58
-"$B" -b --factory-startup --python solutions.py -- scene=find out=out/find_final res=1080 spp=96 frames=all
+"$B" -b --factory-startup --python hero.py -- out=out/hero_final4 res=1920 spp=128 frames=all topdrop=.58
+"$B" -b --factory-startup --python solutions.py -- scene=upload out=out/upload_final res=1080 spp=96 frames=all
 ```
+
+Paths are made absolute against the working directory before Blender sees them (on Windows,
+Blender resolves a bare relative output path against the drive root, so `out/x` would land in `C:\out\x`).
 
 Useful knobs (all `key=value` after `--`): `sunE` `fill` `sun=x,y,z` `exp` `view` `look`,
 hero: `open` `spread` `tilt` `twist` `pivot` `topdrop` `dist` `el` `lens`; recover: `fan`.
@@ -34,7 +37,7 @@ Renders resume where they stopped (existing frames are skipped unless `overwrite
 ## Encode
 
 ```bash
-"$B" -b --factory-startup --python encode.py -- src=out/hero_final3 prefix=hero out=../media/hero.webm crf=30
-"$B" -b --factory-startup --python encode.py -- src=out/hero_final3 prefix=hero out=../media/hero.mp4 crf=20 bg=e5e5e5
+"$B" -b --factory-startup --python encode.py -- src=out/hero_final4 prefix=hero out=../media/hero.webm crf=30
+"$B" -b --factory-startup --python encode.py -- src=out/hero_final4 prefix=hero out=../media/hero.mp4 crf=20 bg=e5e5e5
 # solutions: crf=31 for webm, bg=000000 for the mp4
 ```

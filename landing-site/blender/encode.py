@@ -5,7 +5,8 @@ Run: blender -b --factory-startup --python encode.py -- src=DIR prefix=hero out=
 import bpy, os, sys, glob
 
 A = dict(a.split('=', 1) for a in sys.argv[sys.argv.index('--') + 1:])
-src, prefix, out = A['src'], A['prefix'], A['out']
+# absolute: Blender resolves bare relative output paths against the drive root on Windows
+src, prefix, out = os.path.abspath(A['src']), A['prefix'], os.path.abspath(A['out'])
 files = sorted(f for f in os.listdir(src)
                if f.startswith(prefix + '_') and f.endswith('.png') and '_test_' not in f and not f.endswith('_bg.png')
                and os.path.getsize(os.path.join(src, f)) > 0)

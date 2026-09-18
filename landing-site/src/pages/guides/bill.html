@@ -1,0 +1,292 @@
+---
+title: Exporting from Bill — Reclaim
+description: How to export the bills, payments, vendors and credits Reclaim reads out of Bill, and what each file is for.
+folder: guides
+template: guide
+---
+  <!-- BILL EXPORT GUIDE.
+       The menu names and report names below follow Bill as we understand it today. Every step is
+       listed in scratchpad/unverified.md and has to be checked against Bill's own documentation
+       (Bill Help Center: reports and exports, https://help.bill.com/) before this page is deployed. -->
+  <div class="guide-page">
+    <div class="nav-slot" data-theme="white"></div>
+    <div class="the-container">
+      <div class="the-grid">
+        <div class="guide-layout">
+
+          <aside class="guide-toc">
+            <div class="sticky">
+              <p class="label guides-kicker"><span class="mark" aria-hidden="true"></span>Contents</p>
+              <ul>
+                <li><a href="#what">What Reclaim reads</a></li>
+                <li><a href="#before">Before you begin</a></li>
+                <li><a href="#step-1">1. Open Reports</a></li>
+                <li><a href="#step-2">2. Set the date range</a></li>
+                <li><a href="#step-3">3. Export your bills</a></li>
+                <li><a href="#step-4">4. Export your payments</a></li>
+                <li><a href="#step-5">5. Export your vendor list</a></li>
+                <li><a href="#step-6">6. Export credits and unapplied amounts</a></li>
+                <li><a href="#step-7">7. Check the files before you upload</a></li>
+                <li><a href="#troubleshooting">Troubleshooting</a></li>
+              </ul>
+            </div>
+          </aside>
+
+          <div class="guide-content">
+
+            <header class="guide-head">
+              <a href="/guides" class="cta cta-button button-back" size="large" theme="grey"><span class="hover-loop left"><span class="inner"><svg class="icon"><use href="#i-arrow"/></svg>All guides</span></span></a>
+              <h1 class="title">Exporting from Bill</h1>
+              <p class="lede">Bill holds the invoice and payment side. If your ledger lives elsewhere, export from both and upload them together.</p>
+            </header>
+
+            <section id="what">
+              <h2 class="blockhead">What Reclaim reads</h2>
+              <div class="prose">
+                <p>Reclaim works from four exports out of Bill: your bills, the payments that went against them, your vendor list, and any credits. Nothing is connected to your account, and nothing is changed inside it. You export the files, you upload them, and you decide what to do with what comes back.</p>
+                <p>The four files do different jobs, and the comparison only works when all four are there. A duplicate payment is invisible in the bill file alone; an unused credit is invisible in the payment file alone.</p>
+              </div>
+              <div class="tier" role="group" aria-label="The four exports">
+                <div class="tier__col">
+                  <p class="tier__tag">Files</p>
+                  <h3 class="tier__name">What to export</h3>
+                  <ul>
+                    <li>Bills report</li>
+                    <li>Payments report</li>
+                    <li>Vendor list</li>
+                    <li>Credits and unapplied amounts</li>
+                  </ul>
+                </div>
+                <div class="tier__col">
+                  <p class="tier__tag">Purpose</p>
+                  <h3 class="tier__name">What each one does</h3>
+                  <ul>
+                    <li>Bills give every invoice its vendor, number, date and amount</li>
+                    <li>Payments show what actually left, and against which bill</li>
+                    <li>Vendors let two spellings of one supplier be recognised</li>
+                    <li>Credits show money already owed back to you</li>
+                  </ul>
+                </div>
+              </div>
+              <p class="kicker--foot">Reading time about four minutes · Export time about fifteen</p>
+            </section>
+
+            <section id="before">
+              <h2 class="blockhead">Before you begin</h2>
+              <div class="callout">
+                <p class="callout__label"><span class="mark" aria-hidden="true"></span>What you need</p>
+                <p>A Bill login with permission to run and export reports.</p>
+                <p>A date range in mind — two years is a good first pass.</p>
+                <p>Somewhere to put four files while you work.</p>
+              </div>
+              <div class="callout callout--warning">
+                <p class="callout__label"><span class="mark" aria-hidden="true"></span>Export permission is separate</p>
+                <p>In most systems, being able to see a report and being able to export it are two different permissions. If the export control is missing rather than greyed out, it is a permission question for whoever administers your account, not a problem with the report.</p>
+              </div>
+            </section>
+
+          <section id="step-1" class="step">
+            <header class="step__head">
+              <span class="step__num">01</span>
+              <h2 class="step__title">Open Reports</h2>
+            </header>
+            <div class="step__body">
+              <div class="prose">
+                <p>Sign in to Bill and open the <strong>Reports</strong> area. The four exports in this guide all start there, apart from the vendor list, which you can also take from the vendors screen.</p>
+                <p>Bill keeps standard reports and any custom ones your team has built in the same place. If someone has already built a payables export, it probably has the columns you need.</p>
+              </div>
+              <pre class="code"><span class="cm"># the reports area</span>
+https://app.bill.com/<span class="hl">Reports</span></pre>
+              
+              <div class="callout">
+                  <p class="callout__label"><span class="mark" aria-hidden="true"></span>Bill is usually half the picture</p>
+                  <p>Bill holds what was approved and paid through Bill. If your general ledger lives in QuickBooks, Xero or NetSuite, export from there as well and upload both. A bill paid once through Bill and once directly from the bank only shows up when both sides are present.</p>
+                </div>
+            </div>
+          </section>
+
+          <section id="step-2" class="step">
+            <header class="step__head">
+              <span class="step__num">02</span>
+              <h2 class="step__title">Set the date range</h2>
+            </header>
+            <div class="step__body">
+              <div class="prose">
+                <p>Set the period on each report before you export it, and keep it the same across all four.</p>
+                <p>Mismatched ranges create false mismatches: a payment inside the window whose bill sits outside it looks unmatched when it is only cropped.</p>
+              </div>
+              
+              
+              <div class="callout-grid">
+                <div class="callout">
+                  <p class="callout__label"><span class="mark" aria-hidden="true"></span>Go back two years</p>
+                  <p>Duplicate payments through an approval workflow tend to be weeks or months apart — a bill re-entered after a rejection, or a second copy submitted by a different person.</p>
+                </div>
+                <div class="callout">
+                  <p class="callout__label"><span class="mark" aria-hidden="true"></span>Include everything approved</p>
+                  <p>Keep the status filter wide enough to include bills that were approved but later voided. A void that happened after the money moved is worth seeing.</p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section id="step-3" class="step">
+            <header class="step__head">
+              <span class="step__num">03</span>
+              <h2 class="step__title">Export your bills</h2>
+            </header>
+            <div class="step__body">
+              <div class="prose">
+                <p>Run the bills report for your date range and export it to CSV.</p>
+                <p>Make sure the invoice number and the vendor invoice date are both in the columns. Duplicate bills in an approval system usually differ by a character — a leading zero, a dash, a space — and the invoice number is where that shows.</p>
+              </div>
+              <pre class="code"><span class="cm"># what this file should contain</span>
+vendor · invoice date · <span class="hl">invoice number</span> · amount · status · approver</pre>
+              <div class="shot">
+                <div class="shot__frame">
+                  <table>
+                    <thead><tr><th>Vendor</th><th>Invoice date</th><th>Invoice no.</th><th>Amount</th><th>Status</th></tr></thead>
+                    <tbody><tr><td>Northwind Packaging</td><td>03/12/2025</td><td>INV-4471</td><td>2,480.00</td><td>Paid</td></tr><tr><td>Northwind Packaging</td><td>03/12/2025</td><td>INV4471</td><td>2,480.00</td><td>Paid</td></tr><tr><td>Harbour Freight Co</td><td>01/09/2026</td><td>88213</td><td>915.40</td><td>Approved</td></tr></tbody>
+                  </table>
+                </div>
+                <p class="shot__cap"><span class="shot__cap-id">FILE-01</span><span>Bills as approved. Duplicates here usually differ by one character.</span></p>
+              </div>
+              
+            </div>
+          </section>
+
+          <section id="step-4" class="step">
+            <header class="step__head">
+              <span class="step__num">04</span>
+              <h2 class="step__title">Export your payments</h2>
+            </header>
+            <div class="step__body">
+              <div class="prose">
+                <p>Run the payments report for the same range and export it. This is the money side: what was disbursed, by what method, and against which bill.</p>
+                <p>Include the payment method column. Checks, ACH and card payments behave differently, and a bill paid once by check and once by ACH is one of the most common duplicates there is.</p>
+              </div>
+              
+              <div class="shot">
+                <div class="shot__frame">
+                  <table>
+                    <thead><tr><th>Process date</th><th>Vendor</th><th>Bill ref</th><th>Method</th><th>Amount</th></tr></thead>
+                    <tbody><tr><td>12/28/2025</td><td>Northwind Packaging</td><td>INV-4471</td><td>ACH</td><td>2,480.00</td></tr><tr><td>01/04/2026</td><td>Northwind Packaging</td><td>INV4471</td><td>Check</td><td>2,480.00</td></tr><tr><td>02/06/2026</td><td>Harbour Freight Co</td><td>88213</td><td>ACH</td><td>915.40</td></tr></tbody>
+                  </table>
+                </div>
+                <p class="shot__cap"><span class="shot__cap-id">FILE-02</span><span>Payments out, with the method and the bill each one settled.</span></p>
+              </div>
+              <div class="callout">
+                  <p class="callout__label"><span class="mark" aria-hidden="true"></span>Keep the bill reference</p>
+                  <p>Whatever column links a payment back to the bill it settled is the most valuable field in the file. Without it a match relies on amount and date alone; with it the evidence is unambiguous.</p>
+                </div>
+            </div>
+          </section>
+
+          <section id="step-5" class="step">
+            <header class="step__head">
+              <span class="step__num">05</span>
+              <h2 class="step__title">Export your vendor list</h2>
+            </header>
+            <div class="step__body">
+              <div class="prose">
+                <p>Export your vendors, either from the reports area or from the vendors screen directly.</p>
+                <p>Approval workflows make duplicate vendors easy to create: someone adds a supplier that already exists under a slightly different name because they could not find it. Each copy then collects its own bills. The vendor export is what lets Reclaim see that the two are one company.</p>
+              </div>
+              
+              <div class="shot">
+                <div class="shot__frame">
+                  <table>
+                    <thead><tr><th>Vendor</th><th>Short name</th><th>Email</th><th>Status</th></tr></thead>
+                    <tbody><tr><td>Northwind Packaging</td><td>NORTHWIND</td><td>ap@northwind.example</td><td>Active</td></tr><tr><td>Northwind Pkg</td><td>NORTHWIND2</td><td>ap@northwind.example</td><td>Inactive</td></tr><tr><td>Harbour Freight Co</td><td>HARBOUR</td><td>billing@harbour.example</td><td>Active</td></tr></tbody>
+                  </table>
+                </div>
+                <p class="shot__cap"><span class="shot__cap-id">FILE-03</span><span>Vendors, including inactive ones. Approval flows make duplicates easy.</span></p>
+              </div>
+              <div class="callout">
+                  <p class="callout__label"><span class="mark" aria-hidden="true"></span>Include inactive vendors</p>
+                  <p>An inactive vendor record still explains history. Leaving it out hides the connection between two sets of bills that should have been one.</p>
+                </div>
+            </div>
+          </section>
+
+          <section id="step-6" class="step">
+            <header class="step__head">
+              <span class="step__num">06</span>
+              <h2 class="step__title">Export credits and unapplied amounts</h2>
+            </header>
+            <div class="step__body">
+              <div class="prose">
+                <p>Export any vendor credits and unapplied payment amounts held against suppliers.</p>
+                <p>Credits in a payables system are easy to raise and easy to forget. An unapplied credit against a vendor you no longer use is money already spent and never taken back.</p>
+              </div>
+              <pre class="code"><span class="cm"># the rows that matter here</span>
+type = <span class="hl">Credit</span>
+unapplied amount <span class="hl">&gt; 0</span></pre>
+              <div class="shot">
+                <div class="shot__frame">
+                  <table>
+                    <thead><tr><th>Vendor</th><th>Date</th><th>Type</th><th>Unapplied</th></tr></thead>
+                    <tbody><tr><td>Harbour Freight Co</td><td>03/14/2025</td><td>Credit</td><td>640.00</td></tr><tr><td>Delta Print Services</td><td>11/02/2025</td><td>Credit</td><td>1,225.00</td></tr><tr><td>Delta Print Services</td><td>01/22/2026</td><td>Overpayment</td><td>310.00</td></tr></tbody>
+                  </table>
+                </div>
+                <p class="shot__cap"><span class="shot__cap-id">FILE-04</span><span>Credits and unapplied amounts sitting against a supplier.</span></p>
+              </div>
+              
+            </div>
+          </section>
+
+          <section id="step-7" class="step">
+            <header class="step__head">
+              <span class="step__num">07</span>
+              <h2 class="step__title">Check the files before you upload</h2>
+            </header>
+            <div class="step__body">
+              <div class="prose">
+                <p>Open each CSV once. It takes about a minute and saves a round trip.</p>
+                <p>Check that the top row is the column header rather than a report title, that amounts came out as numbers, and that the row count matches roughly what you expected for the period.</p>
+              </div>
+              
+              
+              <div class="callout">
+                  <p class="callout__label"><span class="mark" aria-hidden="true"></span>Upload them unedited</p>
+                  <p>Reclaim traces every result back to a row in the file you gave it. Tidying the file first is the one thing that breaks that, and it is the part that makes a finding checkable.</p>
+                </div>
+            </div>
+          </section>
+
+            <section id="troubleshooting">
+              <h2 class="blockhead">Troubleshooting</h2>
+              <div class="acc">
+                <details open class="is-open">
+                  <summary>Do I still need my accounting system export?</summary>
+                  <div class="panel"><div class="prose"><p>Almost always, yes. Bill shows what went through Bill. Anything paid directly from the bank, on a card, or entered straight into the ledger is invisible from here, and that is where a good share of duplicates live.</p></div></div>
+                </details>
+                <details>
+                  <summary>My reports don't have all those columns</summary>
+                  <div class="panel"><div class="prose"><p>Most Bill reports let you add columns before exporting. If a field you need is not available, export what you have and tell us which column is missing — in many cases the match works without it.</p></div></div>
+                </details>
+                <details>
+                  <summary>Can I export straight from the vendors screen?</summary>
+                  <div class="panel"><div class="prose"><p>Yes. The vendors screen export and the report version contain the same records. Use whichever is quicker for you.</p></div></div>
+                </details>
+                <details>
+                  <summary>What about documents and attachments?</summary>
+                  <div class="panel"><div class="prose"><p>Not needed for a first audit. Reclaim works from the record rows. Once a result is worth acting on, the attachment in Bill is where you go to confirm it.</p></div></div>
+                </details>
+                <details>
+                  <summary>Can Reclaim connect to Bill directly instead?</summary>
+                  <div class="panel"><div class="prose"><p>Not today. Reclaim works from exports you upload. Nothing connects to your Bill account and nothing is changed inside it.</p></div></div>
+                </details>
+              </div>
+            </section>
+
+            <div class="guide-foot">
+              <a href="/guides" class="cta cta-button" size="large" theme="grey"><span class="hover-loop"><span class="inner">All guides</span></span></a>
+              <a href="#contact" class="cta cta-button has-arrow" size="large" theme="black" data-modal="talk"><span class="hover-loop right"><span class="inner">Ask us instead<svg class="icon"><use href="#i-arrow"/></svg></span></span></a>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>

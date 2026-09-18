@@ -430,6 +430,9 @@ def composite_preview(path, bg_hex):
 
 def render(sc, out_dir, prefix, frames, bg_hex=None):
     import time
+    # absolute: Blender on Windows resolves a bare relative output path against the
+    # drive root (out/x -> C:\out\x), not the working directory Python uses
+    out_dir = os.path.abspath(out_dir)
     os.makedirs(out_dir, exist_ok=True)
     if frames == 'all':
         sc.render.filepath = os.path.join(out_dir, prefix + '_')
