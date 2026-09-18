@@ -60,7 +60,7 @@
   mm.innerHTML = '<div class="mm-top">' + $('.left', tplNav).innerHTML
     + '<button type="button" class="menu-toggle mm-close" aria-label="Close menu"><span class="bar"></span><span class="bar"></span></button></div>'
     + '<ul class="mm-list">' + mmRowsHtml + '</ul>'
-    + '<div class="mm-foot"><a href="#start" class="cta cta-button" size="large" theme="green" data-modal="audit"><span class="hover-loop"><span class="inner">Start an Audit</span></span></a></div>';
+    + '<div class="mm-foot"><a href="#start" class="cta cta-button" size="large" theme="green" data-modal="audit"><span class="hover-loop"><span class="inner">Get Started</span></span></a></div>';
   document.body.appendChild(mm);
 
   // ---------- split headings into masked lines ----------
@@ -230,7 +230,7 @@
     const submitWrap = $('.wrapper-submit', modal);
     const errorBox = $('.error-message', modal);
     const MODES = {
-      audit: { heading: 'Start<br>an audit', submit: 'Start an Audit' },
+      audit: { heading: 'Get<br>started', submit: 'Get Started' },
       talk: { heading: 'Talk<br>to us', submit: 'Talk to Us' },
     };
     let opener = null, anim, submitTimer;

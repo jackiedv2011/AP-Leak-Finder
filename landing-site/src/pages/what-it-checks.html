@@ -1,0 +1,696 @@
+---
+title: What It Checks — Reclaim
+description: Five checks run against every payment: duplicate payments, duplicate bills, overpayments, unused vendor credits, and payments that don't match what was billed. Each result comes with the records behind it.
+folder: what-it-checks
+template: finds
+---
+  <!-- HERO (black): the four steps, with a jump grid -->
+  <section class="section hero-business" theme="black">
+    <div class="nav-slot" data-theme="black"></div>
+    <div class="the-container"><div class="the-grid"><div class="content">
+      <h1 class="heading heading1 type-h2" data-split="h1">Five checks.<br>Every payment.</h1>
+      <p class="desc type-body-base">Duplicate payments, duplicate bills, overpayments, unused vendor credits, and payments that don’t match what was billed. Every result comes with the records that show it.</p>
+      <ul class="links">
+          <li><a href="#duplicate-payments" class="hero-business-nav-item type-h4" data-idx="0"><span class="heading">Duplicate payments</span><span class="hover-loop down-right cta-button-square cta" theme="outline" size="medium"><span class="inner"><svg class="icon"><use href="#i-arrow-dr"/></svg></span></span><span class="line"></span></a></li>
+          <li><a href="#duplicate-bills" class="hero-business-nav-item type-h4" data-idx="1"><span class="heading">Duplicate bills</span><span class="hover-loop down-right cta-button-square cta" theme="outline" size="medium"><span class="inner"><svg class="icon"><use href="#i-arrow-dr"/></svg></span></span><span class="line"></span></a></li>
+          <li><a href="#overpayments" class="hero-business-nav-item type-h4" data-idx="2"><span class="heading">Overpayments</span><span class="hover-loop down-right cta-button-square cta" theme="outline" size="medium"><span class="inner"><svg class="icon"><use href="#i-arrow-dr"/></svg></span></span><span class="line"></span></a></li>
+          <li><a href="#unused-credits" class="hero-business-nav-item type-h4" data-idx="3"><span class="heading">Unused credits</span><span class="hover-loop down-right cta-button-square cta" theme="outline" size="medium"><span class="inner"><svg class="icon"><use href="#i-arrow-dr"/></svg></span></span><span class="line"></span></a></li>
+          <li><a href="#payment-mismatches" class="hero-business-nav-item type-h4" data-idx="4"><span class="heading">Payment mismatches</span><span class="hover-loop down-right cta-button-square cta" theme="outline" size="medium"><span class="inner"><svg class="icon"><use href="#i-arrow-dr"/></svg></span></span><span class="line"></span></a></li>
+      </ul>
+    </div></div></div>
+  </section>
+
+  <div class="article-sections hide-nav">
+
+    <section class="rounded-section shouldAnimate hide-nav" id="duplicate-payments" theme="white">
+      <div class="bg bg-top" theme="black"></div>
+      <div class="bg bg-bottom" theme="white"></div>
+      <div class="nav-slot" data-theme="white"></div>
+      <div class="rs-scale" theme="white">
+        <div class="article-section">
+          <div class="full desktop-only divider-block"><div class="the-container"><div class="the-grid"><div class="divider-v"></div></div></div></div>
+          <div class="content">
+            <div class="article-module article-head">
+              <div class="the-grid">
+                <div class="the-col"><div class="generic"><div class="icon"><svg aria-hidden="true"><use href="#i-type-duplicate-payments"/></svg></div><div class="name type-h5">Duplicate payments</div></div></div>
+                <h2 class="type-h3 heading" data-split="h2">Paid once. Then paid again.</h2>
+              </div>
+            </div>
+
+            <div class="article-module article-text-image">
+              <div class="the-grid">
+                <div class="left">
+                  <div class="desc type-body-headline">The same invoice paid twice: by check and ACH, on a card and as a bill, or in a payment run that went out again. Reclaim finds each one, with the records that show it.</div>
+                  <div class="desc2 type-body-large">Reclaim compares each payment with the bills and payments around it: vendor, amount, invoice number, reference, and date. Here are examples of what it turns up.</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="article-module article-carousel article-grid-cards article-card-carousel">
+              <div class="the-grid">
+                <div class="carousel-prev-next-controls controls">
+                  <button type="button" class="hover-loop cta-button-square prev" size="medium" aria-label="Previous"><span class="inner"><svg class="icon"><use href="#i-arrow"/></svg></span></button>
+                  <button type="button" class="hover-loop cta-button-square next" size="medium" aria-label="Next"><span class="inner"><svg class="icon"><use href="#i-arrow"/></svg></span></button>
+                </div>
+                <div class="carousel-wrapper">
+                  <div class="offset">
+                    <div class="swiper">
+                      <ul class="swiper-wrapper">
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">Check + ACH</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-duplicate-payments"/></svg></div></div><div class="question">Was invoice #4471 from the packaging supplier paid twice?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">Yes. $2,640 by ACH on Mar 3, then by check on Mar 11.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">Same invoice</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-duplicate-payments"/></svg></div></div><div class="question">Did any invoice number get paid more than once this year?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">3 invoices, $9,315 in total, all from two vendors.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">Card + bill</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-duplicate-payments"/></svg></div></div><div class="question">Was the software renewal paid on a card and as a bill?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">Yes. $4,800 on the company card, then again by ACH six days later.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">Resent invoice</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-duplicate-payments"/></svg></div></div><div class="question">Did a resent invoice get paid as a new one?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">Yes. Invoice 7719 came back as 7719-A and was paid again: $1,150.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">Vendor record</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-duplicate-payments"/></svg></div></div><div class="question">Is the same vendor set up under two names?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">Yes. The office supplier exists with and without "Inc." Two invoices were paid under both.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">Rent</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-duplicate-payments"/></svg></div></div><div class="question">Two $6,500 payments to the landlord in April?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">Not a duplicate. The second matches a separate invoice for the deposit.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">Reissued check</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-duplicate-payments"/></svg></div></div><div class="question">Did a voided check and its replacement both clear?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">Yes. Check #20417 cleared, and so did its replacement, #20455: $3,210.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">Wire + ACH</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-duplicate-payments"/></svg></div></div><div class="question">Any wires that repeat an ACH to the same vendor?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">1 match: $18,000 to the equipment lessor, sent both ways on May 30.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">Same amount</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-duplicate-payments"/></svg></div></div><div class="question">Payments with the same vendor, amount, and date?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">4 pairs. 3 are duplicates. 1 matches two separate invoices.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">Freight</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-duplicate-payments"/></svg></div></div><div class="question">Were any freight bills paid twice?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">2 bills, $1,940 in total, each paid once from AP and once on a card.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">Utilities</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-duplicate-payments"/></svg></div></div><div class="question">Was the electric bill paid twice in any month?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">Yes, in January: autopay on the 12th, a manual payment on the 14th. $1,318.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">Contractors</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-duplicate-payments"/></svg></div></div><div class="question">Was a contractor paid twice for the same week?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">1 contractor, week of Jun 9: two payments of $2,400.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">Prepaid order</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-duplicate-payments"/></svg></div></div><div class="question">Was a prepaid order paid again when the invoice came?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">Yes. Paid upfront on Feb 2, then again from the invoice: $7,450.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">Year-end</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-duplicate-payments"/></svg></div></div><div class="question">Any duplicates around the year-end close?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">2 payments from the last week of December, $6,020, repeated in January.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">References</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-duplicate-payments"/></svg></div></div><div class="question">Same invoice paid under two different references?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">Yes. "INV 5521" and "5521" were paid three weeks apart: $980.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">Two entities</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-duplicate-payments"/></svg></div></div><div class="question">Did two of your entities pay the same invoice?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">1 invoice: the insurance premium, paid by both. $12,400.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">Payment run</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-duplicate-payments"/></svg></div></div><div class="question">Did a payment run go out twice?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">Yes. The Apr 28 run went out again on Apr 29: 6 vendors, $14,230.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">Small amounts</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-duplicate-payments"/></svg></div></div><div class="question">Any duplicates under $100?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">11 of them, $640 in total, from the same 2 vendors.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">Payroll service</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-duplicate-payments"/></svg></div></div><div class="question">Was the payroll service fee paid twice in Q1?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">No. One payment per invoice in all three months.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">Cleaning</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-duplicate-payments"/></svg></div></div><div class="question">Two $450 payments to the cleaning contractor in June?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">Not a duplicate. They match two invoices, #0611 and #0625.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">Card statement</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-duplicate-payments"/></svg></div></div><div class="question">Was a card statement paid twice?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">Yes. The May statement was paid on the 20th and again on the 27th: $3,775.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">All vendors</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-duplicate-payments"/></svg></div></div><div class="question">How much went out in duplicate payments this year?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">14 duplicates, $61,480, across 9 vendors, each with its records.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="rounded-section hide-nav" id="duplicate-bills" theme="white">
+      <div class="bg bg-top" theme="white"></div>
+      <div class="bg bg-bottom" theme="white"></div>
+      <div class="nav-slot" data-theme="white"></div>
+      <div class="rs-scale" theme="white">
+        <div class="article-section">
+          <div class="full desktop-only divider-block"><div class="the-container"><div class="the-grid"><div class="divider-v"></div></div></div></div>
+          <div class="content">
+            <div class="article-module article-head">
+              <div class="the-grid">
+                <div class="the-col"><div class="generic"><div class="icon"><svg aria-hidden="true"><use href="#i-type-duplicate-bills"/></svg></div><div class="name type-h5">Duplicate bills</div></div></div>
+                <h2 class="type-h3 heading" data-split="h2">One invoice. Entered twice.</h2>
+              </div>
+            </div>
+
+            <div class="article-module article-text-image">
+              <div class="the-grid">
+                <div class="left">
+                  <div class="desc type-body-headline">A bill entered twice is one approval away from being paid twice. Reclaim finds repeats by number, vendor, amount, and date, even when a typo or a renamed vendor hides them.</div>
+                  <div class="desc2 type-body-large">Reclaim compares every bill with the other bills from the same vendor, allowing for typos, extra zeros, and renamed vendors. Here are examples of what it turns up.</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="article-module article-carousel article-grid-cards article-card-carousel">
+              <div class="the-grid">
+                <div class="carousel-prev-next-controls controls">
+                  <button type="button" class="hover-loop cta-button-square prev" size="medium" aria-label="Previous"><span class="inner"><svg class="icon"><use href="#i-arrow"/></svg></span></button>
+                  <button type="button" class="hover-loop cta-button-square next" size="medium" aria-label="Next"><span class="inner"><svg class="icon"><use href="#i-arrow"/></svg></span></button>
+                </div>
+                <div class="carousel-wrapper">
+                  <div class="offset">
+                    <div class="swiper">
+                      <ul class="swiper-wrapper">
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">Same number</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-duplicate-bills"/></svg></div></div><div class="question">Was invoice #3310 entered twice?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">Yes. Once on Feb 4 and again on Feb 18, both approved: $5,120.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">Reminder email</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-duplicate-bills"/></svg></div></div><div class="question">Was a vendor's reminder entered as a new bill?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">Yes. The reminder copy of #8812 became a second bill for $760.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">Leading zeros</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-duplicate-bills"/></svg></div></div><div class="question">Are bills "00417" and "417" the same invoice?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">Yes. Same vendor, date, and amount, entered as two bills.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">Typos</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-duplicate-bills"/></svg></div></div><div class="question">Bills whose numbers differ by one character?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">3 pairs, like INV-2291 and INV-2219. 2 are repeats: $4,430.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">Statement line</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-duplicate-bills"/></svg></div></div><div class="question">Was a line from a vendor statement entered as a bill?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">Yes. The March statement line for #6120 became a new $1,875 bill.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">No number</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-duplicate-bills"/></svg></div></div><div class="question">Bills with no invoice number, same vendor and amount?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">5 bills. 3 look like repeats of each other: $2,190.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">Paper + PDF</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-duplicate-bills"/></svg></div></div><div class="question">Was the same invoice entered from paper and from a PDF?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">Yes, for the printing vendor: $3,460, entered 9 days apart.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">Already paid</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-duplicate-bills"/></svg></div></div><div class="question">Are any open bills repeats of paid ones?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">4 open bills, $7,905, match invoices that were already paid.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">Two dates</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-duplicate-bills"/></svg></div></div><div class="question">Was one invoice entered under two different dates?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">Yes. Invoice date on one, due date on the other: $1,340.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">Two people</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-duplicate-bills"/></svg></div></div><div class="question">Did two people enter the same bill?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">2 bills, entered by different team members on the same day: $2,980.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">Landscaping</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-duplicate-bills"/></svg></div></div><div class="question">Two identical bills from the landscaping vendor?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">Not a repeat. Same amount, but for May and June service.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">Revised invoice</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-duplicate-bills"/></svg></div></div><div class="question">Is a revised invoice open next to the original?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">Yes. #5504 and #5504-R are both open. Only the revised $3,050 is due.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">Two entities</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-duplicate-bills"/></svg></div></div><div class="question">Did the same bill land in two entities' books?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">1 bill: the shared software license, $9,600, in both.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">Carrier portal</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-duplicate-bills"/></svg></div></div><div class="question">Freight bills entered by hand and from the portal?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">6 bills, $2,215, entered both ways.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">Uploaded twice</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-duplicate-bills"/></svg></div></div><div class="question">Was a scanned invoice uploaded twice?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">Yes. The same file, uploaded Tuesday and Thursday: $890.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">Cleaning</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-duplicate-bills"/></svg></div></div><div class="question">Was the March cleaning invoice entered twice?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">No. One bill, matched to one invoice number.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">Rounding</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-duplicate-bills"/></svg></div></div><div class="question">Bills that match once you round the amount?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">2 pairs: $1,249.99 and $1,250.00 for the same order.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">Purchase order</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-duplicate-bills"/></svg></div></div><div class="question">Two bills against the same purchase order line?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">Yes. PO 3381, line 2, was billed twice: $4,700.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">Vendor record</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-duplicate-bills"/></svg></div></div><div class="question">Is one bill filed under two vendor records?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">Yes. The electrician is set up twice, and invoice 12-044 sits under both.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">Year-end</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-duplicate-bills"/></svg></div></div><div class="question">Bills entered twice during the year-end close?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">3 bills, $5,560, all entered in the last week of December.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">Card purchases</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-duplicate-bills"/></svg></div></div><div class="question">Card purchases also entered as bills?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">7 purchases, $3,120, already on the card statement.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">Still unpaid</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-duplicate-bills"/></svg></div></div><div class="question">How many repeated bills are still unpaid?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">9 bills, $16,340, each shown next to the bill it repeats.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="rounded-section hide-nav" id="overpayments" theme="white">
+      <div class="bg bg-top" theme="white"></div>
+      <div class="bg bg-bottom" theme="white"></div>
+      <div class="nav-slot" data-theme="white"></div>
+      <div class="rs-scale" theme="white">
+        <div class="article-section">
+          <div class="full desktop-only divider-block"><div class="the-container"><div class="the-grid"><div class="divider-v"></div></div></div></div>
+          <div class="content">
+            <div class="article-module article-head">
+              <div class="the-grid">
+                <div class="the-col"><div class="generic"><div class="icon"><svg aria-hidden="true"><use href="#i-type-overpayments"/></svg></div><div class="name type-h5">Overpayments</div></div></div>
+                <h2 class="type-h3 heading" data-split="h2">Paid more than you owed.</h2>
+              </div>
+            </div>
+
+            <div class="article-module article-text-image">
+              <div class="the-grid">
+                <div class="left">
+                  <div class="desc type-body-headline">Payments above the invoice, deposits paid again, estimates paid instead of the final bill. Reclaim finds where more went out than was owed, with the bill and payment side by side.</div>
+                  <div class="desc2 type-body-large">Reclaim adds up what was billed and what was paid for each invoice, including deposits, fees, and split payments. Here are examples of what it turns up.</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="article-module article-carousel article-grid-cards article-card-carousel">
+              <div class="the-grid">
+                <div class="carousel-prev-next-controls controls">
+                  <button type="button" class="hover-loop cta-button-square prev" size="medium" aria-label="Previous"><span class="inner"><svg class="icon"><use href="#i-arrow"/></svg></span></button>
+                  <button type="button" class="hover-loop cta-button-square next" size="medium" aria-label="Next"><span class="inner"><svg class="icon"><use href="#i-arrow"/></svg></span></button>
+                </div>
+                <div class="carousel-wrapper">
+                  <div class="offset">
+                    <div class="swiper">
+                      <ul class="swiper-wrapper">
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">Over the invoice</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-overpayments"/></svg></div></div><div class="question">Were any payments larger than their invoice?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">6 payments, $4,915 over in total. The largest was $1,200 over.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">Deposit</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-overpayments"/></svg></div></div><div class="question">Was a deposit left out of the final payment?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">Yes. $1,000 deposit, then the full $5,600 invoice paid anyway.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">Quantity</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-overpayments"/></svg></div></div><div class="question">Paid for 120 units on an invoice for 100?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">Yes. $1,640 over, on the April packaging order.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">Shipping</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-overpayments"/></svg></div></div><div class="question">Was shipping paid twice on one order?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">Yes. Once on the product invoice and again on the freight bill: $285.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">Split payments</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-overpayments"/></svg></div></div><div class="question">Did split payments add up to more than the invoice?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">Yes. Three payments on #2208 came to $6,450 against a $5,900 bill.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">Late fee</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-overpayments"/></svg></div></div><div class="question">Was a late fee paid on an invoice paid on time?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">Yes. A $75 fee on #4410, which was paid 3 days before it was due.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">Retainer</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-overpayments"/></svg></div></div><div class="question">Monthly retainer paid at the old rate?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">Yes. Invoices dropped to $2,000 in March. Payments stayed at $2,500.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">Equipment</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-overpayments"/></svg></div></div><div class="question">Was the June equipment payment more than billed?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">No. $12,480 billed, $12,480 paid.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">No bill</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-overpayments"/></svg></div></div><div class="question">Payments with no bill behind them?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">3 payments, $2,640. Two went to a vendor whose last invoice was in March.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">Rounded up</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-overpayments"/></svg></div></div><div class="question">Payments rounded up past the invoice amount?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">7 payments to the same contractor, $412 over in total.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">Annual plan</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-overpayments"/></svg></div></div><div class="question">Was an annual plan also charged monthly?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">Yes. A $2,400 annual plan, plus 4 monthly charges of $240.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">Adjusted bill</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-overpayments"/></svg></div></div><div class="question">Paid the original amount after a bill was reduced?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">Yes. Reduced to $3,300 after a short shipment. $3,800 was paid.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">Hours</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-overpayments"/></svg></div></div><div class="question">Contractor paid for more hours than invoiced?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">Yes. Invoiced for 32 hours, paid for 40: $760 over.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">Small amounts</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-overpayments"/></svg></div></div><div class="question">Overpayments under $50?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">23 payments, $512 in total, mostly to 2 utilities.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">Explained</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-overpayments"/></svg></div></div><div class="question">Is the extra $180 on invoice #7702 an overpayment?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">No. The payment also covers a separate $180 invoice from that week.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">Card fees</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-overpayments"/></svg></div></div><div class="question">Was a card fee added on top of a fee already billed?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">Yes. The 3% fee was added twice on #1566: $138 over.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">Estimate</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-overpayments"/></svg></div></div><div class="question">Was an estimate paid instead of the final invoice?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">Yes. The $9,500 estimate was paid. The final invoice was $8,740.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">Early payment</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-overpayments"/></svg></div></div><div class="question">Paid full price on invoices with an early-payment discount?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">4 invoices paid inside the discount window at full price: $486.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">New vendors</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-overpayments"/></svg></div></div><div class="question">Overpayments to vendors added this year?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">5 payments, $2,310 over, to 3 new vendors.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">Vendor totals</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-overpayments"/></svg></div></div><div class="question">Vendors paid more than they billed all year?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">4 vendors. Payments exceed bills by $6,275 in total.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">Price change</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-overpayments"/></svg></div></div><div class="question">Paid the old price after the invoice price dropped?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">Yes. Invoices moved to $12.80 a unit in May. Payments stayed at $14.20.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">All vendors</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-overpayments"/></svg></div></div><div class="question">How much was overpaid this year?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">$11,860 across 19 payments, each with its bill and payment.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="rounded-section hide-nav" id="unused-credits" theme="white">
+      <div class="bg bg-top" theme="white"></div>
+      <div class="bg bg-bottom" theme="white"></div>
+      <div class="nav-slot" data-theme="white"></div>
+      <div class="rs-scale" theme="white">
+        <div class="article-section">
+          <div class="full desktop-only divider-block"><div class="the-container"><div class="the-grid"><div class="divider-v"></div></div></div></div>
+          <div class="content">
+            <div class="article-module article-head">
+              <div class="the-grid">
+                <div class="the-col"><div class="generic"><div class="icon"><svg aria-hidden="true"><use href="#i-type-unused-credits"/></svg></div><div class="name type-h5">Unused credits</div></div></div>
+                <h2 class="type-h3 heading" data-split="h2">Credits you had. Never used.</h2>
+              </div>
+            </div>
+
+            <div class="article-module article-text-image">
+              <div class="the-grid">
+                <div class="left">
+                  <div class="desc type-body-headline">Returns, rebates, and price corrections come back to you as credits. Reclaim finds the ones still sitting open while invoices from the same vendor were paid in full anyway.</div>
+                  <div class="desc2 type-body-large">Reclaim tracks credit memos, returns, and statement credits against the bills paid after them, so an open credit doesn't go unnoticed. Here are examples of what it turns up.</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="article-module article-carousel article-grid-cards article-card-carousel">
+              <div class="the-grid">
+                <div class="carousel-prev-next-controls controls">
+                  <button type="button" class="hover-loop cta-button-square prev" size="medium" aria-label="Previous"><span class="inner"><svg class="icon"><use href="#i-arrow"/></svg></span></button>
+                  <button type="button" class="hover-loop cta-button-square next" size="medium" aria-label="Next"><span class="inner"><svg class="icon"><use href="#i-arrow"/></svg></span></button>
+                </div>
+                <div class="carousel-wrapper">
+                  <div class="offset">
+                    <div class="swiper">
+                      <ul class="swiper-wrapper">
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">Credit memos</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-unused-credits"/></svg></div></div><div class="question">Any credit memos that were never applied?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">5 credits, $3,480, still open with 4 vendors.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">Returns</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-unused-credits"/></svg></div></div><div class="question">Was a return credited but never used?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">Yes. A $1,260 credit for returned chairs, open since February.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">Statements</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-unused-credits"/></svg></div></div><div class="question">Does a vendor statement show a credit you haven't used?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">Yes. The paper supplier's statement shows $640 in your favor.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">Older credits</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-unused-credits"/></svg></div></div><div class="question">Open credits more than a year old?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">3 credits, $2,115. The oldest is 19 months old.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">Paid in full</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-unused-credits"/></svg></div></div><div class="question">Was an invoice paid in full while a credit was open?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">Yes. An $850 credit was open when #3304 was paid in full: $4,200.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">Past vendors</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-unused-credits"/></svg></div></div><div class="question">Credits with vendors you no longer use?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">2 vendors, $1,730 in open credits, no bills in 8 months.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">Rebates</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-unused-credits"/></svg></div></div><div class="question">Was a volume rebate issued as a credit and left open?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">Yes. A $2,000 rebate credit from the distributor, never applied.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">Price fixes</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-unused-credits"/></svg></div></div><div class="question">Credits from price corrections that were never applied?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">4 credits, $920, issued after a pricing error in May.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">Damaged goods</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-unused-credits"/></svg></div></div><div class="question">Was a credit for a damaged shipment ever used?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">No. The $415 credit for damaged boxes is still open.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">Checked</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-unused-credits"/></svg></div></div><div class="question">Is the $300 credit from the printer still open?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">No. It was applied to invoice #5518 in April.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">Negative bills</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-unused-credits"/></svg></div></div><div class="question">Credits entered as negative bills?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">6 negative bills, $1,090, never matched to a payment or invoice.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">Deposits</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-unused-credits"/></svg></div></div><div class="question">Deposits still sitting as credits?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">Yes. A $1,500 venue deposit was never applied to the final bill.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">Cancelled order</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-unused-credits"/></svg></div></div><div class="question">Was a cancelled order credited and left open?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">Yes. $3,300 credited in March, not applied or refunded since.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">Service credits</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-unused-credits"/></svg></div></div><div class="question">Service credits for outages left unused?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">Yes. 2 credits from the phone provider, $260 in total.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">Largest</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-unused-credits"/></svg></div></div><div class="question">Which vendor holds the most in open credits?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">The equipment supplier: $4,150 across 3 credit memos.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">Not in your books</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-unused-credits"/></svg></div></div><div class="question">Credits on vendor statements missing from your records?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">3 credits, $1,020, on statements but not in your books.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">Partly used</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-unused-credits"/></svg></div></div><div class="question">Credits that were only partly used?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">2 credits, with $780 left over after partial use.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">Late delivery</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-unused-credits"/></svg></div></div><div class="question">Was a credit for a late delivery ever used?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">No. The $540 credit from the carrier is still open.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">Year-end</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-unused-credits"/></svg></div></div><div class="question">Open credits carried into the new year?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">11 credits, $6,870, still open on January 1.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">From overpaying</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-unused-credits"/></svg></div></div><div class="question">Credits created by your own overpayments?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">2 credits, $1,150, from payments that went over the invoice.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">Two entities</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-unused-credits"/></svg></div></div><div class="question">A credit issued to one entity while the other paid?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">Yes. $980 credited to the parent, full invoice paid by the subsidiary.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">All vendors</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-unused-credits"/></svg></div></div><div class="question">How much is sitting in open vendor credits?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">$9,640 across 14 credits and 9 vendors, each with its memo.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="rounded-section hide-nav" id="payment-mismatches" theme="white">
+      <div class="bg bg-top" theme="white"></div>
+      <div class="bg bg-bottom" theme="white"></div>
+      <div class="nav-slot" data-theme="white"></div>
+      <div class="rs-scale" theme="white">
+        <div class="article-section">
+          <div class="full desktop-only divider-block"><div class="the-container"><div class="the-grid"><div class="divider-v"></div></div></div></div>
+          <div class="content">
+            <div class="article-module article-head">
+              <div class="the-grid">
+                <div class="the-col"><div class="generic"><div class="icon"><svg aria-hidden="true"><use href="#i-type-payment-mismatches"/></svg></div><div class="name type-h5">Payment mismatches</div></div></div>
+                <h2 class="type-h3 heading" data-split="h2">Billed one amount. Paid another.</h2>
+              </div>
+            </div>
+
+            <div class="article-module article-text-image">
+              <div class="the-grid">
+                <div class="left">
+                  <div class="desc type-body-headline">A transposed digit, the wrong invoice, a payee that doesn't match the bill. Reclaim lines up every payment with what was billed and shows exactly where the two differ.</div>
+                  <div class="desc2 type-body-large">Reclaim matches each payment to the bill it paid, then checks the amount, the payee, the invoice number, and the dates. Here are examples of what it turns up.</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="article-module article-carousel article-grid-cards article-card-carousel">
+              <div class="the-grid">
+                <div class="carousel-prev-next-controls controls">
+                  <button type="button" class="hover-loop cta-button-square prev" size="medium" aria-label="Previous"><span class="inner"><svg class="icon"><use href="#i-arrow"/></svg></span></button>
+                  <button type="button" class="hover-loop cta-button-square next" size="medium" aria-label="Next"><span class="inner"><svg class="icon"><use href="#i-arrow"/></svg></span></button>
+                </div>
+                <div class="carousel-wrapper">
+                  <div class="offset">
+                    <div class="swiper">
+                      <ul class="swiper-wrapper">
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">Amount</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-payment-mismatches"/></svg></div></div><div class="question">Payments that don't match their invoice amount?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">7 payments. 4 under, 3 over, $3,210 apart in total.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">Transposed</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-payment-mismatches"/></svg></div></div><div class="question">Was a $2,090 invoice paid as $2,900?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">Yes. Invoice #6612 for $2,090 was paid as $2,900.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">Wrong vendor</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-payment-mismatches"/></svg></div></div><div class="question">Was an invoice paid to the wrong vendor?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">Yes. Invoice #410 from the print shop was paid to another vendor with a #410.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">Bank details</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-payment-mismatches"/></svg></div></div><div class="question">Payments to bank details that changed recently?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">2 payments, $11,300, to an account changed a week earlier.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">Wrong invoice</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-payment-mismatches"/></svg></div></div><div class="question">Does a payment reference the wrong invoice?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">Yes. The $760 payment cites #8120 but matches #8210.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">Currency</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-payment-mismatches"/></svg></div></div><div class="question">A euro invoice paid as the same number in dollars?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">Yes. A €3,200 invoice was paid as $3,200.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">No bill</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-payment-mismatches"/></svg></div></div><div class="question">Payments with no matching bill?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">4 payments, $5,870, with no bill in the files you uploaded.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">Payee name</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-payment-mismatches"/></svg></div></div><div class="question">Payee names that don't match the bill's vendor?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">3 payments. 2 use the vendor's trade name. 1 doesn't match.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">Checked</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-payment-mismatches"/></svg></div></div><div class="question">Does the $4,025 payment match its bill?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">Yes. It matches #3391 after a $75 credit.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">Dates</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-payment-mismatches"/></svg></div></div><div class="question">Payments made before the invoice date?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">Yes. $1,900 paid 12 days before invoice #2230 was issued.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">Check amount</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-payment-mismatches"/></svg></div></div><div class="question">A check that cleared for a different amount?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">Yes. Check #20391 was written for $415 and cleared for $4,150.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">Short paid</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-payment-mismatches"/></svg></div></div><div class="question">Invoices marked paid but paid short?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">2 invoices, $640 short, both closed as paid.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">Sales tax</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-payment-mismatches"/></svg></div></div><div class="question">Payment includes tax the invoice didn't charge?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">Yes. $231 in sales tax added to a tax-exempt order.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">Vendor IDs</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-payment-mismatches"/></svg></div></div><div class="question">Bills and payments under different vendor IDs?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">5 pairs. The same vendor exists under 2 IDs.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">Memo</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-payment-mismatches"/></svg></div></div><div class="question">A payment memo that doesn't match the bill?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">Yes. The memo says April rent. The bill it paid is for May.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">Split payments</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-payment-mismatches"/></svg></div></div><div class="question">Split payments that don't add up to the bill?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">Yes. 2 payments total $4,600 against a $4,060 bill.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">Crossed bills</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-payment-mismatches"/></svg></div></div><div class="question">Does a payment match a different vendor's bill?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">Yes. $1,125 to the caterer matches the florist's open bill exactly.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">Payment run</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-payment-mismatches"/></svg></div></div><div class="question">Payment runs that don't match their bills?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">1 run: $38,410 paid against $37,960 in bills.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">Explained</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-payment-mismatches"/></svg></div></div><div class="question">Is the $12,000 wire to the landlord a mismatch?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">No. It covers 2 months, and both invoices are in the files.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">Card charges</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-payment-mismatches"/></svg></div></div><div class="question">Card charges that don't match any bill?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">6 charges, $1,390, with no bill in the uploaded files.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">Hourly rate</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-payment-mismatches"/></svg></div></div><div class="question">Hourly invoices paid at a different rate?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">Yes. Billed at $85 an hour, paid at $95 for 30 hours: $300.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                        <li class="swiper-slide"><div class="card-wrap"><div class="animate-in"><div class="mouse-3d-rotate"><div class="rotate"><div class="card">
+                    <div class="front"><div class="top"><div class="heading subpillar">All vendors</div><div class="logo"><svg aria-hidden="true"><use href="#i-type-payment-mismatches"/></svg></div></div><div class="question">How many payments don't match what was billed?</div></div>
+                    <div class="back"><div><div class="top heading">Answer</div><div class="answer">12 payments, $8,940 apart in total, each next to its bill.</div></div><div class="bottom"><svg class="logo" viewBox="0 0 26 23" fill="currentColor" aria-hidden="true"><use href="#hx-wheel"/></svg>Example</div></div>
+                  </div></div></div></li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+<!-- @include finds-files -->
+
+<!-- @include platform-faq -->
+
+  </div>
+
+<!-- @include entry -->
