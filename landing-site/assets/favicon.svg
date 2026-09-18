@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="-16 -14 32 28">
   <rect x="-16" y="-14" width="32" height="28" fill="#fff"/>
   <!-- Reclaim's hexagon mark, verbatim: same six paths as #hx-wheel in
-       landing-site/src/partials/sprite.html, the symbol every nav/footer logo uses. -->
+       src/partials/sprite.html, the symbol every nav/footer logo on the site uses. -->
   <g fill="#000">
     <path d="M-2.056,-4.6 L-5.751,-11 L5.751,-11 L2.056,-4.6 Z"/>
     <path d="M2.956,-4.081 L6.651,-10.481 L12.402,-0.520 L5.012,-0.520 Z"/>
