@@ -14,7 +14,7 @@
 <link rel="stylesheet" href="/pages.css">
 <script>try{if(sessionStorage.getItem('rc-visited'))document.documentElement.classList.add('is-return')}catch(e){}</script>
 </head>
-<body data-folder="how-it-works" data-template="platform">
+<body data-folder="how-it-works" data-template="how-it-works">
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <symbol id="i-arrow" viewBox="0 0 16 16"><path d="M8 13.5V2.5M3 7.5 8 2.5l5 5" fill="none" stroke="currentColor" stroke-width="1.5"/></symbol>
@@ -154,7 +154,7 @@
                           <div class="app-recent">bills_2026_q2.csv</div>
                           <div class="app-recent">payments_jan_jun.csv</div>
                           <div class="app-recent">vendor_credits.csv</div>
-                          <div class="app-label">Audit</div>
+                          <div class="app-label">Recovery</div>
                           <div class="app-recent">Q2 vendor payments</div>
                           <div class="app-user"><span class="av">PS</span><span>Priya S.<small>AP lead · Finance</small></span></div>
                         </aside>
@@ -223,7 +223,7 @@
                           <div class="app-recent">Overpayments · 2</div>
                           <div class="app-recent">Unused credits · 2</div>
                           <div class="app-recent">Payment mismatches · 2</div>
-                          <div class="app-label">Audit</div>
+                          <div class="app-label">Recovery</div>
                           <div class="app-recent">Q2 vendor payments</div>
                           <div class="app-user"><span class="av">PS</span><span>Priya S.<small>AP lead · Finance</small></span></div>
                         </aside>
@@ -368,41 +368,6 @@
       </div>
     </section>
 
-    <section class="rounded-section" id="faq" theme="white">
-      <div class="bg bg-top" theme="white"></div>
-      <div class="bg bg-bottom" theme="white"></div>
-      <div class="nav-slot" data-theme="white"></div>
-      <div class="rs-scale" theme="white">
-        <div class="article-section">
-          <div class="full desktop-only divider-block"><div class="the-container"><div class="the-grid"><div class="divider-v"></div></div></div></div>
-          <div class="content">
-            <div class="article-module article-head">
-              <div class="the-grid">
-                <div class="the-col"><div class="generic"></div></div>
-                <h2 class="type-h2 heading" data-split="h2">FAQ</h2>
-              </div>
-            </div>
-            <div class="article-module article-accordion">
-              <div class="the-grid">
-                <div class="the-col">
-                  <ul class="items">
-                    <li><details><summary class="type-body-medium">What records can I upload?</summary><p class="desc type-body-small">Bills, invoices, payment history, vendor-credit reports, and accounting exports, as CSV files. Our <a href="/guides">export guides</a> show where to find them in common accounting tools.</p></details></li>
-                    <li><details><summary class="type-body-medium">Do I need to connect my accounting system?</summary><p class="desc type-body-small">No. You can start with files you export yourself. Nothing needs to be installed or connected to get started.</p></details></li>
-                    <li><details><summary class="type-body-medium">What does Reclaim look for?</summary><p class="desc type-body-small">Duplicate payments, duplicate bills, overpayments, unused vendor credits, and payments that don't match what was billed. Each one has its own section on What It Checks, with examples.</p></details></li>
-                    <li><details><summary class="type-body-medium">How does Reclaim decide something is a mistake?</summary><p class="desc type-body-small">It compares records against each other: vendors, amounts, invoice numbers, dates, and references. A finding is raised when the records themselves show the problem, and every finding lists the records it is based on.</p></details></li>
-                    <li><details><summary class="type-body-medium">Can a finding turn out to be fine?</summary><p class="desc type-body-small">Yes. A partial payment, a deposit, or a credit applied outside your export can look like a mistake. That's why every finding shows its records, and why you review it before treating it as one.</p></details></li>
-                    <li><details><summary class="type-body-medium">Which accounting tools does it work with?</summary><p class="desc type-body-small">Reclaim works from exported records, so it isn't tied to one tool. We have export guides for QuickBooks Online, Xero, NetSuite, and Bill.</p></details></li>
-                    <li><details><summary class="type-body-medium">How are my files handled?</summary><p class="desc type-body-small">Our <a href="/security">Security page</a> covers how Reclaim handles the files you upload.</p></details></li>
-                    <li><details><summary class="type-body-medium">Who is Reclaim for?</summary><p class="desc type-body-small">Businesses that pay a lot of vendors, without a team to chase every mistake: finance and AP teams, operators, and founders.</p></details></li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
     <div class="article-nav desktop-only">
       <div class="sticky">
         <div class="the-container">
@@ -410,6 +375,8 @@
             <div class="the-col">
               <ul>
                 <li><a class="item" href="#upload"><span class="dot"></span><span class="label type-h6">Upload</span></a></li>
+                <li><a class="item" href="#find"><span class="dot"></span><span class="label type-h6">Find</span></a></li>
+                <li><a class="item" href="#evidence"><span class="dot"></span><span class="label type-h6">Evidence</span></a></li>
                 <li><a class="item" href="#faq"><span class="dot"></span><span class="label type-h6">FAQ</span></a></li>
               </ul>
             </div>
@@ -417,35 +384,6 @@
         </div>
       </div>
     </div>
-
-  </div>
-
-  <!-- ENTRY1 (white): get started + about us -->
-  <section class="section entry1" theme="white">
-    <div class="nav-slot" data-theme="white"></div>
-    <ul class="items">
-      <li><a href="#start" class="entry-item1" idx="0" data-modal="audit">
-        <div class="bg"></div>
-        <div class="top">
-          <div class="heading-container">
-            <h3 class="heading type-h3" data-split="h2">Get<br>started</h3>
-            <div class="button"><span class="hover-loop up-right" data-duration=".9"><span class="inner"><svg class="arrow"><use href="#i-arrow-ur"/></svg></span></span></div>
-          </div>
-        </div>
-        <p class="desc type-body-small">Upload your records and see what Reclaim finds, with the evidence behind every result.</p>
-      </a></li>
-      <li><a href="/about" class="entry-item1" idx="1">
-        <div class="bg"></div>
-        <div class="top">
-          <div class="heading-container">
-            <h3 class="heading type-h3" data-split="h2">About<br>us</h3>
-            <div class="button"><span class="hover-loop up-right" data-duration=".9"><span class="inner"><svg class="arrow"><use href="#i-arrow-ur"/></svg></span></span></div>
-          </div>
-        </div>
-        <p class="desc type-body-small">Why we built Reclaim, and what we believe about money that leaves a business by mistake.</p>
-      </a></li>
-    </ul>
-  </section>
           </div>
         </div>
       </div>
