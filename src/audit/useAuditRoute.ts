@@ -1,7 +1,25 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
-export type RouteMode = 'overview' | 'findings' | 'recovery' | 'records' | 'settings'
+/** The seven workspace destinations from the product spec (§27). */
+export type RouteMode =
+  | 'overview'
+  | 'opportunities'
+  | 'recoveries'
+  | 'vendors'
+  | 'reports'
+  | 'data'
+  | 'settings'
 export type EntryRoute = 'sample' | 'upload'
+
+const ROUTE_MODES: RouteMode[] = [
+  'overview',
+  'opportunities',
+  'recoveries',
+  'vendors',
+  'reports',
+  'data',
+  'settings',
+]
 
 export interface AuditRouteState {
   projectId: string | null
@@ -15,10 +33,7 @@ export interface AuditRouteState {
 export function parseAuditRoute(search: string): AuditRouteState {
   const params = new URLSearchParams(search)
   const modeParam = params.get('mode')
-  const mode: RouteMode =
-    modeParam === 'findings' || modeParam === 'recovery' || modeParam === 'records' || modeParam === 'settings'
-      ? modeParam
-      : 'overview'
+  const mode: RouteMode = ROUTE_MODES.includes(modeParam as RouteMode) ? (modeParam as RouteMode) : 'overview'
   const caseId = params.get('case')
   const draft = caseId !== null && params.get('draft') === '1'
   const entryParam = params.get('entry')

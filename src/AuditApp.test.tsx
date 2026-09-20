@@ -1,72 +1,105 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
-import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { afterEach, describe, expect, it } from 'vitest'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { AuditApp } from '@/AuditApp'
 import { getSampleLedger, sampleLedgerCsv } from '@/data/sampleLedger'
 import { detectFindings } from '@/lib/detection'
 import { formatCurrency } from '@/lib/format'
-import { clearEnvironment } from '@/ledger/store'
-import { getActiveProjectId, loadProject } from '@/ledger/projects'
-import { FREE_PREVIEW_COUNT } from '@/billing/entitlement'
-
-// CardField mounts real Stripe.js, which talks to js.stripe.com and can't
-// meaningfully run inside jsdom. The wizard flow around it (the thing these
-// tests actually exercise) is independent of Stripe's own internals, which
-// are Stripe's to test — so a fake tokenization result stands in here.
-vi.mock('@/components/billing/CardField', () => ({
-  CardField: ({ onTokenized }: { onTokenized: (card: unknown) => void }) => (
-    <button
-      type="button"
-      onClick={() => onTokenized({ paymentMethodId: 'pm_test_123', brand: 'visa', last4: '4242', expMonth: 12, expYear: 2030 })}
-    >
-      Save card and continue
-    </button>
-  ),
-}))
+import { assessRecordReadiness } from '@/audit/dataReadiness'
+import { clearEnvironment, mergeImport } from '@/ledger/store'
+import { createProject } from '@/ledger/projects'
+import type { RouteMode } from '@/audit/useAuditRoute'
+import type { Finding } from '@/types'
 
 function setLocation(path: string) {
   window.history.pushState({}, '', path)
 }
 
-function realSampleResult() {
-  const { records } = getSampleLedger()
-  return detectFindings(records)
-}
-
 /**
- * Findings are gated by subscription, so entitlement is an explicit precondition
- * of every render. These helpers default to subscribed because the tests below
- * exercise the case pipeline, not the paywall — free-plan gating has its own
- * dedicated tests at the bottom of this file.
+ * The findings the detection engine really produces for the sample ledger.
+ * Every dollar figure asserted below is derived from this — the product spec
+ * forbids showing a number the records don't support, so a hardcoded currency
+ * string in a test would be able to hide exactly the bug worth catching.
  */
-function setPlan(plan: 'free' | 'pro') {
-  window.localStorage.setItem('reclaim.plan.v1', plan)
+function sampleFindings(): Finding[] {
+  return detectFindings(getSampleLedger().records).findings
 }
 
-async function renderAtSample({ subscribed = true }: { subscribed?: boolean } = {}) {
-  setPlan(subscribed ? 'pro' : 'free')
-  setLocation('/audit?sample=1')
-  render(<AuditApp />)
-  await waitFor(() => expect(screen.getByRole('button', { name: /open overview/i })).toBeInTheDocument())
-  fireEvent.click(screen.getByRole('button', { name: /open overview/i }))
-  await waitFor(() => expect(screen.getByRole('heading', { name: /worth checking|you've recovered|ledger is clean/i })).toBeInTheDocument())
+function sumImpact(findings: Finding[]): number {
+  return findings.reduce((total, finding) => total + finding.dollarImpact, 0)
 }
 
-async function renderAtUploadedDuplicate({ subscribed = true }: { subscribed?: boolean } = {}) {
-  setPlan(subscribed ? 'pro' : 'free')
-  setLocation('/audit?entry=upload')
+/** A ledger already persisted by a previous session, written through the real store. */
+function seedPersistedLedger() {
+  const environment = mergeImport(null, {
+    sourceLabel: 'ledger.csv',
+    mode: 'upload',
+    parsed: getSampleLedger(),
+  })
+  return createProject({
+    name: 'Ledger review',
+    sourceLabel: 'ledger.csv',
+    mode: 'upload',
+    environment,
+  })
+}
+
+function workspace() {
+  return screen.queryByRole('navigation', { name: /workspace/i })
+}
+
+function goToMode(label: string) {
+  const nav = screen.getByRole('navigation', { name: /workspace/i })
+  fireEvent.click(within(nav).getByRole('button', { name: new RegExp(`^${label}`) }))
+}
+
+function navCount(label: string): number {
+  const nav = screen.getByRole('navigation', { name: /workspace/i })
+  const item = within(nav).getByRole('button', { name: new RegExp(`^${label}`) })
+  return Number(item.querySelector('.wk-nav-count')?.textContent ?? '0')
+}
+
+function rung(label: string): HTMLElement {
+  const found = Array.from(document.querySelectorAll<HTMLElement>('.wk-ladder > div')).find(
+    (node) => node.querySelector('.wk-label')?.textContent === label
+  )
+  if (!found) throw new Error(`No ladder rung labelled "${label}"`)
+  return found
+}
+
+function rungValue(label: string): string {
+  return rung(label).querySelector('.wk-figure')?.textContent ?? ''
+}
+
+function tableRows(): HTMLElement[] {
+  return Array.from(document.querySelectorAll<HTMLElement>('.wk-table tbody tr'))
+}
+
+/** Read one figure out of a `<dl>` fact block (Reports / Data / Settings). */
+function fact(label: string): string {
+  const term = Array.from(document.querySelectorAll('dt')).find((node) => node.textContent === label)
+  return term?.nextElementSibling?.textContent ?? ''
+}
+
+/** The sample CTA — a real threshold, so the workspace only appears after it. */
+async function runSampleFromLaunch() {
+  setLocation('/audit?entry=sample')
   render(<AuditApp />)
-  const input = screen.getByLabelText(/upload a csv ledger/i) as HTMLInputElement
-  const csv = [
-    'vendor,invoice_number,invoice_date,payment_date,invoice_amount,amount_paid,terms,bank_account_last4,category',
-    'Sierra Coffee Supply,INV-3305,2025-02-01,2025-02-28,6800,6800,,,',
-    'Sierra Coffee Supply,INV-3305,2025-02-01,2025-03-15,6800,6800,,,',
-  ].join('\n')
-  fireEvent.change(input, { target: { files: [new File([csv], 'sierra.csv', { type: 'text/csv' })] } })
-  await waitFor(() => expect(screen.getByText('sierra.csv')).toBeInTheDocument())
-  fireEvent.click(screen.getByRole('button', { name: /add to my ledger/i }))
-  await waitFor(() => expect(screen.getByRole('button', { name: /open overview/i })).toBeInTheDocument())
-  fireEvent.click(screen.getByRole('button', { name: /open overview/i }))
-  await waitFor(() => expect(screen.getByRole('heading', { name: /worth checking|you've recovered|ledger is clean/i })).toBeInTheDocument())
+  fireEvent.click(screen.getByRole('button', { name: /run the sample/i }))
+  await waitFor(() => expect(screen.getByRole('heading', { name: /where the money stands/i })).toBeInTheDocument())
+}
+
+/** The other entry: a real CSV through the import dialog, which persists a project. */
+async function importLedgerFromLaunch() {
+  setLocation('/audit')
+  render(<AuditApp />)
+  fireEvent.click(screen.getByRole('button', { name: /use your own file/i }))
+  const input = await screen.findByLabelText(/upload a csv ledger/i)
+  fireEvent.change(input, {
+    target: { files: [new File([sampleLedgerCsv], 'ledger.csv', { type: 'text/csv' })] },
+  })
+  await screen.findByText('ledger.csv')
+  fireEvent.click(screen.getByRole('button', { name: /add to ledger/i }))
+  await waitFor(() => expect(screen.getByRole('heading', { name: /where the money stands/i })).toBeInTheDocument())
 }
 
 describe('AuditApp', () => {
@@ -77,449 +110,223 @@ describe('AuditApp', () => {
     window.history.pushState({}, '', '/audit')
   })
 
-  it('a bare /audit with no ledger yet shows the entry screen, not a workspace', () => {
+  it('a bare /audit with no ledger shows the Launch screen, not a workspace', () => {
     setLocation('/audit')
     render(<AuditApp />)
-    expect(screen.getByText(/drop a csv here/i)).toBeInTheDocument()
-    expect(screen.queryByRole('heading', { name: /worth checking|you've recovered|ledger is clean/i })).not.toBeInTheDocument()
+
+    expect(screen.getByRole('button', { name: /run the sample/i })).toBeInTheDocument()
+    expect(workspace()).not.toBeInTheDocument()
   })
 
-  it('?sample=1 creates the ledger and lands on Overview with real, non-fabricated totals', async () => {
-    await renderAtSample()
-
-    const result = realSampleResult()
-    expect(screen.getByText(formatCurrency(result.recoverableTotal + result.reviewTotal + result.opportunityTotal))).toBeInTheDocument()
-    const recoverableCount = result.findings.filter((f) => f.class === 'recoverable').length
-    expect(screen.getByText(`${recoverableCount} issues`)).toBeInTheDocument()
-  })
-
-  it('the sample launch is a real threshold and only enters the workspace after its CTA', async () => {
+  it('?entry=sample builds the ledger on its CTA and lands on Overview with the engine’s real totals', async () => {
     setLocation('/audit?entry=sample')
     render(<AuditApp />)
-    expect(screen.getByRole('heading', { name: /see the evidence connect/i })).toBeInTheDocument()
-    expect(screen.queryByRole('heading', { name: /worth checking|you've recovered|ledger is clean/i })).not.toBeInTheDocument()
 
-    fireEvent.click(screen.getByRole('button', { name: /run the sample audit/i }))
-    await waitFor(() => expect(screen.getByRole('button', { name: /open overview/i })).toBeInTheDocument())
-    fireEvent.click(screen.getByRole('button', { name: /open overview/i }))
-    await waitFor(
-      () => expect(screen.getByRole('heading', { name: /worth checking|you've recovered|ledger is clean/i })).toBeInTheDocument(),
-      { timeout: 3000 }
-    )
+    // The entry route is a threshold, not a redirect: nothing runs until asked.
+    expect(workspace()).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: /run the sample/i }))
+    await waitFor(() => expect(screen.getByRole('heading', { name: /where the money stands/i })).toBeInTheDocument())
+
+    const findings = sampleFindings()
+    expect(findings.length).toBeGreaterThan(0)
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Overview')
+    expect(rungValue('Potential')).toBe(formatCurrency(sumImpact(findings)))
+    expect(screen.getByText(`${findings.length} cases`)).toBeInTheDocument()
   })
 
-  it('the upload entry route stays on the import screen even if a ledger already exists', async () => {
-    await renderAtSample()
-    cleanup()
-    setLocation('/audit?entry=upload')
+  // §3 — found money and returned money are different numbers. The four rungs
+  // are reported side by side and adding them would double-count the same
+  // dollars, so their sum must never appear on the screen as a figure.
+  it('reports the four ladder rungs separately and never as one summed total', async () => {
+    await runSampleFromLaunch()
+
+    const findings = sampleFindings()
+    const potential = sumImpact(findings)
+    const verified = sumImpact(findings.filter((finding) => finding.class === 'recoverable'))
+    expect(verified).toBeGreaterThan(0)
+
+    expect(rungValue('Potential')).toBe(formatCurrency(potential))
+    expect(rungValue('Verified')).toBe(formatCurrency(verified))
+    expect(rungValue('In recovery')).toBe(formatCurrency(0))
+    expect(rungValue('Recovered')).toBe(formatCurrency(0))
+    expect(screen.queryByText(formatCurrency(potential + verified))).not.toBeInTheDocument()
+
+    // $0.00 recovered is not an achievement, so it must not wear the accent
+    // that belongs to money which actually came back.
+    expect(rung('Recovered')).not.toHaveAttribute('data-terminal')
+  })
+
+  it('opening a case from the Overview table routes to ?case= and shows its records as evidence', async () => {
+    await runSampleFromLaunch()
+
+    const [topRow] = tableRows()
+    const vendor = topRow.querySelector('.wk-table-vendor')?.textContent ?? ''
+    const recordCount = Number(/^\d+/.exec(topRow.querySelector('.wk-table-sub')?.textContent ?? '')?.[0])
+    expect(vendor).not.toBe('')
+    expect(recordCount).toBeGreaterThan(0)
+
+    fireEvent.click(topRow)
+
+    await waitFor(() => expect(new URLSearchParams(window.location.search).get('case')).toBeTruthy())
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(vendor)
+    expect(screen.getByRole('heading', { name: 'Evidence' })).toBeInTheDocument()
+    // Every related record on the finding is shown, one evidence row each.
+    expect(tableRows()).toHaveLength(recordCount)
+  })
+
+  // §12 — "94% confident" is fake precision a controller cannot act on. Strength
+  // is one of three words, and nothing on a case may read as a confidence score.
+  it('states evidence strength as a word and never as a confidence percentage', async () => {
+    await runSampleFromLaunch()
+    fireEvent.click(tableRows()[0])
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Evidence' })).toBeInTheDocument())
+
+    const strength = document.querySelector('.wk-strength')
+    expect(strength?.textContent).toMatch(/^(Strong|Moderate|Needs review)$/)
+
+    const page = document.body.textContent ?? ''
+    expect(page).not.toMatch(/\d\s*%/)
+    expect(page).not.toMatch(/confiden/i)
+  })
+
+  it('a decision on a case survives a remount and is picked up by Recoveries', async () => {
+    seedPersistedLedger()
+    setLocation('/audit')
     render(<AuditApp />)
+    await waitFor(() => expect(screen.getByRole('heading', { name: /where the money stands/i })).toBeInTheDocument())
 
-    expect(screen.getByText(/drop a csv here/i)).toBeInTheDocument()
-    expect(screen.queryByRole('heading', { name: /worth checking|you've recovered|ledger is clean/i })).not.toBeInTheDocument()
-  })
+    const [topRow] = tableRows()
+    const vendor = topRow.querySelector('.wk-table-vendor')?.textContent ?? ''
+    fireEvent.click(topRow)
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Evidence' })).toBeInTheDocument())
 
-  it('keeps the completed scan receipt visible after file confirmation and before the dashboard', async () => {
-    setPlan('free')
-    setLocation('/audit?entry=upload')
-    render(<AuditApp />)
-
-    const input = screen.getByLabelText(/upload a csv ledger/i) as HTMLInputElement
-    fireEvent.change(input, {
-      target: { files: [new File([sampleLedgerCsv], 'company-ledger.csv', { type: 'text/csv' })] },
-    })
-
-    await waitFor(() => expect(screen.getByText('company-ledger.csv')).toBeInTheDocument())
-    fireEvent.click(screen.getByRole('button', { name: /add to my ledger/i }))
-
-    const result = realSampleResult()
-    const lockedCount = result.findings.length - FREE_PREVIEW_COUNT
-    await waitFor(() => expect(screen.getByRole('heading', { name: /what was scanned/i })).toBeInTheDocument())
-    expect(screen.getByText(new RegExp(`${FREE_PREVIEW_COUNT} findings are included in your free plan`, 'i'))).toBeInTheDocument()
-    expect(screen.getByText(new RegExp(`${lockedCount} additional findings require an upgrade`, 'i'))).toBeInTheDocument()
-    expect(screen.queryByRole('heading', { name: /worth checking|you've recovered|ledger is clean/i })).not.toBeInTheDocument()
-
-    fireEvent.click(screen.getByRole('button', { name: /open overview/i }))
-    await waitFor(() =>
-      expect(screen.getByRole('heading', { name: /worth checking|you've recovered|ledger is clean/i })).toBeInTheDocument()
-    )
-  })
-
-  it('opening the strongest case shows evidence and a plain-language rule checklist — no confidence score', async () => {
-    await renderAtSample()
-    fireEvent.click(screen.getByRole('button', { name: /review evidence/i }))
-
-    expect(screen.getByText('Why this was flagged')).toBeInTheDocument()
-    expect(screen.getByText('Same vendor')).toBeInTheDocument()
-    expect(screen.queryByText(/% confidence/i)).not.toBeInTheDocument()
-  })
-
-  it('confirming a case moves it out of Findings and into Recovery, and the change is visible from Overview', async () => {
-    await renderAtSample()
-    fireEvent.click(screen.getByRole('button', { name: /review evidence/i }))
-    fireEvent.click(screen.getByRole('button', { name: /^Confirm likely duplicate/i }))
-    expect(screen.getAllByText('Ready to send').length).toBeGreaterThan(0)
-
-    // jsdom's history.back() is asynchronous, so drive the same popstate path
-    // directly rather than racing its timing (see useAuditRoute's popstate handling).
-    act(() => {
-      setLocation('/audit?mode=recovery')
-      fireEvent.popState(window)
-    })
-    expect(screen.getByRole('heading', { name: /ready to send/i })).toBeInTheDocument()
-  })
-
-  it('keeps the recommended case in one continuous scene through recovery preparation', async () => {
-    await renderAtSample()
-    fireEvent.click(screen.getByRole('button', { name: /review evidence/i }))
-
-    expect(screen.getByText('Why this was flagged')).toBeInTheDocument()
-    expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1)
-
-    fireEvent.click(screen.getByRole('button', { name: /^Confirm likely duplicate/i }))
-    expect(screen.getByText('The evidence package is complete.')).toBeInTheDocument()
-
-    fireEvent.click(screen.getByRole('button', { name: 'Prepare' }))
-    expect(screen.getByRole('heading', { name: 'Recovery package' })).toBeInTheDocument()
-
-    fireEvent.click(screen.getByRole('button', { name: 'Mark request sent' }))
-    expect(screen.getAllByText('Waiting on vendor').length).toBeGreaterThan(0)
-    fireEvent.change(screen.getByLabelText('Amount actually recovered'), { target: { value: '6800' } })
-    fireEvent.change(screen.getByLabelText('Outcome note'), { target: { value: 'Refund reference RF-102' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Record money recovered' }))
-    expect(screen.getAllByText('Money back').length).toBeGreaterThan(0)
-  })
-
-  it('keeps recovery progress when the reviewer edits the decision note', async () => {
-    await renderAtSample()
-    fireEvent.click(screen.getByRole('button', { name: /review evidence/i }))
-    fireEvent.click(screen.getByRole('button', { name: /^Confirm likely duplicate/i }))
-    fireEvent.click(screen.getByRole('button', { name: 'Prepare' }))
-    fireEvent.click(screen.getByRole('button', { name: 'Mark request sent' }))
-
-    const note = screen.getByLabelText('Reason (optional)')
-    fireEvent.change(note, { target: { value: 'Checked against the vendor statement' } })
-    fireEvent.blur(note)
-
-    expect(screen.getAllByText('Waiting on vendor').length).toBeGreaterThan(0)
-  })
-
-  it('restores edited recovery copy after the workspace is remounted', async () => {
-    await renderAtUploadedDuplicate()
-    fireEvent.click(screen.getByRole('button', { name: /review evidence/i }))
-    fireEvent.click(screen.getByRole('button', { name: /^Confirm likely duplicate/i }))
-    fireEvent.click(screen.getByRole('button', { name: 'Prepare' }))
-
-    const draft = screen.getByLabelText('Recovery request')
-    fireEvent.change(draft, { target: { value: 'A deliberately edited recovery request.' } })
-    await waitFor(() => {
-      const [saved] = JSON.parse(window.localStorage.getItem('reclaim.projects.index.v1') ?? '[]') as Array<{ id: string }>
-      expect(window.localStorage.getItem(`reclaim.project.v1.${saved.id}`)).toContain('deliberately edited')
-    })
+    fireEvent.click(screen.getByRole('button', { name: 'This is real' }))
+    await waitFor(() => expect(screen.getByText('Confirmed')).toBeInTheDocument())
 
     cleanup()
     render(<AuditApp />)
 
-    await waitFor(() =>
-      expect(screen.getByLabelText('Recovery request')).toHaveValue('A deliberately edited recovery request.')
-    )
+    await waitFor(() => expect(screen.getByText('Confirmed')).toBeInTheDocument())
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(vendor)
+
+    goToMode('Recoveries')
+    expect(screen.getByRole('heading', { name: 'Ready to send' })).toBeInTheDocument()
+    expect(screen.getByText(vendor)).toBeInTheDocument()
   })
 
-  it('the recovery package validates the recipient email and only then offers to send it', async () => {
-    await renderAtSample()
-    fireEvent.click(screen.getByRole('button', { name: /review evidence/i }))
-    fireEvent.click(screen.getByRole('button', { name: /^Confirm likely duplicate/i }))
-    fireEvent.click(screen.getByRole('button', { name: 'Prepare' }))
+  it('walks a case through the whole recovery ladder and moves the money onto the Recovered rung', async () => {
+    await runSampleFromLaunch()
 
-    // No recipient yet — there is nothing to open in an email client.
-    expect(screen.queryByRole('button', { name: /open in email/i })).not.toBeInTheDocument()
+    const [topRow] = tableRows()
+    const value = topRow.querySelector('.wk-table-money')?.textContent ?? ''
+    fireEvent.click(topRow)
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Evidence' })).toBeInTheDocument())
 
-    const email = screen.getByLabelText(/recipient email/i)
-    fireEvent.change(email, { target: { value: 'not-an-email' } })
-    expect(screen.getByText(/doesn't look like a valid email/i)).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /open in email/i })).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'This is real' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Mark request sent' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Money came back' }))
+    await waitFor(() => expect(screen.getByText('Money back')).toBeInTheDocument())
 
-    fireEvent.change(email, { target: { value: 'ap@sierracoffee.com' } })
-    expect(screen.queryByText(/doesn't look like a valid email/i)).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /open in email/i })).toBeInTheDocument()
+    goToMode('Overview')
+    expect(rungValue('Recovered')).toBe(value)
+    expect(rung('Recovered')).toHaveAttribute('data-terminal')
+    // A settled case has left the "in recovery" rung rather than counting twice.
+    expect(rungValue('In recovery')).toBe(formatCurrency(0))
   })
 
-  it('the recovery package can preview the letter exactly as the vendor would receive it', async () => {
-    await renderAtSample()
-    fireEvent.click(screen.getByRole('button', { name: /review evidence/i }))
-    fireEvent.click(screen.getByRole('button', { name: /^Confirm likely duplicate/i }))
-    fireEvent.click(screen.getByRole('button', { name: 'Prepare' }))
+  it('renders each of the seven workspace modes without crashing', async () => {
+    await runSampleFromLaunch()
 
-    fireEvent.change(screen.getByLabelText('Recovery request'), { target: { value: 'Line one.\nLine two.' } })
-    fireEvent.click(screen.getByRole('tab', { name: /preview/i }))
+    const modes: Array<[RouteMode, string]> = [
+      ['overview', 'Overview'],
+      ['opportunities', 'Opportunities'],
+      ['recoveries', 'Recoveries'],
+      ['vendors', 'Vendors'],
+      ['reports', 'Reports'],
+      ['data', 'Data'],
+      ['settings', 'Settings'],
+    ]
 
-    // Editing controls give way to the rendered letter.
-    expect(screen.queryByLabelText('Recovery request')).not.toBeInTheDocument()
-    expect(screen.getByText('Line one.')).toBeInTheDocument()
-    expect(screen.getByText('Line two.')).toBeInTheDocument()
-
-    fireEvent.click(screen.getByRole('tab', { name: /compose/i }))
-    expect(screen.getByLabelText('Recovery request')).toHaveValue('Line one.\nLine two.')
+    for (const [mode, label] of modes) {
+      goToMode(label)
+      expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(label)
+      expect(new URLSearchParams(window.location.search).get('mode')).toBe(mode === 'overview' ? null : mode)
+    }
   })
 
-  it('shows the performance-fee split against the amount actually recovered', async () => {
-    await renderAtSample()
-    fireEvent.click(screen.getByRole('button', { name: /review evidence/i }))
-    fireEvent.click(screen.getByRole('button', { name: /^Confirm likely duplicate/i }))
-    fireEvent.click(screen.getByRole('button', { name: 'Prepare' }))
-    fireEvent.click(screen.getByRole('button', { name: 'Mark request sent' }))
-
-    // The vendor paid less than Reclaim estimated — the fee must follow the
-    // money that actually landed, not the original estimate.
-    fireEvent.change(screen.getByLabelText('Amount actually recovered'), { target: { value: '5000' } })
-
-    const split = document.querySelector('.rc-feesplit')!
-    expect(split).toBeTruthy()
-    expect(split.textContent).toContain(formatCurrency(5000))
-    expect(split.textContent).toContain(formatCurrency(150)) // 3% of 5,000
-    expect(split.textContent).toContain(formatCurrency(4850)) // what the business keeps
-  })
-
-  it('does not imply a settled fee before an amount is entered', async () => {
-    await renderAtSample()
-    fireEvent.click(screen.getByRole('button', { name: /review evidence/i }))
-    fireEvent.click(screen.getByRole('button', { name: /^Confirm likely duplicate/i }))
-    fireEvent.click(screen.getByRole('button', { name: 'Prepare' }))
-    fireEvent.click(screen.getByRole('button', { name: 'Mark request sent' }))
-
-    fireEvent.change(screen.getByLabelText('Amount actually recovered'), { target: { value: '' } })
-    expect(document.querySelector('.rc-feesplit')).toBeNull()
-  })
-
-  it('the requested resolution is an explicit choice that persists on the case', async () => {
-    await renderAtUploadedDuplicate()
-    fireEvent.click(screen.getByRole('button', { name: /review evidence/i }))
-    fireEvent.click(screen.getByRole('button', { name: /^Confirm likely duplicate/i }))
-    fireEvent.click(screen.getByRole('button', { name: 'Prepare' }))
-
-    const refund = screen.getByRole('radio', { name: /refund/i })
-    const credit = screen.getByRole('radio', { name: /account credit/i })
-    expect(refund).toHaveAttribute('aria-checked', 'true')
-
-    fireEvent.click(credit)
-    expect(credit).toHaveAttribute('aria-checked', 'true')
-    expect(refund).toHaveAttribute('aria-checked', 'false')
-
-    await waitFor(() => {
-      const [saved] = JSON.parse(window.localStorage.getItem('reclaim.projects.index.v1') ?? '[]') as Array<{ id: string }>
-      expect(window.localStorage.getItem(`reclaim.project.v1.${saved.id}`)).toContain('"requestedResolution":"credit"')
-    })
-  })
-
-  it('dismissing a finding as expected asks why first, and does not resolve until a reason is confirmed', async () => {
-    await renderAtSample()
-    fireEvent.click(screen.getByRole('button', { name: /review evidence/i }))
-    const strongestTitle = screen.getByRole('heading', { level: 1 }).textContent
-
-    fireEvent.click(screen.getByRole('button', { name: /^Not an error/i }))
-    // The click alone must not resolve the case — it should ask why first.
-    expect(screen.queryByText('Expected')).not.toBeInTheDocument()
-    expect(screen.getByText(/which is it\?/i)).toBeInTheDocument()
-
-    // Cancelling leaves the case exactly as it was. The prompt fades out via
-    // an AnimatePresence exit, so it lingers in the DOM briefly — wait for it.
-    fireEvent.click(screen.getByRole('button', { name: /^cancel$/i }))
-    await waitFor(() => expect(screen.queryByText(/what got it wrong/i)).not.toBeInTheDocument())
-    expect(screen.queryByText('Expected')).not.toBeInTheDocument()
-
-    // Confirm requires an actual reason — the button stays disabled without one.
-    fireEvent.click(screen.getByRole('button', { name: /^Not an error/i }))
-    const confirmBtn = screen.getByRole('button', { name: /confirm — mark as expected/i })
-    expect(confirmBtn).toBeDisabled()
-
-    fireEvent.click(screen.getByRole('radio', { name: /detection got this wrong/i }))
-    expect(confirmBtn).not.toBeDisabled()
-    fireEvent.click(confirmBtn)
-
-    // The status chip may read "Expected / New" (a fresh import marks every
-    // finding new until Findings is visited), so match on the chip's content
-    // rather than an exact "Expected" string.
-    await waitFor(() =>
-      expect(document.querySelector('.audit-status-chip')?.textContent).toMatch(/^Expected/)
-    )
-    // AnimatePresence mode="wait" animates the dismiss-prompt out before
-    // mounting the acknowledgment panel, so it lands a beat after the chip.
-    await waitFor(() => expect(screen.getByText(/thanks — marked as expected/i)).toBeInTheDocument())
-    expect(screen.getByText(/detection got this wrong/i)).toBeInTheDocument()
-
-    act(() => {
-      setLocation('/audit?mode=findings')
-      fireEvent.popState(window)
-    })
-    expect(screen.queryByText(strongestTitle!)).not.toBeInTheDocument()
-  })
-
-  it('needs-information shows a concrete evidence-gap workflow, not a dead end', async () => {
-    await renderAtSample()
-    fireEvent.click(screen.getByRole('button', { name: /review evidence/i }))
-    fireEvent.click(screen.getByRole('button', { name: /^Not sure yet/i }))
-
-    expect(screen.getByText('What would resolve this case')).toBeInTheDocument()
-  })
-
-  it('a second import merges into the existing ledger instead of resetting it', async () => {
-    await renderAtUploadedDuplicate()
-    const projectId = getActiveProjectId()!
-    const totalBefore = loadProject(projectId)!.environment.result.findings.length
-
-    fireEvent.click(screen.getByRole('button', { name: /add records/i }))
-    const input = screen.getByLabelText(/upload a csv ledger/i) as HTMLInputElement
-    const csv = [
-      'vendor,invoice_number,invoice_date,payment_date,invoice_amount,amount_paid,terms,bank_account_last4,category',
-      'Fresh Vendor,INV-9001,2025-08-01,2025-08-10,500,500,,,',
-      'Fresh Vendor,INV-9001,2025-08-01,2025-08-20,500,500,,,',
-    ].join('\n')
-    const file = new File([csv], 'more.csv', { type: 'text/csv' })
-    fireEvent.change(input, { target: { files: [file] } })
-
-    await waitFor(() => expect(screen.getByText('more.csv')).toBeInTheDocument())
-    fireEvent.click(screen.getByRole('button', { name: /add to ledger/i }))
-
-    await waitFor(() => expect(loadProject(projectId)?.environment.imports).toHaveLength(2))
-    await waitFor(() => expect(screen.getByRole('button', { name: /open overview/i })).toBeInTheDocument())
-    fireEvent.click(screen.getByRole('button', { name: /open overview/i }))
-
-    // Radix's tab-trigger pointer handling isn't reliably exercised by jsdom's
-    // synthetic click event, so verify the mode switch through the same route
-    // state the tab click would otherwise produce.
-    act(() => {
-      setLocation('/audit?mode=findings')
-      fireEvent.popState(window)
-    })
-    expect(screen.getByText('Fresh Vendor')).toBeInTheDocument()
-    // original sample findings are still present alongside the new one
-    expect(totalBefore).toBeGreaterThan(0)
-  })
-
-  it('reloading with no query string restores the ledger from persistence instead of showing entry again', async () => {
-    await renderAtUploadedDuplicate()
+  it('reloading with no query string restores the ledger from persistence instead of showing Launch again', async () => {
+    await importLedgerFromLaunch()
     cleanup()
 
     setLocation('/audit')
     render(<AuditApp />)
-    await waitFor(() => expect(screen.getByRole('heading', { name: /worth checking|you've recovered|ledger is clean/i })).toBeInTheDocument())
-    expect(screen.queryByText(/drop a csv here/i)).not.toBeInTheDocument()
+
+    await waitFor(() => expect(screen.getByRole('heading', { name: /where the money stands/i })).toBeInTheDocument())
+    expect(screen.queryByRole('button', { name: /run the sample/i })).not.toBeInTheDocument()
   })
 
-  it('a stale case id in the URL is dropped instead of dead-ending the user', async () => {
-    await renderAtUploadedDuplicate()
-    cleanup()
-
-    setLocation('/audit?mode=findings&case=not-a-real-id')
+  it('drops a stale case id from the URL instead of dead-ending on it', async () => {
+    seedPersistedLedger()
+    setLocation('/audit?case=not-a-real-id')
     render(<AuditApp />)
-    await waitFor(() => expect(window.location.search).not.toContain('case=not-a-real-id'))
+
+    await waitFor(() => expect(window.location.search).not.toContain('case='))
+    expect(screen.getByRole('heading', { name: /where the money stands/i })).toBeInTheDocument()
   })
 
-  it('rapid repeated clicks on the sample link do not create duplicate/corrupted state', async () => {
+  it('rapid repeated clicks on "Run the sample" do not duplicate or corrupt the ledger', async () => {
     setLocation('/audit')
     render(<AuditApp />)
-    const sampleLink = screen.getByRole('button', { name: /sample data/i })
-    fireEvent.click(sampleLink)
-    fireEvent.click(sampleLink)
-    fireEvent.click(sampleLink)
 
-    await waitFor(() => expect(screen.getByRole('button', { name: /open overview/i })).toBeInTheDocument(), { timeout: 3000 })
-    fireEvent.click(screen.getByRole('button', { name: /open overview/i }))
-    await waitFor(() => expect(screen.getByRole('heading', { name: /worth checking|you've recovered|ledger is clean/i })).toBeInTheDocument())
+    const cta = screen.getByRole('button', { name: /run the sample/i })
+    fireEvent.click(cta)
+    fireEvent.click(cta)
+    fireEvent.click(cta)
 
-    const result = realSampleResult()
-    expect(
-      screen.getByText(formatCurrency(result.recoverableTotal + result.reviewTotal + result.opportunityTotal))
-    ).toBeInTheDocument()
-    // exactly one import happened, not three
+    await waitFor(() => expect(screen.getByRole('heading', { name: /where the money stands/i })).toBeInTheDocument())
+
+    const findings = sampleFindings()
+    expect(rungValue('Potential')).toBe(formatCurrency(sumImpact(findings)))
+    expect(screen.getByText(`${findings.length} cases`)).toBeInTheDocument()
+
+    // One import, not three: the record count is the sample's, not a multiple.
+    goToMode('Data')
+    expect(fact('Payment records')).toBe(String(getSampleLedger().records.length))
+    // The sample is a demo session and must not leave a project behind.
     expect(window.localStorage.getItem('reclaim.projects.index.v1')).toBeNull()
   })
 
-  describe('free preview gating', () => {
-    it('shows how much value is withheld without revealing the findings themselves', async () => {
-      await renderAtSample({ subscribed: false })
+  // A vendor that came through clean is a result too. Hiding it would flatter
+  // the findings and make this screen disagree with the sidebar's own count.
+  it('lists every vendor in the ledger, clean ones included, and agrees with the sidebar count', async () => {
+    await runSampleFromLaunch()
 
-      const result = realSampleResult()
-      const previewSet = [...result.findings].sort((a, b) => a.dollarImpact - b.dollarImpact).slice(0, FREE_PREVIEW_COUNT)
-      const lockedValue = result.findings
-        .filter((finding) => !previewSet.some((preview) => preview.id === finding.id))
-        .reduce((sum, finding) => sum + finding.dollarImpact, 0)
+    const vendorsInLedger = new Set(getSampleLedger().records.map((record) => record.vendor)).size
+    const sidebarCount = navCount('Vendors')
 
-      // The paywall states the stakes honestly: real count, real dollars.
-      expect(screen.getAllByText(formatCurrency(lockedValue)).length).toBeGreaterThan(0)
-      expect(screen.getAllByRole('button', { name: /unlock all/i }).length).toBeGreaterThan(0)
-    })
+    goToMode('Vendors')
+    const rows = tableRows()
+    expect(rows).toHaveLength(vendorsInLedger)
+    expect(rows).toHaveLength(sidebarCount)
 
-    it('locks the high-value case on Overview instead of opening it', async () => {
-      await renderAtSample({ subscribed: false })
+    const cleanRows = rows.filter((row) => row.querySelectorAll('td')[1]?.textContent === '—')
+    expect(cleanRows.length).toBeGreaterThan(0)
+    expect(screen.getAllByText('Nothing flagged')).toHaveLength(cleanRows.length)
+    expect(screen.getByText(`${cleanRows.length} of ${rows.length} came back clean`)).toBeInTheDocument()
+  })
 
-      // The recommended case is the most valuable one, which is exactly what the
-      // free plan holds back — so it must offer an unlock, never the evidence.
-      expect(screen.queryByRole('button', { name: /review evidence/i })).not.toBeInTheDocument()
-      const lockedCard = screen.getByRole('button', { name: /locked finding/i })
-      expect(lockedCard).toBeInTheDocument()
+  // Coverage is a claim about what the loaded columns can actually support, so
+  // it is stated as "N of 7" rather than implying a full audit ran regardless.
+  it('the Data screen reports how many of the seven checks the loaded columns support', async () => {
+    await runSampleFromLaunch()
+    goToMode('Data')
 
-      // The gate above promises this amount is hidden, so the card must route
-      // its title and amount through the nodes the blur is scoped to — without
-      // these hooks the dashboard prints exactly what is being withheld.
-      expect(lockedCard.querySelector('.rc-card-title-lock')).toBeTruthy()
-      expect(lockedCard.querySelector('.rc-next-money > strong')).toBeTruthy()
-    })
-
-    it('subscribing through the dialog unlocks every finding', async () => {
-      await renderAtSample({ subscribed: false })
-
-      fireEvent.click(screen.getAllByRole('button', { name: /unlock all/i })[0])
-
-      // Plan → Details → Card → Review → confirm
-      fireEvent.click(screen.getByRole('button', { name: /^continue$/i }))
-      fireEvent.change(screen.getByPlaceholderText(/sierra coffee supply/i), {
-        target: { value: 'Test Business' },
-      })
-      fireEvent.change(screen.getByPlaceholderText(/ap@yourbusiness\.com/i), {
-        target: { value: 'ap@test.com' },
-      })
-      fireEvent.click(screen.getByRole('button', { name: /^continue$/i }))
-
-      // Card step: the "Continue" button must stay disabled until a card is
-      // actually tokenized — you cannot skip straight to Review.
-      expect(screen.getByRole('button', { name: /^continue$/i })).toBeDisabled()
-      fireEvent.click(screen.getByRole('button', { name: /save card and continue/i }))
-      expect(screen.getByText(/visa/i)).toBeInTheDocument()
-      expect(screen.getByText(/4242/)).toBeInTheDocument()
-
-      fireEvent.click(screen.getByRole('button', { name: /^continue$/i }))
-      fireEvent.click(screen.getByRole('button', { name: /start subscription/i }))
-
-      await waitFor(() => expect(screen.getByText(/every finding is unlocked/i)).toBeInTheDocument())
-
-      // The confirmation must report what was just unlocked. These figures are
-      // live props that drop to zero the instant the plan changes, so a naive
-      // implementation renders "0 findings — $0.00" here.
-      const result = realSampleResult()
-      const previewSet = [...result.findings].sort((a, b) => a.dollarImpact - b.dollarImpact).slice(0, FREE_PREVIEW_COUNT)
-      const wasLocked = result.findings.filter((f) => !previewSet.some((p) => p.id === f.id))
-      const wasLockedValue = wasLocked.reduce((sum, f) => sum + f.dollarImpact, 0)
-      expect(
-        screen.getByText(new RegExp(`${wasLocked.length} previously locked findings`, 'i'))
-      ).toBeInTheDocument()
-      expect(screen.getByText(new RegExp(formatCurrency(wasLockedValue).replace(/[$.]/g, '\\$&')))).toBeInTheDocument()
-
-      fireEvent.click(screen.getByRole('button', { name: /view my findings/i }))
-
-      // The previously locked case is now openable evidence, not an upsell.
-      await waitFor(() =>
-        expect(screen.getByRole('button', { name: /review evidence/i })).toBeInTheDocument()
-      )
-      expect(screen.queryByRole('button', { name: /unlock all/i })).not.toBeInTheDocument()
-    })
-
-    it('cannot subscribe without billing details', async () => {
-      await renderAtSample({ subscribed: false })
-      fireEvent.click(screen.getAllByRole('button', { name: /unlock all/i })[0])
-      fireEvent.click(screen.getByRole('button', { name: /^continue$/i }))
-
-      // Blank details must not advance to review.
-      expect(screen.getByRole('button', { name: /^continue$/i })).toBeDisabled()
-    })
+    const parsed = getSampleLedger()
+    const readiness = assessRecordReadiness(parsed.records, parsed.skippedCount, parsed.detectedColumns)
+    expect(readiness.totalCheckCount).toBe(7)
+    expect(screen.getByText(`${readiness.availableCheckCount} of 7 checks`)).toBeInTheDocument()
+    expect(fact('Payment records')).toBe(String(parsed.records.length))
+    expect(fact('Vendors')).toBe(String(new Set(parsed.records.map((record) => record.vendor)).size))
   })
 })

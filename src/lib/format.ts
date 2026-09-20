@@ -83,3 +83,12 @@ export function parseTerms(raw: string | null): ParsedTerms | null {
     netDays: parseInt(netDays, 10),
   }
 }
+
+/**
+ * `1 payment` / `2 payments`. Finding explanations are read by a controller who
+ * is deciding whether to chase a vendor for money — "1 extra payment(s)" reads
+ * like a machine wrote it, which is exactly the wrong impression to give.
+ */
+export function plural(count: number, singular: string, pluralForm = `${singular}s`): string {
+  return count === 1 ? singular : pluralForm
+}

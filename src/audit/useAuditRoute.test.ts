@@ -6,22 +6,27 @@ describe('parseAuditRoute', () => {
     expect(parseAuditRoute('')).toEqual({ projectId: null, mode: 'overview', caseId: null, draft: false, entry: null })
   })
 
-  it('parses a Findings mode URL', () => {
-    expect(parseAuditRoute('?mode=findings')).toEqual({ projectId: null, mode: 'findings', caseId: null, draft: false, entry: null })
-  })
-
-  it('parses a Recovery mode URL', () => {
-    expect(parseAuditRoute('?mode=recovery')).toEqual({ projectId: null, mode: 'recovery', caseId: null, draft: false, entry: null })
+  it('parses every workspace destination', () => {
+    for (const mode of ['overview', 'opportunities', 'recoveries', 'vendors', 'reports', 'data', 'settings']) {
+      expect(parseAuditRoute(`?mode=${mode}`).mode).toBe(mode)
+    }
   })
 
   it('falls back to Overview for an unrecognized mode value', () => {
     expect(parseAuditRoute('?mode=something-else').mode).toBe('overview')
   })
 
+  // The pre-V2 names are gone; a bookmark carrying one must land somewhere
+  // sensible rather than render an empty screen.
+  it('falls back to Overview for a retired mode name', () => {
+    expect(parseAuditRoute('?mode=findings').mode).toBe('overview')
+    expect(parseAuditRoute('?mode=recovery').mode).toBe('overview')
+  })
+
   it('parses a case + draft URL', () => {
-    expect(parseAuditRoute('?mode=findings&case=exact_duplicate-1-2&draft=1')).toEqual({
+    expect(parseAuditRoute('?mode=opportunities&case=exact_duplicate-1-2&draft=1')).toEqual({
       projectId: null,
-      mode: 'findings',
+      mode: 'opportunities',
       caseId: 'exact_duplicate-1-2',
       draft: true,
       entry: null,
@@ -29,11 +34,11 @@ describe('parseAuditRoute', () => {
   })
 
   it('ignores draft=1 without a case id', () => {
-    expect(parseAuditRoute('?mode=findings&draft=1').draft).toBe(false)
+    expect(parseAuditRoute('?mode=opportunities&draft=1').draft).toBe(false)
   })
 
   it('gives the deliberate entry routes precedence over a stale workspace route', () => {
-    expect(parseAuditRoute('?entry=upload&mode=recovery&case=old')).toEqual({
+    expect(parseAuditRoute('?entry=upload&mode=recoveries&case=old')).toEqual({
       projectId: null,
       mode: 'overview',
       caseId: null,
@@ -45,7 +50,7 @@ describe('parseAuditRoute', () => {
 
 describe('buildAuditSearch', () => {
   it('round-trips through parseAuditRoute', () => {
-    const state = { projectId: 'project-1', mode: 'findings' as const, caseId: 'abc', draft: true, entry: null }
+    const state = { projectId: 'project-1', mode: 'opportunities' as const, caseId: 'abc', draft: true, entry: null }
     expect(parseAuditRoute(buildAuditSearch(state))).toEqual(state)
   })
 
@@ -54,7 +59,7 @@ describe('buildAuditSearch', () => {
   })
 
   it('builds a clean entry URL without workspace state', () => {
-    expect(buildAuditSearch({ projectId: null, mode: 'recovery', caseId: 'old', draft: true, entry: 'sample' })).toBe('?entry=sample')
+    expect(buildAuditSearch({ projectId: null, mode: 'recoveries', caseId: 'old', draft: true, entry: 'sample' })).toBe('?entry=sample')
   })
 
   it('keeps the selected local project in workspace and entry URLs', () => {

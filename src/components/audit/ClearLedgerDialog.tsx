@@ -1,4 +1,6 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
+import * as DialogPrimitive from '@radix-ui/react-dialog'
+import { X } from 'lucide-react'
+import '@/workspace/workspace.css'
 
 interface ClearLedgerDialogProps {
   open: boolean
@@ -9,23 +11,36 @@ interface ClearLedgerDialogProps {
 /** Clearing the ledger now deletes persisted data, not just an in-memory session — worth a real confirm step. */
 export function ClearLedgerDialog({ open, onOpenChange, onConfirm }: ClearLedgerDialogProps) {
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="audit-dialog-content">
-        <DialogHeader>
-          <DialogTitle style={{ color: '#171917' }}>Clear this ledger?</DialogTitle>
-          <DialogDescription style={{ color: '#5f625d' }}>
-            This permanently deletes every imported record and decision on this device. This cannot be undone.
-          </DialogDescription>
-        </DialogHeader>
-        <DialogFooter>
-          <button type="button" className="audit-btn" data-motion="pressable" onClick={() => onOpenChange(false)}>
-            Cancel
-          </button>
-          <button type="button" className="audit-btn" data-motion="pressable" data-motion-ray="true" data-variant="primary" onClick={onConfirm}>
-            Delete ledger
-          </button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
+      <DialogPrimitive.Portal>
+        <DialogPrimitive.Overlay className="wk wk-overlay" />
+        <DialogPrimitive.Content className="wk wk-panel" style={{ width: 'min(460px, calc(100vw - 32px))' }}>
+          <header className="wk-panel-head">
+            <div>
+              <DialogPrimitive.Title className="wk-display wk-h2">Clear this ledger?</DialogPrimitive.Title>
+              <DialogPrimitive.Description className="wk-dim">
+                This permanently deletes every imported record and decision on this device. This cannot be undone.
+              </DialogPrimitive.Description>
+            </div>
+            <DialogPrimitive.Close className="wk-panel-close" aria-label="Close">
+              <X aria-hidden="true" />
+            </DialogPrimitive.Close>
+          </header>
+
+          {/* The severity is carried by a mark, the way every other state in the
+              workspace is stated — not by recolouring the confirm button. */}
+          <span className="wk-mark" data-tone="review">Permanent</span>
+
+          <div className="wk-panel-foot">
+            <button type="button" className="wk-btn" data-variant="ghost" onClick={() => onOpenChange(false)}>
+              Cancel
+            </button>
+            <button type="button" className="wk-btn" data-variant="primary" onClick={onConfirm}>
+              Delete ledger
+            </button>
+          </div>
+        </DialogPrimitive.Content>
+      </DialogPrimitive.Portal>
+    </DialogPrimitive.Root>
   )
 }

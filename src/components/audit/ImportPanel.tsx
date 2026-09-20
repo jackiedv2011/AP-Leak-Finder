@@ -1,17 +1,10 @@
 import { useRef, useState } from 'react'
-import { motion } from 'motion/react'
+import * as DialogPrimitive from '@radix-ui/react-dialog'
 import { Upload, Sparkles, Download, HelpCircle, ShieldCheck, FileText, X } from 'lucide-react'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from '@/components/ui/dialog'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { parseCsv } from '@/lib/csv'
 import type { ParseResult } from '@/types'
 import { assessDataReadiness, assessFatalFile } from '@/audit/dataReadiness'
+import '@/workspace/workspace.css'
 
 export interface ImportInput {
   file: File
@@ -60,23 +53,17 @@ function formatFileSize(bytes: number): string {
  * the full-page first-time entry (AuditEntry) and as a lightweight "Add
  * records" dialog for a returning user. Never gates a returning user; it
  * only ever produces an ImportInput for the caller to merge into the ledger.
+ *
+ * Dressed in the workspace's own primitives (see workspace.css): it carries
+ * `wk` so it holds the tokens wherever it is mounted, including inside a
+ * portalled `.wk-panel`, which is outside `.wk` in the DOM.
  */
-const ENTRY_EASE = [0.23, 1, 0.32, 1] as const
-
 export function ImportPanel({ allowSample, animateEntry = false, autoFocusUpload, error, onImport, onRunSample, intro, confirmLabel }: ImportPanelProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [formatOpen, setFormatOpen] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
   const [pending, setPending] = useState<PendingUpload | null>(null)
   const [parseError, setParseError] = useState<string | null>(null)
-
-  const reveal = (delay: number) => animateEntry
-    ? {
-        initial: { opacity: 0, transform: 'translate3d(0, 9px, 0)' },
-        animate: { opacity: 1, transform: 'translate3d(0, 0, 0)' },
-        transition: { delay, duration: 0.2, ease: ENTRY_EASE },
-      }
-    : {}
 
   async function handleFile(file: File) {
     setParseError(null)
@@ -123,194 +110,207 @@ export function ImportPanel({ allowSample, animateEntry = false, autoFocusUpload
 
   if (pending) {
     const readiness = assessDataReadiness(pending.parsed)
+    const vendorCount = new Set(pending.parsed.records.map((r) => r.vendor)).size
     return (
-      <div className="audit-entry-card" data-motion-state="confirmed">
-        <div className="audit-entry-body">
-          <div className="audit-entry-intro">
-            <h2 className="sr-only">Confirm before adding to the ledger</h2>
-            <p style={{ margin: 0 }}>Reclaim read this file. Review it, then add it to the ledger.</p>
-          </div>
+      <div className="wk wk-import" data-state="confirmed">
+        <h2 className="wk-sr">Confirm before adding to the ledger</h2>
+        <p className="wk-dim" style={{ fontSize: 13.5 }}>Reclaim read this file. Review it, then add it to the ledger.</p>
 
-          <div className="audit-confirm-file">
-            <div className="audit-confirm-file-meta">
-              <strong title={pending.file.name}>{pending.file.name}</strong>
-              <span>{formatFileSize(pending.file.size)}</span>
-            </div>
-            <FileText className="h-5 w-5 flex-shrink-0" style={{ color: 'var(--text-faint)' }} aria-hidden="true" />
-          </div>
-
-          <div className="audit-stage-detail" style={{ width: '100%' }} aria-live="polite">
-            <span>{pending.parsed.records.length} valid record{pending.parsed.records.length === 1 ? '' : 's'} parsed</span>
-            <span>
-              {new Set(pending.parsed.records.map((r) => r.vendor)).size} vendor
-              {new Set(pending.parsed.records.map((r) => r.vendor)).size === 1 ? '' : 's'} identified
-            </span>
-            {readiness.dateRangeLabel && <span>{readiness.dateRangeLabel}</span>}
-            {pending.parsed.skippedCount > 0 && (
-              <span>
-                {pending.parsed.skippedCount} row{pending.parsed.skippedCount === 1 ? '' : 's'}{' '}
-                {pending.parsed.skippedCount === 1 ? 'needs' : 'need'} attention and will be skipped
-              </span>
-            )}
-          </div>
-
-          {readiness.weakerChecks.length > 0 && (
-            <div className="audit-readiness-note" style={{ width: '100%' }}>
-              <span className="audit-readiness-note-label">Some checks will be weaker for this file</span>
-              <ul>
-                {readiness.weakerChecks.map((check) => (
-                  <li key={check.label}>{check.label}</li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          <div className="audit-confirm-actions">
-            <button type="button" className="audit-btn" data-motion="pressable" data-motion-ray="true" onClick={() => setPending(null)}>
-              <X className="h-4 w-4" aria-hidden="true" />
-              Choose a different file
-            </button>
-            <button
-              type="button"
-              className="audit-btn"
-              data-motion="pressable"
-              data-motion-ray="true"
-              data-variant="primary"
-              onClick={() =>
-                onImport({ file: pending.file, parsed: pending.parsed, sourceLabel: pending.file.name, mode: 'upload' })
-              }
+        <div
+          className="wk-card-flat"
+          style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, padding: 16 }}
+        >
+          <div style={{ minWidth: 0 }}>
+            <div
+              className="wk-num"
+              style={{ fontSize: 13.5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+              title={pending.file.name}
             >
-              {confirmLabel}
-            </button>
+              {pending.file.name}
+            </div>
+            <div className="wk-table-sub">{formatFileSize(pending.file.size)}</div>
           </div>
+          <FileText aria-hidden="true" style={{ width: 18, height: 18, flex: 'none', color: 'var(--text-muted)' }} />
+        </div>
+
+        <ul className="wk-notes" aria-live="polite">
+          <li>{pending.parsed.records.length} valid record{pending.parsed.records.length === 1 ? '' : 's'} parsed</li>
+          <li>
+            {vendorCount} vendor{vendorCount === 1 ? '' : 's'} identified
+          </li>
+          {readiness.dateRangeLabel && <li>{readiness.dateRangeLabel}</li>}
+          {pending.parsed.skippedCount > 0 && (
+            <li>
+              {pending.parsed.skippedCount} row{pending.parsed.skippedCount === 1 ? '' : 's'}{' '}
+              {pending.parsed.skippedCount === 1 ? 'needs' : 'need'} attention and will be skipped
+            </li>
+          )}
+        </ul>
+
+        {readiness.weakerChecks.length > 0 && (
+          <div>
+            <span className="wk-label">Some checks will be weaker for this file</span>
+            <ul className="wk-notes" style={{ marginTop: 8 }}>
+              {readiness.weakerChecks.map((check) => (
+                <li key={check.label}>{check.label}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+          <button type="button" className="wk-btn" data-variant="outline" onClick={() => setPending(null)}>
+            <X aria-hidden="true" />
+            Choose a different file
+          </button>
+          <button
+            type="button"
+            className="wk-btn"
+            data-variant="primary"
+            onClick={() =>
+              onImport({ file: pending.file, parsed: pending.parsed, sourceLabel: pending.file.name, mode: 'upload' })
+            }
+          >
+            {confirmLabel}
+          </button>
         </div>
       </div>
     )
   }
 
   return (
-      <div className="audit-entry-card">
-        <div className="audit-entry-body">
-        <motion.div className="audit-entry-intro" {...reveal(0.04)}>
-          <h2 className="sr-only">Add records</h2>
-          <p>{intro}</p>
-        </motion.div>
+    <div className="wk wk-import" data-reveal={animateEntry}>
+      <h2 className="wk-sr">Add records</h2>
+      <p className="wk-dim" style={{ fontSize: 13.5 }}>{intro}</p>
 
-        <motion.div
-          onDragOver={(e) => {
-            e.preventDefault()
-            setIsDragging(true)
-          }}
-          onDragLeave={() => setIsDragging(false)}
-          onDrop={handleDrop}
-          className="audit-dropzone"
-          data-dragging={isDragging}
-          {...reveal(0.085)}
+      <div
+        onDragOver={(e) => {
+          e.preventDefault()
+          setIsDragging(true)
+        }}
+        onDragLeave={() => setIsDragging(false)}
+        onDrop={handleDrop}
+        className="wk-drop"
+        data-dragging={isDragging}
+      >
+        <Upload aria-hidden="true" />
+        <div>
+          <strong>Drop a CSV here, or choose a file</strong>
+          <span>Accepts .csv exports from QuickBooks, Xero, or your own AP ledger</span>
+        </div>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".csv"
+          onChange={handleInputChange}
+          aria-label="Upload a CSV ledger"
+        />
+        <button
+          type="button"
+          className="wk-btn"
+          data-variant="primary"
+          autoFocus={autoFocusUpload}
+          onClick={() => fileInputRef.current?.click()}
         >
-          <span className="audit-dropzone-icon" aria-hidden="true">
-            <Upload className="h-5 w-5" />
-          </span>
-          <div className="audit-dropzone-copy">
-            <strong>Drop a CSV here, or choose a file</strong>
-            <span>Accepts .csv exports from QuickBooks, Xero, or your own AP ledger</span>
-          </div>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".csv"
-            className="hidden"
-            onChange={handleInputChange}
-            aria-label="Upload a CSV ledger"
-          />
-          <button
-            type="button"
-            className="audit-btn"
-            data-motion="pressable"
-            data-motion-ray="true"
-            data-variant="primary"
-            autoFocus={autoFocusUpload}
-            onClick={() => fileInputRef.current?.click()}
-          >
-            <Upload className="h-4 w-4" aria-hidden="true" />
-            Upload CSV
-          </button>
-        </motion.div>
-
-        {allowSample && onRunSample && (
-          <motion.div className="audit-entry-sample" {...reveal(0.13)}>
-            <div className="audit-divider">or</div>
-            <button type="button" className="audit-link" data-motion="pressable" style={{ width: '100%', justifyContent: 'center' }} onClick={onRunSample}>
-              <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
-              See how this works with sample data
-            </button>
-          </motion.div>
-        )}
-
-        {(error || parseError) && (
-          <motion.div className="audit-error-banner" role="alert" {...reveal(0.16)}>
-            <p>{error ?? parseError}</p>
-            <ul>
-              <li>
-                <button type="button" className="audit-link" data-motion="pressable" onClick={() => setFormatOpen(true)}>
-                  View required format
-                </button>
-              </li>
-              <li>
-                <a className="audit-link" data-motion="pressable" href="/sample-ledger.csv" download>
-                  Download sample CSV
-                </a>
-              </li>
-            </ul>
-          </motion.div>
-        )}
-
-        <motion.div className="audit-entry-links" {...reveal(0.175)}>
-          <a className="audit-link" data-motion="pressable" href="/sample-ledger.csv" download>
-            <Download className="h-3.5 w-3.5" aria-hidden="true" />
-            Download sample CSV
-          </a>
-          <button type="button" className="audit-link" data-motion="pressable" onClick={() => setFormatOpen(true)}>
-            <HelpCircle className="h-3.5 w-3.5" aria-hidden="true" />
-            See required format
-          </button>
-        </motion.div>
-
-        <motion.p className="audit-privacy-note" {...reveal(0.21)}>
-          <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" />
-          This prototype runs entirely in your browser. Your ledger stays on your device.
-        </motion.p>
+          <Upload aria-hidden="true" />
+          Upload CSV
+        </button>
       </div>
 
-      <Dialog open={formatOpen} onOpenChange={setFormatOpen}>
-        <DialogContent className="audit-dialog-content">
-          <DialogHeader>
-            <DialogTitle style={{ color: '#171917' }}>Required CSV format</DialogTitle>
-            <DialogDescription style={{ color: '#5f625d' }}>
-              Column headers are matched case-insensitively. Currency values may include $ and commas.
-            </DialogDescription>
-          </DialogHeader>
-          <Table>
-            <TableHeader>
-              <TableRow style={{ borderColor: 'rgb(238 241 236 / 0.18)' }}>
-                <TableHead style={{ color: '#5f625d' }}>Column</TableHead>
-                <TableHead style={{ color: '#5f625d' }}>Notes</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {REQUIRED_COLUMNS.map((col) => (
-                <TableRow key={col.name} style={{ borderColor: 'rgb(238 241 236 / 0.1)' }}>
-                  <TableCell className="font-mono text-xs" style={{ color: '#171917' }}>
-                    {col.name}
-                  </TableCell>
-                  <TableCell className="text-sm" style={{ color: '#5f625d' }}>
-                    {col.description}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </DialogContent>
-      </Dialog>
+      {allowSample && onRunSample && (
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+            <hr className="wk-rule" style={{ flex: 1 }} />
+            <span className="wk-label">or</span>
+            <hr className="wk-rule" style={{ flex: 1 }} />
+          </div>
+          <button
+            type="button"
+            className="wk-btn"
+            data-variant="ghost"
+            data-size="sm"
+            style={{ width: '100%', marginTop: 14 }}
+            onClick={onRunSample}
+          >
+            <Sparkles aria-hidden="true" />
+            See how this works with sample data
+          </button>
+        </div>
+      )}
+
+      {(error || parseError) && (
+        <div className="wk-alert" role="alert">
+          <p>{error ?? parseError}</p>
+          <ul className="wk-alert-actions">
+            <li>
+              <button type="button" className="wk-link" onClick={() => setFormatOpen(true)}>
+                View required format
+              </button>
+            </li>
+            <li>
+              <a className="wk-link" href="/sample-ledger.csv" download>
+                Download sample CSV
+              </a>
+            </li>
+          </ul>
+        </div>
+      )}
+
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 18 }}>
+        <a className="wk-link" href="/sample-ledger.csv" download>
+          <Download aria-hidden="true" />
+          Download sample CSV
+        </a>
+        <button type="button" className="wk-link" onClick={() => setFormatOpen(true)}>
+          <HelpCircle aria-hidden="true" />
+          See required format
+        </button>
+      </div>
+
+      <p className="wk-muted" style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5 }}>
+        <ShieldCheck aria-hidden="true" style={{ width: 14, height: 14, flex: 'none' }} />
+        This prototype runs entirely in your browser. Your ledger stays on your device.
+      </p>
+
+      <DialogPrimitive.Root open={formatOpen} onOpenChange={setFormatOpen}>
+        <DialogPrimitive.Portal>
+          <DialogPrimitive.Overlay className="wk wk-overlay" />
+          <DialogPrimitive.Content className="wk wk-panel">
+            <header className="wk-panel-head">
+              <div>
+                <DialogPrimitive.Title className="wk-display wk-h2">Required CSV format</DialogPrimitive.Title>
+                <DialogPrimitive.Description className="wk-dim">
+                  Column headers are matched case-insensitively. Currency values may include $ and commas.
+                </DialogPrimitive.Description>
+              </div>
+              <DialogPrimitive.Close className="wk-panel-close" aria-label="Close">
+                <X aria-hidden="true" />
+              </DialogPrimitive.Close>
+            </header>
+
+            <table className="wk-table">
+              <thead>
+                <tr>
+                  <th>Column</th>
+                  <th>Notes</th>
+                </tr>
+              </thead>
+              <tbody>
+                {REQUIRED_COLUMNS.map((col) => (
+                  <tr key={col.name} style={{ cursor: 'default' }}>
+                    <td className="wk-num" style={{ fontSize: 12.5 }}>
+                      {col.name}
+                    </td>
+                    <td className="wk-dim" style={{ fontSize: 13 }}>
+                      {col.description}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </DialogPrimitive.Content>
+        </DialogPrimitive.Portal>
+      </DialogPrimitive.Root>
     </div>
   )
 }

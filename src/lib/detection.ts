@@ -1,5 +1,5 @@
 import type { APRecord, Finding, FindingClass, DetectionResult } from '@/types'
-import { normalizeVendor, daysBetween, parseTerms, formatCurrency, formatDate } from '@/lib/format'
+import { normalizeVendor, daysBetween, parseTerms, formatCurrency, formatDate, plural } from '@/lib/format'
 import { damerauLevenshteinDistance } from '@/lib/stringDistance'
 
 const EPSILON = 0.01
@@ -77,7 +77,7 @@ function detectExactDuplicates(records: APRecord[]): {
           title: `Duplicate payment of invoice ${invoiceNumber}`,
           explanation: `Invoice ${invoiceNumber} from ${vendor} was paid ${cluster.length} times at ${formatCurrency(
             cluster[0].amountPaid
-          )}. ${formatCurrency(dollarImpact)} across ${duplicateRows.length} extra payment(s) is likely recoverable.`,
+          )}. ${formatCurrency(dollarImpact)} across ${duplicateRows.length} extra ${plural(duplicateRows.length, 'payment')} is likely recoverable.`,
           relatedRecords: cluster,
         }),
         impactRecordIds: duplicateRows.map((r) => r.id),
@@ -164,7 +164,7 @@ function detectNearDuplicates(
             title: `Suspected duplicate payment to ${later.vendor}`,
             explanation: `${later.vendor} was paid ${formatCurrency(later.amountPaid)} for invoice ${
               bestMatch.invoiceNumber
-            } and again for invoice ${later.invoiceNumber}, ${bestGap} day(s) apart. The identical amount and short gap suggest the second payment (${formatDate(
+            } and again for invoice ${later.invoiceNumber}, ${bestGap} ${plural(bestGap, 'day')} apart. The identical amount and short gap suggest the second payment (${formatDate(
               later.paymentDate
             )}) may be an unintended duplicate.`,
             relatedRecords: [bestMatch, later],
@@ -234,7 +234,7 @@ function detectUnclaimedDiscounts(records: APRecord[]): FindingWithImpactRows[] 
           title: `Unclaimed early-payment discount on invoice ${r.invoiceNumber ?? 'unknown'}`,
           explanation: `Terms of ${r.terms} entitled ${r.vendor} invoice ${
             r.invoiceNumber ?? 'unknown'
-          } to a ${terms.discountPct}% discount for paying within ${terms.discountDays} days. Payment was made ${daysToPay} day(s) after the invoice date but at full price, leaving ${formatCurrency(
+          } to a ${terms.discountPct}% discount for paying within ${terms.discountDays} days. Payment was made ${daysToPay} ${plural(daysToPay, 'day')} after the invoice date but at full price, leaving ${formatCurrency(
             dollarImpact
           )} of eligible discount unclaimed.`,
           relatedRecords: [r],
@@ -270,7 +270,7 @@ function detectMissedDiscounts(records: APRecord[]): Finding[] {
           title: `Missed early-payment discount on invoice ${r.invoiceNumber ?? 'unknown'}`,
           explanation: `Terms of ${r.terms} offered a ${terms.discountPct}% discount for paying within ${
             terms.discountDays
-          } days, but invoice ${r.invoiceNumber ?? 'unknown'} from ${r.vendor} was paid ${daysToPay} day(s) after the invoice date. Paying earlier next time would save ${formatCurrency(
+          } days, but invoice ${r.invoiceNumber ?? 'unknown'} from ${r.vendor} was paid ${daysToPay} ${plural(daysToPay, 'day')} after the invoice date. Paying earlier next time would save ${formatCurrency(
             dollarImpact
           )}.`,
           relatedRecords: [r],
