@@ -1,10 +1,36 @@
 import type { APRecord, Finding, FindingClass, DetectionResult } from '@/types'
-import { normalizeVendor, daysBetween, parseTerms, formatCurrency, formatDate, plural } from '@/lib/format'
+import { normalizeVendor, daysBetween, parseTerms, formatCurrency, formatDate, plural, toCents } from '@/lib/format'
 import { damerauLevenshteinDistance } from '@/lib/stringDistance'
 
 const EPSILON = 0.01
 /** Max Damerau-Levenshtein distance between normalized invoice numbers to count as "near-identical" for Rule 2. */
 const MAX_NEAR_DUPLICATE_INVOICE_DISTANCE = 2
+/**
+ * Rule 2 treats three or more identically priced payments to one vendor on a
+ * steady cadence (rent, subscriptions, retainers) as a recurring charge rather
+ * than a run of duplicates. Every gap must be at least this long and the gaps
+ * must agree with each other within RECURRING_GAP_TOLERANCE_DAYS.
+ */
+const RECURRING_MIN_GAP_DAYS = 20
+const RECURRING_GAP_TOLERANCE_DAYS = 10
+/** A one-cent difference is rounding, not an overpayment. */
+const OVERPAYMENT_MIN_CENTS = 2
+
+/**
+ * Credits, refunds and zero-dollar lines are never themselves a leak. They stay
+ * in the ledger (and net against duplicates in Rule 1) but no rule assesses them.
+ */
+function isPayment(r: APRecord): boolean {
+  return r.amountPaid > 0
+}
+
+/** The invoice amount the rows agree on, or null when the file didn't say (or the rows disagree). */
+function agreedInvoiceAmount(rows: APRecord[]): number | null {
+  const amounts = new Set(rows.map((r) => (r.invoiceAmount === null ? null : toCents(r.invoiceAmount))))
+  if (amounts.size !== 1) return null
+  const [only] = amounts
+  return only === null ? null : only / 100
+}
 
 function normalizeInvoiceNumber(invoiceNumber: string): string {
   return invoiceNumber.toLowerCase().trim().replace(/\s+/g, ' ')
@@ -52,20 +78,36 @@ function detectExactDuplicates(records: APRecord[]): {
   const withInvoice = records.filter((r) => r.invoiceNumber !== null)
   const groups = groupBy(withInvoice, (r) => `${normalizeVendor(r.vendor)}|${normalizeInvoiceNumber(r.invoiceNumber!)}`)
 
-  for (const group of groups.values()) {
+  for (const allRows of groups.values()) {
+    const group = allRows.filter(isPayment)
     if (group.length < 2) continue
     const sorted = [...group].sort((a, b) => a.paymentDate.getTime() - b.paymentDate.getTime())
     sorted.forEach((r) => allGroupedRecordIds.add(r.id))
 
     const invoiceNumber = sorted[0].invoiceNumber
     const vendor = sorted[0].vendor
-    const amountClusters = Array.from(groupBy(sorted, (r) => Math.round(r.amountPaid * 100).toString()).values())
+    const totalPaid = sorted.reduce((sum, r) => sum + r.amountPaid, 0)
+    // A refund or credit memo against the same invoice has already given some of it back.
+    const refunded = allRows.filter((r) => r.amountPaid < 0).reduce((sum, r) => sum - r.amountPaid, 0)
+    const invoiceAmount = agreedInvoiceAmount(sorted)
+
+    // Instalments: several payments that together come to no more than the
+    // invoice are how the invoice was paid, not a duplicate of it.
+    if (invoiceAmount !== null && toCents(totalPaid) <= toCents(invoiceAmount)) continue
+    // The most that can have leaked is what went out beyond the invoice (when
+    // we know it), less anything the vendor has already returned.
+    const excessCeiling = invoiceAmount === null ? Infinity : totalPaid - invoiceAmount
+
+    const amountClusters = Array.from(groupBy(sorted, (r) => toCents(r.amountPaid).toString()).values())
     const duplicateClusters = amountClusters.filter((cluster) => cluster.length > 1)
     const singlePaymentRows = amountClusters.filter((cluster) => cluster.length === 1).flat()
 
     for (const cluster of duplicateClusters) {
       const duplicateRows = cluster.slice(1)
-      const dollarImpact = duplicateRows.reduce((sum, r) => sum + r.amountPaid, 0)
+      const extraPaid = duplicateRows.reduce((sum, r) => sum + r.amountPaid, 0)
+      const dollarImpact = Math.min(extraPaid, excessCeiling) - refunded
+      if (toCents(dollarImpact) <= 0) continue
+      const refundNote = refunded > 0 ? ` ${formatCurrency(refunded)} has already been credited back, leaving` : ''
       findings.push({
         finding: makeFinding({
           id: `exact_duplicate-${cluster.map((r) => r.id).join('-')}`,
@@ -77,7 +119,7 @@ function detectExactDuplicates(records: APRecord[]): {
           title: `Duplicate payment of invoice ${invoiceNumber}`,
           explanation: `Invoice ${invoiceNumber} from ${vendor} was paid ${cluster.length} times at ${formatCurrency(
             cluster[0].amountPaid
-          )}. ${formatCurrency(dollarImpact)} across ${duplicateRows.length} extra ${plural(duplicateRows.length, 'payment')} is likely recoverable.`,
+          )}.${refundNote} ${formatCurrency(dollarImpact)} across ${duplicateRows.length} extra ${plural(duplicateRows.length, 'payment')} is likely recoverable.`,
           relatedRecords: cluster,
         }),
         impactRecordIds: duplicateRows.map((r) => r.id),
@@ -86,7 +128,10 @@ function detectExactDuplicates(records: APRecord[]): {
 
     if (singlePaymentRows.length > 0) {
       const reviewRows = duplicateClusters.length > 0 ? singlePaymentRows : sorted.slice(1)
-      const dollarImpact = reviewRows.reduce((sum, r) => sum + r.amountPaid, 0)
+      const reviewPaid = reviewRows.reduce((sum, r) => sum + r.amountPaid, 0)
+      const dollarImpact = Math.min(reviewPaid, excessCeiling) - (duplicateClusters.length > 0 ? 0 : refunded)
+      if (toCents(dollarImpact) <= 0) continue
+      const overInvoice = invoiceAmount === null ? '' : ` ${formatCurrency(totalPaid)} was paid in total against a ${formatCurrency(invoiceAmount)} invoice.`
       findings.push({
         finding: makeFinding({
           id: `repeated_invoice_review-${sorted.map((r) => r.id).join('-')}`,
@@ -96,7 +141,7 @@ function detectExactDuplicates(records: APRecord[]): {
           vendor,
           dollarImpact,
           title: `Repeated payments for invoice ${invoiceNumber}`,
-          explanation: `Invoice ${invoiceNumber} from ${vendor} appears in payments with different amounts. Review ${formatCurrency(
+          explanation: `Invoice ${invoiceNumber} from ${vendor} appears in payments with different amounts.${overInvoice} Review ${formatCurrency(
             dollarImpact
           )} of additional payment activity before treating it as a potential duplicate.`,
           relatedRecords: sorted,
@@ -109,23 +154,51 @@ function detectExactDuplicates(records: APRecord[]): {
   return { findings, allGroupedRecordIds }
 }
 
+/**
+ * Records that belong to a recurring series for this vendor: three or more
+ * payments of the same amount, each with its own invoice number, spaced on a
+ * steady cadence. One vendor can have several such series (two subscriptions).
+ * A genuine duplicate slipped into a series breaks the cadence, so the series
+ * stops qualifying and every pair is assessed again.
+ */
+function recurringRecordIds(sortedByDate: APRecord[]): Set<string> {
+  const recurring = new Set<string>()
+  const byAmount = groupBy(
+    sortedByDate.filter((r) => r.invoiceNumber !== null),
+    (r) => toCents(r.amountPaid).toString()
+  )
+  for (const series of byAmount.values()) {
+    if (series.length < 3) continue
+    const invoiceNumbers = new Set(series.map((r) => normalizeInvoiceNumber(r.invoiceNumber!)))
+    if (invoiceNumbers.size !== series.length) continue
+    const gaps: number[] = []
+    for (let i = 1; i < series.length; i++) gaps.push(daysBetween(series[i - 1].paymentDate, series[i].paymentDate))
+    if (gaps.some((gap) => gap < RECURRING_MIN_GAP_DAYS)) continue
+    if (Math.max(...gaps) - Math.min(...gaps) > RECURRING_GAP_TOLERANCE_DAYS) continue
+    series.forEach((r) => recurring.add(r.id))
+  }
+  return recurring
+}
+
 // Rule 2 — Near-duplicate payment (recoverable, high)
 function detectNearDuplicates(
   records: APRecord[],
   excludeRecordIds: Set<string>
 ): FindingWithImpactRows[] {
   const findings: FindingWithImpactRows[] = []
-  const eligible = records.filter((r) => !excludeRecordIds.has(r.id))
+  const eligible = records.filter((r) => isPayment(r) && !excludeRecordIds.has(r.id))
   const groups = groupBy(eligible, (r) => normalizeVendor(r.vendor))
   const usedAsLater = new Set<string>()
 
   for (const group of groups.values()) {
     const sorted = [...group].sort((a, b) => a.paymentDate.getTime() - b.paymentDate.getTime())
+    const recurring = recurringRecordIds(sorted)
 
     for (let i = 1; i < sorted.length; i++) {
       const later = sorted[i]
       if (usedAsLater.has(later.id)) continue
       if (later.invoiceNumber === null) continue
+      if (recurring.has(later.id)) continue
 
       let bestMatch: APRecord | null = null
       let bestGap = Infinity
@@ -133,8 +206,9 @@ function detectNearDuplicates(
       for (let j = 0; j < i; j++) {
         const earlier = sorted[j]
         if (earlier.invoiceNumber === null) continue
+        if (recurring.has(earlier.id)) continue
         if (earlier.invoiceNumber === later.invoiceNumber) continue
-        if (Math.abs(earlier.amountPaid - later.amountPaid) > EPSILON) continue
+        if (toCents(earlier.amountPaid) !== toCents(later.amountPaid)) continue
 
         const invoiceDistance = damerauLevenshteinDistance(
           normalizeInvoiceNumber(earlier.invoiceNumber),
@@ -183,9 +257,9 @@ function detectOverpayments(records: APRecord[]): FindingWithImpactRows[] {
   const findings: FindingWithImpactRows[] = []
 
   for (const r of records) {
-    if (r.invoiceAmount === null) continue
-    if (r.amountPaid > r.invoiceAmount + EPSILON) {
-      const dollarImpact = r.amountPaid - r.invoiceAmount
+    if (!isPayment(r) || r.invoiceAmount === null) continue
+    if (toCents(r.amountPaid) - toCents(r.invoiceAmount) >= OVERPAYMENT_MIN_CENTS) {
+      const dollarImpact = (toCents(r.amountPaid) - toCents(r.invoiceAmount)) / 100
       findings.push({
         finding: makeFinding({
           id: `overpayment-${r.id}`,
@@ -213,6 +287,7 @@ function detectUnclaimedDiscounts(records: APRecord[]): FindingWithImpactRows[] 
   const findings: FindingWithImpactRows[] = []
 
   for (const r of records) {
+    if (!isPayment(r)) continue
     const terms = parseTerms(r.terms)
     if (!terms) continue
     if (r.invoiceDate === null || r.invoiceAmount === null) continue
@@ -252,12 +327,16 @@ function detectMissedDiscounts(records: APRecord[]): Finding[] {
   const findings: Finding[] = []
 
   for (const r of records) {
+    if (!isPayment(r)) continue
     const terms = parseTerms(r.terms)
     if (!terms) continue
     if (r.invoiceDate === null || r.invoiceAmount === null) continue
 
     const daysToPay = daysBetween(r.invoiceDate, r.paymentDate)
-    if (daysToPay > terms.discountDays) {
+    // Paying the discounted amount late means the vendor honoured the discount
+    // anyway — nothing was lost, so there is nothing to change next time.
+    const paidFull = r.amountPaid >= r.invoiceAmount - EPSILON
+    if (daysToPay > terms.discountDays && paidFull) {
       const dollarImpact = r.invoiceAmount * (terms.discountPct / 100)
       findings.push(
         makeFinding({
@@ -286,7 +365,7 @@ function detectMissedDiscounts(records: APRecord[]): Finding[] {
 function detectBankAccountChanges(records: APRecord[]): Finding[] {
   const findings: Finding[] = []
   const groups = groupBy(
-    records.filter((r) => r.bankAccountLast4 !== null),
+    records.filter((r) => isPayment(r) && r.bankAccountLast4 !== null),
     (r) => normalizeVendor(r.vendor)
   )
 
@@ -328,7 +407,7 @@ function detectBankAccountChanges(records: APRecord[]): Finding[] {
 // Rule 7 — Payment amount outlier (review, medium)
 function detectAmountOutliers(records: APRecord[]): Finding[] {
   const findings: Finding[] = []
-  const groups = groupBy(records, (r) => normalizeVendor(r.vendor))
+  const groups = groupBy(records.filter(isPayment), (r) => normalizeVendor(r.vendor))
 
   for (const group of groups.values()) {
     if (group.length < 4) continue
@@ -372,7 +451,7 @@ function detectAmountOutliers(records: APRecord[]): Finding[] {
 // Rule 8 — Invoice number reused across different vendors (review, high)
 function detectSharedInvoiceNumbers(records: APRecord[]): Finding[] {
   const findings: Finding[] = []
-  const withInvoice = records.filter((r) => r.invoiceNumber !== null)
+  const withInvoice = records.filter((r) => isPayment(r) && r.invoiceNumber !== null)
   const groups = groupBy(withInvoice, (r) => normalizeInvoiceNumber(r.invoiceNumber!))
 
   for (const group of groups.values()) {

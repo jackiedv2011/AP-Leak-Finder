@@ -1,39 +1,23 @@
 import type { ReactNode } from 'react'
-import {
-  LayoutGrid,
-  Search,
-  Banknote,
-  Building2,
-  FileBarChart,
-  Database,
-  Settings as SettingsIcon,
-} from 'lucide-react'
+import { LayoutGrid, FolderSearch, Search, Banknote, FileBarChart, Settings as SettingsIcon, LogOut } from 'lucide-react'
+import { useOptionalAuth } from '@/lib/auth/AuthContext'
 import './workspace.css'
 
-/** The seven destinations from the V2 spec (§27). Deliberately small. */
-export type WorkspaceMode =
-  | 'overview'
-  | 'opportunities'
-  | 'recoveries'
-  | 'vendors'
-  | 'reports'
-  | 'data'
-  | 'settings'
+export type WorkspaceMode = 'dashboard' | 'audits' | 'findings' | 'recoveries' | 'reports' | 'settings'
 
 interface NavEntry {
   mode: WorkspaceMode
   label: string
   icon: typeof LayoutGrid
-  /** Rendered as plain tabular text beside the label — never a filled badge. */
   count?: number
 }
 
 export interface WorkspaceShellProps {
   mode: WorkspaceMode
   onModeChange: (mode: WorkspaceMode) => void
-  opportunityCount: number
+  auditCount: number
+  findingCount: number
   recoveryCount: number
-  vendorCount: number
   title: string
   subtitle?: string
   actions?: ReactNode
@@ -41,7 +25,7 @@ export interface WorkspaceShellProps {
 }
 
 /** Reclaim's hexagon mark — the same six paths as #hx-wheel on the marketing site. */
-function Mark() {
+export function Mark() {
   return (
     <svg viewBox="-13 -11.5 26 23" aria-hidden="true">
       <path d="M-2.056,-4.6 L-5.751,-11 L5.751,-11 L2.056,-4.6 Z" />
@@ -54,28 +38,33 @@ function Mark() {
   )
 }
 
+function initialsOf(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean)
+  return (parts[0]?.[0] ?? '') + (parts[1]?.[0] ?? '') || 'R'
+}
+
 export function WorkspaceShell({
   mode,
   onModeChange,
-  opportunityCount,
+  auditCount,
+  findingCount,
   recoveryCount,
-  vendorCount,
   title,
   subtitle,
   actions,
   children,
 }: WorkspaceShellProps) {
+  const auth = useOptionalAuth()
+  const user = auth?.user ?? null
+
   const primary: NavEntry[] = [
-    { mode: 'overview', label: 'Overview', icon: LayoutGrid },
-    { mode: 'opportunities', label: 'Opportunities', icon: Search, count: opportunityCount },
+    { mode: 'dashboard', label: 'Dashboard', icon: LayoutGrid },
+    { mode: 'audits', label: 'Audits', icon: FolderSearch, count: auditCount },
+    { mode: 'findings', label: 'Findings', icon: Search, count: findingCount },
     { mode: 'recoveries', label: 'Recoveries', icon: Banknote, count: recoveryCount },
-    { mode: 'vendors', label: 'Vendors', icon: Building2, count: vendorCount },
-  ]
-  const secondary: NavEntry[] = [
     { mode: 'reports', label: 'Reports', icon: FileBarChart },
-    { mode: 'data', label: 'Data', icon: Database },
-    { mode: 'settings', label: 'Settings', icon: SettingsIcon },
   ]
+  const secondary: NavEntry[] = [{ mode: 'settings', label: 'Settings', icon: SettingsIcon }]
 
   const renderItem = ({ mode: entryMode, label, icon: Icon, count }: NavEntry) => (
     <li key={entryMode}>
@@ -91,6 +80,11 @@ export function WorkspaceShell({
       </button>
     </li>
   )
+
+  async function handleLogOut() {
+    await auth?.logOut()
+    window.location.href = '/login'
+  }
 
   return (
     <div className="wk">
@@ -109,10 +103,25 @@ export function WorkspaceShell({
         </nav>
 
         <div className="wk-side-foot">
-          <div className="wk-label">Sample ledger</div>
-          <p className="wk-muted" style={{ fontSize: 12.5, marginTop: 6 }}>
-            Demo data. Every figure traces to a row you can open.
-          </p>
+          {user ? (
+            <>
+              <div className="wk-account">
+                <span className="wk-avatar" aria-hidden="true">
+                  {initialsOf(user.name)}
+                </span>
+                <div style={{ minWidth: 0 }}>
+                  <div className="wk-account-name">{user.isGuest ? 'Guest session' : user.name}</div>
+                  <div className="wk-account-sub">
+                    {user.isGuest ? 'Nothing is saved to an account' : `${user.plan === 'pro' ? 'Pro' : 'Free'} plan · ${user.company || user.email}`}
+                  </div>
+                </div>
+              </div>
+              <button type="button" className="wk-btn" data-variant="ghost" data-size="sm" onClick={handleLogOut} style={{ justifyContent: 'flex-start' }}>
+                <LogOut aria-hidden="true" />
+                {user.isGuest ? 'Exit guest session' : 'Log out'}
+              </button>
+            </>
+          ) : null}
         </div>
       </aside>
 
@@ -122,7 +131,7 @@ export function WorkspaceShell({
             {subtitle ? <span className="wk-label">{subtitle}</span> : null}
             <h1 className="wk-display wk-h1">{title}</h1>
           </div>
-          {actions ? <div style={{ display: 'flex', gap: 10 }}>{actions}</div> : null}
+          {actions ? <div className="wk-topbar-actions">{actions}</div> : null}
         </header>
         <main className="wk-body">{children}</main>
       </div>

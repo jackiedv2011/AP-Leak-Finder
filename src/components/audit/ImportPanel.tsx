@@ -28,8 +28,8 @@ interface ImportPanelProps {
 const REQUIRED_COLUMNS: { name: string; description: string }[] = [
   { name: 'vendor', description: 'Vendor / supplier name' },
   { name: 'invoice_number', description: 'Invoice ID as printed' },
-  { name: 'invoice_date', description: 'Date on the invoice (YYYY-MM-DD)' },
-  { name: 'payment_date', description: 'Date the business paid (YYYY-MM-DD, required)' },
+  { name: 'invoice_date', description: 'Date on the invoice (YYYY-MM-DD or MM/DD/YYYY)' },
+  { name: 'payment_date', description: 'Date the business paid (YYYY-MM-DD or MM/DD/YYYY, required)' },
   { name: 'invoice_amount', description: 'Amount the invoice was for' },
   { name: 'amount_paid', description: 'Amount actually paid (required)' },
   { name: 'terms', description: 'e.g. 2/10 net 30, net 30, net 15, or blank' },
@@ -269,7 +269,7 @@ export function ImportPanel({ allowSample, animateEntry = false, autoFocusUpload
 
       <p className="wk-muted" style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5 }}>
         <ShieldCheck aria-hidden="true" style={{ width: 14, height: 14, flex: 'none' }} />
-        This prototype runs entirely in your browser. Your ledger stays on your device.
+        The checks run in your browser. With an account, the audit is saved to that account; as a guest it stays in this tab.
       </p>
 
       <DialogPrimitive.Root open={formatOpen} onOpenChange={setFormatOpen}>

@@ -12,15 +12,20 @@ export interface LedgerProjectSummary {
   recoveryActiveValue: number
 }
 
-export const PROJECT_INDEX_KEY = 'reclaim.projects.index.v1'
-export const ACTIVE_PROJECT_KEY = 'reclaim.projects.active.v1'
+import { storageKey } from '@/lib/storageScope'
+
+export const PROJECT_INDEX_BASE = 'reclaim.projects.index.v1'
+export const ACTIVE_PROJECT_BASE = 'reclaim.projects.active.v1'
 export const COMBINED_PROJECTS_KEY = 'reclaim.projects.v1'
 export const LEGACY_LEDGER_KEY = 'reclaim.ledger.v1'
+/** Scoped to the signed-in account (or the bare name when no scope is set). */
+export const PROJECT_INDEX_KEY = () => storageKey(PROJECT_INDEX_BASE)
+export const ACTIVE_PROJECT_KEY = () => storageKey(ACTIVE_PROJECT_BASE)
 
 export function readProjectIndex(): LedgerProjectSummary[] {
   if (typeof window === 'undefined') return []
   try {
-    const raw = window.localStorage.getItem(PROJECT_INDEX_KEY)
+    const raw = window.localStorage.getItem(PROJECT_INDEX_KEY())
     if (!raw) return []
     return (JSON.parse(raw) as LedgerProjectSummary[]).toSorted((a, b) => b.updatedAt - a.updatedAt)
   } catch {
@@ -30,7 +35,7 @@ export function readProjectIndex(): LedgerProjectSummary[] {
 
 export function writeProjectIndex(projects: LedgerProjectSummary[]): void {
   if (typeof window === 'undefined') return
-  window.localStorage.setItem(PROJECT_INDEX_KEY, JSON.stringify(projects))
+  window.localStorage.setItem(PROJECT_INDEX_KEY(), JSON.stringify(projects))
 }
 
 export function hasSavedLocalWork(): boolean {

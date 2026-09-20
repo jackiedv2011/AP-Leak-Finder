@@ -60,7 +60,7 @@
   mm.innerHTML = '<div class="mm-top">' + $('.left', tplNav).innerHTML
     + '<button type="button" class="menu-toggle mm-close" aria-label="Close menu"><span class="bar"></span><span class="bar"></span></button></div>'
     + '<ul class="mm-list">' + mmRowsHtml + '</ul>'
-    + '<div class="mm-foot"><a href="/audit?entry=sample" class="cta cta-button" size="large" theme="green"><span class="hover-loop"><span class="inner">Get Started</span></span></a></div>';
+    + '<div class="mm-foot"><a href="/audit?entry=sample" class="cta cta-button" size="large" theme="green"><span class="hover-loop"><span class="inner">Get Started</span></span></a><a href="/login" class="mm-login type-body-xs">Log in</a></div>';
   document.body.appendChild(mm);
 
   // ---------- split headings into masked lines ----------

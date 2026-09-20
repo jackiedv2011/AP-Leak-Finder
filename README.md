@@ -17,9 +17,21 @@ The bundled ledger is fictional demo data. Its totals are potential impact, not 
 
 ## Product truth
 
-Reclaim currently uses an explainable, deterministic rules engine. There is no backend, database, external API, or AI model in this prototype. The same CSV produces the same findings, and every displayed amount traces back to a rule and transaction records.
+Reclaim's detection is an explainable, deterministic rules engine that runs in the browser: the same CSV produces the same findings, and every displayed amount traces back to a rule and transaction records. AI is used in exactly one place — drafting the wording of a recovery request, on the server, from the case data on the page, for the person to read and edit before they send it themselves. Reclaim never emails a vendor.
 
-This prototype runs entirely in the browser. Uploaded data remains on the device until the page is refreshed.
+Accounts, sessions and each account's audits live on the Reclaim server (`server/`, SQLite). The browser keeps a per-account cache in localStorage while that person is logged in and clears it on log-out.
+
+## Running it
+
+```bash
+cp .env.example .env      # optional; everything has a development default
+npm run dev:server        # API on :8787 (SQLite in ./data/, dev mailbox, no email sent)
+npm run dev               # Vite on :5173, proxies /api to the server
+```
+
+Without a `.env`, sign-up still requires email confirmation — the "Check your email" screen shows the link the server *would* have sent (development mailbox). Google sign-in and AI drafting stay hidden until their variables are set; see `.env.example` for which values are public and which are secrets.
+
+Production: `npm run build && NODE_ENV=production APP_ORIGIN=https://… npm start` serves `dist/` and the API from one process.
 
 ## Detection rules
 

@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { AuthLayout } from '@/pages/AuthLayout'
+import { AuthLayout, Field } from '@/pages/AuthLayout'
 import { useAuth } from '@/lib/auth/AuthContext'
 
 export function ResetPasswordPage() {
@@ -7,22 +7,26 @@ export function ResetPasswordPage() {
   const token = useState(() => new URLSearchParams(window.location.search).get('token') ?? '')[0]
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
-  const [error, setError] = useState<string | null>(null)
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
+  const [formError, setFormError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [done, setDone] = useState(false)
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault()
-    setError(null)
-    if (password !== confirmPassword) {
-      setError('Passwords do not match.')
-      return
-    }
+    setFormError(null)
+    const errors: Record<string, string> = {}
+    if (password.length < 8) errors.password = 'Use at least 8 characters.'
+    if (confirmPassword !== password) errors.confirmPassword = 'Passwords do not match.'
+    setFieldErrors(errors)
+    if (Object.keys(errors).length > 0) return
+
     setSubmitting(true)
-    const result = await resetPassword(token, password)
+    const result = await resetPassword(token, password, confirmPassword)
     setSubmitting(false)
     if (!result.ok) {
-      setError(result.message)
+      setFieldErrors(result.fields ?? {})
+      setFormError(result.fields ? null : result.message)
       return
     }
     setDone(true)
@@ -31,10 +35,14 @@ export function ResetPasswordPage() {
   if (!token) {
     return (
       <AuthLayout>
-        <div className="auth-card">
-          <h1>Invalid reset link</h1>
-          <p className="auth-card-subtitle">This link is missing its token. Request a new one.</p>
-          <p className="auth-footer-note"><a href="/forgot-password">Request a new reset link</a></p>
+        <div className="wk-auth-card">
+          <div>
+            <h1>Invalid reset link</h1>
+            <p>This link is missing its token. Request a new one.</p>
+          </div>
+          <a className="wk-btn" data-variant="primary" href="/forgot-password">
+            Request a new reset link
+          </a>
         </div>
       </AuthLayout>
     )
@@ -43,11 +51,13 @@ export function ResetPasswordPage() {
   if (done) {
     return (
       <AuthLayout>
-        <div className="auth-card">
-          <h1>Password updated</h1>
-          <p className="auth-success" style={{ marginTop: '1.25rem' }}>You&apos;re logged in with your new password.</p>
-          <a className="auth-submit" style={{ marginTop: '1.5rem', display: 'grid', placeItems: 'center', textDecoration: 'none' }} href="/audit">
-            Go to your audit
+        <div className="wk-auth-card">
+          <div>
+            <h1>Password updated</h1>
+            <p>You&apos;re logged in with your new password.</p>
+          </div>
+          <a className="wk-btn" data-variant="primary" data-size="lg" href="/audit">
+            Go to your dashboard
           </a>
         </div>
       </AuthLayout>
@@ -56,42 +66,55 @@ export function ResetPasswordPage() {
 
   return (
     <AuthLayout>
-      <div className="auth-card">
-        <h1>Choose a new password</h1>
-        <p className="auth-card-subtitle">Make it at least 8 characters.</p>
+      <div className="wk-auth-card">
+        <div>
+          <h1>Choose a new password</h1>
+          <p>Make it at least 8 characters.</p>
+        </div>
 
-        <form className="auth-form" onSubmit={handleSubmit} noValidate>
-          {error ? <p className="auth-error" role="alert">{error}</p> : null}
+        <form className="wk-auth-form" onSubmit={handleSubmit} noValidate>
+          {formError ? (
+            <div className="wk-alert" role="alert">
+              <p>{formError}</p>
+              <ul className="wk-alert-actions">
+                <li>
+                  <a className="wk-link" href="/forgot-password">
+                    Request a new reset link
+                  </a>
+                </li>
+              </ul>
+            </div>
+          ) : null}
 
-          <div className="auth-field">
-            <label htmlFor="reset-password">New password</label>
+          <Field id="reset-password" label="New password" error={fieldErrors.password}>
             <input
               id="reset-password"
-              className="auth-input"
+              className="wk-input"
               type="password"
               autoComplete="new-password"
               required
               value={password}
               onChange={(event) => setPassword(event.target.value)}
-              placeholder="At least 8 characters"
+              aria-invalid={fieldErrors.password ? 'true' : undefined}
+              aria-describedby={fieldErrors.password ? 'reset-password-error' : undefined}
             />
-          </div>
+          </Field>
 
-          <div className="auth-field">
-            <label htmlFor="reset-confirm">Confirm new password</label>
+          <Field id="reset-confirm" label="Confirm new password" error={fieldErrors.confirmPassword}>
             <input
               id="reset-confirm"
-              className="auth-input"
+              className="wk-input"
               type="password"
               autoComplete="new-password"
               required
               value={confirmPassword}
               onChange={(event) => setConfirmPassword(event.target.value)}
-              placeholder="Re-enter your password"
+              aria-invalid={fieldErrors.confirmPassword ? 'true' : undefined}
+              aria-describedby={fieldErrors.confirmPassword ? 'reset-confirm-error' : undefined}
             />
-          </div>
+          </Field>
 
-          <button className="auth-submit" type="submit" disabled={submitting}>
+          <button className="wk-btn" data-variant="primary" data-size="lg" type="submit" disabled={submitting}>
             {submitting ? 'Updating…' : 'Update password'}
           </button>
         </form>

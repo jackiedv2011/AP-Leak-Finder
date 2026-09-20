@@ -8,7 +8,7 @@
 // life of the dev server, exactly the workflow landing-site/README.md documents —
 // it's just started for you. Edit anything under landing-site/src/ and refresh.
 //
-// The React app (/audit, /scanner, everything else) is untouched: requests that
+// The React app (/audit, /login, /privacy, everything else) is untouched: requests that
 // don't match a landing-site route just call next() and Vite handles them as before.
 import { spawn, execFileSync, type ChildProcess } from 'node:child_process'
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
@@ -70,7 +70,7 @@ export function landingSitePlugin(): Plugin {
 
       // Vercel runs the production build without Vite's dev middleware. Copy the
       // generated static site into dist so clean landing routes work in production,
-      // while retaining the compiled React app for /audit and /scanner.
+      // while retaining the compiled React app for its own routes.
       const distRoot = join(process.cwd(), 'dist')
       const reactIndex = readFileSync(join(distRoot, 'index.html'))
       execFileSync(process.execPath, ['build.cjs'], { cwd: LANDING_ROOT, stdio: 'inherit' })
@@ -81,7 +81,7 @@ export function landingSitePlugin(): Plugin {
         cpSync(join(LANDING_ROOT, entry.name), join(distRoot, entry.name), { recursive: true, force: true })
       }
 
-      for (const route of ['audit', 'scanner']) {
+      for (const route of ['audit', 'scanner', 'login', 'signup', 'forgot-password', 'reset-password', 'privacy', 'terms']) {
         const routeDir = join(distRoot, route)
         mkdirSync(routeDir, { recursive: true })
         writeFileSync(join(routeDir, 'index.html'), reactIndex)

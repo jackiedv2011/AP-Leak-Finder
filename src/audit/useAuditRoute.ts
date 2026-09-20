@@ -1,25 +1,20 @@
+import { storageKey } from '@/lib/storageScope'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
-/** The seven workspace destinations from the product spec (§27). */
-export type RouteMode =
-  | 'overview'
-  | 'opportunities'
-  | 'recoveries'
-  | 'vendors'
-  | 'reports'
-  | 'data'
-  | 'settings'
+/** The six workspace destinations. */
+export type RouteMode = 'dashboard' | 'audits' | 'findings' | 'recoveries' | 'reports' | 'settings'
 export type EntryRoute = 'sample' | 'upload'
 
-const ROUTE_MODES: RouteMode[] = [
-  'overview',
-  'opportunities',
-  'recoveries',
-  'vendors',
-  'reports',
-  'data',
-  'settings',
-]
+const ROUTE_MODES: RouteMode[] = ['dashboard', 'audits', 'findings', 'recoveries', 'reports', 'settings']
+
+/** Older bookmarks carry the previous section names; send them somewhere sensible. */
+const RETIRED_MODES: Record<string, RouteMode> = {
+  overview: 'dashboard',
+  opportunities: 'findings',
+  vendors: 'reports',
+  data: 'audits',
+  recovery: 'recoveries',
+}
 
 export interface AuditRouteState {
   projectId: string | null
@@ -30,17 +25,22 @@ export interface AuditRouteState {
   entry: EntryRoute | null
 }
 
+function resolveMode(value: string | null): RouteMode {
+  if (value && ROUTE_MODES.includes(value as RouteMode)) return value as RouteMode
+  if (value && RETIRED_MODES[value]) return RETIRED_MODES[value]
+  return 'dashboard'
+}
+
 export function parseAuditRoute(search: string): AuditRouteState {
   const params = new URLSearchParams(search)
-  const modeParam = params.get('mode')
-  const mode: RouteMode = ROUTE_MODES.includes(modeParam as RouteMode) ? (modeParam as RouteMode) : 'overview'
+  const mode = resolveMode(params.get('mode'))
   const caseId = params.get('case')
   const draft = caseId !== null && params.get('draft') === '1'
   const entryParam = params.get('entry')
   const entry: EntryRoute | null = entryParam === 'sample' || entryParam === 'upload' ? entryParam : null
   const projectId = params.get('project')
   return entry
-    ? { projectId, mode: 'overview', caseId: null, draft: false, entry }
+    ? { projectId, mode: 'dashboard', caseId: null, draft: false, entry }
     : { projectId, mode, caseId, draft, entry: null }
 }
 
@@ -51,7 +51,7 @@ export function buildAuditSearch(state: AuditRouteState): string {
     params.set('entry', state.entry)
     return `?${params.toString()}`
   }
-  if (state.mode !== 'overview') params.set('mode', state.mode)
+  if (state.mode !== 'dashboard') params.set('mode', state.mode)
   if (state.caseId) {
     params.set('case', state.caseId)
     if (state.draft) params.set('draft', '1')
@@ -60,13 +60,13 @@ export function buildAuditSearch(state: AuditRouteState): string {
   return qs ? `?${qs}` : ''
 }
 
-const CONTEXT_KEY = 'reclaim.ledger.context.v1'
+const CONTEXT_KEY = () => storageKey('reclaim.ledger.context.v1')
 
 /** The last view a returning user was in — mode, case, draft — restored on a bare reload. */
 export function loadPersistedContext(): AuditRouteState | null {
   if (typeof window === 'undefined') return null
   try {
-    const raw = window.localStorage.getItem(CONTEXT_KEY)
+    const raw = window.localStorage.getItem(CONTEXT_KEY())
     if (!raw) return null
     return parseAuditRoute(buildAuditSearch(JSON.parse(raw) as AuditRouteState))
   } catch {
@@ -77,7 +77,7 @@ export function loadPersistedContext(): AuditRouteState | null {
 function savePersistedContext(state: AuditRouteState): void {
   if (typeof window === 'undefined') return
   try {
-    window.localStorage.setItem(CONTEXT_KEY, JSON.stringify(state))
+    window.localStorage.setItem(CONTEXT_KEY(), JSON.stringify(state))
   } catch {
     // ignore — context restore is a convenience, not a correctness requirement
   }

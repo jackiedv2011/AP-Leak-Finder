@@ -61,14 +61,14 @@ html:has(.reclaim-theme) body {
   background: #090b0c;
 }
 
-/* The workspace runs on the same paper surface as the landing page. */
-html:has(.reclaim-audit) {
+/* The product surface: warm white, light colour scheme. */
+html:has(.wk) {
   color-scheme: light;
-  background: #f3efe7;
+  background: #f7f4ee;
 }
 
-html:has(.reclaim-audit) body {
-  background: #f3efe7;
+html:has(.wk) body {
+  background: #f7f4ee;
 }
 
 @media (prefers-reduced-motion: reduce) {

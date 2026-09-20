@@ -6,9 +6,12 @@ afterEach(() => {
   cleanup()
 })
 
-Object.defineProperty(window, 'scrollTo', { value: vi.fn(), writable: true })
+// Server tests run in the node environment, where there is no window to patch.
+const hasWindow = typeof window !== 'undefined'
 
-if (!window.matchMedia) {
+if (hasWindow) Object.defineProperty(window, 'scrollTo', { value: vi.fn(), writable: true })
+
+if (hasWindow && !window.matchMedia) {
   window.matchMedia = (query: string) => ({
     matches: false,
     media: query,
@@ -21,7 +24,7 @@ if (!window.matchMedia) {
   })
 }
 
-if (!('IntersectionObserver' in window)) {
+if (hasWindow && !('IntersectionObserver' in window)) {
   class MockIntersectionObserver {
     observe() {}
     unobserve() {}
@@ -34,7 +37,7 @@ if (!('IntersectionObserver' in window)) {
   window.IntersectionObserver = MockIntersectionObserver
 }
 
-if (!navigator.clipboard) {
+if (hasWindow && !navigator.clipboard) {
   Object.assign(navigator, {
     clipboard: {
       writeText: () => Promise.resolve(),
