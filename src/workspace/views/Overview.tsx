@@ -99,10 +99,10 @@ export function Overview({ env, onOpenCase, onSeeAll }: OverviewProps) {
 
       {/* §28 — "what should I do", answered with one number and one door. */}
       <section className="wk-section">
-        <div className="wk-card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 27, flexWrap: 'wrap' }}>
+        <div className="wk-card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 25, flexWrap: 'wrap' }}>
           <div>
             <span className="wk-label">Waiting on you</span>
-            <p style={{ marginTop: 10, fontSize: 16, maxWidth: 590 }}>
+            <p style={{ marginTop: 9, fontSize: 15, maxWidth: 549 }}>
               {l.awaitingDecision > 0 ? (
                 <>
                   <b className="wk-num">{formatCurrency(l.awaitingDecision)}</b> is verified and undecided. Reclaim
@@ -164,12 +164,12 @@ export function Overview({ env, onOpenCase, onSeeAll }: OverviewProps) {
         <div className="wk-section-head">
           <h2 className="wk-display wk-h2">Why it happened</h2>
         </div>
-        <ul style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+        <ul style={{ display: 'flex', flexDirection: 'column', gap: 17 }}>
           {causes.map((cause) => (
             <li key={cause.type}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 17, marginBottom: 8 }}>
-                <span style={{ fontSize: 14.5 }}>{cause.label}</span>
-                <span className="wk-num wk-dim" style={{ fontSize: 14 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, marginBottom: 7 }}>
+                <span style={{ fontSize: 13.5 }}>{cause.label}</span>
+                <span className="wk-num wk-dim" style={{ fontSize: 13 }}>
                   {formatCurrency(cause.value)}
                 </span>
               </div>

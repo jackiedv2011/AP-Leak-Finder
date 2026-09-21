@@ -38,7 +38,7 @@ export function CaseDetail({ finding, state, onDecide, onMarkRequested, onRecord
               <h2 className="wk-display wk-figure-sm" style={{ marginTop: 10 }}>
                 {formatCurrency(finding.dollarImpact)}
               </h2>
-              <p className="wk-dim" style={{ marginTop: 10, maxWidth: 590 }}>
+              <p className="wk-dim" style={{ marginTop: 9, maxWidth: 549 }}>
                 {finding.explanation}
               </p>
             </div>
@@ -56,7 +56,7 @@ export function CaseDetail({ finding, state, onDecide, onMarkRequested, onRecord
             <>
               <hr className="wk-rule" style={{ margin: '18px 0' }} />
               <span className="wk-label">Still open</span>
-              <p style={{ marginTop: 8, fontSize: 15 }}>{question}</p>
+              <p style={{ marginTop: 8, fontSize: 14 }}>{question}</p>
             </>
           ) : null}
 
@@ -182,7 +182,7 @@ export function CaseDetail({ finding, state, onDecide, onMarkRequested, onRecord
 
       <Section title="Accounting">
         <div className="wk-card-flat">
-          <p className="wk-dim" style={{ fontSize: 15, maxWidth: 665 }}>
+          <p className="wk-dim" style={{ fontSize: 14, maxWidth: 618 }}>
             {state.recoveryStage === 'recovered' ? (
               <>
                 {formatCurrency(state.recoveredAmount ?? finding.dollarImpact)} came back. Clear the vendor

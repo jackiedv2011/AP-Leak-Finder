@@ -24,17 +24,17 @@ export function Launch({ onRunSample, onUseOwn, running = false, note }: LaunchP
 
       <div className="wk-launch-copy">
         <span className="wk-label">Sample ledger · 80 payments</span>
-        <h1 className="wk-display" style={{ fontSize: 65, marginTop: 15 }}>
+        <h1 className="wk-display" style={{ fontSize: 60, marginTop: 14 }}>
           See what the
           <br />
           checks find.
         </h1>
-        <p style={{ marginTop: 19, maxWidth: 475, color: 'var(--text-dim)', fontSize: 16 }}>
+        <p style={{ marginTop: 18, maxWidth: 442, color: 'var(--text-dim)', fontSize: 15 }}>
           Seven checks run against eighty real payment records from twelve vendors. Nothing is uploaded, nothing
           leaves this browser, and every result opens to the rows behind it.
         </p>
 
-        <div style={{ display: 'flex', gap: 13, marginTop: 30, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: 12, marginTop: 28, flexWrap: 'wrap' }}>
           <button type="button" className="wk-btn" data-variant="primary" onClick={onRunSample} disabled={running}>
             {running ? 'Reading the ledger…' : 'Run the sample'}
             {running ? null : <ArrowRight aria-hidden="true" />}
@@ -46,7 +46,7 @@ export function Launch({ onRunSample, onUseOwn, running = false, note }: LaunchP
         </div>
 
         {note ? (
-          <p className="wk-label" style={{ marginTop: 21, color: 'var(--warn)' }}>
+          <p className="wk-label" style={{ marginTop: 20, color: 'var(--warn)' }}>
             {note}
           </p>
         ) : null}

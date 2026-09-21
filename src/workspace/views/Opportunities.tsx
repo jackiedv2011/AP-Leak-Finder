@@ -32,7 +32,7 @@ export function Opportunities({ env, onOpenCase }: OpportunitiesProps) {
       <div className="wk-section-head">
         {/* The order is not by size, and a reader who assumes it is will think
             the table is broken. Say what it is sorted by. */}
-        <p className="wk-dim" style={{ fontSize: 14 }}>
+        <p className="wk-dim" style={{ fontSize: 13 }}>
           Ordered by what is worth chasing first — value weighed against how well the records support it.
         </p>
         <span className="wk-label">
@@ -74,7 +74,7 @@ export function Opportunities({ env, onOpenCase }: OpportunitiesProps) {
                     {DECISION_LABEL[o.state.decision]}
                   </span>
                 ) : (
-                  <span className="wk-dim" style={{ fontSize: 14 }}>
+                  <span className="wk-dim" style={{ fontSize: 13 }}>
                     —
                   </span>
                 )}

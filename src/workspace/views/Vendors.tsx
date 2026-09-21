@@ -49,7 +49,7 @@ export function Vendors({ env }: { env: LedgerEnvironment }) {
               <td className="wk-num">{v.caseCount === 0 ? '—' : v.caseCount}</td>
               <td>
                 {v.strongest === null ? (
-                  <span className="wk-dim" style={{ fontSize: 14 }}>
+                  <span className="wk-dim" style={{ fontSize: 13 }}>
                     Nothing flagged
                   </span>
                 ) : (
