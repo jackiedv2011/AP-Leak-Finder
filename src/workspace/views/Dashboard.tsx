@@ -5,6 +5,8 @@ import { ladder, opportunities, rootCauses } from '../selectors'
 import { lockedSummary } from '../planGates'
 import { Locked } from '@/components/plan/Locked'
 import { Strength } from './Strength'
+import { SCREEN_OBJECT } from '../objects'
+import { WorkObject } from '../WorkObject'
 
 interface DashboardProps {
   env: LedgerEnvironment
@@ -51,6 +53,16 @@ function findingsTable(rows: ReturnType<typeof opportunities>, onOpenCase: ((id:
   )
 }
 
+/** A bar can round a real amount down to nothing, so it always keeps a mark. */
+function Meter({ value, scale }: { value: number; scale: number }) {
+  const share = value / scale
+  return (
+    <div className="wk-rung-track" aria-hidden="true">
+      <i style={{ width: share <= 0 ? '0%' : `${Math.max(1.5, Math.min(100, share * 100))}%` }} />
+    </div>
+  )
+}
+
 function Stat({
   label,
   value,
@@ -87,6 +99,17 @@ export function Dashboard({ env, visible, auditCount, auditLabel, onOpenCase, on
   const locked = lockedSummary(all.map((o) => o.finding), visible)
   const biggestCause = causes[0]?.value ?? 1
 
+  // One scale for all three stages: the largest figure on the board. Not a
+  // total — `ladder()` keeps the stages disjoint and §3 forbids adding them —
+  // just the common denominator that lets three separate bars be compared.
+  const scale = Math.max(l.potential, l.verified, l.inRecovery, l.recovered, 1)
+  // Where the money has actually got to. Everything past it is demoted rather
+  // than given equal weight to a figure thousands of dollars larger.
+  const frontier = [l.verified, l.inRecovery, l.recovered].reduce(
+    (deepest, value, index) => (value > 0 ? index : deepest),
+    -1
+  )
+
   return (
     <>
       <section className="wk-section">
@@ -95,7 +118,6 @@ export function Dashboard({ env, visible, auditCount, auditLabel, onOpenCase, on
             label="Potential recovery"
             value={formatCurrency(l.potential)}
             note={`Across ${l.counts.potential} ${plural(l.counts.potential, 'finding')} in ${auditLabel}.`}
-            accent={l.potential > 0}
           />
           <Stat
             label="Findings"
@@ -156,28 +178,41 @@ export function Dashboard({ env, visible, auditCount, auditLabel, onOpenCase, on
           <h2 className="wk-display wk-h2">Recovery pipeline</h2>
           <p>Each figure is a separate stage. They are never added together.</p>
         </div>
-        <div className="wk-pipeline">
-          <div>
-            <span className="wk-label">Verified</span>
-            <span className="wk-pipeline-figure">{formatCurrency(l.verified)}</span>
-            <span className="wk-ladder-note">
-              {l.counts.verified} {plural(l.counts.verified, 'finding')} the records support
-            </span>
+        {/* The object stands beside the stages rather than above them: it is
+            the largest thing on the screen, and the money is the most
+            important, so they share a row and neither pushes the other down. */}
+        <div className="wk-dash-pipeline">
+          <div className="wk-pipeline">
+            <div data-frontier={frontier === 0 || undefined}>
+              <span className="wk-label">Verified</span>
+              <span className="wk-pipeline-figure">{formatCurrency(l.verified)}</span>
+              <Meter value={l.verified} scale={scale} />
+              <span className="wk-ladder-note">
+                {l.counts.verified} {plural(l.counts.verified, 'finding')} the records support
+              </span>
+            </div>
+            <div data-frontier={frontier === 1 || undefined} data-unreached={frontier < 1 || undefined}>
+              <span className="wk-label">In recovery</span>
+              <span className="wk-pipeline-figure">{formatCurrency(l.inRecovery)}</span>
+              <Meter value={l.inRecovery} scale={scale} />
+              <span className="wk-ladder-note">
+                {l.counts.inRecovery} {plural(l.counts.inRecovery, 'request')} out with vendors
+              </span>
+            </div>
+            <div
+              data-accent={l.recovered > 0 || undefined}
+              data-frontier={frontier === 2 || undefined}
+              data-unreached={frontier < 2 || undefined}
+            >
+              <span className="wk-label">Recovered</span>
+              <span className="wk-pipeline-figure">{formatCurrency(l.recovered)}</span>
+              <Meter value={l.recovered} scale={scale} />
+              <span className="wk-ladder-note">
+                {l.counts.recovered} {plural(l.counts.recovered, 'case')} settled
+              </span>
+            </div>
           </div>
-          <div>
-            <span className="wk-label">In recovery</span>
-            <span className="wk-pipeline-figure">{formatCurrency(l.inRecovery)}</span>
-            <span className="wk-ladder-note">
-              {l.counts.inRecovery} {plural(l.counts.inRecovery, 'request')} out with vendors
-            </span>
-          </div>
-          <div data-accent={l.recovered > 0 || undefined}>
-            <span className="wk-label">Recovered</span>
-            <span className="wk-pipeline-figure">{formatCurrency(l.recovered)}</span>
-            <span className="wk-ladder-note">
-              {l.counts.recovered} {plural(l.counts.recovered, 'case')} settled
-            </span>
-          </div>
+          <WorkObject name={SCREEN_OBJECT.dashboard} height={186} />
         </div>
       </section>
 
