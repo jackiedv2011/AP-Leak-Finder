@@ -3,6 +3,8 @@ import { DECISION_LABEL, RECOVERY_STAGE_LABEL, type DecisionValue } from '@/ledg
 import type { CaseState } from '@/ledger/caseState'
 import type { Finding } from '@/types'
 import { evidenceOf, openQuestion, timelineFor } from '../selectors'
+import { causeOf } from '../objects'
+import { WorkObject } from '../WorkObject'
 import { Strength } from './Overview'
 
 interface CaseDetailProps {
@@ -27,6 +29,10 @@ export function CaseDetail({ finding, state, onDecide, onMarkRequested, onRecord
   const evidence = evidenceOf(finding)
   const question = openQuestion(finding)
   const steps = timelineFor(finding, state)
+  // What went wrong, in the four words a controller would use for it. The
+  // engine's rule name ("near-duplicate payment") is still on the list screens
+  // and in the evidence below; this is the same case stated as a cause.
+  const cause = causeOf(finding.type)
 
   return (
     <>
@@ -49,6 +55,10 @@ export function CaseDetail({ finding, state, onDecide, onMarkRequested, onRecord
                   {RECOVERY_STAGE_LABEL[state.recoveryStage]}
                 </span>
               ) : null}
+            </div>
+            <div className="wk-case-cause">
+              <WorkObject name={cause.object} height={104} />
+              <span className="wk-label">{cause.label}</span>
             </div>
           </div>
 

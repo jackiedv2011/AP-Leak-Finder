@@ -492,6 +492,72 @@ html[data-theme='light'] .wk {
   .wk-seg-thumb { transition: none; }
 }
 
+/* ---------- 3D objects ---------- */
+/* See workspace/objects.tsx for why these are the only colour on the screen.
+   They are alpha stills, so nothing sits behind one — no plate, no tint, no
+   second file for light mode. The chrome around them stays monochrome. */
+.wk-object {
+  display: block;
+  flex: none;
+  /* Sized by height, with the width following the aspect ratio the img's own
+     attributes carry. `object-fit` is the guard for the one case where a very
+     narrow column clamps the width: the object letterboxes rather than
+     stretching. */
+  height: var(--wk-obj-h);
+  width: auto;
+  max-width: 100%;
+  object-fit: contain;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+/* The screen's opening line and its object, straight on the canvas — the same
+   way the marketing site sets a render, with no card around it. */
+.wk-screen-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 32px;
+  padding-bottom: 27px;
+  border-bottom: 1px solid var(--line);
+}
+.wk-screen-head p { font-size: 14px; color: var(--text-dim); max-width: 42ch; }
+
+/* The ladder and the tower share the first row. The object is as tall as the
+   four rungs together, which makes it the largest thing on the overview —
+   the weight the marketing site gives its hero render, on the screen that
+   opens the product. */
+.wk-overview-top { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 32px; }
+
+/* An empty screen has nothing to look at by definition, so the object stops
+   being a mark beside the content and becomes the content. */
+.wk-empty[data-object] { align-items: center; text-align: center; gap: 13px; padding: 36px 21px 44px; }
+.wk-empty[data-object] p { margin-inline: auto; }
+.wk-empty .wk-object { margin-bottom: 8px; }
+
+/* The object naming the case's cause, at the end of the summary row. */
+.wk-case-cause { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+
+@media (max-width: 1250px) {
+  .wk-overview-top .wk-object { height: 206px; }
+}
+@media (max-width: 900px) {
+  .wk-overview-top { gap: 22px; }
+  .wk-overview-top .wk-object { height: 168px; }
+  .wk-screen-head { gap: 18px; padding-bottom: 21px; }
+  .wk-screen-head .wk-object { height: 94px; }
+}
+@media (max-width: 560px) {
+  /* Below this the ladder is already one column, and a tower beside it would
+     squeeze both. It moves above the rungs rather than disappearing — the
+     section then reads heading, object, figures, the same order the marketing
+     site sets a render in. */
+  .wk-overview-top { grid-template-columns: minmax(0, 1fr); justify-items: center; gap: 20px; }
+  .wk-overview-top .wk-object { order: -1; height: 156px; }
+  .wk-screen-head { flex-direction: column; align-items: flex-start; gap: 16px; }
+  .wk-screen-head .wk-object { height: 112px; }
+}
+
 /* ---------- empty + misc ---------- */
 .wk-empty { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; padding: 43px 21px; border: 1px dashed var(--line); border-radius: 14px; color: var(--text-muted); }
 .wk-rule { height: 1px; background: var(--line); border: 0; }

@@ -25,17 +25,19 @@ for (const name of ['pushState', 'replaceState'] as const) {
   }
 }
 
-// Launch's video is authored as a site-absolute path; resolve it against this
-// bundle instead if the host doesn't serve from its origin root.
+// The launch video and the workspace's 3D stills are authored as site-absolute
+// paths under /media/; resolve them against this bundle instead if the host
+// doesn't serve from its origin root.
 addEventListener(
   'error',
   (event) => {
     const el = event.target
-    if (el instanceof HTMLVideoElement && el.src.includes('/media/') && !el.dataset.retried) {
-      el.dataset.retried = '1'
-      el.src = new URL('media/find.webm', document.baseURI).href
-      el.load()
-    }
+    if (!(el instanceof HTMLVideoElement) && !(el instanceof HTMLImageElement)) return
+    if (!el.src.includes('/media/') || el.dataset.retried) return
+    el.dataset.retried = '1'
+    const rest = el.src.slice(el.src.indexOf('/media/') + 1)
+    el.src = new URL(rest, document.baseURI).href
+    if (el instanceof HTMLVideoElement) el.load()
   },
   true
 )

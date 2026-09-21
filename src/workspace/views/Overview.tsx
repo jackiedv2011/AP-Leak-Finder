@@ -2,6 +2,8 @@ import { ArrowRight } from 'lucide-react'
 import { formatCurrency, plural } from '@/lib/format'
 import type { LedgerEnvironment } from '@/ledger/store'
 import { EVIDENCE_LABEL, ladder, opportunities, rootCauses, type Opportunity } from '../selectors'
+import { SCREEN_OBJECT } from '../objects'
+import { WorkObject } from '../WorkObject'
 
 interface OverviewProps {
   env: LedgerEnvironment
@@ -59,41 +61,47 @@ export function Overview({ env, onOpenCase, onSeeAll }: OverviewProps) {
           <h2 className="wk-display wk-h2">Where the money stands</h2>
           <span className="wk-label">{l.counts.potential} cases</span>
         </div>
-        <div className="wk-ladder">
-          <Rung
-            label="Potential"
-            value={l.potential}
-            note={`${l.counts.potential} ${plural(l.counts.potential, 'case')} the checks surfaced, before anyone judged them.`}
-          />
-          <Rung
-            label="Verified"
-            value={l.verified}
-            note={`${l.counts.verified} where the records support a claim. Not yet agreed by any vendor.`}
-          />
-          <Rung
-            label="In recovery"
-            value={l.inRecovery}
-            note={
-              l.counts.inRecovery > 0
-                ? `${l.counts.inRecovery} ${plural(l.counts.inRecovery, 'request is', 'requests are')} out with vendors.`
-                : l.counts.recovered > 0
-                  ? 'Nothing is out with a vendor right now.'
-                  : 'Nothing has been sent yet.'
-            }
-          />
-          <Rung
-            label="Recovered"
-            value={l.recovered}
-            // The accent belongs to money that actually came back. Painting a
-            // $0.00 green celebrates nothing and cheapens the one figure on
-            // this screen worth trusting.
-            terminal={l.recovered > 0}
-            note={
-              l.counts.recovered > 0
-                ? `${l.counts.recovered} closed with money actually back.`
-                : 'Money only counts here once it has actually settled.'
-            }
-          />
+        {/* The object stands beside the rungs rather than above them: it is the
+            largest thing on the screen, and the rungs are the most important,
+            so they occupy the same row and neither pushes the other down. */}
+        <div className="wk-overview-top">
+          <div className="wk-ladder">
+            <Rung
+              label="Potential"
+              value={l.potential}
+              note={`${l.counts.potential} ${plural(l.counts.potential, 'case')} the checks surfaced, before anyone judged them.`}
+            />
+            <Rung
+              label="Verified"
+              value={l.verified}
+              note={`${l.counts.verified} where the records support a claim. Not yet agreed by any vendor.`}
+            />
+            <Rung
+              label="In recovery"
+              value={l.inRecovery}
+              note={
+                l.counts.inRecovery > 0
+                  ? `${l.counts.inRecovery} ${plural(l.counts.inRecovery, 'request is', 'requests are')} out with vendors.`
+                  : l.counts.recovered > 0
+                    ? 'Nothing is out with a vendor right now.'
+                    : 'Nothing has been sent yet.'
+              }
+            />
+            <Rung
+              label="Recovered"
+              value={l.recovered}
+              // The accent belongs to money that actually came back. Painting a
+              // $0.00 green celebrates nothing and cheapens the one figure on
+              // this screen worth trusting.
+              terminal={l.recovered > 0}
+              note={
+                l.counts.recovered > 0
+                  ? `${l.counts.recovered} closed with money actually back.`
+                  : 'Money only counts here once it has actually settled.'
+              }
+            />
+          </div>
+          <WorkObject name={SCREEN_OBJECT.overview} height={268} />
         </div>
       </section>
 

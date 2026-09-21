@@ -4,6 +4,7 @@ import { assessRecordReadiness } from '@/audit/dataReadiness'
 import type { LedgerEnvironment } from '@/ledger/store'
 import type { ResolvedTheme, ThemeChoice } from '../theme'
 import { ladder, rootCauses } from '../selectors'
+import { ScreenHead } from '../WorkObject'
 
 function Facts({ rows }: { rows: Array<[string, string]> }) {
   return (
@@ -28,6 +29,7 @@ export function Reports({ env }: { env: LedgerEnvironment }) {
   const causes = rootCauses(env)
   return (
     <>
+      <ScreenHead mode="reports" />
       <section className="wk-section">
         <h2 className="wk-display wk-h2">This ledger</h2>
         <Facts
@@ -77,6 +79,7 @@ export function DataView({ env, onImport }: { env: LedgerEnvironment; onImport: 
   )
   return (
     <>
+      <ScreenHead mode="data" />
       <section className="wk-section">
         <h2 className="wk-display wk-h2">What Reclaim read</h2>
         <Facts
@@ -147,6 +150,7 @@ export function SettingsView({ env, onClear, theme, resolvedTheme, onThemeChange
   const s = overviewSummary(env)
   return (
     <>
+      <ScreenHead mode="settings" />
       <section className="wk-section">
         <h2 className="wk-display wk-h2">Appearance</h2>
         <div className="wk-card">

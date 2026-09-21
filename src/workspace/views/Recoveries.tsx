@@ -2,6 +2,8 @@ import { formatCurrency } from '@/lib/format'
 import { RECOVERY_STAGE_LABEL, type RecoveryStage } from '@/ledger/caseState'
 import type { LedgerEnvironment } from '@/ledger/store'
 import { recoveries } from '../selectors'
+import { SCREEN_OBJECT } from '../objects'
+import { ScreenHead, WorkObject } from '../WorkObject'
 
 const STAGE_ORDER: RecoveryStage[] = ['confirmed', 'requested', 'recovered', 'not_recovered']
 const STAGE_TONE: Record<RecoveryStage, string> = {
@@ -17,7 +19,8 @@ export function Recoveries({ env, onOpenCase }: { env: LedgerEnvironment; onOpen
 
   if (rows.length === 0) {
     return (
-      <div className="wk-empty">
+      <div className="wk-empty" data-object>
+        <WorkObject name={SCREEN_OBJECT.recoveries} height={170} />
         <span className="wk-label">No recoveries yet</span>
         <p style={{ maxWidth: 512 }}>
           A case lands here once you've confirmed it's real. Nothing goes to a vendor without that step.
@@ -28,6 +31,7 @@ export function Recoveries({ env, onOpenCase }: { env: LedgerEnvironment; onOpen
 
   return (
     <>
+      <ScreenHead mode="recoveries" />
       {STAGE_ORDER.map((stage) => {
         const inStage = rows.filter((o) => o.state.recoveryStage === stage)
         if (inStage.length === 0) return null
