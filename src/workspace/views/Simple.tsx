@@ -2,6 +2,7 @@ import { formatCurrency } from '@/lib/format'
 import { overviewSummary } from '@/ledger/views'
 import { assessRecordReadiness } from '@/audit/dataReadiness'
 import type { LedgerEnvironment } from '@/ledger/store'
+import type { ResolvedTheme, ThemeChoice } from '../theme'
 import { ladder, rootCauses } from '../selectors'
 
 function Facts({ rows }: { rows: Array<[string, string]> }) {
@@ -125,11 +126,50 @@ export function DataView({ env, onImport }: { env: LedgerEnvironment; onImport: 
   )
 }
 
+const THEME_OPTIONS: Array<{ value: ThemeChoice; name: string; note: string }> = [
+  { value: 'system', name: 'Match my system', note: 'Follows your device, and changes with it.' },
+  { value: 'light', name: 'Light', note: 'Always the light canvas, whatever your device says.' },
+  { value: 'dark', name: 'Dark', note: 'Always the dark canvas, whatever your device says.' },
+]
+
+interface SettingsViewProps {
+  env: LedgerEnvironment
+  onClear: () => void
+  theme: ThemeChoice
+  resolvedTheme: ResolvedTheme
+  onThemeChange: (choice: ThemeChoice) => void
+}
+
 /** §27's Settings — deliberately small. */
-export function SettingsView({ env, onClear }: { env: LedgerEnvironment; onClear: () => void }) {
+export function SettingsView({ env, onClear, theme, resolvedTheme, onThemeChange }: SettingsViewProps) {
   const s = overviewSummary(env)
   return (
     <>
+      <section className="wk-section">
+        <div className="wk-section-head">
+          <h2 className="wk-display wk-h2">Appearance</h2>
+          {/* Say which one is actually in effect: on "Match my system" the
+              chosen option alone doesn't tell you what you're looking at. */}
+          <span className="wk-label">Showing {resolvedTheme}</span>
+        </div>
+        <div className="wk-card">
+          <div className="wk-choice" role="group" aria-label="Appearance">
+            {THEME_OPTIONS.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                aria-pressed={theme === option.value}
+                onClick={() => onThemeChange(option.value)}
+              >
+                <span>
+                  <span className="wk-choice-name">{option.name}</span>
+                  <span className="wk-choice-note">{option.note}</span>
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </section>
       <section className="wk-section">
         <h2 className="wk-display wk-h2">This workspace</h2>
         <Facts

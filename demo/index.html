@@ -11,7 +11,27 @@
       href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:opsz,wght@14..32,300..700&family=JetBrains+Mono:wght@400;500&display=swap"
       rel="stylesheet"
     />
-    <style>html,body,#root{margin:0;padding:0;min-height:100%;background:#000}</style>
+    <script>
+      /* Resolve the theme before first paint, so the workspace never flashes
+         the wrong canvas on a full navigation. Mirrors workspace/theme.ts —
+         same key, same three choices — and stays deliberately tiny and
+         dependency-free because it blocks rendering. */
+      (function () {
+        try {
+          var c = localStorage.getItem('reclaim.theme.v1');
+          if (c !== 'light' && c !== 'dark') {
+            c = matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+          }
+          document.documentElement.dataset.theme = c;
+        } catch (e) {
+          document.documentElement.dataset.theme = 'dark';
+        }
+      })();
+    </script>
+    <style>
+      html,body,#root{margin:0;padding:0;min-height:100%;background:#000}
+      html[data-theme='light'],html[data-theme='light'] body{background:#fff}
+    </style>
   </head>
   <body>
     <div id="root"></div>

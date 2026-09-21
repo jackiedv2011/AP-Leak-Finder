@@ -11,6 +11,7 @@ import { Vendors } from '@/workspace/views/Vendors'
 import { Reports, DataView, SettingsView } from '@/workspace/views/Simple'
 import { CaseDetail } from '@/workspace/views/CaseDetail'
 import { useAuditRoute, loadPersistedContext, type RouteMode } from '@/audit/useAuditRoute'
+import { useTheme } from '@/workspace/theme'
 import {
   loadEnvironment,
   mergeImport,
@@ -59,6 +60,7 @@ function sampleImportInput(): MergeImportInput {
 
 export function AuditApp() {
   const { route, navigate, goBack } = useAuditRoute()
+  const { choice: themeChoice, resolved: resolvedTheme, choose: chooseTheme } = useTheme()
   const [project, setProject] = useState<LedgerProject | null>(() => {
     migrateLegacyLedger(loadEnvironment)
     const projectId = route.projectId ?? getActiveProjectId()
@@ -381,7 +383,13 @@ export function AuditApp() {
         ) : route.mode === 'data' ? (
           <DataView env={environment} onImport={() => setImportDialogOpen(true)} />
         ) : (
-          <SettingsView env={environment} onClear={() => setClearDialogOpen(true)} />
+          <SettingsView
+            env={environment}
+            onClear={() => setClearDialogOpen(true)}
+            theme={themeChoice}
+            resolvedTheme={resolvedTheme}
+            onThemeChange={chooseTheme}
+          />
         )}
       </WorkspaceShell>
 
