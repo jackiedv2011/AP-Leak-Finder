@@ -330,6 +330,9 @@ export function AuditApp() {
   return (
     <>
       <WorkspaceShell
+        // A case is its own screen, so opening or closing one replays the
+        // entry the same way switching sections does.
+        viewKey={activeFinding ? `case:${activeFinding.id}` : `mode:${route.mode}`}
         mode={route.mode}
         onModeChange={(mode) => navigate({ mode, caseId: null, draft: false })}
         opportunityCount={environment.result.findings.length}

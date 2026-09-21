@@ -37,6 +37,13 @@ export interface WorkspaceShellProps {
   title: string
   subtitle?: string
   actions?: ReactNode
+  /**
+   * Changes whenever the visible screen does. It remounts the header and body
+   * so their entry animation replays on each navigation — a CSS animation
+   * otherwise runs once, on first mount, and every later screen would appear
+   * with no transition at all.
+   */
+  viewKey: string
   children: ReactNode
 }
 
@@ -63,6 +70,7 @@ export function WorkspaceShell({
   title,
   subtitle,
   actions,
+  viewKey,
   children,
 }: WorkspaceShellProps) {
   const primary: NavEntry[] = [
@@ -118,13 +126,13 @@ export function WorkspaceShell({
 
       <div className="wk-main">
         <header className="wk-topbar">
-          <div className="wk-topbar-title">
+          <div className="wk-topbar-title" key={viewKey}>
             {subtitle ? <span className="wk-label">{subtitle}</span> : null}
             <h1 className="wk-display wk-h1">{title}</h1>
           </div>
           {actions ? <div style={{ display: 'flex', gap: 10 }}>{actions}</div> : null}
         </header>
-        <main className="wk-body">{children}</main>
+        <main className="wk-body" key={viewKey}>{children}</main>
       </div>
     </div>
   )
