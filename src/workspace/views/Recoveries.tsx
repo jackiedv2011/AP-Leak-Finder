@@ -19,7 +19,7 @@ export function Recoveries({ env, onOpenCase }: { env: LedgerEnvironment; onOpen
     return (
       <div className="wk-empty">
         <span className="wk-label">No recoveries yet</span>
-        <p style={{ maxWidth: 580 }}>
+        <p style={{ maxWidth: 550 }}>
           A case lands here once you've confirmed it's real. Nothing goes to a vendor without that step.
         </p>
       </div>

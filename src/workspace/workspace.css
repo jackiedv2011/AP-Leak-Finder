@@ -30,8 +30,8 @@
   --f-text: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --f-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
-  --sidebar-w: 276px;
-  --gutter: 40px;
+  --sidebar-w: 262px;
+  --gutter: 38px;
 
   position: relative;
   display: grid;
@@ -40,7 +40,7 @@
   background: var(--bg);
   color: var(--text);
   font-family: var(--f-text);
-  font-size: 16px;
+  font-size: 15px;
   line-height: 1.55;
   -webkit-font-smoothing: antialiased;
 }
@@ -62,14 +62,14 @@
   letter-spacing: -0.02em;
   text-transform: uppercase;
 }
-.wk-h1 { font-size: 36px; }
-.wk-h2 { font-size: 27px; }
-.wk-figure { font-size: 62px; font-variant-numeric: tabular-nums; }
-.wk-figure-sm { font-size: 36px; font-variant-numeric: tabular-nums; }
+.wk-h1 { font-size: 34px; }
+.wk-h2 { font-size: 26px; }
+.wk-figure { font-size: 59px; font-variant-numeric: tabular-nums; }
+.wk-figure-sm { font-size: 34px; font-variant-numeric: tabular-nums; }
 
 .wk-label {
   font-family: var(--f-mono);
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 500;
   letter-spacing: 0.085em;
   text-transform: uppercase;
@@ -83,8 +83,8 @@
 .wk-side {
   display: flex;
   flex-direction: column;
-  gap: 32px;
-  padding: 28px 18px;
+  gap: 30px;
+  padding: 27px 17px;
   border-right: 1px solid var(--line);
   background: var(--bg);
   position: sticky;
@@ -92,26 +92,26 @@
   height: 100dvh;
   overflow-y: auto;
 }
-.wk-brand { display: flex; align-items: center; gap: 11px; padding: 0 8px; height: 38px; }
-.wk-brand svg { width: 26px; height: 26px; flex: none; fill: currentColor; overflow: visible; }
+.wk-brand { display: flex; align-items: center; gap: 10px; padding: 0 8px; height: 36px; }
+.wk-brand svg { width: 25px; height: 25px; flex: none; fill: currentColor; overflow: visible; }
 .wk-brand b {
   font-family: var(--f-display);
-  font-size: 25px;
+  font-size: 24px;
   font-weight: 700;
   letter-spacing: -0.02em;
   text-transform: uppercase;
 }
 .wk-nav { display: flex; flex-direction: column; gap: 2px; }
-.wk-nav-group { margin-top: 22px; padding: 0 8px 8px; }
+.wk-nav-group { margin-top: 21px; padding: 0 8px 8px; }
 .wk-nav-item {
   display: grid;
-  grid-template-columns: 18px 1fr auto;
+  grid-template-columns: 17px 1fr auto;
   align-items: center;
-  gap: 12px;
+  gap: 11px;
   padding: 10px 10px;
   border-radius: 9px;
   color: var(--text-muted);
-  font-size: 15.5px;
+  font-size: 14.5px;
   cursor: pointer;
   border: 0;
   background: none;
@@ -120,14 +120,14 @@
   font-family: inherit;
   transition: background-color .14s ease, color .14s ease;
 }
-.wk-nav-item svg { width: 18px; height: 18px; stroke-width: 1.6; }
+.wk-nav-item svg { width: 17px; height: 17px; stroke-width: 1.6; }
 .wk-nav-item:hover { background: var(--raised); color: var(--text-dim); }
 .wk-nav-item[aria-current='page'] { background: var(--raised); color: var(--text); }
 /* count sits as plain tabular text, not a filled badge */
-.wk-nav-count { font-family: var(--f-mono); font-size: 13px; color: var(--text-muted); }
+.wk-nav-count { font-family: var(--f-mono); font-size: 12.5px; color: var(--text-muted); }
 .wk-nav-item[aria-current='page'] .wk-nav-count { color: var(--accent); }
 
-.wk-side-foot { margin-top: auto; padding: 16px 8px 0; border-top: 1px solid var(--line); }
+.wk-side-foot { margin-top: auto; padding: 15px 8px 0; border-top: 1px solid var(--line); }
 
 /* ---------- main ---------- */
 .wk-main { min-width: 0; display: flex; flex-direction: column; }
@@ -136,7 +136,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  min-height: 76px;
+  min-height: 72px;
   padding: 0 var(--gutter);
   border-bottom: 1px solid var(--line);
   position: sticky;
@@ -146,44 +146,48 @@
   backdrop-filter: blur(10px);
 }
 .wk-topbar-title { display: flex; flex-direction: column; gap: 2px; }
-.wk-body { padding: 34px var(--gutter) 76px; display: flex; flex-direction: column; gap: 40px; }
-.wk-section { display: flex; flex-direction: column; gap: 17px; }
-.wk-section-head { display: flex; align-items: baseline; justify-content: space-between; gap: 18px; }
+.wk-body { padding: 32px var(--gutter) 72px; display: flex; flex-direction: column; gap: 38px; }
+.wk-section { display: flex; flex-direction: column; gap: 16px; }
+.wk-section-head { display: flex; align-items: baseline; justify-content: space-between; gap: 17px; }
 
 /* ---------- surfaces ---------- */
 .wk-card {
   border: 1px solid var(--line);
-  border-radius: 16px;
+  border-radius: 15px;
   background: var(--raised);
-  padding: 24px;
+  padding: 23px;
 }
-.wk-card-flat { border: 1px solid var(--line); border-radius: 16px; background: transparent; padding: 24px; }
+.wk-card-flat { border: 1px solid var(--line); border-radius: 15px; background: transparent; padding: 23px; }
 
 /* ---------- the value ladder ---------- */
 /* Spec §3: these never blur together, so they read as one row of distinct
    figures with the billable one marked, not a single headline number. */
-.wk-ladder { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
-.wk-ladder > * { background: var(--raised); padding: 24px; display: flex; flex-direction: column; gap: 12px; }
+.wk-ladder { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 15px; overflow: hidden; }
+.wk-ladder > * { background: var(--raised); padding: 23px; display: flex; flex-direction: column; gap: 11px; }
 .wk-ladder-figure { display: flex; align-items: baseline; gap: 8px; }
-.wk-ladder-note { font-size: 14px; color: var(--text-muted); }
+.wk-ladder-note { font-size: 13.5px; color: var(--text-muted); }
 .wk-ladder [data-terminal='true'] .wk-figure { color: var(--accent); }
 
 /* Column count follows the figures, not the other way round. These amounts are
    the whole point of the screen, so a cell is only ever as narrow as the
    longest number it has to print in full — four-across fits only on a genuinely
    wide display, and below that two reads bigger and stays honest. A clipped
-   "$21,678.4(" is worse than a taller page. */
-@media (min-width: 1700px) {
+   "$21,678.4(" is worse than a taller page.
+
+   The four-up threshold is set for a seven-figure amount, not for the sample's
+   five-figure one — a real ledger will carry wider numbers than this demo does,
+   and the breakpoint has to hold for those too. */
+@media (min-width: 1850px) {
   .wk-ladder { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
 
 @media (max-width: 760px) {
   .wk-ladder { grid-template-columns: minmax(0, 1fr); }
-  .wk-figure { font-size: 46px; }
+  .wk-figure { font-size: 44px; }
 }
 
 /* ---------- marks (no pills) ---------- */
-.wk-mark { display: inline-flex; align-items: center; gap: 9px; font-family: var(--f-mono); font-size: 13px; letter-spacing: 0.075em; text-transform: uppercase; color: var(--text-dim); }
+.wk-mark { display: inline-flex; align-items: center; gap: 8px; font-family: var(--f-mono); font-size: 12.5px; letter-spacing: 0.075em; text-transform: uppercase; color: var(--text-dim); }
 .wk-mark::before { content: ''; width: 8px; height: 8px; flex: none; background: currentColor; }
 .wk-mark[data-tone='strong'] { color: var(--accent); }
 .wk-mark[data-tone='review'] { color: var(--warn); }
@@ -191,35 +195,35 @@
 .wk-mark[data-tone='info'] { color: var(--info); }
 
 /* evidence strength: three rules, filled to the level — spec §12, no percentages */
-.wk-strength { display: inline-flex; align-items: center; gap: 10px; }
+.wk-strength { display: inline-flex; align-items: center; gap: 9px; }
 .wk-strength-bars { display: inline-flex; gap: 4px; }
-.wk-strength-bars i { width: 17px; height: 3px; background: var(--line); display: block; }
+.wk-strength-bars i { width: 16px; height: 3px; background: var(--line); display: block; }
 .wk-strength[data-level='strong'] i:nth-child(-n + 3) { background: var(--accent); }
 .wk-strength[data-level='moderate'] i:nth-child(-n + 2) { background: var(--text-dim); }
 .wk-strength[data-level='review'] i:nth-child(-n + 1) { background: var(--warn); }
-.wk-strength span { font-family: var(--f-mono); font-size: 13px; letter-spacing: 0.075em; text-transform: uppercase; color: var(--text-muted); }
+.wk-strength span { font-family: var(--f-mono); font-size: 12.5px; letter-spacing: 0.075em; text-transform: uppercase; color: var(--text-muted); }
 
 /* ---------- table ---------- */
 .wk-table { width: 100%; border-collapse: collapse; }
 .wk-table th {
   text-align: left;
-  padding: 0 18px 12px;
+  padding: 0 17px 11px;
   border-bottom: 1px solid var(--line);
   font-family: var(--f-mono);
-  font-size: 12.5px;
+  font-size: 12px;
   font-weight: 500;
   letter-spacing: 0.085em;
   text-transform: uppercase;
   color: var(--text-muted);
   white-space: nowrap;
 }
-.wk-table td { padding: 16px 18px; border-bottom: 1px solid var(--line-soft); vertical-align: middle; }
+.wk-table td { padding: 15px 17px; border-bottom: 1px solid var(--line-soft); vertical-align: middle; }
 .wk-table tbody tr { cursor: pointer; transition: background-color .12s ease; }
 .wk-table tbody tr:hover { background: var(--raised); }
 .wk-table .wk-right { text-align: right; }
-.wk-table-money { font-family: var(--f-mono); font-variant-numeric: tabular-nums; font-size: 16px; }
+.wk-table-money { font-family: var(--f-mono); font-variant-numeric: tabular-nums; font-size: 15px; }
 .wk-table-vendor { font-weight: 550; }
-.wk-table-sub { font-size: 13.5px; color: var(--text-muted); margin-top: 2px; }
+.wk-table-sub { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
 
 /* ---------- buttons ---------- */
 .wk-btn {
@@ -227,52 +231,52 @@
   align-items: center;
   justify-content: center;
   gap: 9px;
-  height: 44px;
-  padding: 0 19px;
+  height: 42px;
+  padding: 0 18px;
   border-radius: 999px;
   border: 1px solid transparent;
   font-family: var(--f-text);
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
   transition: background-color .14s ease, border-color .14s ease, color .14s ease;
 }
-.wk-btn svg { width: 17px; height: 17px; stroke-width: 1.8; }
+.wk-btn svg { width: 16px; height: 16px; stroke-width: 1.8; }
 .wk-btn[data-variant='primary'] { background: var(--accent); color: #000; }
 .wk-btn[data-variant='primary']:hover { background: #4dffa0; }
 .wk-btn[data-variant='outline'] { border-color: var(--line); color: var(--text); }
 .wk-btn[data-variant='outline']:hover { border-color: var(--text-muted); background: var(--raised); }
 .wk-btn[data-variant='ghost'] { color: var(--text-muted); }
 .wk-btn[data-variant='ghost']:hover { color: var(--text); background: var(--raised); }
-.wk-btn[data-size='sm'] { height: 38px; padding: 0 15px; font-size: 14px; }
+.wk-btn[data-size='sm'] { height: 36px; padding: 0 14px; font-size: 13.5px; }
 
 /* ---------- timeline (spec §21) ---------- */
 .wk-timeline { display: flex; flex-direction: column; }
-.wk-timeline li { display: grid; grid-template-columns: 108px 18px 1fr; gap: 16px; padding-bottom: 24px; position: relative; }
-.wk-timeline li::before { content: ''; position: absolute; left: 117px; top: 16px; bottom: 0; width: 1px; background: var(--line); }
+.wk-timeline li { display: grid; grid-template-columns: 103px 17px 1fr; gap: 15px; padding-bottom: 23px; position: relative; }
+.wk-timeline li::before { content: ''; position: absolute; left: 111px; top: 15px; bottom: 0; width: 1px; background: var(--line); }
 .wk-timeline li:last-child { padding-bottom: 0; }
 .wk-timeline li:last-child::before { display: none; }
 .wk-timeline-dot { width: 10px; height: 10px; margin-top: 6px; background: var(--line); justify-self: center; }
 .wk-timeline li[data-done='true'] .wk-timeline-dot { background: var(--accent); }
-.wk-timeline-when { font-family: var(--f-mono); font-size: 13px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-muted); padding-top: 2px; }
-.wk-timeline-what { font-size: 15.5px; }
-.wk-timeline-detail { font-size: 14px; color: var(--text-muted); margin-top: 2px; }
+.wk-timeline-when { font-family: var(--f-mono); font-size: 12.5px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-muted); padding-top: 2px; }
+.wk-timeline-what { font-size: 14.5px; }
+.wk-timeline-detail { font-size: 13.5px; color: var(--text-muted); margin-top: 2px; }
 
 /* ---------- empty + misc ---------- */
-.wk-empty { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; padding: 48px 24px; border: 1px dashed var(--line); border-radius: 16px; color: var(--text-muted); }
+.wk-empty { display: flex; flex-direction: column; align-items: flex-start; gap: 11px; padding: 46px 23px; border: 1px dashed var(--line); border-radius: 15px; color: var(--text-muted); }
 .wk-rule { height: 1px; background: var(--line); border: 0; }
 .wk-bar { height: 3px; background: var(--line); overflow: hidden; }
 .wk-bar i { display: block; height: 100%; background: var(--accent); }
 
 @media (max-width: 900px) {
   .wk { grid-template-columns: 1fr; }
-  .wk-side { position: static; height: auto; flex-direction: row; align-items: center; gap: 14px; overflow-x: auto; border-right: 0; border-bottom: 1px solid var(--line); padding: 14px 18px; }
+  .wk-side { position: static; height: auto; flex-direction: row; align-items: center; gap: 13px; overflow-x: auto; border-right: 0; border-bottom: 1px solid var(--line); padding: 13px 17px; }
   .wk-side .wk-nav { flex-direction: row; }
   .wk-nav-group, .wk-side-foot { display: none; }
-  .wk-nav-item { grid-template-columns: 18px auto auto; }
-  .wk-body { padding: 24px 18px 56px; --gutter: 18px; }
-  .wk-topbar { padding: 0 18px; }
+  .wk-nav-item { grid-template-columns: 17px auto auto; }
+  .wk-body { padding: 23px 17px 53px; --gutter: 17px; }
+  .wk-topbar { padding: 0 17px; }
 
   /* A five-column table of vendors and amounts has a floor width no phone
      clears. Rather than drop columns — every one of them is part of the
@@ -285,7 +289,7 @@
     overscroll-behavior-x: contain;
   }
   .wk-table thead,
-  .wk-table tbody { display: table; width: 100%; min-width: 660px; }
+  .wk-table tbody { display: table; width: 100%; min-width: 630px; }
   .wk-table tbody { border-collapse: collapse; }
 }
 
@@ -295,19 +299,19 @@
 .wk-launch {
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   align-items: center;
-  gap: 52px;
-  padding: 56px var(--gutter);
+  gap: 49px;
+  padding: 53px var(--gutter);
 }
-.wk-launch-copy { max-width: 580px; justify-self: end; order: -1; }
+.wk-launch-copy { max-width: 550px; justify-self: end; order: -1; }
 .wk-launch-media { display: flex; align-items: center; justify-content: center; min-width: 0; }
-.wk-launch-media video { width: 100%; max-width: 520px; height: auto; }
+.wk-launch-media video { width: 100%; max-width: 495px; height: auto; }
 .wk-btn:disabled { opacity: .55; cursor: default; }
 
 @media (prefers-reduced-motion: reduce) {
   .wk-launch-media video { display: none; }
 }
 @media (max-width: 900px) {
-  .wk-launch { grid-template-columns: 1fr; gap: 28px; padding: 36px 18px; }
+  .wk-launch { grid-template-columns: 1fr; gap: 27px; padding: 34px 17px; }
   .wk-launch-copy { justify-self: start; }
   .wk-launch-media { order: 1; }
 }
@@ -316,8 +320,8 @@
 /* Short caveat lines: the checks a file can't fully support, the columns it
    didn't carry. They are sentences under their label, so they stay sentences —
    no marker standing in for a bullet, no box turning a caveat into an object. */
-.wk-notes { display: flex; flex-direction: column; gap: 9px; max-width: 700px; }
-.wk-notes li { font-size: 14.5px; color: var(--text-dim); }
+.wk-notes { display: flex; flex-direction: column; gap: 8px; max-width: 665px; }
+.wk-notes li { font-size: 14px; color: var(--text-dim); }
 
 /* ---------- portalled surfaces: overlay + panel ---------- */
 /* A dialog is this same workspace, floated. Its roots carry `wk` for the tokens
@@ -343,14 +347,14 @@
   z-index: 61;
   display: flex;
   flex-direction: column;
-  gap: 22px;
-  width: min(680px, calc(100vw - 32px));
+  gap: 21px;
+  width: min(645px, calc(100vw - 32px));
   min-height: 0;
   max-height: min(86dvh, 900px);
-  padding: 28px;
+  padding: 27px;
   overflow-y: auto;
   border: 1px solid var(--line);
-  border-radius: 16px;
+  border-radius: 15px;
   background: var(--raised);
   opacity: 0;
   scale: .985;
@@ -360,14 +364,14 @@
 .wk-panel[data-state='open'] { opacity: 1; scale: 1; translate: -50% -50%; }
 
 .wk-panel-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
-.wk-panel-head p { margin-top: 9px; font-size: 15px; max-width: 560px; }
+.wk-panel-head p { margin-top: 9px; font-size: 14px; max-width: 530px; }
 .wk-panel-foot { display: flex; align-items: center; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
 .wk-panel-close {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: 34px;
+  height: 34px;
   flex: none;
   border: 0;
   border-radius: 999px;
@@ -377,31 +381,31 @@
   transition: background-color .14s ease, color .14s ease;
 }
 .wk-panel-close:hover { background: var(--raised-hi); color: var(--text); }
-.wk-panel-close svg { width: 18px; height: 18px; stroke-width: 1.8; }
+.wk-panel-close svg { width: 17px; height: 17px; stroke-width: 1.8; }
 
 @media (max-width: 900px) {
-  .wk-panel { width: calc(100vw - 24px); padding: 24px; gap: 18px; }
+  .wk-panel { width: calc(100vw - 24px); padding: 23px; gap: 17px; }
 }
 
 /* ---------- import: dropzone, links, alert ---------- */
 /* The one place the workspace takes a file. Same dashed edge as `.wk-empty`,
    because both say "nothing here yet". */
-.wk-import { display: flex; flex-direction: column; gap: 20px; min-height: 0; background: transparent; }
+.wk-import { display: flex; flex-direction: column; gap: 19px; min-height: 0; background: transparent; }
 
 .wk-drop {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 16px;
-  padding: 26px;
+  gap: 15px;
+  padding: 25px;
   border: 1px dashed var(--line);
-  border-radius: 16px;
+  border-radius: 15px;
   transition: background-color .14s ease, border-color .14s ease;
 }
 .wk-drop[data-dragging='true'] { border-color: var(--accent); background: var(--raised-hi); }
-.wk-drop > svg { width: 20px; height: 20px; flex: none; stroke-width: 1.6; color: var(--text-muted); }
-.wk-drop strong { display: block; font-size: 16px; font-weight: 600; }
-.wk-drop strong + span { display: block; margin-top: 5px; font-size: 14px; color: var(--text-muted); }
+.wk-drop > svg { width: 19px; height: 19px; flex: none; stroke-width: 1.6; color: var(--text-muted); }
+.wk-drop strong { display: block; font-size: 15px; font-weight: 600; }
+.wk-drop strong + span { display: block; margin-top: 5px; font-size: 13.5px; color: var(--text-muted); }
 /* The real input stays in the DOM (and labelled) — the button drives it. */
 .wk-drop input[type='file'] { display: none; }
 
@@ -413,16 +417,16 @@
   border: 0;
   background: none;
   font-family: var(--f-text);
-  font-size: 14px;
+  font-size: 13.5px;
   color: var(--text-muted);
   cursor: pointer;
   transition: color .14s ease;
 }
-.wk-link svg { width: 16px; height: 16px; flex: none; stroke-width: 1.7; }
+.wk-link svg { width: 15px; height: 15px; flex: none; stroke-width: 1.7; }
 .wk-link:hover { color: var(--text); text-decoration: underline; text-underline-offset: 3px; }
 
 /* An error stated in place: one rule down the side, never a filled banner. */
-.wk-alert { display: flex; flex-direction: column; gap: 12px; padding-left: 16px; border-left: 2px solid var(--warn); font-size: 14.5px; }
+.wk-alert { display: flex; flex-direction: column; gap: 11px; padding-left: 15px; border-left: 2px solid var(--warn); font-size: 14px; }
 .wk-alert-actions { display: flex; flex-wrap: wrap; gap: 18px; }
 
 .wk-sr {
