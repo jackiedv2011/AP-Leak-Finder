@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { ArrowRight } from 'lucide-react'
 import { formatCurrency, plural } from '@/lib/format'
 import type { LedgerEnvironment } from '@/ledger/store'
@@ -25,24 +26,51 @@ export function Strength({ level }: { level: Opportunity['evidence'] }) {
   )
 }
 
-function Rung({
-  label,
-  value,
-  note,
-  terminal = false,
-}: {
+interface RungProps {
   label: string
   value: number
   note: string
+  /** This rung's share of Potential, 0–1 — the one scale all four are read on. */
+  share: number
+  /** Money confirmed for this rung but not in it yet. Same scale, drawn after. */
+  queued?: number
+  /** The deepest rung money has actually reached. */
+  frontier?: boolean
+  /** Past the frontier: nothing has got this far. */
+  unreached?: boolean
   terminal?: boolean
-}) {
+  action?: ReactNode
+}
+
+/** A bar can round a figure into nothing, so a real amount always keeps a mark. */
+function width(share: number): string {
+  if (share <= 0) return '0%'
+  return `${Math.max(1.5, Math.min(100, share * 100))}%`
+}
+
+function Rung({ label, value, note, share, queued = 0, frontier, unreached, terminal, action }: RungProps) {
   return (
-    <div data-terminal={terminal || undefined}>
-      <span className="wk-label">{label}</span>
-      <div className="wk-ladder-figure">
+    <div
+      data-terminal={terminal || undefined}
+      data-frontier={frontier || undefined}
+      data-unreached={unreached || undefined}
+    >
+      <div className="wk-rung-figure">
+        <span className="wk-label">{label}</span>
         <span className="wk-display wk-figure">{formatCurrency(value)}</span>
       </div>
-      <p className="wk-ladder-note">{note}</p>
+      <div className="wk-rung-meter">
+        <div className="wk-rung-track" aria-hidden="true">
+          <i className="wk-rung-fill" style={{ width: width(share) }} />
+          {/* Drawn from where the fill stops, not from the origin: it reads as
+              "this much more is queued behind it", which is what it is. */}
+          {queued > 0 ? (
+            <i className="wk-rung-queued" style={{ left: width(share), width: width(queued) }} />
+          ) : null}
+        </div>
+        <p className="wk-ladder-note">{note}</p>
+        {action}
+      </div>
     </div>
   )
 }
@@ -52,6 +80,18 @@ export function Overview({ env, onOpenCase, onSeeAll }: OverviewProps) {
   const causes = rootCauses(env)
   const top = opportunities(env).slice(0, 5)
   const biggestCause = causes[0]?.value ?? 1
+
+  // Every rung is measured against Potential. That is the only relationship
+  // the bars claim: not that the rungs nest (`inRecovery` and `recovered` are
+  // disjoint stages, so they don't) and not that they sum (§3 — they never do).
+  const scale = l.potential > 0 ? l.potential : 1
+  const share = (value: number) => value / scale
+
+  // Where the money has actually got to: the deepest rung carrying anything.
+  // Everything past it is demoted rather than given equal weight to a figure
+  // twenty thousand dollars larger.
+  const reached = [l.potential, l.verified, l.inRecovery, l.recovered]
+  const frontier = reached.reduce((deepest, value, index) => (value > 0 ? index : deepest), -1)
 
   return (
     <>
@@ -69,27 +109,62 @@ export function Overview({ env, onOpenCase, onSeeAll }: OverviewProps) {
             <Rung
               label="Potential"
               value={l.potential}
+              share={share(l.potential)}
+              frontier={frontier === 0}
               note={`${l.counts.potential} ${plural(l.counts.potential, 'case')} the checks surfaced, before anyone judged them.`}
             />
             <Rung
               label="Verified"
               value={l.verified}
-              note={`${l.counts.verified} where the records support a claim. Not yet agreed by any vendor.`}
+              share={share(l.verified)}
+              frontier={frontier === 1}
+              unreached={frontier < 1}
+              note={
+                l.awaitingDecision > 0
+                  ? `${l.counts.verified} where the records support a claim. ${formatCurrency(l.awaitingDecision)} of that is undecided — nothing reaches a vendor until you approve it.`
+                  : `${l.counts.verified} where the records support a claim. Every one has a decision on it.`
+              }
+              // §28 answered on the rung it belongs to: one number, one door.
+              // As a separate card it restated a figure already on this screen.
+              action={
+                l.awaitingDecision > 0 && top[0] ? (
+                  <div>
+                    <button
+                      type="button"
+                      className="wk-btn"
+                      data-variant="primary"
+                      data-size="sm"
+                      onClick={() => onOpenCase(top[0].finding.id)}
+                    >
+                      Review {top[0].finding.vendor}
+                      <ArrowRight aria-hidden="true" />
+                    </button>
+                  </div>
+                ) : null
+              }
             />
             <Rung
               label="In recovery"
               value={l.inRecovery}
+              share={share(l.inRecovery)}
+              queued={share(l.readyToSend)}
+              frontier={frontier === 2}
+              unreached={frontier < 2}
               note={
                 l.counts.inRecovery > 0
                   ? `${l.counts.inRecovery} ${plural(l.counts.inRecovery, 'request is', 'requests are')} out with vendors.`
-                  : l.counts.recovered > 0
-                    ? 'Nothing is out with a vendor right now.'
+                  : l.readyToSend > 0
+                    ? `Nothing sent yet. ${formatCurrency(l.readyToSend)} is confirmed and ready to go.`
                     : 'Nothing has been sent yet.'
               }
             />
             <Rung
               label="Recovered"
               value={l.recovered}
+              share={share(l.recovered)}
+              queued={share(l.inRecovery)}
+              frontier={frontier === 3}
+              unreached={frontier < 3}
               // The accent belongs to money that actually came back. Painting a
               // $0.00 green celebrates nothing and cheapens the one figure on
               // this screen worth trusting.
@@ -97,36 +172,13 @@ export function Overview({ env, onOpenCase, onSeeAll }: OverviewProps) {
               note={
                 l.counts.recovered > 0
                   ? `${l.counts.recovered} closed with money actually back.`
-                  : 'Money only counts here once it has actually settled.'
+                  : l.inRecovery > 0
+                    ? `Nothing has settled yet. ${formatCurrency(l.inRecovery)} is out with vendors.`
+                    : 'Money only counts here once it has actually settled.'
               }
             />
           </div>
           <WorkObject name={SCREEN_OBJECT.overview} height={268} />
-        </div>
-      </section>
-
-      {/* §28 — "what should I do", answered with one number and one door. */}
-      <section className="wk-section">
-        <div className="wk-card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 25, flexWrap: 'wrap' }}>
-          <div>
-            <span className="wk-label">Waiting on you</span>
-            <p style={{ marginTop: 9, fontSize: 15, maxWidth: 549 }}>
-              {l.awaitingDecision > 0 ? (
-                <>
-                  <b className="wk-num">{formatCurrency(l.awaitingDecision)}</b> is verified and undecided. Reclaim
-                  won't contact a vendor until you approve it.
-                </>
-              ) : (
-                <>Every verified case has a decision on it. Nothing is waiting.</>
-              )}
-            </p>
-          </div>
-          {top[0] ? (
-            <button type="button" className="wk-btn" data-variant="primary" onClick={() => onOpenCase(top[0].finding.id)}>
-              Review {top[0].finding.vendor}
-              <ArrowRight aria-hidden="true" />
-            </button>
-          ) : null}
         </div>
       </section>
 

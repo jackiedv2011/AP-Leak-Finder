@@ -259,7 +259,8 @@ html[data-theme='light'] .wk {
   height: 100dvh;
   overflow-y: auto;
 }
-.wk-brand { display: flex; align-items: center; gap: 9px; padding: 0 8px; height: 33px; }
+.wk-brand { display: flex; align-items: center; gap: 9px; padding: 0 8px; height: 33px; transition: color .14s ease; }
+.wk-brand:hover { color: var(--accent-ink); }
 .wk-brand svg { width: 23px; height: 23px; flex: none; fill: currentColor; overflow: visible; }
 /* The wordmark, not a heading. It is set exactly as landing-site renders it
    (.hx-logo .word): the sans at 650, tight tracking, sentence case — never the
@@ -292,8 +293,11 @@ html[data-theme='light'] .wk {
   transition: background-color .14s ease, color .14s ease;
 }
 .wk-nav-item svg { width: 16px; height: 16px; stroke-width: 1.6; }
-.wk-nav-item:hover { background: var(--raised); color: var(--text-dim); }
+.wk-nav-item:hover { background: var(--raised); color: var(--accent-ink); }
 .wk-nav-item[aria-current='page'] { background: var(--raised); color: var(--text); }
+/* The current page is styled after :hover in this sheet and would otherwise
+   win over it, leaving the one item you are pointing at as the only dead one. */
+.wk-nav-item[aria-current='page']:hover { color: var(--accent-ink); }
 /* count sits as plain tabular text, not a filled badge */
 .wk-nav-count { font-family: var(--f-mono); font-size: 11.5px; color: var(--text-muted); }
 .wk-nav-item[aria-current='page'] .wk-nav-count { color: var(--accent-ink); }
@@ -331,30 +335,72 @@ html[data-theme='light'] .wk {
 .wk-card-flat { border: 1px solid var(--line); border-radius: 14px; background: transparent; padding: 21px; }
 
 /* ---------- the value ladder ---------- */
-/* Spec §3: these never blur together, so they read as one row of distinct
-   figures with the billable one marked, not a single headline number. */
-.wk-ladder { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
-.wk-ladder > * { background: var(--raised); padding: 21px; display: flex; flex-direction: column; gap: 10px; }
-.wk-ladder-figure { display: flex; align-items: baseline; gap: 8px; }
-.wk-ladder-note { font-size: 12.5px; color: var(--text-muted); }
-.wk-ladder [data-terminal='true'] .wk-figure { color: var(--accent-ink); }
+/* Spec §3: the rungs are never added together, and they are never nested
+   either — `inRecovery` and `recovered` are disjoint stages in `ladder()`, so
+   a funnel would state a containment that isn't in the data. Every rung is
+   measured against Potential instead: one shared scale, four independent
+   readings, and the only claim a bar makes is a proportion.
 
-/* Column count follows the figures, not the other way round. These amounts are
-   the whole point of the screen, so a cell is only ever as narrow as the
-   longest number it has to print in full — four-across fits only on a genuinely
-   wide display, and below that two reads bigger and stays honest. A clipped
-   "$21,678.4(" is worse than a taller page.
-
-   The four-up threshold is set for a seven-figure amount, not for the sample's
-   five-figure one — a real ledger will carry wider numbers than this demo does,
-   and the breakpoint has to hold for those too. */
-@media (min-width: 1750px) {
-  .wk-ladder { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+   A stack rather than a grid, so all four bars start at the same x and the
+   comparison is the layout rather than something the reader has to do. */
+.wk-ladder {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  background: var(--line);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  overflow: hidden;
 }
+.wk-ladder > * {
+  background: var(--raised);
+  padding: 17px 21px;
+  display: grid;
+  /* Sized for an eight-figure amount set in full, not for the sample's
+     five-figure one — a real ledger carries wider numbers than this demo does,
+     and a clipped "$12,345,67" is worse than a narrower bar beside it. */
+  grid-template-columns: 320px minmax(0, 1fr);
+  gap: 26px;
+  align-items: center;
+}
+.wk-rung-figure { display: flex; flex-direction: column; gap: 6px; }
+.wk-rung-meter { display: flex; flex-direction: column; gap: 11px; min-width: 0; align-items: flex-start; }
+.wk-ladder-note { font-size: 12.5px; color: var(--text-muted); }
 
-@media (max-width: 760px) {
-  .wk-ladder { grid-template-columns: minmax(0, 1fr); }
-  .wk-figure { font-size: 41px; }
+/* Square ends, to sit with the blocky language of the renders rather than
+   against it. */
+.wk-rung-track { position: relative; width: 100%; height: 12px; background: var(--line); }
+.wk-rung-track i { position: absolute; top: 0; bottom: 0; left: 0; display: block; }
+.wk-rung-fill { background: var(--text); }
+/* Potential is the one rung nobody has judged yet, so it reads as provisional
+   rather than as a result. */
+.wk-ladder > :first-child .wk-rung-fill { background: var(--text-muted); }
+/* Money confirmed for a rung but not yet in it. Outlined and never filled: a
+   queue is not a result, and the moment it reads as one the screen is lying. */
+.wk-rung-queued { border: 1px dashed var(--text-muted); }
+
+/* Where the money actually sits right now — one rule down the side, no badge. */
+.wk-ladder > [data-frontier] { box-shadow: inset 2px 0 0 var(--accent-ink); }
+.wk-ladder > [data-frontier] .wk-label { color: var(--accent-ink); }
+
+/* Past the frontier nothing has arrived, so the figure states itself at a size
+   that matches — still exact, no longer shouting over the rungs that have. */
+.wk-ladder > [data-unreached] .wk-figure { font-size: 27px; color: var(--text-muted); }
+
+/* The accent belongs to money that actually came back. */
+.wk-ladder > [data-terminal='true'] .wk-rung-fill { background: var(--accent-ink); }
+.wk-ladder > [data-terminal='true'] .wk-figure { color: var(--accent-ink); }
+
+@media (max-width: 1200px) {
+  /* The figure column and a bar long enough to read stop fitting beside each
+     other well before the page does — the object shares this row too. Stacked,
+     every rung still reads on the same shared scale, and the figure gets the
+     full width rather than a column sized for the worst case. */
+  .wk-ladder > * { grid-template-columns: minmax(0, 1fr); gap: 15px; }
+}
+@media (max-width: 560px) {
+  .wk-ladder .wk-figure { font-size: 42px; }
+  .wk-ladder > [data-unreached] .wk-figure { font-size: 24px; }
 }
 
 /* ---------- marks (no pills) ---------- */
@@ -390,7 +436,14 @@ html[data-theme='light'] .wk {
 }
 .wk-table td { padding: 14px 16px; border-bottom: 1px solid var(--line-soft); vertical-align: middle; }
 .wk-table tbody tr { cursor: pointer; transition: background-color .12s ease; }
+.wk-table td { transition: color .12s ease; }
 .wk-table tbody tr:hover { background: var(--raised); }
+/* The money columns keep their own ink. Green on a figure already means "this
+   came back" — it is the one place the accent carries meaning rather than
+   decoration, and a hover has no business borrowing it. Anything with a colour
+   of its own (`.wk-table-sub`, the evidence marks) keeps it too, so only the
+   text you are actually navigating to lights up. */
+.wk-table tbody tr:hover td:not(.wk-table-money) { color: var(--accent-ink); }
 .wk-table .wk-right { text-align: right; }
 .wk-table-money { font-family: var(--f-mono); font-variant-numeric: tabular-nums; font-size: 14px; }
 .wk-table-vendor { font-weight: 550; }
@@ -417,9 +470,9 @@ html[data-theme='light'] .wk {
 .wk-btn[data-variant='primary'] { background: var(--accent); color: #000; }
 .wk-btn[data-variant='primary']:hover { background: var(--accent-hover); }
 .wk-btn[data-variant='outline'] { border-color: var(--line); color: var(--text); }
-.wk-btn[data-variant='outline']:hover { border-color: var(--text-muted); background: var(--raised); }
+.wk-btn[data-variant='outline']:hover { border-color: var(--accent-ink); color: var(--accent-ink); background: var(--raised); }
 .wk-btn[data-variant='ghost'] { color: var(--text-muted); }
-.wk-btn[data-variant='ghost']:hover { color: var(--text); background: var(--raised); }
+.wk-btn[data-variant='ghost']:hover { color: var(--accent-ink); background: var(--raised); }
 .wk-btn[data-size='sm'] { height: 33px; padding: 0 13px; font-size: 12.5px; }
 
 /* ---------- timeline (spec §21) ---------- */
@@ -675,7 +728,7 @@ html[data-theme='light'] .wk {
   cursor: pointer;
   transition: background-color .14s ease, color .14s ease;
 }
-.wk-panel-close:hover { background: var(--raised-hi); color: var(--text); }
+.wk-panel-close:hover { background: var(--raised-hi); color: var(--accent-ink); }
 .wk-panel-close svg { width: 16px; height: 16px; stroke-width: 1.8; }
 
 @media (max-width: 900px) {
@@ -718,7 +771,7 @@ html[data-theme='light'] .wk {
   transition: color .14s ease;
 }
 .wk-link svg { width: 14px; height: 14px; flex: none; stroke-width: 1.7; }
-.wk-link:hover { color: var(--text); text-decoration: underline; text-underline-offset: 3px; }
+.wk-link:hover { color: var(--accent-ink); text-decoration: underline; text-underline-offset: 3px; }
 
 /* An error stated in place: one rule down the side, never a filled banner. */
 .wk-alert { display: flex; flex-direction: column; gap: 10px; padding-left: 14px; border-left: 2px solid var(--warn); font-size: 13px; }

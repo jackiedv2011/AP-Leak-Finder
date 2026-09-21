@@ -55,6 +55,12 @@ export interface Ladder {
   counts: Record<LadderStage, number>
   /** Verified and still waiting on a person — §28's "what should I do". */
   awaitingDecision: number
+  /**
+   * Confirmed by a reviewer but not yet sent: the money queued behind the
+   * `In recovery` rung rather than in it. Reported so a rung sitting at zero
+   * can say what is waiting to move into it, instead of only that nothing has.
+   */
+  readyToSend: number
 }
 
 /**
@@ -159,6 +165,7 @@ export function ladder(env: LedgerEnvironment): Ladder {
   const counts: Record<LadderStage, number> = { ...empty }
   const totals = { ...empty }
   let awaitingDecision = 0
+  let readyToSend = 0
 
   for (const finding of env.result.findings) {
     const state = getCaseState(env, finding.id)
@@ -178,6 +185,9 @@ export function ladder(env: LedgerEnvironment): Ladder {
       totals.verified += finding.dollarImpact
       counts.verified += 1
     }
+    if (stage === 'confirmed') {
+      readyToSend += finding.dollarImpact
+    }
     if (stage === 'requested') {
       totals.inRecovery += finding.dollarImpact
       counts.inRecovery += 1
@@ -190,7 +200,7 @@ export function ladder(env: LedgerEnvironment): Ladder {
     }
   }
 
-  return { ...totals, counts, awaitingDecision }
+  return { ...totals, counts, awaitingDecision, readyToSend }
 }
 
 /**
