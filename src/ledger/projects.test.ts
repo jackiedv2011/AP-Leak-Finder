@@ -1,6 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { getSampleLedger } from '@/data/sampleLedger'
-import { mergeImport, serializeEnvironment } from '@/ledger/store'
+import { mergeImport, serializeEnvironment, setCaseState } from '@/ledger/store'
+import { confirmCase, markRecoveryRequested, recordRecoveryOutcome } from '@/ledger/caseState'
+import { ladder } from '@/workspace/selectors'
 import {
   createProject,
   deleteProject,
@@ -17,6 +19,42 @@ function environment() {
 
 describe('local ledger projects', () => {
   afterEach(() => window.localStorage.clear())
+
+  it('every recovery field survives save → reload, and the dashboard figures come back identical', () => {
+    let env = environment()
+    const [first, second] = env.result.findings.filter((f) => f.class === 'recoverable')
+    env = setCaseState(env, first.id, recordRecoveryOutcome(markRecoveryRequested(confirmCase('yes')), 'recovered', 123.45, 'CM-9'))
+    env = setCaseState(env, second.id, markRecoveryRequested(confirmCase(null)))
+    const project = createProject({ name: 'March', sourceLabel: 'march.csv', mode: 'upload', environment: env })
+    const before = ladder(env)
+
+    const reloaded = loadProject(project.id)!
+    expect(reloaded.environment.caseStates[first.id]).toMatchObject({
+      decision: 'confirmed',
+      reason: 'yes',
+      recoveryStage: 'recovered',
+      recoveredAmount: 123.45,
+      recoveryOutcomeNote: 'CM-9',
+    })
+    expect(reloaded.environment.caseStates[first.id].recoveryRequestedAt).toBeTypeOf('number')
+    expect(reloaded.environment.caseStates[first.id].recoveryResolvedAt).toBeTypeOf('number')
+    expect(ladder(reloaded.environment)).toEqual(before)
+    expect(ladder(reloaded.environment).recovered).toBe(123.45)
+    expect(listProjects()[0].recoveryActiveCount).toBe(1)
+  })
+
+  it('findings keep their identity across a reload, so a decision made before still applies after', () => {
+    let env = environment()
+    const target = env.result.findings[0]
+    env = setCaseState(env, target.id, confirmCase(null))
+    const project = createProject({ name: 'March', sourceLabel: 'march.csv', mode: 'upload', environment: env })
+    const reloaded = loadProject(project.id)!
+    expect(reloaded.environment.result.findings.map((f) => f.id)).toEqual(env.result.findings.map((f) => f.id))
+    expect(reloaded.environment.caseStates[target.id].decision).toBe('confirmed')
+    // and the related records are the live revived ones, not stale JSON clones
+    const revived = reloaded.environment.result.findings[0].relatedRecords[0]
+    expect(reloaded.environment.records).toContain(revived)
+  })
 
   it('creates separate projects and keeps the newest one active', () => {
     const first = createProject({ name: 'March', sourceLabel: 'march.csv', mode: 'upload', environment: environment() })

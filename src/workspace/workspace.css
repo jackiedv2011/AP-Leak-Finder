@@ -1,56 +1,43 @@
 /* Reclaim workspace — the product surface.
  *
- * Canonical to landing-site/: same three families (Barlow Condensed display,
- * Inter text, JetBrains Mono labels), same palette, same green. The dark
- * treatment is lifted from the marketing site's own black sections — its hero,
- * its footer, the featured pricing card — not invented separately.
+ * One design system for everything behind the log-in: the dashboard, the audit
+ * workflow, the auth screens and the legal pages. Warm white canvas, near-black
+ * text, one dark green used sparingly for actions, active states and the
+ * figures that matter. Borders and shadows stay quiet; whitespace does the
+ * separating.
  *
- * Two deliberate departures from landing-site/styles.css:
- *  - Sizes are px, not rem. The marketing site scales rem with the viewport so
- *    a whole page zooms as one poster; a workspace wants stable density at any
- *    window size, and the app's root font-size isn't fluid anyway.
- *  - No pills. Status, evidence strength and counts are set as a mark plus a
- *    mono label on the background, never a filled capsule around text.
+ * Sizes are px rather than rem: a workspace wants stable density at any window
+ * size. Every surface carries `.wk` so the tokens travel with it, including
+ * portalled dialogs that render outside the app grid.
  */
 
 .wk {
-  color-scheme: dark;
+  --bg: #f7f4ee;              /* warm white canvas */
+  --bg-deep: #efeae1;         /* a step down, for wells and hover */
+  --surface: #ffffff;
+  --line: #e4dfd5;
+  --line-soft: #ede8df;
+  --text: #171716;
+  --text-dim: #4d4b46;
+  --text-muted: #7c786f;
+  --accent: #1f5f43;          /* dark green — buttons, active states, key figures */
+  --accent-hover: #184c36;
+  --accent-soft: #e7f0eb;     /* tint behind an accent mark */
+  --warn: #a8641f;
+  --warn-soft: #f7ecdc;
+  --info: #2f5b86;
+  --danger: #a13b2d;
+  --danger-soft: #f8e6e2;
 
-  --bg: #000;
-  --raised: #1a1a1a;          /* --cl-grey-900: the nav bar on the site's black sections */
-  --raised-hi: #232323;
-  --line: #2f2f2f;            /* --cl-grey-800 */
-  --line-soft: rgb(255 255 255 / 0.08);
-  --text: #fff;
-  --text-dim: #c6c6c6;        /* --cl-grey-400 */
-  --text-muted: #979797;      /* --cl-grey-500 */
+  --shadow-card: 0 1px 2px rgb(38 32 20 / 0.04), 0 6px 20px rgb(38 32 20 / 0.05);
+  --shadow-pop: 0 20px 60px rgb(38 32 20 / 0.16);
 
-  /* The green splits in two. `--accent` is a fill and always carries black
-     text, so it stays the brand green in both themes. `--accent-ink` is the
-     same green used AS text or a hairline, which on a white canvas would be
-     barely visible, so it darkens in light mode. Keeping them apart is what
-     lets the logo green survive the inversion unchanged. */
-  --accent: #00fd74;          /* --cl-reclaim */
-  --accent-hover: #4dffa0;
-  --accent-ink: #00fd74;
-
-  --warn: #ff6838;            /* --cl-orange-1 */
-  --info: #00d1ff;            /* --cl-blue-1 */
-
-  /* A scrim is a shadow, not a surface: it stays dark in both themes, so it
-     must not be derived from --bg. */
-  --scrim: rgb(0 0 0 / 0.74);
-
-  /* Segmented control: a well, and a thumb that lifts out of it. */
-  --seg-track: #141414;
-  --seg-thumb: #3a3a3a;
-
-  --f-display: 'Barlow Condensed', 'Anton', ui-sans-serif, system-ui, sans-serif;
   --f-text: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  --f-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
-  --sidebar-w: 244px;
-  --gutter: 35px;
+  --sidebar-w: 236px;
+  --gutter: 36px;
+  --radius: 12px;
+  --radius-sm: 8px;
 
   position: relative;
   display: grid;
@@ -58,200 +45,53 @@
   min-height: 100dvh;
   background: var(--bg);
   color: var(--text);
+  color-scheme: light;
   font-family: var(--f-text);
   font-size: 14px;
-  line-height: 1.55;
+  line-height: 1.5;
   -webkit-font-smoothing: antialiased;
-}
-
-
-/* ---------- view entry ---------- */
-/* Screens used to replace each other in one frame, which reads as a glitch
-   rather than a move. Each view now settles in: its sections rise a few pixels
-   and fade, staggered in the order the eye reads them.
- *
- * The animation is re-run by remounting <main> on a key that follows the
- * route, so it plays on every navigation rather than only on first mount.
- * Everything is `both`-filled and short — long enough to feel deliberate,
- * short enough that a reviewer moving quickly never waits on it. */
-.wk-body > * {
-  animation: wk-rise .34s cubic-bezier(.22, 1, .36, 1) both;
-}
-.wk-body > :nth-child(2) { animation-delay: .05s; }
-.wk-body > :nth-child(3) { animation-delay: .095s; }
-.wk-body > :nth-child(4) { animation-delay: .13s; }
-/* Past the fourth, hold the delay rather than letting it grow — a long page
-   should not end with sections still queuing to appear. */
-.wk-body > :nth-child(n + 5) { animation-delay: .16s; }
-
-/* The topbar names the screen, so it moves with it. */
-.wk-topbar-title { animation: wk-fade .3s ease both; }
-
-/* Inside a view, the rungs land in sequence — they read left to right as a
-   ladder, and arriving together loses that. */
-.wk-ladder > * { animation: wk-fade .36s ease both; }
-.wk-ladder > :nth-child(2) { animation-delay: .06s; }
-.wk-ladder > :nth-child(3) { animation-delay: .11s; }
-.wk-ladder > :nth-child(4) { animation-delay: .155s; }
-
-/* Rows settle quickly and only near the top: a stagger that runs the whole
-   length of a sixteen-row table turns a list into a performance. */
-.wk-table tbody tr { animation: wk-fade .26s ease both; }
-.wk-table tbody tr:nth-child(2) { animation-delay: .03s; }
-.wk-table tbody tr:nth-child(3) { animation-delay: .055s; }
-.wk-table tbody tr:nth-child(4) { animation-delay: .075s; }
-.wk-table tbody tr:nth-child(n + 5) { animation-delay: .09s; }
-
-@keyframes wk-fade {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .wk-body > *,
-  .wk-topbar-title,
-  .wk-ladder > *,
-  .wk-table tbody tr { animation: none; }
-}
-
-/* ---------- theme cross-fade ---------- */
-/* Flipping the canvas between black and white in one frame is physically
-   unpleasant to look at. `data-theme-transition` is set on <html> for the
-   length of the change only, so the palette eases across instead of snapping,
-   and nothing carries a permanent transition that would make hover states
-   feel laggy or fight the existing ones.
- *
- * It is never set on first paint — a page that faded in from the opposite
- * theme on load would be the same problem with extra steps. */
-:root { --theme-fade: 320ms; }
-
-html[data-theme-transition],
-html[data-theme-transition] body {
-  transition: background-color var(--theme-fade) ease;
-}
-html[data-theme-transition] .wk,
-html[data-theme-transition] .wk *,
-html[data-theme-transition] .wk *::before,
-html[data-theme-transition] .wk *::after {
-  transition:
-    background-color var(--theme-fade) ease,
-    color var(--theme-fade) ease,
-    border-color var(--theme-fade) ease,
-    outline-color var(--theme-fade) ease,
-    box-shadow var(--theme-fade) ease,
-    fill var(--theme-fade) ease,
-    stroke var(--theme-fade) ease;
-}
-
-/* The three elements whose own motion is not colour. The blanket rule above
-   would replace their transition outright, and the thumb in particular is
-   mid-slide at exactly the moment the theme changes — losing that would make
-   the switch jump precisely when it is being watched. */
-html[data-theme-transition] .wk-seg-thumb {
-  transition:
-    transform .26s cubic-bezier(.4, 0, .2, 1),
-    background-color var(--theme-fade) ease,
-    box-shadow var(--theme-fade) ease;
-}
-html[data-theme-transition] .wk-overlay {
-  transition: opacity .18s ease, background-color var(--theme-fade) ease;
-}
-html[data-theme-transition] .wk-panel {
-  transition:
-    opacity .16s ease,
-    scale .2s ease,
-    translate .2s ease,
-    background-color var(--theme-fade) ease,
-    border-color var(--theme-fade) ease;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  html[data-theme-transition],
-  html[data-theme-transition] body,
-  html[data-theme-transition] .wk,
-  html[data-theme-transition] .wk *,
-  html[data-theme-transition] .wk *::before,
-  html[data-theme-transition] .wk *::after { transition: none; }
-}
-
-/* ---------- light ---------- */
-/* The same workspace with the greyscale inverted: black becomes white, white
-   becomes black, and the dark greys become their light counterparts at the
-   same distance from the canvas. Hue-carrying tokens are not inverted — they
-   are re-picked for a white background, because a colour that reads on black
-   is not the same colour that reads on white.
- *
- * Which theme applies is decided in JS (see workspace/theme.ts) and written to
- * <html data-theme>, so the system preference and an explicit choice resolve
- * through one code path rather than a CSS media query the settings screen
- * would then have to fight. index.html sets the attribute before first paint. */
-html[data-theme='light'] .wk {
-  color-scheme: light;
-
-  --bg: #fff;
-  --raised: #f4f3f1;
-  --raised-hi: #e9e7e4;
-  --line: #dcd9d4;
-  --line-soft: rgb(0 0 0 / 0.08);
-  --text: #000;
-  --text-dim: #3a3a3a;
-  --text-muted: #6a6a6a;
-
-  /* Fill unchanged — it still carries black text. Ink darkened: #00fd74 as
-     text on white is about 1.3:1, which is unreadable. */
-  --accent: #00fd74;
-  --accent-hover: #00e468;
-  --accent-ink: #007a39;
-
-  --warn: #c2410c;
-  --info: #0369a1;
-
-  --scrim: rgb(0 0 0 / 0.45);
-
-  --seg-track: #e9e7e4;
-  --seg-thumb: #fff;
+  font-feature-settings: 'cv11', 'ss01';
 }
 
 .wk *,
 .wk *::before,
 .wk *::after { box-sizing: border-box; }
 
-.wk h1, .wk h2, .wk h3, .wk h4, .wk p, .wk ul, .wk ol, .wk figure { margin: 0; padding: 0; }
+.wk h1, .wk h2, .wk h3, .wk h4, .wk p, .wk ul, .wk ol, .wk figure, .wk dl, .wk dd { margin: 0; padding: 0; }
 .wk ul, .wk ol { list-style: none; }
 .wk a { color: inherit; text-decoration: none; }
-.wk :focus-visible { outline: 2px solid var(--accent-ink); outline-offset: 2px; border-radius: 2px; }
+.wk :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
 
 /* ---------- type ---------- */
 .wk-display {
-  font-family: var(--f-display);
-  font-weight: 700;
-  line-height: 0.9;
+  font-family: var(--f-text);
+  font-weight: 600;
+  line-height: 1.15;
   letter-spacing: -0.02em;
-  text-transform: uppercase;
 }
-.wk-h1 { font-size: 32px; }
-.wk-h2 { font-size: 24px; }
-.wk-figure { font-size: 55px; font-variant-numeric: tabular-nums; }
-.wk-figure-sm { font-size: 32px; font-variant-numeric: tabular-nums; }
+.wk-h1 { font-size: 22px; }
+.wk-h2 { font-size: 16px; }
+.wk-figure { font-size: 30px; font-weight: 600; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+.wk-figure-sm { font-size: 26px; font-weight: 600; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
 
 .wk-label {
-  font-family: var(--f-mono);
   font-size: 11.5px;
-  font-weight: 500;
-  letter-spacing: 0.085em;
+  font-weight: 600;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--text-muted);
 }
-.wk-num { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+.wk-num { font-variant-numeric: tabular-nums; }
 .wk-muted { color: var(--text-muted); }
 .wk-dim { color: var(--text-dim); }
+.wk-accent { color: var(--accent); }
 
 /* ---------- sidebar ---------- */
 .wk-side {
   display: flex;
   flex-direction: column;
-  gap: 28px;
-  padding: 25px 16px;
+  gap: 24px;
+  padding: 22px 14px;
   border-right: 1px solid var(--line);
   background: var(--bg);
   position: sticky;
@@ -259,31 +99,21 @@ html[data-theme='light'] .wk {
   height: 100dvh;
   overflow-y: auto;
 }
-.wk-brand { display: flex; align-items: center; gap: 9px; padding: 0 8px; height: 33px; transition: color .14s ease; }
-.wk-brand:hover { color: var(--accent-ink); }
-.wk-brand svg { width: 23px; height: 23px; flex: none; fill: currentColor; overflow: visible; }
-/* The wordmark, not a heading. It is set exactly as landing-site renders it
-   (.hx-logo .word): the sans at 650, tight tracking, sentence case — never the
-   condensed display face and never uppercased, because "RECLAIM" in Barlow
-   Condensed is a different mark from the one on the logo. */
-.wk-brand b {
-  font-family: var(--f-text);
-  font-size: 22px;
-  font-weight: 650;
-  font-stretch: 100%;
-  letter-spacing: -0.045em;
-}
+.wk-brand { display: flex; align-items: center; gap: 9px; padding: 0 10px; height: 32px; }
+.wk-brand svg { width: 20px; height: 20px; flex: none; fill: var(--accent); overflow: visible; }
+.wk-brand b { font-size: 17px; font-weight: 650; letter-spacing: -0.02em; }
 .wk-nav { display: flex; flex-direction: column; gap: 2px; }
-.wk-nav-group { margin-top: 20px; padding: 0 8px 8px; }
+.wk-nav-group { margin-top: 16px; padding: 0 10px 8px; }
 .wk-nav-item {
   display: grid;
   grid-template-columns: 16px 1fr auto;
   align-items: center;
   gap: 10px;
-  padding: 9px 9px;
-  border-radius: 8px;
-  color: var(--text-muted);
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  color: var(--text-dim);
   font-size: 13.5px;
+  font-weight: 500;
   cursor: pointer;
   border: 0;
   background: none;
@@ -292,17 +122,27 @@ html[data-theme='light'] .wk {
   font-family: inherit;
   transition: background-color .14s ease, color .14s ease;
 }
-.wk-nav-item svg { width: 16px; height: 16px; stroke-width: 1.6; }
-.wk-nav-item:hover { background: var(--raised); color: var(--accent-ink); }
-.wk-nav-item[aria-current='page'] { background: var(--raised); color: var(--text); }
-/* The current page is styled after :hover in this sheet and would otherwise
-   win over it, leaving the one item you are pointing at as the only dead one. */
-.wk-nav-item[aria-current='page']:hover { color: var(--accent-ink); }
-/* count sits as plain tabular text, not a filled badge */
-.wk-nav-count { font-family: var(--f-mono); font-size: 11.5px; color: var(--text-muted); }
-.wk-nav-item[aria-current='page'] .wk-nav-count { color: var(--accent-ink); }
+.wk-nav-item svg { width: 16px; height: 16px; stroke-width: 1.7; }
+.wk-nav-item:hover { background: var(--bg-deep); color: var(--text); }
+.wk-nav-item[aria-current='page'] { background: var(--surface); color: var(--accent); box-shadow: 0 0 0 1px var(--line), var(--shadow-card); }
+.wk-nav-count { font-size: 11.5px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.wk-nav-item[aria-current='page'] .wk-nav-count { color: var(--accent); }
 
-.wk-side-foot { margin-top: auto; padding: 14px 8px 0; border-top: 1px solid var(--line); }
+.wk-side-foot { margin-top: auto; padding: 16px 4px 0; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 12px; }
+.wk-account { display: grid; grid-template-columns: 30px 1fr; gap: 10px; align-items: center; padding: 0 6px; }
+.wk-avatar {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 650;
+}
+.wk-account-name { font-size: 13px; font-weight: 550; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wk-account-sub { font-size: 11.5px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* ---------- main ---------- */
 .wk-main { min-width: 0; display: flex; flex-direction: column; }
@@ -311,144 +151,125 @@ html[data-theme='light'] .wk {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  min-height: 67px;
+  min-height: 64px;
   padding: 0 var(--gutter);
   border-bottom: 1px solid var(--line);
   position: sticky;
   top: 0;
   z-index: 10;
-  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  background: color-mix(in srgb, var(--bg) 90%, transparent);
   backdrop-filter: blur(10px);
 }
-.wk-topbar-title { display: flex; flex-direction: column; gap: 2px; }
-.wk-body { padding: 30px var(--gutter) 67px; display: flex; flex-direction: column; gap: 35px; }
-.wk-section { display: flex; flex-direction: column; gap: 15px; }
+.wk-topbar-title { display: flex; flex-direction: column; gap: 1px; }
+.wk-topbar-actions { display: flex; gap: 10px; }
+.wk-body { padding: 30px var(--gutter) 72px; display: flex; flex-direction: column; gap: 36px; max-width: 1180px; width: 100%; }
+.wk-section { display: flex; flex-direction: column; gap: 14px; }
 .wk-section-head { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; }
+.wk-section-head p { font-size: 13px; color: var(--text-muted); }
 
 /* ---------- surfaces ---------- */
 .wk-card {
   border: 1px solid var(--line);
-  border-radius: 14px;
-  background: var(--raised);
-  padding: 21px;
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+  padding: 22px;
 }
-.wk-card-flat { border: 1px solid var(--line); border-radius: 14px; background: transparent; padding: 21px; }
+.wk-card-flat { border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); padding: 22px; }
+.wk-well { border-radius: var(--radius); background: var(--bg-deep); padding: 18px 20px; }
 
-/* ---------- the value ladder ---------- */
-/* Spec §3: the rungs are never added together, and they are never nested
-   either — `inRecovery` and `recovered` are disjoint stages in `ladder()`, so
-   a funnel would state a containment that isn't in the data. Every rung is
-   measured against Potential instead: one shared scale, four independent
-   readings, and the only claim a bar makes is a proportion.
-
-   A stack rather than a grid, so all four bars start at the same x and the
-   comparison is the layout rather than something the reader has to do. */
+/* ---------- stat tiles ---------- */
+/* Also used for the recovery ladder: figures side by side, never summed. */
 .wk-ladder {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+.wk-ladder > * {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
+  padding: 20px 22px;
   display: flex;
   flex-direction: column;
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  overflow: hidden;
+  gap: 8px;
+  min-width: 0;
 }
-/* The rungs sit straight on the canvas. A filled cell behind each one put a
-   second edge on every boundary the hairline was already drawing, and the
-   figures are large enough not to need a panel holding them up. */
-.wk-ladder > * + * { border-top: 1px solid var(--line); }
-.wk-ladder > * {
-  padding: 17px 21px;
-  display: grid;
-  /* Sized for an eight-figure amount set in full, not for the sample's
-     five-figure one — a real ledger carries wider numbers than this demo does,
-     and a clipped "$12,345,67" is worse than a narrower bar beside it. */
-  grid-template-columns: 320px minmax(0, 1fr);
-  gap: 26px;
-  align-items: center;
-}
-.wk-rung-figure { display: flex; flex-direction: column; gap: 6px; }
-.wk-rung-meter { display: flex; flex-direction: column; gap: 11px; min-width: 0; align-items: flex-start; }
+.wk-ladder-figure { display: flex; align-items: baseline; gap: 8px; overflow: hidden; }
 .wk-ladder-note { font-size: 12.5px; color: var(--text-muted); }
+.wk-ladder [data-terminal='true'] .wk-figure,
+.wk-ladder [data-accent='true'] .wk-figure { color: var(--accent); }
 
-/* Square ends, to sit with the blocky language of the renders rather than
-   against it. */
-.wk-rung-track { position: relative; width: 100%; height: 12px; background: var(--line); }
-.wk-rung-track i { position: absolute; top: 0; bottom: 0; left: 0; display: block; }
-.wk-rung-fill { background: var(--text); }
-/* Potential is the one rung nobody has judged yet, so it reads as provisional
-   rather than as a result. */
-.wk-ladder > :first-child .wk-rung-fill { background: var(--text-muted); }
-/* Money confirmed for a rung but not yet in it. Outlined and never filled: a
-   queue is not a result, and the moment it reads as one the screen is lying. */
-.wk-rung-queued { border: 1px dashed var(--text-muted); }
+@media (max-width: 1100px) { .wk-ladder { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 620px) { .wk-ladder { grid-template-columns: minmax(0, 1fr); } }
 
-/* Where the money actually sits right now, said by the label alone — the rungs
-   past it are already demoted, so the pair reads without a marker on the edge. */
-.wk-ladder > [data-frontier] .wk-label { color: var(--accent-ink); }
-
-/* Past the frontier nothing has arrived, so the figure states itself at a size
-   that matches — still exact, no longer shouting over the rungs that have. */
-.wk-ladder > [data-unreached] .wk-figure { font-size: 27px; color: var(--text-muted); }
-
-/* The accent belongs to money that actually came back. */
-.wk-ladder > [data-terminal='true'] .wk-rung-fill { background: var(--accent-ink); }
-.wk-ladder > [data-terminal='true'] .wk-figure { color: var(--accent-ink); }
-
-@media (max-width: 1200px) {
-  /* The figure column and a bar long enough to read stop fitting beside each
-     other well before the page does — the object shares this row too. Stacked,
-     every rung still reads on the same shared scale, and the figure gets the
-     full width rather than a column sized for the worst case. */
-  .wk-ladder > * { grid-template-columns: minmax(0, 1fr); gap: 15px; }
-}
-@media (max-width: 560px) {
-  .wk-ladder .wk-figure { font-size: 42px; }
-  .wk-ladder > [data-unreached] .wk-figure { font-size: 24px; }
+/* ---------- pipeline strip (verified → in recovery → recovered) ---------- */
+.wk-pipeline { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); overflow: hidden; }
+.wk-pipeline > * { padding: 16px 20px; display: flex; flex-direction: column; gap: 4px; }
+.wk-pipeline > * + * { border-left: 1px solid var(--line-soft); }
+.wk-pipeline-figure { font-size: 20px; font-weight: 600; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.wk-pipeline [data-accent='true'] .wk-pipeline-figure { color: var(--accent); }
+@media (max-width: 620px) {
+  .wk-pipeline { grid-template-columns: minmax(0, 1fr); }
+  .wk-pipeline > * + * { border-left: 0; border-top: 1px solid var(--line-soft); }
 }
 
-/* ---------- marks (no pills) ---------- */
-.wk-mark { display: inline-flex; align-items: center; gap: 8px; font-family: var(--f-mono); font-size: 11.5px; letter-spacing: 0.075em; text-transform: uppercase; color: var(--text-dim); }
-.wk-mark::before { content: ''; width: 8px; height: 8px; flex: none; background: currentColor; }
-.wk-mark[data-tone='strong'] { color: var(--accent-ink); }
+/* ---------- marks ---------- */
+.wk-mark { display: inline-flex; align-items: center; gap: 7px; font-size: 12.5px; font-weight: 500; color: var(--text-dim); white-space: nowrap; }
+.wk-mark::before { content: ''; width: 7px; height: 7px; flex: none; border-radius: 999px; background: currentColor; }
+.wk-mark[data-tone='strong'] { color: var(--accent); }
 .wk-mark[data-tone='review'] { color: var(--warn); }
 .wk-mark[data-tone='quiet'] { color: var(--text-muted); }
 .wk-mark[data-tone='info'] { color: var(--info); }
 
-/* evidence strength: three rules, filled to the level — spec §12, no percentages */
+.wk-pill {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 9px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 600;
+  background: var(--bg-deep);
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+.wk-pill[data-tone='strong'] { background: var(--accent-soft); color: var(--accent); }
+.wk-pill[data-tone='review'] { background: var(--warn-soft); color: var(--warn); }
+
+/* evidence strength: three rules, filled to the level — never a percentage */
 .wk-strength { display: inline-flex; align-items: center; gap: 8px; }
-.wk-strength-bars { display: inline-flex; gap: 4px; }
-.wk-strength-bars i { width: 15px; height: 3px; background: var(--line); display: block; }
-.wk-strength[data-level='strong'] i:nth-child(-n + 3) { background: var(--accent-ink); }
+.wk-strength-bars { display: inline-flex; gap: 3px; }
+.wk-strength-bars i { width: 14px; height: 3px; border-radius: 2px; background: var(--line); display: block; }
+.wk-strength[data-level='strong'] i:nth-child(-n + 3) { background: var(--accent); }
 .wk-strength[data-level='moderate'] i:nth-child(-n + 2) { background: var(--text-dim); }
 .wk-strength[data-level='review'] i:nth-child(-n + 1) { background: var(--warn); }
-.wk-strength span { font-family: var(--f-mono); font-size: 11.5px; letter-spacing: 0.075em; text-transform: uppercase; color: var(--text-muted); }
+.wk-strength span { font-size: 12.5px; color: var(--text-dim); }
 
 /* ---------- table ---------- */
+.wk-table-wrap { border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); overflow: hidden; }
 .wk-table { width: 100%; border-collapse: collapse; }
 .wk-table th {
   text-align: left;
-  padding: 0 16px 10px;
+  padding: 12px 18px;
   border-bottom: 1px solid var(--line);
-  font-family: var(--f-mono);
+  background: var(--bg);
   font-size: 11.5px;
-  font-weight: 500;
-  letter-spacing: 0.085em;
+  font-weight: 600;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
   color: var(--text-muted);
   white-space: nowrap;
 }
-.wk-table td { padding: 14px 16px; border-bottom: 1px solid var(--line-soft); vertical-align: middle; }
+.wk-table td { padding: 14px 18px; border-bottom: 1px solid var(--line-soft); vertical-align: middle; }
+.wk-table tbody tr:last-child td { border-bottom: 0; }
 .wk-table tbody tr { cursor: pointer; transition: background-color .12s ease; }
-.wk-table td { transition: color .12s ease; }
-.wk-table tbody tr:hover { background: var(--raised); }
-/* The money columns keep their own ink. Green on a figure already means "this
-   came back" — it is the one place the accent carries meaning rather than
-   decoration, and a hover has no business borrowing it. Anything with a colour
-   of its own (`.wk-table-sub`, the evidence marks) keeps it too, so only the
-   text you are actually navigating to lights up. */
-.wk-table tbody tr:hover td:not(.wk-table-money) { color: var(--accent-ink); }
+.wk-table tbody tr:hover { background: var(--bg); }
 .wk-table .wk-right { text-align: right; }
-.wk-table-money { font-family: var(--f-mono); font-variant-numeric: tabular-nums; font-size: 14px; }
+.wk-table-money { font-variant-numeric: tabular-nums; font-size: 14px; font-weight: 550; }
 .wk-table-vendor { font-weight: 550; }
-.wk-table-sub { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+.wk-table-sub { font-size: 12.5px; color: var(--text-muted); margin-top: 2px; }
 
 /* ---------- buttons ---------- */
 .wk-btn {
@@ -456,181 +277,64 @@ html[data-theme='light'] .wk {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  height: 39px;
-  padding: 0 17px;
-  border-radius: 999px;
+  height: 38px;
+  padding: 0 16px;
+  border-radius: var(--radius-sm);
   border: 1px solid transparent;
   font-family: var(--f-text);
-  font-size: 13px;
+  font-size: 13.5px;
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
-  transition: background-color .14s ease, border-color .14s ease, color .14s ease;
+  text-decoration: none;
+  transition: background-color .14s ease, border-color .14s ease, color .14s ease, box-shadow .14s ease;
 }
-.wk-btn svg { width: 15px; height: 15px; stroke-width: 1.8; }
-.wk-btn[data-variant='primary'] { background: var(--accent); color: #000; }
+.wk-btn svg { width: 15px; height: 15px; stroke-width: 1.9; }
+.wk-btn[data-variant='primary'] { background: var(--accent); color: #fff; box-shadow: 0 1px 2px rgb(31 95 67 / 0.25); }
 .wk-btn[data-variant='primary']:hover { background: var(--accent-hover); }
-.wk-btn[data-variant='outline'] { border-color: var(--line); color: var(--text); }
-.wk-btn[data-variant='outline']:hover { border-color: var(--accent-ink); color: var(--accent-ink); background: var(--raised); }
-.wk-btn[data-variant='ghost'] { color: var(--text-muted); }
-.wk-btn[data-variant='ghost']:hover { color: var(--accent-ink); background: var(--raised); }
-.wk-btn[data-size='sm'] { height: 33px; padding: 0 13px; font-size: 12.5px; }
+.wk-btn[data-variant='outline'] { border-color: var(--line); background: var(--surface); color: var(--text); }
+.wk-btn[data-variant='outline']:hover { border-color: #cfc9bd; background: var(--bg); }
+.wk-btn[data-variant='ghost'] { color: var(--text-dim); }
+.wk-btn[data-variant='ghost']:hover { color: var(--text); background: var(--bg-deep); }
+.wk-btn[data-variant='danger'] { border-color: var(--danger); color: var(--danger); background: var(--surface); }
+.wk-btn[data-variant='danger']:hover { background: var(--danger-soft); }
+.wk-btn[data-size='sm'] { height: 32px; padding: 0 12px; font-size: 12.5px; }
+.wk-btn[data-size='lg'] { height: 44px; padding: 0 20px; font-size: 14px; }
+.wk-btn:disabled { opacity: .55; cursor: default; }
 
-/* ---------- timeline (spec §21) ---------- */
+/* ---------- timeline ---------- */
 .wk-timeline { display: flex; flex-direction: column; }
-.wk-timeline li { display: grid; grid-template-columns: 96px 16px 1fr; gap: 14px; padding-bottom: 21px; position: relative; }
-.wk-timeline li::before { content: ''; position: absolute; left: 104px; top: 14px; bottom: 0; width: 1px; background: var(--line); }
+.wk-timeline li { display: grid; grid-template-columns: 92px 16px 1fr; gap: 14px; padding-bottom: 20px; position: relative; }
+.wk-timeline li::before { content: ''; position: absolute; left: 113px; top: 16px; bottom: 0; width: 1px; background: var(--line); }
 .wk-timeline li:last-child { padding-bottom: 0; }
 .wk-timeline li:last-child::before { display: none; }
-.wk-timeline-dot { width: 10px; height: 10px; margin-top: 6px; background: var(--line); justify-self: center; }
-.wk-timeline li[data-done='true'] .wk-timeline-dot { background: var(--accent-ink); }
-.wk-timeline-when { font-family: var(--f-mono); font-size: 11.5px; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-muted); padding-top: 2px; }
-.wk-timeline-what { font-size: 13.5px; }
+.wk-timeline-dot { width: 9px; height: 9px; margin-top: 6px; border-radius: 999px; background: var(--line); justify-self: center; }
+.wk-timeline li[data-done='true'] .wk-timeline-dot { background: var(--accent); }
+.wk-timeline-when { font-size: 11.5px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-muted); padding-top: 3px; }
+.wk-timeline-what { font-size: 13.5px; font-weight: 500; }
 .wk-timeline-detail { font-size: 12.5px; color: var(--text-muted); margin-top: 2px; }
 
-/* ---------- segmented control ---------- */
-/* The appearance switch: one track, three segments, and a thumb that slides
-   between them. This is the one place a capsule wraps a word, because a
-   segmented control IS the capsule — the thumb has to be a shape that moves,
-   and a bare marker cannot slide.
- *
- * The thumb is a single element translated by whole multiples of its own
- * width, so the three stops are exact at any track width and the motion is one
- * transform rather than three competing transitions. */
-.wk-seg {
-  position: relative;
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  width: 100%;
-  max-width: 330px;
-  padding: 3px;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  background: var(--seg-track);
-}
-.wk-seg-thumb {
-  position: absolute;
-  top: 3px;
-  left: 3px;
-  width: calc((100% - 6px) / 3);
-  height: calc(100% - 6px);
-  border-radius: 999px;
-  background: var(--seg-thumb);
-  box-shadow: 0 1px 2px rgb(0 0 0 / 0.16);
-  transition: transform .26s cubic-bezier(.4, 0, .2, 1);
-}
-.wk-seg[data-active='1'] .wk-seg-thumb { transform: translateX(100%); }
-.wk-seg[data-active='2'] .wk-seg-thumb { transform: translateX(200%); }
-
-.wk-seg-option {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 32px;
-  border-radius: 999px;
-  font-size: 13px;
-  color: var(--text-muted);
-  cursor: pointer;
-  user-select: none;
-  transition: color .2s ease;
-}
-/* A real radio group underneath: arrow keys, screen-reader semantics and form
-   behaviour come free, and the visible control is only the paint on top. */
-.wk-seg-option input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
-.wk-seg-option:has(input:checked) { color: var(--text); font-weight: 600; }
-.wk-seg-option:has(input:focus-visible) { outline: 2px solid var(--accent-ink); outline-offset: 2px; }
-
-@media (prefers-reduced-motion: reduce) {
-  .wk-seg-thumb { transition: none; }
-}
-
-/* ---------- 3D objects ---------- */
-/* See workspace/objects.tsx for why these are the only colour on the screen.
-   They are alpha stills, so nothing sits behind one — no plate, no tint, no
-   second file for light mode. The chrome around them stays monochrome. */
-.wk-object {
-  display: block;
-  flex: none;
-  /* Sized by height, with the width following the aspect ratio the img's own
-     attributes carry. `object-fit` is the guard for the one case where a very
-     narrow column clamps the width: the object letterboxes rather than
-     stretching. */
-  height: var(--wk-obj-h);
-  width: auto;
-  max-width: 100%;
-  object-fit: contain;
-  user-select: none;
-  -webkit-user-drag: none;
-}
-
-/* The screen's opening line and its object, straight on the canvas — the same
-   way the marketing site sets a render, with no card around it. */
-.wk-screen-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 32px;
-  padding-bottom: 27px;
-  border-bottom: 1px solid var(--line);
-}
-.wk-screen-head p { font-size: 14px; color: var(--text-dim); max-width: 42ch; }
-
-/* The ladder and the tower share the first row. The object is as tall as the
-   four rungs together, which makes it the largest thing on the overview —
-   the weight the marketing site gives its hero render, on the screen that
-   opens the product. */
-.wk-overview-top { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 32px; }
-
-/* An empty screen has nothing to look at by definition, so the object stops
-   being a mark beside the content and becomes the content. */
-.wk-empty[data-object] { align-items: center; text-align: center; gap: 13px; padding: 36px 21px 44px; }
-.wk-empty[data-object] p { margin-inline: auto; }
-.wk-empty .wk-object { margin-bottom: 8px; }
-
-/* The object naming the case's cause, at the end of the summary row. */
-.wk-case-cause { display: flex; flex-direction: column; align-items: center; gap: 10px; }
-
-@media (max-width: 1250px) {
-  .wk-overview-top .wk-object { height: 206px; }
-}
-@media (max-width: 900px) {
-  .wk-overview-top { gap: 22px; }
-  .wk-overview-top .wk-object { height: 168px; }
-  .wk-screen-head { gap: 18px; padding-bottom: 21px; }
-  .wk-screen-head .wk-object { height: 94px; }
-}
-@media (max-width: 560px) {
-  /* Below this the ladder is already one column, and a tower beside it would
-     squeeze both. It moves above the rungs rather than disappearing — the
-     section then reads heading, object, figures, the same order the marketing
-     site sets a render in. */
-  .wk-overview-top { grid-template-columns: minmax(0, 1fr); justify-items: center; gap: 20px; }
-  .wk-overview-top .wk-object { order: -1; height: 156px; }
-  .wk-screen-head { flex-direction: column; align-items: flex-start; gap: 16px; }
-  .wk-screen-head .wk-object { height: 112px; }
-}
-
 /* ---------- empty + misc ---------- */
-.wk-empty { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; padding: 43px 21px; border: 1px dashed var(--line); border-radius: 14px; color: var(--text-muted); }
+.wk-empty { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; padding: 40px 24px; border: 1px dashed var(--line); border-radius: var(--radius); color: var(--text-muted); background: var(--surface); }
+.wk-empty p { color: var(--text-dim); }
 .wk-rule { height: 1px; background: var(--line); border: 0; }
-.wk-bar { height: 3px; background: var(--line); overflow: hidden; }
-.wk-bar i { display: block; height: 100%; background: var(--accent-ink); }
+.wk-bar { height: 6px; border-radius: 999px; background: var(--bg-deep); overflow: hidden; }
+.wk-bar i { display: block; height: 100%; border-radius: 999px; background: var(--accent); }
+
+.wk-list { display: flex; flex-direction: column; }
+.wk-list > li { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 0; border-bottom: 1px solid var(--line-soft); }
+.wk-list > li:last-child { border-bottom: 0; }
 
 @media (max-width: 900px) {
   .wk { grid-template-columns: 1fr; }
   .wk-side { position: static; height: auto; flex-direction: row; align-items: center; gap: 12px; overflow-x: auto; border-right: 0; border-bottom: 1px solid var(--line); padding: 12px 16px; }
+  .wk-side nav { display: flex; align-items: center; gap: 2px; }
   .wk-side .wk-nav { flex-direction: row; }
   .wk-nav-group, .wk-side-foot { display: none; }
-  .wk-nav-item { grid-template-columns: 16px auto auto; }
-  .wk-body { padding: 21px 16px 49px; --gutter: 16px; }
+  .wk-nav-item { grid-template-columns: 16px auto auto; white-space: nowrap; }
+  .wk-body { padding: 20px 16px 48px; --gutter: 16px; }
   .wk-topbar { padding: 0 16px; }
 
-  /* A five-column table of vendors and amounts has a floor width no phone
-     clears. Rather than drop columns — every one of them is part of the
-     evidence — the table itself scrolls sideways, so the page never does and
-     nothing is silently withheld. */
   .wk-table {
     display: block;
     overflow-x: auto;
@@ -638,52 +342,36 @@ html[data-theme='light'] .wk {
     overscroll-behavior-x: contain;
   }
   .wk-table thead,
-  .wk-table tbody { display: table; width: 100%; min-width: 590px; }
+  .wk-table tbody { display: table; width: 100%; min-width: 560px; }
   .wk-table tbody { border-collapse: collapse; }
 }
 
-/* ---------- launch ---------- */
-/* The handoff from the marketing site. Same black hero treatment, same rendered
-   loop, so the product doesn't look like a different company's software. */
+/* ---------- launch (first audit, no ledger yet) ---------- */
 .wk-launch {
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  align-items: center;
-  gap: 46px;
-  padding: 49px var(--gutter);
+  grid-template-columns: minmax(0, 1fr);
+  place-items: center;
+  padding: 48px var(--gutter);
 }
-.wk-launch-copy { max-width: 512px; justify-self: end; order: -1; }
-.wk-launch-media { display: flex; align-items: center; justify-content: center; min-width: 0; }
-.wk-launch-media video { width: 100%; max-width: 460px; height: auto; }
-.wk-btn:disabled { opacity: .55; cursor: default; }
-
-@media (prefers-reduced-motion: reduce) {
-  .wk-launch-media video { display: none; }
-}
-@media (max-width: 900px) {
-  .wk-launch { grid-template-columns: 1fr; gap: 25px; padding: 32px 16px; }
-  .wk-launch-copy { justify-self: start; }
-  .wk-launch-media { order: 1; }
-}
+.wk-launch-card { width: min(560px, 100%); display: flex; flex-direction: column; gap: 22px; }
+.wk-launch-steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.wk-launch-steps > * { display: flex; flex-direction: column; gap: 6px; padding: 14px 16px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+.wk-launch-steps b { font-size: 13px; font-weight: 600; }
+.wk-launch-steps span { font-size: 12.5px; color: var(--text-muted); }
+@media (max-width: 620px) { .wk-launch-steps { grid-template-columns: minmax(0, 1fr); } }
 
 /* ---------- notes ---------- */
-/* Short caveat lines: the checks a file can't fully support, the columns it
-   didn't carry. They are sentences under their label, so they stay sentences —
-   no marker standing in for a bullet, no box turning a caveat into an object. */
 .wk-notes { display: flex; flex-direction: column; gap: 7px; max-width: 620px; }
-.wk-notes li { font-size: 13px; color: var(--text-dim); }
+.wk-notes li { font-size: 13px; color: var(--text-dim); padding-left: 14px; position: relative; }
+.wk-notes li::before { content: ''; position: absolute; left: 0; top: 9px; width: 5px; height: 5px; border-radius: 999px; background: var(--text-muted); }
 
 /* ---------- portalled surfaces: overlay + panel ---------- */
-/* A dialog is this same workspace, floated. Its roots carry `wk` for the tokens
-   and the resets, plus one of the modifiers below to undo the app grid — the
-   same pattern `.wk-launch` uses. Nothing here adds a colour or a face that
-   isn't already a token at the top of this file. */
 .wk-overlay {
   position: fixed;
   inset: 0;
   z-index: 60;
   display: block;
   min-height: 0;
-  background: var(--scrim);
+  background: rgb(23 23 22 / 0.42);
   opacity: 0;
   transition: opacity .18s ease;
 }
@@ -697,14 +385,15 @@ html[data-theme='light'] .wk {
   display: flex;
   flex-direction: column;
   gap: 20px;
-  width: min(600px, calc(100vw - 32px));
+  width: min(620px, calc(100vw - 32px));
   min-height: 0;
   max-height: min(86dvh, 900px);
-  padding: 25px;
+  padding: 26px;
   overflow-y: auto;
   border: 1px solid var(--line);
-  border-radius: 14px;
-  background: var(--raised);
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: var(--shadow-pop);
   opacity: 0;
   scale: .985;
   translate: -50% -47%;
@@ -713,7 +402,7 @@ html[data-theme='light'] .wk {
 .wk-panel[data-state='open'] { opacity: 1; scale: 1; translate: -50% -50%; }
 
 .wk-panel-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
-.wk-panel-head p { margin-top: 8px; font-size: 13px; max-width: 493px; }
+.wk-panel-head p { margin-top: 6px; font-size: 13.5px; max-width: 520px; }
 .wk-panel-foot { display: flex; align-items: center; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
 .wk-panel-close {
   display: inline-flex;
@@ -729,16 +418,14 @@ html[data-theme='light'] .wk {
   cursor: pointer;
   transition: background-color .14s ease, color .14s ease;
 }
-.wk-panel-close:hover { background: var(--raised-hi); color: var(--accent-ink); }
+.wk-panel-close:hover { background: var(--bg-deep); color: var(--text); }
 .wk-panel-close svg { width: 16px; height: 16px; stroke-width: 1.8; }
 
 @media (max-width: 900px) {
-  .wk-panel { width: calc(100vw - 24px); padding: 21px; gap: 16px; }
+  .wk-panel { width: calc(100vw - 24px); padding: 20px; gap: 16px; }
 }
 
 /* ---------- import: dropzone, links, alert ---------- */
-/* The one place the workspace takes a file. Same dashed edge as `.wk-empty`,
-   because both say "nothing here yet". */
 .wk-import { display: flex; flex-direction: column; gap: 18px; min-height: 0; background: transparent; }
 
 .wk-drop {
@@ -746,16 +433,16 @@ html[data-theme='light'] .wk {
   flex-direction: column;
   align-items: flex-start;
   gap: 14px;
-  padding: 23px;
-  border: 1px dashed var(--line);
-  border-radius: 14px;
+  padding: 22px;
+  border: 1px dashed #cfc9bd;
+  border-radius: var(--radius);
+  background: var(--bg);
   transition: background-color .14s ease, border-color .14s ease;
 }
-.wk-drop[data-dragging='true'] { border-color: var(--accent-ink); background: var(--raised-hi); }
-.wk-drop > svg { width: 18px; height: 18px; flex: none; stroke-width: 1.6; color: var(--text-muted); }
+.wk-drop[data-dragging='true'] { border-color: var(--accent); background: var(--accent-soft); }
+.wk-drop > svg { width: 18px; height: 18px; flex: none; stroke-width: 1.7; color: var(--accent); }
 .wk-drop strong { display: block; font-size: 14px; font-weight: 600; }
-.wk-drop strong + span { display: block; margin-top: 5px; font-size: 12.5px; color: var(--text-muted); }
-/* The real input stays in the DOM (and labelled) — the button drives it. */
+.wk-drop strong + span { display: block; margin-top: 4px; font-size: 12.5px; color: var(--text-muted); }
 .wk-drop input[type='file'] { display: none; }
 
 .wk-link {
@@ -766,16 +453,15 @@ html[data-theme='light'] .wk {
   border: 0;
   background: none;
   font-family: var(--f-text);
-  font-size: 12.5px;
-  color: var(--text-muted);
+  font-size: 13px;
+  color: var(--accent);
   cursor: pointer;
   transition: color .14s ease;
 }
-.wk-link svg { width: 14px; height: 14px; flex: none; stroke-width: 1.7; }
-.wk-link:hover { color: var(--accent-ink); text-decoration: underline; text-underline-offset: 3px; }
+.wk-link svg { width: 14px; height: 14px; flex: none; stroke-width: 1.8; }
+.wk-link:hover { text-decoration: underline; text-underline-offset: 3px; }
 
-/* An error stated in place: one rule down the side, never a filled banner. */
-.wk-alert { display: flex; flex-direction: column; gap: 10px; padding-left: 14px; border-left: 2px solid var(--warn); font-size: 13px; }
+.wk-alert { display: flex; flex-direction: column; gap: 10px; padding: 12px 14px; border: 1px solid #ecc9c2; border-radius: var(--radius-sm); background: var(--danger-soft); color: #7d2f23; font-size: 13px; }
 .wk-alert-actions { display: flex; flex-wrap: wrap; gap: 18px; }
 
 .wk-sr {
@@ -790,8 +476,6 @@ html[data-theme='light'] .wk {
   border: 0;
 }
 
-/* The entry reveal, kept from the panel's first version — a short rise, the
-   same easing, staggered in the order the eye reads the card. */
 @keyframes wk-rise {
   from { opacity: 0; transform: translate3d(0, 9px, 0); }
   to { opacity: 1; transform: none; }
@@ -803,9 +487,164 @@ html[data-theme='light'] .wk {
 .wk-import[data-reveal='true'] > :nth-child(5) { animation-delay: .16s; }
 .wk-import[data-reveal='true'] > :nth-child(n + 6) { animation-delay: .195s; }
 
+/* ---------- forms ---------- */
+.wk-field { display: flex; flex-direction: column; gap: 6px; }
+.wk-field label { font-size: 13px; font-weight: 550; color: var(--text); }
+.wk-field-row { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.wk-field-row a { font-size: 12.5px; color: var(--accent); font-weight: 500; }
+.wk-input {
+  width: 100%;
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+  transition: border-color .14s ease, box-shadow .14s ease;
+}
+.wk-input::placeholder { color: #a5a198; }
+.wk-input:hover { border-color: #cfc9bd; }
+.wk-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgb(31 95 67 / 0.14); }
+.wk-input[aria-invalid='true'] { border-color: var(--danger); }
+.wk-input[aria-invalid='true']:focus { box-shadow: 0 0 0 3px rgb(161 59 45 / 0.14); }
+.wk-field-error { font-size: 12.5px; color: var(--danger); }
+.wk-field-hint { font-size: 12.5px; color: var(--text-muted); }
+.wk-textarea { min-height: 120px; padding: 10px 12px; height: auto; resize: vertical; line-height: 1.5; }
+.wk-check { display: grid; grid-template-columns: 16px 1fr; gap: 10px; align-items: start; font-size: 13px; color: var(--text-dim); cursor: pointer; }
+.wk-check input { width: 16px; height: 16px; margin: 2px 0 0; accent-color: var(--accent); cursor: pointer; }
+.wk-check a { color: var(--accent); font-weight: 500; text-decoration: underline; text-underline-offset: 2px; }
+.wk-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+@media (max-width: 520px) { .wk-form-grid { grid-template-columns: minmax(0, 1fr); } }
+
+/* ---------- auth pages ---------- */
+.wk-auth { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto 1fr auto; }
+.wk-auth-header { display: flex; align-items: center; justify-content: space-between; padding: 22px var(--gutter); }
+.wk-auth-header a { display: inline-flex; align-items: center; gap: 9px; font-weight: 650; font-size: 16px; letter-spacing: -0.02em; }
+.wk-auth-header svg { width: 20px; height: 20px; fill: var(--accent); overflow: visible; }
+.wk-auth-header .wk-auth-alt { font-size: 13px; color: var(--text-dim); font-weight: 500; }
+.wk-auth-header .wk-auth-alt a { display: inline; color: var(--accent); font-size: 13px; }
+.wk-auth-main { display: grid; place-items: start center; padding: 24px var(--gutter) 64px; }
+.wk-auth-card {
+  width: min(440px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  padding: 32px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+}
+.wk-auth-card[data-wide='true'] { width: min(560px, 100%); }
+.wk-auth-card h1 { font-size: 22px; font-weight: 600; letter-spacing: -0.02em; }
+.wk-auth-card h1 + p { margin-top: 6px; font-size: 13.5px; color: var(--text-dim); }
+.wk-auth-form { display: flex; flex-direction: column; gap: 16px; }
+.wk-auth-foot { font-size: 13px; color: var(--text-dim); text-align: center; }
+.wk-auth-foot a { color: var(--accent); font-weight: 550; }
+.wk-auth-legal { display: flex; gap: 18px; justify-content: center; padding: 20px var(--gutter); font-size: 12.5px; color: var(--text-muted); }
+.wk-auth-legal a:hover { color: var(--text); }
+.wk-divider { display: flex; align-items: center; gap: 14px; font-size: 12px; color: var(--text-muted); }
+.wk-divider::before, .wk-divider::after { content: ''; flex: 1; height: 1px; background: var(--line); }
+.wk-success { padding: 12px 14px; border-radius: var(--radius-sm); background: var(--accent-soft); color: var(--accent); font-size: 13.5px; }
+.wk-token-box { padding: 12px 14px; border-radius: var(--radius-sm); background: var(--bg); border: 1px solid var(--line); font-size: 12.5px; color: var(--text-dim); word-break: break-all; }
+.wk-token-box a { color: var(--accent); text-decoration: underline; }
+
+/* ---------- legal / document pages ---------- */
+.wk-doc-page { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto 1fr auto; }
+.wk-doc { width: min(760px, 100%); justify-self: center; padding: 8px var(--gutter) 80px; display: flex; flex-direction: column; gap: 28px; }
+.wk-doc h1 { font-size: 30px; font-weight: 600; letter-spacing: -0.03em; line-height: 1.15; }
+.wk-doc h2 { font-size: 17px; font-weight: 600; letter-spacing: -0.01em; margin-top: 8px; }
+.wk-doc p, .wk-doc li { font-size: 14.5px; line-height: 1.65; color: var(--text-dim); }
+.wk-doc ul { list-style: disc; padding-left: 22px; display: flex; flex-direction: column; gap: 6px; }
+.wk-doc section { display: flex; flex-direction: column; gap: 10px; }
+.wk-doc a { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
+.wk-doc-meta { display: flex; flex-wrap: wrap; gap: 14px; font-size: 12.5px; color: var(--text-muted); }
+.wk-banner { display: flex; gap: 12px; align-items: flex-start; padding: 14px 16px; border-radius: var(--radius); border: 1px solid #ead9bd; background: var(--warn-soft); color: #6f4416; font-size: 13.5px; line-height: 1.5; }
+.wk-banner svg { width: 16px; height: 16px; flex: none; margin-top: 2px; stroke-width: 1.8; }
+.wk-doc .wk-placeholder { background: #fff6dc; border-bottom: 1px dashed #d9b95a; padding: 0 3px; }
+
 @media (prefers-reduced-motion: reduce) {
   .wk-overlay,
   .wk-panel { transition: none; }
   .wk-panel { scale: 1; translate: -50% -50%; }
   .wk-import[data-reveal='true'] > * { animation: none; }
 }
+
+/* ---------- background art ---------- */
+/* Product screenshots circling the auth and launch screens. The layer is
+   fixed, clipped and inert. ScreenshotDrift.tsx positions every card on one
+   ring around the viewport centre and turns the ring clockwise; the cards fade
+   in on arrival and stay upright. */
+.wk-drift { position: fixed; inset: 0; overflow: hidden; pointer-events: none; z-index: 0; }
+.wk-drift-card {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: var(--w);
+  opacity: 0;
+  animation: wk-drift-in 0.9s ease-out forwards;
+  animation-delay: calc(var(--i, 0) * 70ms);
+  will-change: transform;
+}
+.wk-drift-card img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  box-shadow: 0 18px 40px -18px rgba(23, 23, 22, 0.28), 0 2px 6px rgba(23, 23, 22, 0.05);
+  user-select: none;
+}
+@keyframes wk-drift-in {
+  from { opacity: 0; }
+  to { opacity: var(--drift-opacity, 0.9); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .wk-drift-card { animation: none; opacity: var(--drift-opacity, 0.9); }
+}
+@media (max-width: 700px) {
+  .wk-drift-card { display: none; width: min(var(--w), 62vw); --drift-opacity: 0.7; }
+  .wk-drift-card[data-mobile='true'] { display: block; }
+}
+/* The screens that carry the art sit above it. */
+.wk-auth > :not(.wk-drift), .wk-launch > :not(.wk-drift) { position: relative; z-index: 1; }
+
+/* ---------- plans ---------- */
+.wk-plan-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; padding: 0 24px; }
+.wk-plan-card { border: 1px solid var(--line); border-radius: var(--radius); padding: 18px 18px 16px; background: var(--surface); }
+.wk-plan-card[data-highlight] { border-color: var(--accent); box-shadow: 0 0 0 3px rgb(31 95 67 / 0.10); }
+.wk-plan-features { list-style: none; margin: 14px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; font-size: 13.5px; }
+.wk-plan-features li { display: flex; gap: 8px; align-items: flex-start; }
+.wk-plan-features svg { width: 15px; height: 15px; flex: none; margin-top: 2px; color: var(--accent); }
+.wk-plan-pill { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--accent); background: rgb(31 95 67 / 0.08); border-radius: 999px; padding: 3px 9px; }
+
+/* Content the plan doesn't include: blurred, inert, with a notice in front. */
+.wk-locked { position: relative; }
+.wk-locked-content { filter: blur(7px); opacity: 0.55; pointer-events: none; user-select: none; }
+.wk-locked-notice { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 16px; pointer-events: none; }
+.wk-locked-card {
+  pointer-events: auto; display: flex; align-items: center; gap: 14px; width: min(560px, 100%); padding: 14px 16px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: 0 12px 30px -16px rgb(23 23 22 / 0.35);
+}
+.wk-locked-card > svg { width: 18px; height: 18px; color: var(--accent); flex: none; }
+@media (max-width: 620px) { .wk-locked-card { flex-wrap: wrap; } }
+
+/* ---------- decision choices ---------- */
+.wk-choice { display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); cursor: pointer; }
+.wk-choice:hover { border-color: #cfc9bd; }
+.wk-choice[data-selected] { border-color: var(--accent); box-shadow: 0 0 0 3px rgb(31 95 67 / 0.12); }
+.wk-choice input { margin-top: 3px; accent-color: var(--accent); }
+.wk-choice > span { display: flex; flex-direction: column; gap: 3px; font-size: 13.5px; }
+.wk-choice b { font-weight: 600; }
+.wk-choice .wk-dim { font-size: 12.5px; }
+
+/* ---------- onboarding tour ---------- */
+.wk-tour-icon { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; flex: none; border-radius: 12px; background: rgb(31 95 67 / 0.09); color: var(--accent); }
+.wk-tour-icon svg { width: 20px; height: 20px; }
+.wk-tour-tip { margin-top: 12px; font-size: 13px; padding: 10px 12px; border-radius: var(--radius-sm); background: var(--bg); border: 1px solid var(--line); }
+.wk-tour-dots { display: flex; gap: 6px; justify-content: center; padding: 4px 24px 0; }
+.wk-tour-dots i { width: 7px; height: 7px; border-radius: 999px; background: var(--line); }
+.wk-tour-dots i[data-active] { background: var(--accent); }

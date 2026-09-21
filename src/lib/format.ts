@@ -16,30 +16,52 @@ export function normalizeVendor(vendor: string): string {
   return words.join(' ').trim()
 }
 
-/** Strip currency symbols/commas and parse a complete number. Returns null for blank/na. */
+/**
+ * Strip currency symbols/commas and parse a complete number. Returns null for
+ * blank/na. Accounting-style "(150.00)" is read as a negative, since that is
+ * how most ledgers export credits.
+ */
 export function parseCurrency(raw: string | null | undefined): number | null {
   if (raw === null || raw === undefined) return null
   const trimmed = raw.trim()
   if (trimmed === '' || trimmed.toLowerCase() === 'na' || trimmed.toLowerCase() === 'n/a') return null
-  const cleaned = trimmed.replace(/[$,]/g, '')
+  const parenthesized = /^\((.*)\)$/.exec(trimmed)
+  const cleaned = (parenthesized ? `-${parenthesized[1]}` : trimmed).replace(/[$,\s]/g, '')
   if (!/^-?(?:\d+(?:\.\d+)?|\.\d+)$/.test(cleaned)) return null
   const value = Number(cleaned)
   return Number.isFinite(value) ? value : null
 }
 
-/** Parse a YYYY-MM-DD date string as a local date (avoids UTC off-by-one). */
+/** Whole cents, so two amounts compare the way a bookkeeper reads them rather than as floats. */
+export function toCents(value: number): number {
+  return Math.round(value * 100)
+}
+
+function buildLocalDate(y: number, m: number, d: number): Date | null {
+  const date = new Date(y, m - 1, d)
+  if (Number.isNaN(date.getTime())) return null
+  return date.getFullYear() === y && date.getMonth() === m - 1 && date.getDate() === d ? date : null
+}
+
+/**
+ * Parse a date cell as a local date (avoids UTC off-by-one). Accepts the
+ * formats accounting exports actually use: ISO `YYYY-MM-DD` (with or without a
+ * time suffix), `YYYY/MM/DD`, and US `MM/DD/YYYY` / `M/D/YYYY`. A slash date
+ * with a four-digit year is always read month-first; anything else is null so
+ * the row is reported as skipped rather than guessed at.
+ */
 export function parseDate(raw: string | null | undefined): Date | null {
   if (raw === null || raw === undefined) return null
   const trimmed = raw.trim()
   if (trimmed === '' || trimmed.toLowerCase() === 'na' || trimmed.toLowerCase() === 'n/a') return null
-  const match = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})$/)
-  if (!match) return null
-  const [, y, m, d] = match
-  const date = new Date(Number(y), Number(m) - 1, Number(d))
-  if (Number.isNaN(date.getTime())) return null
-  return date.getFullYear() === Number(y) && date.getMonth() === Number(m) - 1 && date.getDate() === Number(d)
-    ? date
-    : null
+
+  const iso = trimmed.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})(?:[T ]\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:?\d{2})?)?$/)
+  if (iso) return buildLocalDate(Number(iso[1]), Number(iso[2]), Number(iso[3]))
+
+  const us = trimmed.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/)
+  if (us) return buildLocalDate(Number(us[3]), Number(us[1]), Number(us[2]))
+
+  return null
 }
 
 export function daysBetween(a: Date, b: Date): number {

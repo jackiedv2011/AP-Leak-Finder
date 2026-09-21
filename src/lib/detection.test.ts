@@ -356,3 +356,93 @@ describe('No double-counting across recoverable findings', () => {
     expect(result.recoverableTotal).toBe(600) // 500 (duplicate) + 100 (row0 overpayment)
   })
 })
+
+describe('regressions — false positives found in the messy-ledger audit', () => {
+  it('two instalments that add up to the invoice are not a duplicate (equal or uneven)', () => {
+    const records = [
+      makeRecord({ vendor: 'Lakeside', invoiceNumber: 'LP-500', invoiceAmount: 3000, amountPaid: 1500, paymentDate: d(2025, 8, 10) }),
+      makeRecord({ vendor: 'Lakeside', invoiceNumber: 'LP-500', invoiceAmount: 3000, amountPaid: 1500, paymentDate: d(2025, 8, 25) }),
+      makeRecord({ vendor: 'Lakeside', invoiceNumber: 'LP-501', invoiceAmount: 2500, amountPaid: 2000, paymentDate: d(2025, 8, 15) }),
+      makeRecord({ vendor: 'Lakeside', invoiceNumber: 'LP-501', invoiceAmount: 2500, amountPaid: 500, paymentDate: d(2025, 8, 30) }),
+    ]
+    expect(detectFindings(records).findings).toHaveLength(0)
+  })
+
+  it('instalments that overshoot the invoice recover only the overshoot, not a whole extra payment', () => {
+    const records = [
+      makeRecord({ vendor: 'Lakeside', invoiceNumber: 'LP-9', invoiceAmount: 3000, amountPaid: 1500, paymentDate: d(2025, 8, 10) }),
+      makeRecord({ vendor: 'Lakeside', invoiceNumber: 'LP-9', invoiceAmount: 3000, amountPaid: 1500, paymentDate: d(2025, 8, 25) }),
+      makeRecord({ vendor: 'Lakeside', invoiceNumber: 'LP-9', invoiceAmount: 3000, amountPaid: 1500, paymentDate: d(2025, 9, 1) }),
+    ]
+    const [finding] = detectFindings(records).findings
+    expect(finding.type).toBe('exact_duplicate')
+    expect(finding.dollarImpact).toBe(1500)
+  })
+
+  it('a refund already booked against a duplicated invoice reduces (and can cancel) the recoverable amount', () => {
+    const paidTwice = [
+      makeRecord({ vendor: 'Pine', invoiceNumber: 'INV-8', amountPaid: 760, paymentDate: d(2025, 6, 15) }),
+      makeRecord({ vendor: 'Pine', invoiceNumber: 'INV-8', amountPaid: 760, paymentDate: d(2025, 6, 15) }),
+    ]
+    expect(detectFindings(paidTwice).findings[0].dollarImpact).toBe(760)
+    const partlyRefunded = [...paidTwice, makeRecord({ vendor: 'Pine', invoiceNumber: 'INV-8', amountPaid: -200, paymentDate: d(2025, 6, 25) })]
+    expect(detectFindings(partlyRefunded).findings[0].dollarImpact).toBe(560)
+    const fullyRefunded = [...paidTwice, makeRecord({ vendor: 'Pine', invoiceNumber: 'INV-8', amountPaid: -760, paymentDate: d(2025, 6, 25) })]
+    expect(detectFindings(fullyRefunded).findings).toHaveLength(0)
+  })
+
+  it('credit memos and zero-dollar rows are never findings on their own', () => {
+    const records = [
+      makeRecord({ vendor: 'Pine', invoiceNumber: 'CM-1', invoiceAmount: -200, amountPaid: -200, paymentDate: d(2025, 6, 25) }),
+      makeRecord({ vendor: 'Pine', invoiceNumber: 'CM-1', invoiceAmount: -200, amountPaid: -200, paymentDate: d(2025, 6, 26) }),
+      makeRecord({ vendor: 'Pine', invoiceNumber: 'Z-1', invoiceAmount: 0, amountPaid: 0, paymentDate: d(2025, 7, 2) }),
+      makeRecord({ vendor: 'Pine', invoiceNumber: 'Z-1', invoiceAmount: 0, amountPaid: 0, paymentDate: d(2025, 7, 2) }),
+      makeRecord({ vendor: 'Pine', invoiceNumber: 'Z-1', invoiceAmount: 100, amountPaid: 0, terms: '2/10 net 30', invoiceDate: d(2025, 7, 1), paymentDate: d(2025, 7, 2) }),
+    ]
+    expect(detectFindings(records).findings).toHaveLength(0)
+  })
+
+  it('a steady monthly series of identical amounts with sequential invoice numbers is recurring, not near-duplicates', () => {
+    const records = [1, 2, 3, 4, 5, 6].map((month) =>
+      makeRecord({ vendor: 'Summit Rent', invoiceNumber: `RENT-2025-0${month}`, amountPaid: 4000, paymentDate: d(2025, month, 3) })
+    )
+    expect(detectFindings(records).findings).toHaveLength(0)
+  })
+
+  it('a duplicate dropped into a recurring series breaks the cadence and is still caught', () => {
+    const records = [
+      ...[1, 2, 3].map((month) =>
+        makeRecord({ vendor: 'Summit Rent', invoiceNumber: `RENT-2025-0${month}`, amountPaid: 4000, paymentDate: d(2025, month, 3) })
+      ),
+      // keyed again four days after March's, with a transposed number
+      makeRecord({ vendor: 'Summit Rent', invoiceNumber: 'RENT-2025-30', amountPaid: 4000, paymentDate: d(2025, 3, 7) }),
+    ]
+    const near = detectFindings(records).findings.filter((f) => f.type === 'near_duplicate')
+    expect(near.length).toBeGreaterThanOrEqual(1)
+    expect(near.some((f) => f.relatedRecords.some((r) => r.invoiceNumber === 'RENT-2025-30'))).toBe(true)
+  })
+
+  it('Rule 5 stays quiet when the discounted amount was paid late — the discount was honoured, nothing was lost', () => {
+    const records = [
+      makeRecord({ vendor: 'Blue Bag', invoiceNumber: 'INV-6009', invoiceAmount: 1000, amountPaid: 980, terms: '2/10 net 30', invoiceDate: d(2025, 5, 1), paymentDate: d(2025, 5, 28) }),
+    ]
+    expect(detectFindings(records).findings).toHaveLength(0)
+  })
+
+  it('a one-cent rounding difference is not an overpayment, but two cents is', () => {
+    const oneCent = makeRecord({ vendor: 'Riverside', invoiceNumber: 'INV-1', invoiceAmount: 1234.56, amountPaid: 1234.57 })
+    expect(detectFindings([oneCent]).findings).toHaveLength(0)
+    const twoCents = makeRecord({ vendor: 'Riverside', invoiceNumber: 'INV-2', invoiceAmount: 1234.56, amountPaid: 1234.58 })
+    const [finding] = detectFindings([twoCents]).findings
+    expect(finding.type).toBe('overpayment')
+    expect(finding.dollarImpact).toBe(0.02)
+  })
+
+  it('a vendor needs at least nine payments before the outlier rule can fire at all (2.5σ is unreachable below that)', () => {
+    const eight = [...Array(7)].map((_, i) => makeRecord({ vendor: 'Metro', invoiceNumber: `U-${i}`, amountPaid: 400 + i, paymentDate: d(2025, 1 + i, 1) }))
+    eight.push(makeRecord({ vendor: 'Metro', invoiceNumber: 'U-big', amountPaid: 9500, paymentDate: d(2025, 9, 1) }))
+    expect(detectFindings(eight).findings.filter((f) => f.type === 'amount_outlier')).toHaveLength(0)
+    const nine = [...eight, makeRecord({ vendor: 'Metro', invoiceNumber: 'U-8', amountPaid: 410, paymentDate: d(2025, 10, 1) })]
+    expect(detectFindings(nine).findings.filter((f) => f.type === 'amount_outlier')).toHaveLength(1)
+  })
+})

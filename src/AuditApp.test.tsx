@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { AuditApp } from '@/AuditApp'
 import { getSampleLedger, sampleLedgerCsv } from '@/data/sampleLedger'
@@ -52,29 +52,57 @@ function goToMode(label: string) {
   fireEvent.click(within(nav).getByRole('button', { name: new RegExp(`^${label}`) }))
 }
 
-function navCount(label: string): number {
+function navLabels(): string[] {
   const nav = screen.getByRole('navigation', { name: /workspace/i })
-  const item = within(nav).getByRole('button', { name: new RegExp(`^${label}`) })
-  return Number(item.querySelector('.wk-nav-count')?.textContent ?? '0')
+  return within(nav)
+    .getAllByRole('button')
+    .map((button) => button.querySelector('span')?.textContent ?? '')
 }
 
-function rung(label: string): HTMLElement {
+/** One of the dashboard's stat tiles, by its label. */
+function stat(label: string): HTMLElement {
   const found = Array.from(document.querySelectorAll<HTMLElement>('.wk-ladder > div')).find(
     (node) => node.querySelector('.wk-label')?.textContent === label
   )
-  if (!found) throw new Error(`No ladder rung labelled "${label}"`)
+  if (!found) throw new Error(`No stat tile labelled "${label}"`)
   return found
 }
 
-function rungValue(label: string): string {
-  return rung(label).querySelector('.wk-figure')?.textContent ?? ''
+function statValue(label: string): string {
+  return stat(label).querySelector('.wk-figure')?.textContent ?? ''
 }
 
-function tableRows(): HTMLElement[] {
-  return Array.from(document.querySelectorAll<HTMLElement>('.wk-table tbody tr'))
+/** One stage of the recovery pipeline strip, by its label. */
+function stageValue(label: string): string {
+  const found = Array.from(document.querySelectorAll<HTMLElement>('.wk-pipeline > div')).find(
+    (node) => node.querySelector('.wk-label')?.textContent === label
+  )
+  if (!found) throw new Error(`No pipeline stage labelled "${label}"`)
+  return found.querySelector('.wk-pipeline-figure')?.textContent ?? ''
 }
 
-/** Read one figure out of a `<dl>` fact block (Reports / Data / Settings). */
+function tableRows(table: HTMLElement | Document = document): HTMLElement[] {
+  return Array.from(table.querySelectorAll<HTMLElement>('.wk-table tbody tr'))
+}
+
+function lastTable(): HTMLElement {
+  const tables = document.querySelectorAll<HTMLElement>('.wk-table')
+  return tables[tables.length - 1]
+}
+
+
+/** Make a decision through the review dialog. */
+async function decide(option: 'This is real' | 'I need more detail' | 'Not an issue') {
+  fireEvent.click(await screen.findByRole('button', { name: 'Review this finding' }))
+  const dialog = await screen.findByTestId('decision-dialog')
+  fireEvent.click(within(dialog).getByLabelText(new RegExp(`^${option}`)))
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Save decision' }))
+  await waitFor(() => expect(screen.queryByTestId('decision-dialog')).not.toBeInTheDocument())
+}
+
+const DASHBOARD_READY = () => expect(screen.getByRole('heading', { name: 'Recent findings' })).toBeInTheDocument()
+
+/** Read one figure out of a `<dl>` fact block (Audits / Reports / Settings). */
 function fact(label: string): string {
   const term = Array.from(document.querySelectorAll('dt')).find((node) => node.textContent === label)
   return term?.nextElementSibling?.textContent ?? ''
@@ -85,21 +113,21 @@ async function runSampleFromLaunch() {
   setLocation('/audit?entry=sample')
   render(<AuditApp />)
   fireEvent.click(screen.getByRole('button', { name: /run the sample/i }))
-  await waitFor(() => expect(screen.getByRole('heading', { name: /where the money stands/i })).toBeInTheDocument())
+  await waitFor(DASHBOARD_READY)
 }
 
 /** The other entry: a real CSV through the import dialog, which persists a project. */
 async function importLedgerFromLaunch() {
   setLocation('/audit')
   render(<AuditApp />)
-  fireEvent.click(screen.getByRole('button', { name: /use your own file/i }))
+  fireEvent.click(screen.getByRole('button', { name: /upload a ledger/i }))
   const input = await screen.findByLabelText(/upload a csv ledger/i)
   fireEvent.change(input, {
     target: { files: [new File([sampleLedgerCsv], 'ledger.csv', { type: 'text/csv' })] },
   })
   await screen.findByText('ledger.csv')
-  fireEvent.click(screen.getByRole('button', { name: /add to ledger/i }))
-  await waitFor(() => expect(screen.getByRole('heading', { name: /where the money stands/i })).toBeInTheDocument())
+  fireEvent.click(screen.getByRole('button', { name: /run the audit/i }))
+  await waitFor(DASHBOARD_READY)
 }
 
 describe('AuditApp', () => {
@@ -118,7 +146,7 @@ describe('AuditApp', () => {
     expect(workspace()).not.toBeInTheDocument()
   })
 
-  it('?entry=sample builds the ledger on its CTA and lands on Overview with the engine’s real totals', async () => {
+  it('?entry=sample builds the ledger on its CTA and lands on the Dashboard with the engine’s real totals', async () => {
     setLocation('/audit?entry=sample')
     render(<AuditApp />)
 
@@ -126,19 +154,25 @@ describe('AuditApp', () => {
     expect(workspace()).not.toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: /run the sample/i }))
-    await waitFor(() => expect(screen.getByRole('heading', { name: /where the money stands/i })).toBeInTheDocument())
+    await waitFor(DASHBOARD_READY)
 
     const findings = sampleFindings()
     expect(findings.length).toBeGreaterThan(0)
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Overview')
-    expect(rungValue('Potential')).toBe(formatCurrency(sumImpact(findings)))
-    expect(screen.getByText(`${findings.length} cases`)).toBeInTheDocument()
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Dashboard')
+    expect(statValue('Potential recovery')).toBe(formatCurrency(sumImpact(findings)))
+    expect(statValue('Findings')).toBe(String(findings.length))
+    expect(statValue('Audits run')).toBe('1')
   })
 
-  // §3 — found money and returned money are different numbers. The four rungs
-  // are reported side by side and adding them would double-count the same
+  it('offers exactly the six sections, in order', async () => {
+    await runSampleFromLaunch()
+    expect(navLabels()).toEqual(['Dashboard', 'Audits', 'Findings', 'Recoveries', 'Reports', 'Settings'])
+  })
+
+  // Found money and returned money are different numbers. The stages are
+  // reported side by side and adding them would double-count the same
   // dollars, so their sum must never appear on the screen as a figure.
-  it('reports the four ladder rungs separately and never as one summed total', async () => {
+  it('reports potential, verified, in-recovery and recovered separately and never as one summed total', async () => {
     await runSampleFromLaunch()
 
     const findings = sampleFindings()
@@ -146,18 +180,25 @@ describe('AuditApp', () => {
     const verified = sumImpact(findings.filter((finding) => finding.class === 'recoverable'))
     expect(verified).toBeGreaterThan(0)
 
-    expect(rungValue('Potential')).toBe(formatCurrency(potential))
-    expect(rungValue('Verified')).toBe(formatCurrency(verified))
-    expect(rungValue('In recovery')).toBe(formatCurrency(0))
-    expect(rungValue('Recovered')).toBe(formatCurrency(0))
+    expect(statValue('Potential recovery')).toBe(formatCurrency(potential))
+    expect(stageValue('Verified')).toBe(formatCurrency(verified))
+    expect(stageValue('In recovery')).toBe(formatCurrency(0))
+    expect(stageValue('Recovered')).toBe(formatCurrency(0))
+    expect(statValue('Recovered')).toBe(formatCurrency(0))
     expect(screen.queryByText(formatCurrency(potential + verified))).not.toBeInTheDocument()
 
     // $0.00 recovered is not an achievement, so it must not wear the accent
     // that belongs to money which actually came back.
-    expect(rung('Recovered')).not.toHaveAttribute('data-terminal')
+    expect(stat('Recovered')).not.toHaveAttribute('data-accent')
   })
 
-  it('opening a case from the Overview table routes to ?case= and shows its records as evidence', async () => {
+  it('"Start an audit" opens the import dialog for a new audit, not a merge into the open one', async () => {
+    await runSampleFromLaunch()
+    fireEvent.click(screen.getByRole('button', { name: /^start an audit$/i }))
+    expect(await screen.findByRole('dialog', { name: 'Start an audit' })).toBeInTheDocument()
+  })
+
+  it('opening a case from the Dashboard table routes to ?case= and shows its records as evidence', async () => {
     await runSampleFromLaunch()
 
     const [topRow] = tableRows()
@@ -194,20 +235,20 @@ describe('AuditApp', () => {
     seedPersistedLedger()
     setLocation('/audit')
     render(<AuditApp />)
-    await waitFor(() => expect(screen.getByRole('heading', { name: /where the money stands/i })).toBeInTheDocument())
+    await waitFor(DASHBOARD_READY)
 
     const [topRow] = tableRows()
     const vendor = topRow.querySelector('.wk-table-vendor')?.textContent ?? ''
     fireEvent.click(topRow)
     await waitFor(() => expect(screen.getByRole('heading', { name: 'Evidence' })).toBeInTheDocument())
 
-    fireEvent.click(screen.getByRole('button', { name: 'This is real' }))
-    await waitFor(() => expect(screen.getByText('Confirmed')).toBeInTheDocument())
+    await decide('This is real')
+    await waitFor(() => expect(screen.getAllByText('Confirmed').length).toBeGreaterThan(0))
 
     cleanup()
     render(<AuditApp />)
 
-    await waitFor(() => expect(screen.getByText('Confirmed')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getAllByText('Confirmed').length).toBeGreaterThan(0))
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(vendor)
 
     goToMode('Recoveries')
@@ -223,35 +264,265 @@ describe('AuditApp', () => {
     fireEvent.click(topRow)
     await waitFor(() => expect(screen.getByRole('heading', { name: 'Evidence' })).toBeInTheDocument())
 
-    fireEvent.click(screen.getByRole('button', { name: 'This is real' }))
+    await decide('This is real')
     fireEvent.click(await screen.findByRole('button', { name: 'Mark request sent' }))
     fireEvent.click(await screen.findByRole('button', { name: 'Money came back' }))
-    await waitFor(() => expect(screen.getByText('Money back')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getAllByText('Money back').length).toBeGreaterThan(0))
 
-    goToMode('Overview')
-    expect(rungValue('Recovered')).toBe(value)
-    expect(rung('Recovered')).toHaveAttribute('data-terminal')
-    // A settled case has left the "in recovery" rung rather than counting twice.
-    expect(rungValue('In recovery')).toBe(formatCurrency(0))
+    goToMode('Dashboard')
+    expect(statValue('Recovered')).toBe(value)
+    expect(stat('Recovered')).toHaveAttribute('data-accent')
+    // A settled case has left the "in recovery" stage rather than counting twice.
+    expect(stageValue('In recovery')).toBe(formatCurrency(0))
+    expect(stageValue('Recovered')).toBe(value)
   })
 
-  it('renders each of the seven workspace modes without crashing', async () => {
+  it('a recovered case leaves Potential recovery and Verified, so found money is never shown as still findable', async () => {
+    await runSampleFromLaunch()
+    const potentialBefore = statValue('Potential recovery')
+    const verifiedBefore = stageValue('Verified')
+
+    const [topRow] = tableRows()
+    const value = topRow.querySelector('.wk-table-money')?.textContent ?? ''
+    const impact = sampleFindings().find((f) => formatCurrency(f.dollarImpact) === value)!.dollarImpact
+    fireEvent.click(topRow)
+    await decide('This is real')
+    fireEvent.click(await screen.findByRole('button', { name: 'Mark request sent' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Money came back' }))
+    await waitFor(() => expect(screen.getAllByText('Money back').length).toBeGreaterThan(0))
+
+    goToMode('Dashboard')
+    const potential = sumImpact(sampleFindings()) - impact
+    expect(potentialBefore).toBe(formatCurrency(sumImpact(sampleFindings())))
+    expect(statValue('Potential recovery')).toBe(formatCurrency(potential))
+    expect(stageValue('Verified')).toBe(formatCurrency(sumImpact(sampleFindings().filter((f) => f.class === 'recoverable')) - impact))
+    expect(verifiedBefore).not.toBe(stageValue('Verified'))
+    expect(statValue('Recovered')).toBe(value)
+  })
+
+  it('dismissing a finding removes it from Potential recovery and from "Where the money went"', async () => {
+    await runSampleFromLaunch()
+    const [topRow] = tableRows()
+    const value = topRow.querySelector('.wk-table-money')?.textContent ?? ''
+    const impact = sampleFindings().find((f) => formatCurrency(f.dollarImpact) === value)!.dollarImpact
+    fireEvent.click(topRow)
+    await decide('Not an issue')
+    await waitFor(() => expect(screen.getAllByText('Expected').length).toBeGreaterThan(0))
+
+    goToMode('Dashboard')
+    expect(statValue('Potential recovery')).toBe(formatCurrency(sumImpact(sampleFindings()) - impact))
+    expect(statValue('Findings')).toBe(String(sampleFindings().length - 1))
+    const causes = Array.from(document.querySelectorAll('.wk-card-flat li .wk-num')).map((n) => n.textContent)
+    const dupTotal = sumImpact(sampleFindings().filter((f) => f.type === 'exact_duplicate')) - impact
+    expect(causes).toContain(formatCurrency(dupTotal))
+  })
+
+  it('a decision can be changed until a request is sent, and an outcome can be reopened after', async () => {
+    await runSampleFromLaunch()
+    const [topRow] = tableRows()
+    fireEvent.click(topRow)
+
+    // wrong click: dismissed → change decision → confirm instead
+    await decide('Not an issue')
+    fireEvent.click(await screen.findByRole('button', { name: 'Change decision' }))
+    expect(await screen.findByRole('button', { name: 'Review this finding' })).toBeInTheDocument()
+    await decide('This is real')
+    fireEvent.click(await screen.findByRole('button', { name: 'Mark request sent' }))
+    // once sent, the decision is locked
+    await waitFor(() => expect(screen.queryByRole('button', { name: 'Change decision' })).not.toBeInTheDocument())
+
+    // wrong outcome: closed without recovery → reopen → money came back
+    fireEvent.click(await screen.findByRole('button', { name: 'Close without recovery' }))
+    await waitFor(() => expect(screen.getAllByText('Closed, no money back').length).toBeGreaterThan(0))
+    goToMode('Dashboard')
+    expect(statValue('Recovered')).toBe(formatCurrency(0))
+    goToMode('Recoveries')
+    fireEvent.click(tableRows()[0])
+    fireEvent.click(await screen.findByRole('button', { name: 'Reopen outcome' }))
+    fireEvent.click(await screen.findByRole('button', { name: 'Money came back' }))
+    await waitFor(() => expect(screen.getAllByText('Money back').length).toBeGreaterThan(0))
+    goToMode('Dashboard')
+    expect(statValue('Recovered')).not.toBe(formatCurrency(0))
+    // nav badges are workloads: one fewer finding waiting, nothing left in flight
+    expect(stageValue('In recovery')).toBe(formatCurrency(0))
+  })
+
+  it('records a partial recovery: dashboard, reports, recoveries and the case summary all show what actually came back', async () => {
+    await runSampleFromLaunch()
+    const [topRow] = tableRows()
+    const value = topRow.querySelector('.wk-table-money')?.textContent ?? ''
+    const impact = sampleFindings().find((f) => formatCurrency(f.dollarImpact) === value)!.dollarImpact
+    fireEvent.click(topRow)
+    await decide('This is real')
+
+    // the request panel drafts a letter from the case and lets us pick the method
+    const panel = await screen.findByTestId('recovery-request')
+    const subject = () => (within(panel).getByLabelText('Subject') as HTMLInputElement).value
+    const message = () => (within(panel).getByLabelText('Message') as HTMLTextAreaElement).value
+    expect(subject()).toContain('Request for refund')
+    fireEvent.change(within(panel).getByLabelText('Ask for'), { target: { value: 'credit' } })
+    await waitFor(() => expect(subject()).toContain('Request for credit'))
+    expect(message()).toContain(formatCurrency(impact))
+    fireEvent.click(within(panel).getByRole('button', { name: 'Mark request sent' }))
+
+    // record 40% of it as received, by credit, with a reference
+    const outcome = await screen.findByTestId('recovery-outcome')
+    const partial = Math.round(impact * 0.4 * 100) / 100
+    fireEvent.change(within(outcome).getByLabelText('Amount received'), { target: { value: String(partial) } })
+    fireEvent.change(within(outcome).getByLabelText('Reference (optional)'), { target: { value: 'CM-42' } })
+    fireEvent.click(within(outcome).getByRole('button', { name: 'Money came back' }))
+    await waitFor(() => expect(screen.getAllByText('Money back').length).toBeGreaterThan(0))
+
+    expect(fact('Original opportunity')).toBe(value)
+    expect(fact('Requested')).toBe(value)
+    expect(fact('Received')).toBe(formatCurrency(partial))
+    expect(fact('Still outstanding')).toBe(formatCurrency(impact - partial))
+    expect(fact('Method')).toBe('Account credit')
+    const history = screen.getByTestId('case-history')
+    expect(history).toHaveTextContent('Confirmed as real')
+    expect(history).toHaveTextContent('Recovery request sent')
+    expect(history).toHaveTextContent(`Money received recorded · ${formatCurrency(partial)} · Account credit`)
+    expect(history).toHaveTextContent('CM-42')
+    expect(history).toHaveTextContent('Guest session')
+
+    goToMode('Dashboard')
+    expect(statValue('Recovered')).toBe(formatCurrency(partial))
+    expect(statValue('Potential recovery')).toBe(formatCurrency(sumImpact(sampleFindings()) - impact))
+    expect(stageValue('In recovery')).toBe(formatCurrency(0))
+    goToMode('Reports')
+    expect(fact('Recovered')).toBe(formatCurrency(partial))
+    goToMode('Recoveries')
+    expect(stageValue('Recovered')).toBe(formatCurrency(partial))
+    expect(screen.getByRole('heading', { name: 'Money back' })).toBeInTheDocument()
+    expect(lastTable().querySelector('.wk-table-money')?.textContent).toBe(formatCurrency(partial))
+  })
+
+  it('rejects an invalid recovered amount and records nothing', async () => {
+    await runSampleFromLaunch()
+    fireEvent.click(tableRows()[0])
+    await decide('This is real')
+    fireEvent.click(await screen.findByRole('button', { name: 'Mark request sent' }))
+    const outcome = await screen.findByTestId('recovery-outcome')
+    const amount = within(outcome).getByLabelText('Amount received')
+    for (const bad of ['', '-1', 'abc', '999999999']) {
+      fireEvent.change(amount, { target: { value: bad } })
+      fireEvent.click(within(outcome).getByRole('button', { name: 'Money came back' }))
+      expect(within(outcome).getByRole('alert')).toBeInTheDocument()
+      expect(screen.queryByTestId('case-history')).not.toHaveTextContent('Money received recorded')
+    }
+    expect(fact('Received')).toBe('—')
+    goToMode('Dashboard')
+    expect(statValue('Recovered')).toBe(formatCurrency(0))
+  })
+
+  it('a partial recovery survives a full reload and re-login', async () => {
+    seedPersistedLedger()
+    setLocation('/audit')
+    render(<AuditApp />)
+    await waitFor(DASHBOARD_READY)
+    fireEvent.click(tableRows()[0])
+    await decide('This is real')
+    fireEvent.click(await screen.findByRole('button', { name: 'Mark request sent' }))
+    const outcome = await screen.findByTestId('recovery-outcome')
+    fireEvent.change(within(outcome).getByLabelText('Amount received'), { target: { value: '12.34' } })
+    fireEvent.click(within(outcome).getByRole('button', { name: 'Money came back' }))
+    await waitFor(() => expect(fact('Received')).toBe(formatCurrency(12.34)))
+
+    cleanup()
+    render(<AuditApp />)
+    await waitFor(() => expect(fact('Received')).toBe(formatCurrency(12.34)))
+    expect(screen.getByTestId('case-history')).toHaveTextContent('Money received recorded')
+    goToMode('Dashboard')
+    expect(statValue('Recovered')).toBe(formatCurrency(12.34))
+  })
+
+  it('copies and downloads the recovery request without sending anything', async () => {
+    await runSampleFromLaunch()
+    fireEvent.click(tableRows()[0])
+    await decide('This is real')
+    const panel = await screen.findByTestId('recovery-request')
+    const writeText = vi.fn().mockResolvedValue(undefined)
+    Object.defineProperty(navigator, 'clipboard', { value: { writeText }, configurable: true })
+    fireEvent.click(within(panel).getByRole('button', { name: 'Copy' }))
+    await waitFor(() => expect(writeText).toHaveBeenCalledTimes(1))
+    expect(writeText.mock.calls[0][0]).toContain('Subject: ')
+    expect(writeText.mock.calls[0][0]).toContain('Best regards')
+
+    const createObjectURL = vi.fn().mockReturnValue('blob:x')
+    const revokeObjectURL = vi.fn()
+    Object.defineProperty(URL, 'createObjectURL', { value: createObjectURL, configurable: true })
+    Object.defineProperty(URL, 'revokeObjectURL', { value: revokeObjectURL, configurable: true })
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
+    fireEvent.click(within(panel).getByRole('button', { name: 'Download' }))
+    expect(createObjectURL).toHaveBeenCalledTimes(1)
+    expect(click).toHaveBeenCalledTimes(1)
+    click.mockRestore()
+    // nothing was "sent": still ready to send, nothing in recovery
+    expect(fact('Status')).toBe('Ready to send')
+    expect(screen.getByTestId('case-history')).not.toHaveTextContent('Recovery request sent')
+  })
+
+  it('an edited letter is kept on the case, and "Draft with AI" degrades gracefully when the server has no key', async () => {
+    seedPersistedLedger()
+    setLocation('/audit')
+    render(<AuditApp />)
+    await waitFor(DASHBOARD_READY)
+    fireEvent.click(tableRows()[0])
+    await decide('This is real')
+    const panel = await screen.findByTestId('recovery-request')
+    fireEvent.change(within(panel).getByLabelText('Message'), { target: { value: 'Hand-written request.' } })
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(null, { status: 503 }))
+    fireEvent.click(within(panel).getByRole('button', { name: 'Draft with AI' }))
+    await waitFor(() => expect(within(panel).getByRole('status')).toHaveTextContent('not configured'))
+    expect(fetchMock).toHaveBeenCalledWith('/api/ai/draft', expect.objectContaining({ method: 'POST' }))
+    const sent = JSON.parse((fetchMock.mock.calls[0][1] as RequestInit).body as string)
+    expect(Object.keys(sent).sort()).toEqual(
+      ['amountFlagged', 'amountRequested', 'evidenceStrength', 'explanation', 'findingTitle', 'findingType', 'method', 'recoveryStage', 'reviewerNote', 'rows', 'sender', 'userContext', 'vendor'].sort()
+    )
+    fetchMock.mockRestore()
+    expect(within(panel).getByLabelText('Message')).toHaveValue('Hand-written request.')
+    fireEvent.click(within(panel).getByRole('button', { name: 'Mark request sent' }))
+    await screen.findByTestId('recovery-outcome')
+    cleanup()
+    render(<AuditApp />)
+    await waitFor(() => expect(fact('Status')).toBe('Waiting on vendor'))
+  })
+
+  it('dismissing through the dialog keeps the structured reason and the note', async () => {
+    seedPersistedLedger()
+    setLocation('/audit')
+    render(<AuditApp />)
+    await waitFor(DASHBOARD_READY)
+    fireEvent.click(tableRows()[0])
+    fireEvent.click(await screen.findByRole('button', { name: 'Review this finding' }))
+    const dialog = await screen.findByTestId('decision-dialog')
+    fireEvent.click(within(dialog).getByLabelText(/^Not an issue/))
+    fireEvent.change(within(dialog).getByLabelText('Why is it expected?'), { target: { value: 'known_vendor_exception' } })
+    fireEvent.change(within(dialog).getByLabelText('Note (optional)'), { target: { value: 'Agreed split with vendor' } })
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Save decision' }))
+    await waitFor(() => expect(screen.getAllByText('Expected').length).toBeGreaterThan(0))
+    const stored = JSON.parse(window.localStorage.getItem(Object.keys(window.localStorage).find((k) => k.startsWith('reclaim.project.v1.'))!)!)
+    const state = Object.values(stored.environment.caseStates)[0] as { decision: string; dismissalTag: string; reason: string; history: Array<{ note: string }> }
+    expect(state).toMatchObject({ decision: 'expected', dismissalTag: 'known_vendor_exception', reason: 'Agreed split with vendor' })
+    expect(state.history[0].note).toBe('Agreed split with vendor')
+  })
+
+  it('renders each of the six workspace sections without crashing', async () => {
     await runSampleFromLaunch()
 
     const modes: Array<[RouteMode, string]> = [
-      ['overview', 'Overview'],
-      ['opportunities', 'Opportunities'],
+      ['dashboard', 'Dashboard'],
+      ['audits', 'Audits'],
+      ['findings', 'Findings'],
       ['recoveries', 'Recoveries'],
-      ['vendors', 'Vendors'],
       ['reports', 'Reports'],
-      ['data', 'Data'],
       ['settings', 'Settings'],
     ]
 
     for (const [mode, label] of modes) {
       goToMode(label)
       expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(label)
-      expect(new URLSearchParams(window.location.search).get('mode')).toBe(mode === 'overview' ? null : mode)
+      expect(new URLSearchParams(window.location.search).get('mode')).toBe(mode === 'dashboard' ? null : mode)
     }
   })
 
@@ -262,8 +533,19 @@ describe('AuditApp', () => {
     setLocation('/audit')
     render(<AuditApp />)
 
-    await waitFor(() => expect(screen.getByRole('heading', { name: /where the money stands/i })).toBeInTheDocument())
+    await waitFor(DASHBOARD_READY)
     expect(screen.queryByRole('button', { name: /run the sample/i })).not.toBeInTheDocument()
+  })
+
+  it('a persisted audit is listed on the Audits page as the open one', async () => {
+    await importLedgerFromLaunch()
+    goToMode('Audits')
+
+    const [row] = tableRows()
+    expect(row).toHaveAttribute('aria-current', 'true')
+    expect(row.querySelector('.wk-table-vendor')?.textContent).toContain('ledger')
+    expect(within(row).getByText('Open')).toBeInTheDocument()
+    expect(fact('Payment records')).toBe(String(getSampleLedger().records.length))
   })
 
   it('drops a stale case id from the URL instead of dead-ending on it', async () => {
@@ -272,7 +554,7 @@ describe('AuditApp', () => {
     render(<AuditApp />)
 
     await waitFor(() => expect(window.location.search).not.toContain('case='))
-    expect(screen.getByRole('heading', { name: /where the money stands/i })).toBeInTheDocument()
+    DASHBOARD_READY()
   })
 
   it('rapid repeated clicks on "Run the sample" do not duplicate or corrupt the ledger', async () => {
@@ -284,31 +566,30 @@ describe('AuditApp', () => {
     fireEvent.click(cta)
     fireEvent.click(cta)
 
-    await waitFor(() => expect(screen.getByRole('heading', { name: /where the money stands/i })).toBeInTheDocument())
+    await waitFor(DASHBOARD_READY)
 
     const findings = sampleFindings()
-    expect(rungValue('Potential')).toBe(formatCurrency(sumImpact(findings)))
-    expect(screen.getByText(`${findings.length} cases`)).toBeInTheDocument()
+    expect(statValue('Potential recovery')).toBe(formatCurrency(sumImpact(findings)))
+    expect(statValue('Findings')).toBe(String(findings.length))
 
     // One import, not three: the record count is the sample's, not a multiple.
-    goToMode('Data')
+    goToMode('Audits')
     expect(fact('Payment records')).toBe(String(getSampleLedger().records.length))
     // The sample is a demo session and must not leave a project behind.
     expect(window.localStorage.getItem('reclaim.projects.index.v1')).toBeNull()
   })
 
   // A vendor that came through clean is a result too. Hiding it would flatter
-  // the findings and make this screen disagree with the sidebar's own count.
-  it('lists every vendor in the ledger, clean ones included, and agrees with the sidebar count', async () => {
+  // the findings and make this screen disagree with its own vendor count.
+  it('the Reports page lists every vendor in the ledger, clean ones included', async () => {
     await runSampleFromLaunch()
 
     const vendorsInLedger = new Set(getSampleLedger().records.map((record) => record.vendor)).size
-    const sidebarCount = navCount('Vendors')
 
-    goToMode('Vendors')
-    const rows = tableRows()
+    goToMode('Reports')
+    const rows = tableRows(lastTable())
     expect(rows).toHaveLength(vendorsInLedger)
-    expect(rows).toHaveLength(sidebarCount)
+    expect(fact('Vendors')).toBe(String(vendorsInLedger))
 
     const cleanRows = rows.filter((row) => row.querySelectorAll('td')[1]?.textContent === '—')
     expect(cleanRows.length).toBeGreaterThan(0)
@@ -318,9 +599,9 @@ describe('AuditApp', () => {
 
   // Coverage is a claim about what the loaded columns can actually support, so
   // it is stated as "N of 7" rather than implying a full audit ran regardless.
-  it('the Data screen reports how many of the seven checks the loaded columns support', async () => {
+  it('the Audits page reports how many of the seven checks the loaded columns support', async () => {
     await runSampleFromLaunch()
-    goToMode('Data')
+    goToMode('Audits')
 
     const parsed = getSampleLedger()
     const readiness = assessRecordReadiness(parsed.records, parsed.skippedCount, parsed.detectedColumns)

@@ -1,17 +1,20 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { ArrowLeft } from 'lucide-react'
-import { ImportDialog } from '@/components/audit/ImportDialog'
+import { formatCurrency } from '@/lib/format'
+import { ArrowLeft, Plus } from 'lucide-react'
+import { ImportDialog, type ImportIntent } from '@/components/audit/ImportDialog'
 import { ClearLedgerDialog } from '@/components/audit/ClearLedgerDialog'
+import { LegacyImportDialog } from '@/components/audit/LegacyImportDialog'
+import { deferLegacyProjects, discardLegacyProjects, importLegacyProjects, legacyProjectsPresent, type LegacySummary } from '@/ledger/legacyMigration'
 import { WorkspaceShell } from '@/workspace/WorkspaceShell'
 import { Launch } from '@/workspace/views/Launch'
-import { Overview } from '@/workspace/views/Overview'
-import { Opportunities } from '@/workspace/views/Opportunities'
+import { Dashboard } from '@/workspace/views/Dashboard'
+import { Audits } from '@/workspace/views/Audits'
+import { Findings } from '@/workspace/views/Findings'
 import { Recoveries } from '@/workspace/views/Recoveries'
-import { Vendors } from '@/workspace/views/Vendors'
-import { Reports, DataView, SettingsView } from '@/workspace/views/Simple'
+import { Reports } from '@/workspace/views/Reports'
+import { SettingsView } from '@/workspace/views/Settings'
 import { CaseDetail } from '@/workspace/views/CaseDetail'
 import { useAuditRoute, loadPersistedContext, type RouteMode } from '@/audit/useAuditRoute'
-import { useTheme } from '@/workspace/theme'
 import {
   loadEnvironment,
   mergeImport,
@@ -25,10 +28,12 @@ import {
   createProject,
   deleteProject,
   getActiveProjectId,
+  listProjects,
   loadProject,
   migrateLegacyLedger,
   saveProject,
   type LedgerProject,
+  type LedgerProjectSummary,
 } from '@/ledger/projects'
 import {
   confirmCase,
@@ -36,21 +41,33 @@ import {
   markNeedsInfo,
   markRecoveryRequested,
   recordRecoveryOutcome,
+  reopenDecision,
+  reopenOutcome,
   updateCaseReason,
   updateRecoveryPackage,
+  withHistory,
   type DecisionValue,
+  type DismissalTag,
+  type RecoveryMethod,
 } from '@/ledger/caseState'
+import { useEntitlements, useOptionalAuth } from '@/lib/auth/AuthContext'
+import { Locked } from '@/components/plan/Locked'
+import { OnboardingTour } from '@/components/tutorial/OnboardingTour'
+import { UpgradeDialog } from '@/components/plan/UpgradeDialog'
+import { visibleFindingIds } from '@/workspace/planGates'
+import { projectSync } from '@/ledger/projectSync'
+import type { SenderProfile } from '@/lib/senderProfile'
+import type { RequestPackage } from '@/workspace/views/RecoveryPanels'
 import { overviewSummary, findCaseView } from '@/ledger/views'
 import { getSampleLedger } from '@/data/sampleLedger'
 import type { ImportInput } from '@/components/audit/ImportPanel'
 
 const TITLES: Record<RouteMode, string> = {
-  overview: 'Overview',
-  opportunities: 'Opportunities',
+  dashboard: 'Dashboard',
+  audits: 'Audits',
+  findings: 'Findings',
   recoveries: 'Recoveries',
-  vendors: 'Vendors',
   reports: 'Reports',
-  data: 'Data',
   settings: 'Settings',
 }
 
@@ -60,12 +77,28 @@ function sampleImportInput(): MergeImportInput {
 
 export function AuditApp() {
   const { route, navigate, goBack } = useAuditRoute()
-  const { choice: themeChoice, resolved: resolvedTheme, choose: chooseTheme } = useTheme()
+  const auth = useOptionalAuth()
+  const entitlements = useEntitlements()
+  const [limitDialog, setLimitDialog] = useState(false)
+  const [tourRequested, setTourRequested] = useState(false)
+  const account = auth?.user && !auth.user.isGuest ? auth.user : null
+  // First run: the account (or guest tab) has not been through the tour.
+  const tourOpen = tourRequested || (auth !== null && auth.status === 'ready' && auth.user !== null && !auth.user.onboardingSeenAt)
+  const closeTour = useCallback(() => {
+    setTourRequested(false)
+    void auth?.markOnboardingSeen()
+  }, [auth])
+  const actor = account ? account.name || account.email : null
+  const sender = useMemo<SenderProfile>(
+    () => ({ businessName: account?.company ?? '', senderName: account?.name ?? '', senderEmail: account?.email ?? '' }),
+    [account]
+  )
   const [project, setProject] = useState<LedgerProject | null>(() => {
     migrateLegacyLedger(loadEnvironment)
     const projectId = route.projectId ?? getActiveProjectId()
     return projectId ? loadProject(projectId) : null
   })
+  const [projects, setProjects] = useState<LedgerProjectSummary[]>(() => listProjects())
   const [environment, setEnvironment] = useState<LedgerEnvironment | null>(() => project?.environment ?? null)
   const [running, setRunning] = useState(false)
   const [entryError, setEntryError] = useState<string | null>(null)
@@ -73,8 +106,10 @@ export function AuditApp() {
   // "I have a file" entry, so the import surface opens with the screen rather
   // than hiding behind the secondary button.
   const [importDialogOpen, setImportDialogOpen] = useState(() => route.entry === 'upload')
+  const [importIntent, setImportIntent] = useState<ImportIntent>('new')
   const [clearDialogOpen, setClearDialogOpen] = useState(false)
   const [sampleSession, setSampleSession] = useState(false)
+  const [legacy, setLegacy] = useState<LegacySummary | null>(() => legacyProjectsPresent())
 
   const environmentRef = useRef(environment)
   const projectRef = useRef(project)
@@ -82,6 +117,21 @@ export function AuditApp() {
   environmentRef.current = environment
   projectRef.current = project
   const caseOriginRef = useRef<{ mode: RouteMode; y: number }>({ mode: route.mode, y: 0 })
+
+  const refreshProjects = useCallback(() => setProjects(listProjects()), [])
+
+  const openImport = useCallback(
+    (intent: ImportIntent) => {
+      // Starting a new audit counts against the plan; adding records to an open one does not.
+      if (intent === 'new' && account && !entitlements.canStartAudit) {
+        setLimitDialog(true)
+        return
+      }
+      setImportIntent(intent)
+      setImportDialogOpen(true)
+    },
+    [account, entitlements.canStartAudit]
+  )
 
   const runImport = useCallback(
     async (input: MergeImportInput, options: { replaceEnvironment?: boolean; persist?: boolean } = {}) => {
@@ -92,9 +142,8 @@ export function AuditApp() {
       setRunning(true)
       // Yield one tick so the running label actually paints before the
       // (synchronous) merge/detection work runs — honest for large files,
-      // imperceptible for small ones. No artificial minimum duration. A
-      // macrotask yield (not requestAnimationFrame) since rAF doesn't fire
-      // reliably in a backgrounded or non-compositing tab.
+      // imperceptible for small ones. A macrotask yield (not requestAnimationFrame)
+      // since rAF doesn't fire reliably in a backgrounded or non-compositing tab.
       await new Promise((resolve) => setTimeout(resolve, 0))
       try {
         const next = mergeImport(options.replaceEnvironment ? null : environmentRef.current, input)
@@ -111,22 +160,25 @@ export function AuditApp() {
               })
           projectRef.current = saved
           setProject(saved)
-          navigate({ projectId: saved.id, mode: 'overview', caseId: null, draft: false, entry: null }, { replace: true })
+          refreshProjects()
+          // A new audit counts against the plan once the server has it.
+          if (!current || options.replaceEnvironment) void projectSync.flush().then(() => auth?.refreshEntitlements())
+          navigate({ projectId: saved.id, mode: 'dashboard', caseId: null, draft: false, entry: null }, { replace: true })
         } else {
-          navigate({ projectId: null, mode: 'overview', caseId: null, draft: false, entry: null }, { replace: true })
+          navigate({ projectId: null, mode: 'dashboard', caseId: null, draft: false, entry: null }, { replace: true })
         }
         environmentRef.current = next
         setEnvironment(next)
         setSampleSession(options.persist === false)
       } catch (err) {
         console.error('Reclaim: import failed', err)
-        setEntryError('Something went wrong processing that file. No scan results were saved.')
+        setEntryError('Something went wrong processing that file. No audit results were saved.')
       } finally {
         runActiveRef.current = false
         setRunning(false)
       }
     },
-    [navigate]
+    [navigate, refreshProjects, auth]
   )
 
   const runSampleAudit = useCallback(() => {
@@ -144,7 +196,7 @@ export function AuditApp() {
     }
     if (window.location.search === '') {
       const persisted = loadPersistedContext()
-      if (persisted && (persisted.mode !== 'overview' || persisted.caseId)) {
+      if (persisted && (persisted.mode !== 'dashboard' || persisted.caseId)) {
         navigate(persisted, { replace: true })
       }
     }
@@ -152,11 +204,11 @@ export function AuditApp() {
   }, [])
 
   // Arriving at (or being sent to) the upload entry re-opens it, including the
-  // hand-off after clearing a ledger, which leaves the workspace with nothing
+  // hand-off after deleting an audit, which leaves the workspace with nothing
   // to show.
   useEffect(() => {
-    if (route.entry === 'upload') setImportDialogOpen(true)
-  }, [route.entry])
+    if (route.entry === 'upload') openImport('new')
+  }, [route.entry, openImport])
 
   useEffect(() => {
     if (!route.projectId || route.projectId === projectRef.current?.id) return
@@ -169,11 +221,12 @@ export function AuditApp() {
     environmentRef.current = selected.environment
     setProject(selected)
     setEnvironment(selected.environment)
+    setSampleSession(false)
   }, [navigate, route.projectId])
 
-  // Viewing the queue counts as having seen what's new since the last import.
+  // Viewing the findings list counts as having seen what's new since the last import.
   useEffect(() => {
-    if (route.mode === 'opportunities' && environment && environment.newFindingIds.length > 0) {
+    if (route.mode === 'findings' && environment && environment.newFindingIds.length > 0) {
       const next = acknowledgeNewFindings(environment)
       const currentProject = projectRef.current
       if (currentProject) {
@@ -202,8 +255,6 @@ export function AuditApp() {
   useEffect(() => {
     if (route.caseId || route.mode !== caseOriginRef.current.mode) return
     const targetY = caseOriginRef.current.y
-    // Browser history restores its own scroll position after popstate. Waiting a
-    // task lets the product's exact case origin win that race consistently.
     const timeout = window.setTimeout(() => {
       try {
         window.scrollTo({ top: targetY, left: 0, behavior: 'instant' })
@@ -219,24 +270,23 @@ export function AuditApp() {
       const env = environmentRef.current
       if (!env) return
       const current = getCaseState(env, findingId)
-      const next = setCaseState(env, findingId, update(current))
+      const next = setCaseState(env, findingId, withHistory(current, update(current), actor))
       const currentProject = projectRef.current
       if (currentProject) {
         const saved = saveProject({ ...currentProject, environment: next })
         projectRef.current = saved
         setProject(saved)
+        refreshProjects()
       }
       setEnvironment(next)
     },
-    []
+    [refreshProjects, actor]
   )
 
   const handleOpenCase = useCallback(
     (findingId: string) => {
       caseOriginRef.current = { mode: route.mode, y: window.scrollY }
       navigate({ caseId: findingId, draft: false, entry: null })
-      // Opening a case is a new scene, not a continuation of the queue below it.
-      // Reset twice so the post-navigation layout cannot restore the previous scroll position.
       const resetCaseScroll = () => window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
       resetCaseScroll()
       window.requestAnimationFrame(resetCaseScroll)
@@ -245,7 +295,7 @@ export function AuditApp() {
   )
 
   const handleDecide = useCallback(
-    (findingId: string, value: DecisionValue, reason: string | null) => {
+    (findingId: string, value: DecisionValue, reason: string | null, dismissalTag: DismissalTag | null = null) => {
       persistCaseState(findingId, (current) =>
         current.decision === value
           ? updateCaseReason(current, reason)
@@ -253,24 +303,38 @@ export function AuditApp() {
             ? confirmCase(reason)
             : value === 'needs_info'
               ? markNeedsInfo(reason)
-              : markExpected(reason)
+              : markExpected(reason, dismissalTag)
       )
     },
     [persistCaseState]
   )
 
   const handleMarkRequested = useCallback(
-    (findingId: string, subject: string, body: string) => {
+    (findingId: string, pkg: RequestPackage) => {
       persistCaseState(findingId, (current) =>
-        markRecoveryRequested(updateRecoveryPackage(current, { subject, body, requestedResolution: 'refund' }))
+        markRecoveryRequested(
+          updateRecoveryPackage(current, { subject: pkg.subject, body: pkg.body, requestedResolution: pkg.method }),
+          pkg.requestedAmount
+        )
       )
     },
     [persistCaseState]
   )
 
   const handleRecordOutcome = useCallback(
-    (findingId: string, outcome: 'recovered' | 'not_recovered', amount: number | null) => {
-      persistCaseState(findingId, (current) => recordRecoveryOutcome(current, outcome, amount, null))
+    (findingId: string, outcome: 'recovered' | 'not_recovered', amount: number | null, note: string | null, method: RecoveryMethod | null) => {
+      persistCaseState(findingId, (current) => recordRecoveryOutcome(current, outcome, amount, note, method))
+    },
+    [persistCaseState]
+  )
+
+  const handleReopen = useCallback(
+    (findingId: string) => {
+      persistCaseState(findingId, (current) =>
+        current.recoveryStage === 'recovered' || current.recoveryStage === 'not_recovered'
+          ? reopenOutcome(current)
+          : reopenDecision(current)
+      )
     },
     [persistCaseState]
   )
@@ -279,10 +343,36 @@ export function AuditApp() {
     (input: ImportInput) =>
       runImport(
         { sourceLabel: input.sourceLabel, mode: input.mode, parsed: input.parsed },
-        { replaceEnvironment: route.entry === 'upload' }
+        { replaceEnvironment: importIntent === 'new' || route.entry === 'upload' }
       ),
-    [route.entry, runImport]
+    [importIntent, route.entry, runImport]
   )
+
+  const handleOpenProject = useCallback(
+    (id: string) => {
+      navigate({ projectId: id, mode: 'dashboard', caseId: null, draft: false, entry: null })
+    },
+    [navigate]
+  )
+
+  /** After an import the account's project list (and possibly the open audit) changed under us: reload from the cache. */
+  const reloadFromCache = useCallback(() => {
+    refreshProjects()
+    const nextId = getActiveProjectId()
+    const next = nextId ? loadProject(nextId) : null
+    projectRef.current = next
+    environmentRef.current = next?.environment ?? null
+    setProject(next)
+    setEnvironment(next?.environment ?? null)
+    setSampleSession(false)
+    navigate({ projectId: next?.id ?? null, mode: 'dashboard', caseId: null, draft: false, entry: next ? null : 'upload' }, { replace: true })
+  }, [navigate, refreshProjects])
+
+  const handleImportLegacy = useCallback(async () => {
+    await importLegacyProjects()
+    setLegacy(null)
+    reloadFromCache()
+  }, [reloadFromCache])
 
   const handleClearLedger = useCallback(() => {
     const currentProject = projectRef.current
@@ -296,50 +386,73 @@ export function AuditApp() {
     setSampleSession(false)
     setClearDialogOpen(false)
     setEntryError(null)
+    refreshProjects()
     navigate(
       {
         projectId: nextProject?.id ?? null,
-        mode: 'overview',
+        mode: 'dashboard',
         caseId: null,
         draft: false,
         entry: nextProject ? null : 'upload',
       },
       { replace: true }
     )
-  }, [navigate, sampleSession])
+  }, [navigate, refreshProjects, sampleSession])
 
   // The entry sequence and the running state share one screen, so arriving from
   // the marketing site never flashes through a differently-styled interstitial.
+  const tour = auth ? <OnboardingTour open={tourOpen && legacy === null} entitlements={entitlements} onDone={closeTour} /> : null
+
+  const legacyDialog = (
+    <LegacyImportDialog
+      summary={legacy}
+      onImport={handleImportLegacy}
+      onDefer={() => {
+        deferLegacyProjects()
+        setLegacy(null)
+      }}
+      onDiscard={() => {
+        discardLegacyProjects()
+        setLegacy(null)
+      }}
+    />
+  )
+
   if (running || route.entry !== null || !environment) {
     return (
       <>
-        <Launch
-          onRunSample={runSampleAudit}
-          onUseOwn={() => setImportDialogOpen(true)}
-          running={running}
-          note={entryError ?? undefined}
+        {legacyDialog}
+        {tour}
+        <Launch onRunSample={runSampleAudit} onUseOwn={() => openImport('new')} running={running} note={entryError ?? undefined} />
+        <UpgradeDialog
+          open={limitDialog}
+          onOpenChange={setLimitDialog}
+          reason={`You've used ${entitlements.usage.auditsThisMonth} of ${entitlements.limits.auditsPerMonth ?? '∞'} audits this month on the Free plan.`}
         />
-        <ImportDialog open={importDialogOpen} onOpenChange={setImportDialogOpen} onImport={handleImport} error={entryError} />
+        <ImportDialog open={importDialogOpen} onOpenChange={setImportDialogOpen} onImport={handleImport} error={entryError} intent="new" />
       </>
     )
   }
 
   const overview = overviewSummary(environment)
   const activeFinding = activeCase?.finding ?? null
+  const visible = visibleFindingIds(environment, entitlements)
+  const activeLocked = activeFinding !== null && !visible.has(activeFinding.id)
+  const auditCount = projects.length + (sampleSession ? 1 : 0)
+  const auditLabel = sampleSession ? 'the sample ledger' : project?.name ?? 'this audit'
 
   return (
     <>
       <WorkspaceShell
-        // A case is its own screen, so opening or closing one replays the
-        // entry the same way switching sections does.
-        viewKey={activeFinding ? `case:${activeFinding.id}` : `mode:${route.mode}`}
         mode={route.mode}
         onModeChange={(mode) => navigate({ mode, caseId: null, draft: false })}
-        opportunityCount={environment.result.findings.length}
-        recoveryCount={overview.recoveryActiveCount + overview.recoveredCount}
-        vendorCount={overview.vendorCount}
+        auditCount={auditCount}
+        // The badges are workloads: findings still waiting on a decision, and
+        // recoveries still moving (ready to send or out with a vendor).
+        findingCount={environment.result.findings.filter((f) => getCaseState(environment, f.id).decision === null).length}
+        recoveryCount={overview.recoveryActiveCount}
         title={activeFinding ? activeFinding.vendor : TITLES[route.mode]}
-        subtitle={activeFinding ? 'Recovery case' : undefined}
+        subtitle={activeFinding ? 'Finding' : sampleSession ? 'Sample ledger' : project?.name}
         actions={
           activeFinding ? (
             <button type="button" className="wk-btn" data-variant="ghost" data-size="sm" onClick={goBack}>
@@ -347,57 +460,85 @@ export function AuditApp() {
               Back
             </button>
           ) : (
-            <button
-              type="button"
-              className="wk-btn"
-              data-variant="outline"
-              data-size="sm"
-              onClick={() => setImportDialogOpen(true)}
-            >
-              Add a file
+            <button type="button" className="wk-btn" data-variant="primary" data-size="sm" onClick={() => openImport('new')}>
+              <Plus aria-hidden="true" />
+              Start an audit
             </button>
           )
         }
       >
-        {activeFinding && activeCase ? (
+        {activeFinding && activeCase && activeLocked ? (
+          <Locked
+            title="This finding is part of Pro"
+            note={`The Free plan shows the ${entitlements.limits.findingsVisible} lowest-value findings in full. Pro shows every finding, including this ${formatCurrency(activeFinding.dollarImpact)} one.`}
+          >
+            <CaseDetail
+              finding={activeFinding}
+              state={activeCase.state}
+              sender={sender}
+              onDecide={() => {}}
+              onMarkRequested={() => {}}
+              onRecordOutcome={() => {}}
+              onReopen={() => {}}
+            />
+          </Locked>
+        ) : activeFinding && activeCase ? (
           <CaseDetail
             finding={activeFinding}
             state={activeCase.state}
+            sender={sender}
             onDecide={handleDecide}
-            onMarkRequested={(findingId) =>
-              handleMarkRequested(findingId, `Regarding ${activeFinding.vendor}`, activeFinding.explanation)
-            }
+            onMarkRequested={handleMarkRequested}
             onRecordOutcome={handleRecordOutcome}
+            onReopen={handleReopen}
           />
-        ) : route.mode === 'overview' ? (
-          <Overview
+        ) : route.mode === 'dashboard' ? (
+          <Dashboard
             env={environment}
+            visible={visible}
+            auditCount={auditCount}
+            auditLabel={auditLabel}
             onOpenCase={handleOpenCase}
-            onSeeAll={() => navigate({ mode: 'opportunities', caseId: null, draft: false })}
+            onSeeAllFindings={() => navigate({ mode: 'findings', caseId: null, draft: false })}
+            onStartAudit={() => openImport('new')}
           />
-        ) : route.mode === 'opportunities' ? (
-          <Opportunities env={environment} onOpenCase={handleOpenCase} />
+        ) : route.mode === 'audits' ? (
+          <Audits
+            env={environment}
+            projects={projects}
+            activeProjectId={project?.id ?? null}
+            sampleSession={sampleSession}
+            onOpenProject={handleOpenProject}
+            onStartAudit={() => openImport('new')}
+            onAddRecords={() => openImport('add')}
+            onRunSample={runSampleAudit}
+          />
+        ) : route.mode === 'findings' ? (
+          <Findings env={environment} visible={visible} onOpenCase={handleOpenCase} />
         ) : route.mode === 'recoveries' ? (
           <Recoveries env={environment} onOpenCase={handleOpenCase} />
-        ) : route.mode === 'vendors' ? (
-          <Vendors env={environment} />
         ) : route.mode === 'reports' ? (
           <Reports env={environment} />
-        ) : route.mode === 'data' ? (
-          <DataView env={environment} onImport={() => setImportDialogOpen(true)} />
         ) : (
-          <SettingsView
-            env={environment}
-            onClear={() => setClearDialogOpen(true)}
-            theme={themeChoice}
-            resolvedTheme={resolvedTheme}
-            onThemeChange={chooseTheme}
-          />
+          <SettingsView env={environment} onClear={() => setClearDialogOpen(true)} onShowTour={() => setTourRequested(true)} />
         )}
       </WorkspaceShell>
 
-      <ImportDialog open={importDialogOpen} onOpenChange={setImportDialogOpen} onImport={handleImport} error={entryError} />
+      <ImportDialog
+        open={importDialogOpen}
+        onOpenChange={setImportDialogOpen}
+        onImport={handleImport}
+        error={entryError}
+        intent={importIntent}
+      />
       <ClearLedgerDialog open={clearDialogOpen} onOpenChange={setClearDialogOpen} onConfirm={handleClearLedger} />
+      <UpgradeDialog
+        open={limitDialog}
+        onOpenChange={setLimitDialog}
+        reason={`You've used ${entitlements.usage.auditsThisMonth} of ${entitlements.limits.auditsPerMonth ?? '∞'} audits this month on the Free plan.`}
+      />
+      {legacyDialog}
+      {tour}
     </>
   )
 }

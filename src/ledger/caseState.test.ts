@@ -7,6 +7,10 @@ import {
   markNeedsInfo,
   markRecoveryRequested,
   recordRecoveryOutcome,
+  reopenDecision,
+  reopenOutcome,
+  validateRecoveredAmount,
+  withHistory,
   queueGroupFor,
   updateCaseReason,
   updateDismissal,
@@ -144,5 +148,105 @@ describe('case-state transitions', () => {
   it('a needs-info decision always groups into needs-context, even for a recoverable-class finding', () => {
     const state = markNeedsInfo(null)
     expect(queueGroupFor(finding({ class: 'recoverable' }), state)).toBe('check')
+  })
+})
+
+describe('changing your mind', () => {
+  it('a decision can be taken back until a request is sent, keeping any notes typed so far', () => {
+    const reopened = reopenDecision(updateRecoveryDraft(confirmCase('looks real'), 'Dear vendor…'))
+    expect(reopened.decision).toBeNull()
+    expect(reopened.recoveryStage).toBeNull()
+    expect(reopened.reason).toBe('looks real')
+    expect(reopened.recoveryDraft).toBe('Dear vendor…')
+    expect(reopenDecision(markExpected('split')).decision).toBeNull()
+  })
+
+  it('once a request has gone out the decision is locked; only the outcome can be reopened', () => {
+    const requested = markRecoveryRequested(confirmCase(null))
+    expect(reopenDecision(requested)).toBe(requested)
+    const recovered = recordRecoveryOutcome(requested, 'recovered', 300, 'CM-1')
+    expect(reopenDecision(recovered)).toBe(recovered)
+    const reopened = reopenOutcome(recovered)
+    expect(reopened.recoveryStage).toBe('requested')
+    expect(reopened.recoveredAmount).toBeNull()
+    expect(reopened.recoveryOutcomeNote).toBeNull()
+    expect(reopened.recoveryRequestedAt).toBe(requested.recoveryRequestedAt)
+  })
+
+  it('reopening an outcome does nothing to a case that has no outcome yet', () => {
+    const confirmed = confirmCase(null)
+    expect(reopenOutcome(confirmed)).toBe(confirmed)
+  })
+
+  it('a recorded outcome can be corrected: recovered → not recovered clears the money figure', () => {
+    const recovered = recordRecoveryOutcome(markRecoveryRequested(confirmCase(null)), 'recovered', 300, null)
+    const corrected = recordRecoveryOutcome(recovered, 'not_recovered', null, 'bounced')
+    expect(corrected.recoveryStage).toBe('not_recovered')
+    expect(corrected.recoveredAmount).toBeNull()
+  })
+
+  it('a recovered amount is never negative', () => {
+    const state = recordRecoveryOutcome(markRecoveryRequested(confirmCase(null)), 'recovered', -50, null)
+    expect(state.recoveredAmount).toBe(0)
+  })
+})
+
+describe('partial recovery and the requested amount', () => {
+  it('records what was asked for separately from what the finding supports', () => {
+    const state = markRecoveryRequested(confirmCase(null), 600)
+    expect(state.requestedAmount).toBe(600)
+    expect(markRecoveryRequested(confirmCase(null)).requestedAmount).toBeNull()
+  })
+
+  it('a partial, full, or zero recovery is stored exactly as entered, with the method it came back as', () => {
+    const requested = markRecoveryRequested(confirmCase(null), 1000)
+    expect(recordRecoveryOutcome(requested, 'recovered', 400, null, 'credit')).toMatchObject({ recoveredAmount: 400, recoveredVia: 'credit' })
+    expect(recordRecoveryOutcome(requested, 'recovered', 1000, null, 'refund')).toMatchObject({ recoveredAmount: 1000, recoveredVia: 'refund' })
+    expect(recordRecoveryOutcome(requested, 'recovered', 0, 'nothing yet', null)).toMatchObject({ recoveredAmount: 0 })
+    expect(recordRecoveryOutcome(requested, 'not_recovered', 400, null, 'refund')).toMatchObject({ recoveredAmount: null, recoveredVia: null })
+  })
+
+  it('validates recovered amounts: blank, junk, negative and over-the-request are rejected', () => {
+    expect(validateRecoveredAmount('', 1000)).toMatch(/Enter the amount/)
+    expect(validateRecoveredAmount('abc', 1000)).toMatch(/Enter the amount/)
+    expect(validateRecoveredAmount('-5', 1000)).toMatch(/negative/)
+    expect(validateRecoveredAmount('1000.01', 1000)).toMatch(/more than/)
+    expect(validateRecoveredAmount('0', 1000)).toBeNull()
+    expect(validateRecoveredAmount('$1,000.00', 1000)).toBeNull()
+    expect(validateRecoveredAmount('999.99', 1000)).toBeNull()
+  })
+})
+
+describe('audit trail', () => {
+  const alice = 'alice@example.com'
+
+  it('every transition appends one event with before/after, actor, and the money where it applies', () => {
+    let state = withHistory({ decision: null, reason: null, decidedAt: null, recoveryStage: null }, confirmCase('looks real'), alice)
+    state = withHistory(state, markRecoveryRequested(updateRecoveryPackage(state, { requestedResolution: 'credit' }), 750), alice)
+    state = withHistory(state, recordRecoveryOutcome(state, 'recovered', 500, 'CM-7', 'credit'), alice)
+    const history = state.history!
+    expect(history.map((e) => e.action)).toEqual(['decision:confirmed', 'stage:requested', 'outcome:recovered'])
+    expect(history[0]).toMatchObject({ from: { decision: null, recoveryStage: null }, to: { decision: 'confirmed', recoveryStage: 'confirmed' }, note: 'looks real', actor: alice })
+    expect(history[1]).toMatchObject({ amount: 750, method: 'credit', to: { recoveryStage: 'requested' } })
+    expect(history[2]).toMatchObject({ amount: 500, method: 'credit', note: 'CM-7', from: { recoveryStage: 'requested' }, to: { recoveryStage: 'recovered' } })
+    for (const e of history) expect(e.at).toBeTypeOf('number')
+  })
+
+  it('reopenings are on the record too, and a no-op change adds nothing', () => {
+    let state = withHistory({ decision: null, reason: null, decidedAt: null, recoveryStage: null }, markExpected('split'), null)
+    state = withHistory(state, reopenDecision(state), null)
+    expect(state.history!.map((e) => e.action)).toEqual(['decision:expected', 'decision:reopened'])
+    expect(state.history![1].actor).toBeNull()
+    const same = withHistory(state, updateCaseReason(state, 'new note'), null)
+    expect(same.history).toHaveLength(2)
+    let done = withHistory(state, recordRecoveryOutcome(markRecoveryRequested(confirmCase(null), 100), 'not_recovered', null, null), null)
+    done = withHistory(done, reopenOutcome(done), null)
+    expect(done.history!.at(-1)!.action).toBe('outcome:reopened')
+  })
+
+  it('correcting a recovered amount is recorded as a separate event', () => {
+    let state = withHistory({ decision: null, reason: null, decidedAt: null, recoveryStage: null }, recordRecoveryOutcome(markRecoveryRequested(confirmCase(null), 100), 'recovered', 60, null), null)
+    state = withHistory(state, recordRecoveryOutcome(state, 'recovered', 80, null), null)
+    expect(state.history!.at(-1)).toMatchObject({ action: 'outcome:amount_changed', amount: 80 })
   })
 })

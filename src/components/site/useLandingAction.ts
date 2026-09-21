@@ -26,7 +26,7 @@ export function getLandingAction(): LandingAction {
     return { label: 'Review your ledger', href: '/audit?entry=upload', context: null }
   }
 
-  const activeId = window.localStorage.getItem(ACTIVE_PROJECT_KEY)
+  const activeId = window.localStorage.getItem(ACTIVE_PROJECT_KEY())
   const project = projects.find((item) => item.id === activeId) ?? projects[0]
   const projectParam = encodeURIComponent(project.id)
 

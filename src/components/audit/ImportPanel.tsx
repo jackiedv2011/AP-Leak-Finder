@@ -28,8 +28,8 @@ interface ImportPanelProps {
 const REQUIRED_COLUMNS: { name: string; description: string }[] = [
   { name: 'vendor', description: 'Vendor / supplier name' },
   { name: 'invoice_number', description: 'Invoice ID as printed' },
-  { name: 'invoice_date', description: 'Date on the invoice (YYYY-MM-DD)' },
-  { name: 'payment_date', description: 'Date the business paid (YYYY-MM-DD, required)' },
+  { name: 'invoice_date', description: 'Date on the invoice (YYYY-MM-DD or MM/DD/YYYY)' },
+  { name: 'payment_date', description: 'Date the business paid (YYYY-MM-DD or MM/DD/YYYY, required)' },
   { name: 'invoice_amount', description: 'Amount the invoice was for' },
   { name: 'amount_paid', description: 'Amount actually paid (required)' },
   { name: 'terms', description: 'e.g. 2/10 net 30, net 30, net 15, or blank' },
@@ -114,7 +114,7 @@ export function ImportPanel({ allowSample, animateEntry = false, autoFocusUpload
     return (
       <div className="wk wk-import" data-state="confirmed">
         <h2 className="wk-sr">Confirm before adding to the ledger</h2>
-        <p className="wk-dim" style={{ fontSize: 14 }}>Reclaim read this file. Review it, then add it to the ledger.</p>
+        <p className="wk-dim" style={{ fontSize: 13.5 }}>Reclaim read this file. Review it, then add it to the ledger.</p>
 
         <div
           className="wk-card-flat"
@@ -123,7 +123,7 @@ export function ImportPanel({ allowSample, animateEntry = false, autoFocusUpload
           <div style={{ minWidth: 0 }}>
             <div
               className="wk-num"
-              style={{ fontSize: 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+              style={{ fontSize: 13.5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
               title={pending.file.name}
             >
               {pending.file.name}
@@ -150,7 +150,7 @@ export function ImportPanel({ allowSample, animateEntry = false, autoFocusUpload
         {readiness.weakerChecks.length > 0 && (
           <div>
             <span className="wk-label">Some checks will be weaker for this file</span>
-            <ul className="wk-notes" style={{ marginTop: 10 }}>
+            <ul className="wk-notes" style={{ marginTop: 8 }}>
               {readiness.weakerChecks.map((check) => (
                 <li key={check.label}>{check.label}</li>
               ))}
@@ -181,7 +181,7 @@ export function ImportPanel({ allowSample, animateEntry = false, autoFocusUpload
   return (
     <div className="wk wk-import" data-reveal={animateEntry}>
       <h2 className="wk-sr">Add records</h2>
-      <p className="wk-dim" style={{ fontSize: 14 }}>{intro}</p>
+      <p className="wk-dim" style={{ fontSize: 13.5 }}>{intro}</p>
 
       <div
         onDragOver={(e) => {
@@ -269,7 +269,7 @@ export function ImportPanel({ allowSample, animateEntry = false, autoFocusUpload
 
       <p className="wk-muted" style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5 }}>
         <ShieldCheck aria-hidden="true" style={{ width: 14, height: 14, flex: 'none' }} />
-        This prototype runs entirely in your browser. Your ledger stays on your device.
+        The checks run in your browser. With an account, the audit is saved to that account; as a guest it stays in this tab.
       </p>
 
       <DialogPrimitive.Root open={formatOpen} onOpenChange={setFormatOpen}>

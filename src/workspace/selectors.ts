@@ -11,7 +11,7 @@
 import { getCaseState, type LedgerEnvironment } from '@/ledger/store'
 import type { CaseState } from '@/ledger/caseState'
 import { evidenceStrength, keyUncertainty } from '@/audit/ruleChecklist'
-import { normalizeVendor } from '@/lib/format'
+import { formatCurrency, normalizeVendor } from '@/lib/format'
 import { FINDING_TYPE_LABELS } from '@/lib/labels'
 import type { Finding, FindingType } from '@/types'
 
@@ -38,15 +38,21 @@ export const EVIDENCE_LABEL: Record<EvidenceLevel, string> = {
 export type LadderStage = 'potential' | 'verified' | 'inRecovery' | 'recovered' | 'protected'
 
 export interface Ladder {
-  /** Something looks wrong. Every finding, before anyone judged it. */
+  /**
+   * Money still in play: every finding that has not been dismissed and has
+   * not reached an outcome. Money that already came back (or was closed as
+   * not recoverable) leaves this figure — potential and recovered are never
+   * the same dollars.
+   */
   potential: number
   /**
    * The rules engine's verdict that the records support a recovery — not a
    * human's. Nothing here has been agreed to by a vendor, so this is the
    * ceiling on what could be claimed, never a forecast of what will come back.
+   * A case leaves this rung once it is dismissed or once a request goes out.
    */
   verified: number
-  /** A request has actually gone out. */
+  /** A request has actually gone out and nothing has come back yet. */
   inRecovery: number
   /** Money that actually came back — the only figure worth trusting. */
   recovered: number
@@ -55,12 +61,6 @@ export interface Ladder {
   counts: Record<LadderStage, number>
   /** Verified and still waiting on a person — §28's "what should I do". */
   awaitingDecision: number
-  /**
-   * Confirmed by a reviewer but not yet sent: the money queued behind the
-   * `In recovery` rung rather than in it. Reported so a rung sitting at zero
-   * can say what is waiting to move into it, instead of only that nothing has.
-   */
-  readyToSend: number
 }
 
 /**
@@ -165,7 +165,6 @@ export function ladder(env: LedgerEnvironment): Ladder {
   const counts: Record<LadderStage, number> = { ...empty }
   const totals = { ...empty }
   let awaitingDecision = 0
-  let readyToSend = 0
 
   for (const finding of env.result.findings) {
     const state = getCaseState(env, finding.id)
@@ -174,19 +173,22 @@ export function ladder(env: LedgerEnvironment): Ladder {
       awaitingDecision += finding.dollarImpact
     }
 
-    totals.potential += finding.dollarImpact
-    counts.potential += 1
+    // Each case sits on exactly one rung. Dismissed and resolved cases are
+    // off the ladder entirely except for the money that actually settled.
+    const dismissed = state.decision === 'expected'
+    const resolved = stage === 'recovered' || stage === 'not_recovered'
+    if (!dismissed && !resolved) {
+      totals.potential += finding.dollarImpact
+      counts.potential += 1
+    }
 
-    if (finding.class === 'opportunity') {
+    if (finding.class === 'opportunity' && !dismissed) {
       totals.protected += finding.dollarImpact
       counts.protected += 1
     }
-    if (finding.class === 'recoverable') {
+    if (finding.class === 'recoverable' && !dismissed && stage !== 'requested' && !resolved) {
       totals.verified += finding.dollarImpact
       counts.verified += 1
-    }
-    if (stage === 'confirmed') {
-      readyToSend += finding.dollarImpact
     }
     if (stage === 'requested') {
       totals.inRecovery += finding.dollarImpact
@@ -200,7 +202,7 @@ export function ladder(env: LedgerEnvironment): Ladder {
     }
   }
 
-  return { ...totals, counts, awaitingDecision, readyToSend }
+  return { ...totals, counts, awaitingDecision }
 }
 
 /**
@@ -240,7 +242,7 @@ export function vendors(env: LedgerEnvironment): VendorRollup[] {
     const evidence = evidenceOf(finding)
     const row = rowFor(finding.vendor)
     row.caseCount += 1
-    row.potential += finding.dollarImpact
+    if (isStillInPlay(state)) row.potential += finding.dollarImpact
     if (state.recoveryStage === 'recovered') row.recovered += state.recoveredAmount ?? finding.dollarImpact
     if (row.strongest === null || order.indexOf(evidence) > order.indexOf(row.strongest)) row.strongest = evidence
   }
@@ -250,10 +252,20 @@ export function vendors(env: LedgerEnvironment): VendorRollup[] {
   )
 }
 
-/** §25 — why the money left, grouped by the check that caught it. */
+/** Not dismissed and not yet resolved — the same test the ladder's `potential` rung uses. */
+function isStillInPlay(state: CaseState): boolean {
+  return state.decision !== 'expected' && state.recoveryStage !== 'recovered' && state.recoveryStage !== 'not_recovered'
+}
+
+/**
+ * §25 — why the money left, grouped by the check that caught it. A finding the
+ * reviewer dismissed as expected was never a leak, so it is left out; money
+ * that has since been recovered still left in the first place, so it stays.
+ */
 export function rootCauses(env: LedgerEnvironment): RootCause[] {
   const byType = new Map<FindingType, RootCause>()
   for (const finding of env.result.findings) {
+    if (getCaseState(env, finding.id).decision === 'expected') continue
     const row = byType.get(finding.type) ?? {
       type: finding.type,
       label: FINDING_TYPE_LABELS[finding.type] ?? finding.type,
@@ -299,7 +311,14 @@ export function timelineFor(finding: Finding, state: CaseState): TimelineStep[] 
     },
     {
       when: at(state.recoveryResolvedAt),
-      what: state.recoveryStage === 'not_recovered' ? 'Closed without recovery' : 'Recovery verified',
+      // Reclaim has no bank feed, so it cannot verify anything itself — the
+      // outcome is what the reviewer recorded, and the label says so.
+      what:
+        state.recoveryStage === 'not_recovered'
+          ? 'Closed without recovery'
+          : state.recoveryStage === 'recovered'
+            ? `Money received — ${formatCurrency(state.recoveredAmount ?? finding.dollarImpact)} recorded by you`
+            : 'Outcome recorded',
       detail: state.recoveryOutcomeNote ?? undefined,
       done: state.recoveryStage === 'recovered' || state.recoveryStage === 'not_recovered',
     },

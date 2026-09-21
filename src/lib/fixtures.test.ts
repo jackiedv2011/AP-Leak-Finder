@@ -33,13 +33,15 @@ describe('arbitrary-file resilience', () => {
     const csv = [
       HEADER,
       'Acme,INV-1,2025-01-01,2025-02-30,100,100,,,', // impossible date
-      'Acme,INV-2,2025-01-01,01/15/2025,100,100,,,', // unsupported MM/DD/YYYY format
-      'Acme,INV-3,2025-01-01,2025-01-15,100,100,,,', // valid
+      'Acme,INV-2,2025-01-01,15.01.2025,100,100,,,', // unsupported dotted DD.MM.YYYY format
+      'Acme,INV-3,2025-01-01,Jan 15 2025,100,100,,,', // unsupported written-month format
+      'Acme,INV-4,2025-01-01,2025-01-15,100,100,,,', // valid ISO
+      'Acme,INV-5,2025-01-01,01/16/2025,100,100,,,', // valid US MM/DD/YYYY
     ].join('\n')
     expect(() => parseCsv(csv)).not.toThrow()
     const result = parseCsv(csv)
-    expect(result.records).toHaveLength(1)
-    expect(result.skippedCount).toBe(2)
+    expect(result.records).toHaveLength(2)
+    expect(result.skippedCount).toBe(3)
   })
 
   it('keeps rows with a missing invoice reference as null rather than dropping them', () => {

@@ -8,7 +8,7 @@ interface ClearLedgerDialogProps {
   onConfirm: () => void
 }
 
-/** Clearing the ledger now deletes persisted data, not just an in-memory session — worth a real confirm step. */
+/** Deleting an audit removes persisted data, not just an in-memory session — worth a real confirm step. */
 export function ClearLedgerDialog({ open, onOpenChange, onConfirm }: ClearLedgerDialogProps) {
   return (
     <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
@@ -17,9 +17,9 @@ export function ClearLedgerDialog({ open, onOpenChange, onConfirm }: ClearLedger
         <DialogPrimitive.Content className="wk wk-panel" style={{ width: 'min(460px, calc(100vw - 32px))' }}>
           <header className="wk-panel-head">
             <div>
-              <DialogPrimitive.Title className="wk-display wk-h2">Clear this ledger?</DialogPrimitive.Title>
+              <DialogPrimitive.Title className="wk-display wk-h2">Delete this audit?</DialogPrimitive.Title>
               <DialogPrimitive.Description className="wk-dim">
-                This permanently deletes every imported record and decision on this device. This cannot be undone.
+                This permanently deletes every record, finding, decision and recovery note in this audit. It cannot be undone.
               </DialogPrimitive.Description>
             </div>
             <DialogPrimitive.Close className="wk-panel-close" aria-label="Close">
@@ -27,16 +27,12 @@ export function ClearLedgerDialog({ open, onOpenChange, onConfirm }: ClearLedger
             </DialogPrimitive.Close>
           </header>
 
-          {/* The severity is carried by a mark, the way every other state in the
-              workspace is stated — not by recolouring the confirm button. */}
-          <span className="wk-mark" data-tone="review">Permanent</span>
-
           <div className="wk-panel-foot">
             <button type="button" className="wk-btn" data-variant="ghost" onClick={() => onOpenChange(false)}>
               Cancel
             </button>
-            <button type="button" className="wk-btn" data-variant="primary" onClick={onConfirm}>
-              Delete ledger
+            <button type="button" className="wk-btn" data-variant="danger" onClick={onConfirm}>
+              Delete audit
             </button>
           </div>
         </DialogPrimitive.Content>

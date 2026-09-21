@@ -10,7 +10,6 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
-demo-dist
 *.local
 
 # Editor-sync backups of deleted files, not project source
@@ -32,3 +31,9 @@ demo-dist
 # Landing site: Blender render frames (~900MB) and Python caches
 landing-site/blender/out/
 __pycache__/
+
+# server secrets and database
+.env
+.env.*
+!.env.example
+data/

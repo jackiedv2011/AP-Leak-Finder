@@ -4,40 +4,19 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=3" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <!-- The same three families the marketing site renders, from the same source, so the
-         workspace and landing-site/ are typographically one product. Barlow Condensed is
-         the display face, Inter the text face, JetBrains Mono the label face. -->
+    <!-- One text face for the whole product surface. -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:opsz,wght@14..32,300..700&family=JetBrains+Mono:wght@400;500&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300..700&display=swap"
       rel="stylesheet"
     />
-    <meta name="theme-color" content="#090b0c" />
-    <meta name="color-scheme" content="dark light" />
-    <script>
-      /* Resolve the theme before first paint, so the workspace never flashes
-         the wrong canvas on a full navigation. Mirrors workspace/theme.ts —
-         same key, same three choices — and stays deliberately tiny and
-         dependency-free because it blocks rendering. */
-      (function () {
-        try {
-          var c = localStorage.getItem('reclaim.theme.v1');
-          if (c !== 'light' && c !== 'dark') {
-            c = matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
-          }
-          document.documentElement.dataset.theme = c;
-        } catch (e) {
-          document.documentElement.dataset.theme = 'dark';
-        }
-      })();
-    </script>
+    <meta name="theme-color" content="#f7f4ee" />
+    <meta name="color-scheme" content="light" />
     <style>
-      /* Paint the canvas before hydration so a full navigation (the landing
-         CTA into /audit, say) never flashes the opposite theme. The value
-         tracks the resolved theme set by the script above. */
-      html, body { background: #000; }
-      html[data-theme='light'], html[data-theme='light'] body { background: #fff; }
+      /* Set before hydration so full navigations into the app never flash a
+         differently-coloured frame. */
+      html, body { background: #f7f4ee; margin: 0; }
     </style>
     <meta name="description" content="Reclaim reviews your payment ledger and shows the records behind every payment that needs attention." />
     <meta property="og:title" content="Reclaim. | Evidence-first payment review" />

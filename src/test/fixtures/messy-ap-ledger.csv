@@ -1,0 +1,69 @@
+vendor,invoice_number,invoice_date,payment_date,invoice_amount,amount_paid,terms,bank_account_last4,category,memo
+Sierra Coffee Supply,INV-1001,2025-01-05,2025-02-02,6800.00,6800.00,net 30,4410,COGS,TP1 exact duplicate (first)
+Sierra Coffee Supply,INV-1001,2025-01-05,2025-02-19,6800.00,6800.00,net 30,4410,COGS,TP1 exact duplicate (second)
+Sierra Coffee Supply,INV-1002,2025-01-20,2025-02-18,4850.00,4850.00,net 30,4410,COGS,clean
+  sierra coffee supply  ,inv-1003,2025-02-01,2025-03-01,5200.00,5200.00,net 30,4410,COGS,FP8 whitespace + case
+Harbor Point Roasting Equipment,INV-2002,2025-02-01,2025-02-20,1250.00,1250.00,net 30,7720,Equipment,TP2 triple payment (1)
+Harbor Point Roasting Equipment,INV-2002,2025-02-01,2025-03-05,1250.00,1250.00,net 30,7720,Equipment,TP2 triple payment (2)
+Harbor Point Roasting Equipment,INV-2002,2025-02-01,2025-03-21,1250.00,1250.00,net 30,7720,Equipment,TP2 triple payment (3)
+ABC Supply LLC,INV-3003,2025-03-01,2025-03-15,900.00,900.00,net 15,1234,Supplies,TP3 vendor variant (LLC)
+"ABC Supply, Inc.",INV-3003,2025-03-01,2025-03-29,900.00,900.00,net 15,1234,Supplies,TP3 vendor variant (Inc)
+ABC Supply Co,INV-3004,2025-03-10,2025-03-30,410.00,410.00,net 15,1234,Supplies,TP3 different invoice — clean
+CloudPOS Software,INV-4410,2025-03-01,2025-03-01,3100.00,3100.00,net 30,5555,Software,TP4 near duplicate (original)
+CloudPOS Software,INV-4401,2025-03-01,2025-03-20,3100.00,3100.00,net 30,5555,Software,TP4 near duplicate (transposed)
+Golden Bean Exports,INV-5005,2025-04-01,2025-04-20,2400.00,3200.00,net 30,8080,COGS,TP5 overpayment
+Golden Bean Exports,INV-5006,2025-04-10,2025-04-30,1800.00,1800.00,net 30,8080,COGS,clean
+Blue Bag Packaging,INV-6006,2025-04-01,2025-04-08,5000.00,5000.00,2/10 net 30,3131,Packaging,TP6 unclaimed discount
+Blue Bag Packaging,INV-6007,2025-04-01,2025-04-25,2000.00,2000.00,2/10 net 30,3131,Packaging,TP7 missed discount
+Blue Bag Packaging,INV-6008,2025-05-01,2025-05-06,1500.00,1470.00,2/10 net 30,3131,Packaging,FP discount taken correctly
+Blue Bag Packaging,INV-6009,2025-05-01,2025-05-28,1000.00,980.00,2/10 net 30,3131,Packaging,FP discount taken late — vendor allowed it
+Northwest Pastry Co,NP-101,2025-01-10,2025-01-31,640.00,640.00,net 30,1111,Bakery,TP8 bank change baseline
+Northwest Pastry Co,NP-102,2025-02-10,2025-02-28,655.00,655.00,net 30,1111,Bakery,TP8 bank change baseline
+Northwest Pastry Co,NP-103,2025-03-10,2025-03-31,630.00,630.00,net 30,1111,Bakery,TP8 bank change baseline
+Northwest Pastry Co,NP-104,2025-04-10,2025-04-30,662.00,662.00,net 30,9999,Bakery,TP8 bank account changed
+Northwest Bakery Co,NB-77,2025-04-12,2025-04-28,310.00,310.00,net 30,2222,Bakery,FP2 similar name — separate vendor
+Metro Utilities,UTL-0101,2025-01-01,2025-01-15,412.10,412.10,,,Utilities,TP9 outlier baseline
+Metro Utilities,UTL-0102,2025-02-01,2025-02-15,398.55,398.55,,,Utilities,TP9 outlier baseline
+Metro Utilities,UTL-0103,2025-03-01,2025-03-15,441.20,441.20,,,Utilities,TP9 outlier baseline
+Metro Utilities,UTL-0104,2025-04-01,2025-04-15,405.00,405.00,,,Utilities,TP9 outlier baseline
+Metro Utilities,UTL-0105,2025-05-01,2025-05-15,433.75,433.75,,,Utilities,TP9 outlier baseline
+Metro Utilities,UTL-0106,2025-06-01,2025-06-15,419.90,419.90,,,Utilities,TP9 outlier baseline
+Metro Utilities,UTL-0107,2025-07-01,2025-07-15,427.30,427.30,,,Utilities,TP9 outlier baseline
+Metro Utilities,UTL-0108,2025-08-01,2025-08-15,401.15,401.15,,,Utilities,TP9 outlier baseline
+Metro Utilities,UTL-0109,2025-09-01,2025-09-15,415.60,415.60,,,Utilities,TP9 outlier baseline
+Metro Utilities,UTL-0110,2025-10-01,2025-10-15,9500.00,9500.00,,,Utilities,TP9 amount outlier
+Acme Steel,INV-7007,2025-05-01,2025-05-20,1000.00,1000.00,net 30,4545,Materials,TP10 shared invoice number (vendor A)
+Acme Stone,INV-7007,2025-05-03,2025-05-22,1000.00,1000.00,net 30,6767,Materials,TP10 shared invoice number (vendor B)
+Pine Valley Dairy,INV-8008,2025-06-01,2025-06-15,760.00,760.00,net 15,9090,COGS,TP11 identical export row
+Pine Valley Dairy,INV-8008,2025-06-01,2025-06-15,760.00,760.00,net 15,9090,COGS,TP11 identical export row
+Pine Valley Dairy,CM-100,2025-06-20,2025-06-25,-200.00,-200.00,net 15,9090,COGS,FP5 credit memo
+Pine Valley Dairy,INV-8009,2025-06-22,2025-07-02,0.00,0.00,net 15,9090,COGS,FP6 zero-dollar row
+Pine Valley Dairy,INV-8009,2025-06-22,2025-07-02,0.00,0.00,net 15,9090,COGS,FP6 zero-dollar row again
+Riverside Linen,INV-9009,2025-07-01,2025-07-15,1234.56,1234.57,net 30,2323,Linen,FP12 one-cent rounding
+Riverside Linen,INV-9010,2025-07-01,2025-07-15,1180.00,1180.00,net 30,2323,Linen,clean
+Summit Rent LLC,RENT-2025-01,2025-01-01,2025-01-03,4000.00,4000.00,,,Rent,FP1 recurring monthly rent
+Summit Rent LLC,RENT-2025-02,2025-02-01,2025-02-03,4000.00,4000.00,,,Rent,FP1 recurring monthly rent
+Summit Rent LLC,RENT-2025-03,2025-03-01,2025-03-03,4000.00,4000.00,,,Rent,FP1 recurring monthly rent
+Summit Rent LLC,RENT-2025-04,2025-04-01,2025-04-03,4000.00,4000.00,,,Rent,FP1 recurring monthly rent
+Summit Rent LLC,RENT-2025-05,2025-05-01,2025-05-03,4000.00,4000.00,,,Rent,FP1 recurring monthly rent
+Summit Rent LLC,RENT-2025-06,2025-06-01,2025-06-03,4000.00,4000.00,,,Rent,FP1 recurring monthly rent
+Lakeside Printing,LP-500,2025-08-01,2025-08-10,3000.00,1500.00,net 30,1212,Marketing,FP3 partial payment 1 of 2
+Lakeside Printing,LP-500,2025-08-01,2025-08-25,3000.00,1500.00,net 30,1212,Marketing,FP3 partial payment 2 of 2
+Lakeside Printing,LP-501,2025-08-05,2025-08-15,2500.00,2000.00,net 30,1212,Marketing,FP3 uneven partial 1 of 2
+Lakeside Printing,LP-501,2025-08-05,2025-08-30,2500.00,500.00,net 30,1212,Marketing,FP3 uneven partial 2 of 2
+Lakeside Printing,LP-502,2025-08-06,2025-08-20,1000.00,950.00,net 30,1212,Marketing,FP4 underpayment — not a finding
+Lakeside Printing,LP-503,2025-08-07,2025-08-21,800.00,800.00,net 30,1212,Marketing,clean
+Lakeside Printing,LP-503,2025-08-07,2025-09-01,800.00,800.00,net 30,1212,Marketing,TP12 duplicate that exceeds the invoice
+Evergreen Landscaping,EL-1,2025-03-01,2025-03-15,250000.00,250000.00,net 30,7878,Facilities,FP11 very large legit payment (only one)
+Evergreen Landscaping,EL-2,2025-03-02,2025-03-16,0.05,0.05,net 30,7878,Facilities,FP11 very small legit payment
+,INV-X1,2025-03-01,2025-03-10,100.00,100.00,,,Misc,skipped — missing vendor
+Nameless Vendor Test,,2025-03-01,2025-03-10,100.00,100.00,,,Misc,kept — missing invoice number
+Nameless Vendor Test,,2025-03-01,2025-03-10,100.00,100.00,,,Misc,kept — missing invoice number (not a duplicate without a reference)
+Bad Date Vendor,BD-1,2025-03-01,2025-02-30,100.00,100.00,,,Misc,skipped — impossible date
+Bad Date Vendor,BD-2,2025-03-01,not a date,100.00,100.00,,,Misc,skipped — invalid date
+US Date Vendor,UD-1,03/01/2025,03/15/2025,300.00,300.00,,,Misc,kept — US date format
+US Date Vendor,UD-2,2025/03/01,2025/03/20,325.00,325.00,,,Misc,kept — slash ISO date format
+Blank Amount Vendor,BA-1,2025-03-01,2025-03-10,100.00,,,,Misc,skipped — blank amount
+Blank Amount Vendor,BA-2,2025-03-01,2025-03-10,100.00,abc,,,Misc,skipped — non-numeric amount
+Paren Vendor,PV-1,2025-03-01,2025-03-10,"(150.00)","(150.00)",,,Misc,kept — accounting negative
+Comma Vendor,CV-1,2025-03-01,2025-03-10,"$12,500.00","$12,500.00",,,Misc,kept — currency symbol and thousands separator
