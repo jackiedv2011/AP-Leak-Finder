@@ -99,10 +99,10 @@ export function Overview({ env, onOpenCase, onSeeAll }: OverviewProps) {
 
       {/* §28 — "what should I do", answered with one number and one door. */}
       <section className="wk-section">
-        <div className="wk-card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 24, flexWrap: 'wrap' }}>
+        <div className="wk-card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 28, flexWrap: 'wrap' }}>
           <div>
             <span className="wk-label">Waiting on you</span>
-            <p style={{ marginTop: 8, fontSize: 15, maxWidth: 560 }}>
+            <p style={{ marginTop: 10, fontSize: 17, maxWidth: 620 }}>
               {l.awaitingDecision > 0 ? (
                 <>
                   <b className="wk-num">{formatCurrency(l.awaitingDecision)}</b> is verified and undecided. Reclaim
@@ -164,19 +164,19 @@ export function Overview({ env, onOpenCase, onSeeAll }: OverviewProps) {
         <div className="wk-section-head">
           <h2 className="wk-display wk-h2">Why it happened</h2>
         </div>
-        <ul style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <ul style={{ display: 'flex', flexDirection: 'column', gap: 19 }}>
           {causes.map((cause) => (
             <li key={cause.type}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, marginBottom: 7 }}>
-                <span style={{ fontSize: 13.5 }}>{cause.label}</span>
-                <span className="wk-num wk-dim" style={{ fontSize: 13 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 18, marginBottom: 8 }}>
+                <span style={{ fontSize: 15.5 }}>{cause.label}</span>
+                <span className="wk-num wk-dim" style={{ fontSize: 14.5 }}>
                   {formatCurrency(cause.value)}
                 </span>
               </div>
               <div className="wk-bar">
                 <i style={{ width: `${Math.max(2, (cause.value / biggestCause) * 100)}%` }} />
               </div>
-              <div className="wk-table-sub" style={{ marginTop: 5 }}>
+              <div className="wk-table-sub" style={{ marginTop: 6 }}>
                 {cause.count} {cause.count === 1 ? 'case' : 'cases'}
               </div>
             </li>

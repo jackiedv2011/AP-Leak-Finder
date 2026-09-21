@@ -7,11 +7,11 @@ import { ladder, rootCauses } from '../selectors'
 function Facts({ rows }: { rows: Array<[string, string]> }) {
   return (
     <div className="wk-card-flat">
-      <dl style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 22, margin: 0 }}>
+      <dl style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: 26, margin: 0 }}>
         {rows.map(([label, value]) => (
           <div key={label}>
             <dt className="wk-label">{label}</dt>
-            <dd className="wk-num" style={{ margin: '7px 0 0', fontSize: 17 }}>
+            <dd className="wk-num" style={{ margin: '9px 0 0', fontSize: 20 }}>
               {value}
             </dd>
           </div>
@@ -96,7 +96,7 @@ export function DataView({ env, onImport }: { env: LedgerEnvironment; onImport: 
         </div>
         {readiness.weakerChecks.length === 0 ? (
           <div className="wk-card-flat">
-            <p className="wk-dim" style={{ fontSize: 13.5, maxWidth: 620 }}>
+            <p className="wk-dim" style={{ fontSize: 15.5, maxWidth: 700 }}>
               These records carry every column all seven checks need. Nothing was skipped for want of data.
             </p>
           </div>
@@ -112,11 +112,11 @@ export function DataView({ env, onImport }: { env: LedgerEnvironment; onImport: 
         <h2 className="wk-display wk-h2">Sources</h2>
         <div className="wk-card">
           <span className="wk-label">{s.lastImportLabel ?? 'No source'}</span>
-          <p className="wk-dim" style={{ marginTop: 8, fontSize: 13.5, maxWidth: 560 }}>
+          <p className="wk-dim" style={{ marginTop: 10, fontSize: 15.5, maxWidth: 620 }}>
             Everything on every screen traces back to these rows. Reclaim reads them and nothing else — it has no
             connection to your accounting system and cannot change your books.
           </p>
-          <button type="button" className="wk-btn" data-variant="outline" data-size="sm" style={{ marginTop: 16 }} onClick={onImport}>
+          <button type="button" className="wk-btn" data-variant="outline" data-size="sm" style={{ marginTop: 18 }} onClick={onImport}>
             Add another file
           </button>
         </div>
@@ -143,11 +143,11 @@ export function SettingsView({ env, onClear }: { env: LedgerEnvironment; onClear
       <section className="wk-section">
         <h2 className="wk-display wk-h2">Your data</h2>
         <div className="wk-card">
-          <p className="wk-dim" style={{ fontSize: 13.5, maxWidth: 560 }}>
+          <p className="wk-dim" style={{ fontSize: 15.5, maxWidth: 620 }}>
             This ledger lives in your browser's local storage and has never left this device. Clearing it removes
             every record, case and decision, and cannot be undone.
           </p>
-          <button type="button" className="wk-btn" data-variant="outline" data-size="sm" style={{ marginTop: 16 }} onClick={onClear}>
+          <button type="button" className="wk-btn" data-variant="outline" data-size="sm" style={{ marginTop: 18 }} onClick={onClear}>
             Clear this ledger
           </button>
         </div>

@@ -114,7 +114,7 @@ export function ImportPanel({ allowSample, animateEntry = false, autoFocusUpload
     return (
       <div className="wk wk-import" data-state="confirmed">
         <h2 className="wk-sr">Confirm before adding to the ledger</h2>
-        <p className="wk-dim" style={{ fontSize: 13.5 }}>Reclaim read this file. Review it, then add it to the ledger.</p>
+        <p className="wk-dim" style={{ fontSize: 15.5 }}>Reclaim read this file. Review it, then add it to the ledger.</p>
 
         <div
           className="wk-card-flat"
@@ -123,7 +123,7 @@ export function ImportPanel({ allowSample, animateEntry = false, autoFocusUpload
           <div style={{ minWidth: 0 }}>
             <div
               className="wk-num"
-              style={{ fontSize: 13.5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+              style={{ fontSize: 15.5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
               title={pending.file.name}
             >
               {pending.file.name}
@@ -150,7 +150,7 @@ export function ImportPanel({ allowSample, animateEntry = false, autoFocusUpload
         {readiness.weakerChecks.length > 0 && (
           <div>
             <span className="wk-label">Some checks will be weaker for this file</span>
-            <ul className="wk-notes" style={{ marginTop: 8 }}>
+            <ul className="wk-notes" style={{ marginTop: 10 }}>
               {readiness.weakerChecks.map((check) => (
                 <li key={check.label}>{check.label}</li>
               ))}
@@ -181,7 +181,7 @@ export function ImportPanel({ allowSample, animateEntry = false, autoFocusUpload
   return (
     <div className="wk wk-import" data-reveal={animateEntry}>
       <h2 className="wk-sr">Add records</h2>
-      <p className="wk-dim" style={{ fontSize: 13.5 }}>{intro}</p>
+      <p className="wk-dim" style={{ fontSize: 15.5 }}>{intro}</p>
 
       <div
         onDragOver={(e) => {
@@ -229,7 +229,7 @@ export function ImportPanel({ allowSample, animateEntry = false, autoFocusUpload
             className="wk-btn"
             data-variant="ghost"
             data-size="sm"
-            style={{ width: '100%', marginTop: 14 }}
+            style={{ width: '100%', marginTop: 16 }}
             onClick={onRunSample}
           >
             <Sparkles aria-hidden="true" />
@@ -267,7 +267,7 @@ export function ImportPanel({ allowSample, animateEntry = false, autoFocusUpload
         </button>
       </div>
 
-      <p className="wk-muted" style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5 }}>
+      <p className="wk-muted" style={{ display: 'flex', alignItems: 'center', gap: 9, fontSize: 14 }}>
         <ShieldCheck aria-hidden="true" style={{ width: 14, height: 14, flex: 'none' }} />
         This prototype runs entirely in your browser. Your ledger stays on your device.
       </p>
@@ -298,10 +298,10 @@ export function ImportPanel({ allowSample, animateEntry = false, autoFocusUpload
               <tbody>
                 {REQUIRED_COLUMNS.map((col) => (
                   <tr key={col.name} style={{ cursor: 'default' }}>
-                    <td className="wk-num" style={{ fontSize: 12.5 }}>
+                    <td className="wk-num" style={{ fontSize: 14 }}>
                       {col.name}
                     </td>
-                    <td className="wk-dim" style={{ fontSize: 13 }}>
+                    <td className="wk-dim" style={{ fontSize: 14.5 }}>
                       {col.description}
                     </td>
                   </tr>
