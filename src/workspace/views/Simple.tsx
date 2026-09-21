@@ -126,10 +126,12 @@ export function DataView({ env, onImport }: { env: LedgerEnvironment; onImport: 
   )
 }
 
-const THEME_OPTIONS: Array<{ value: ThemeChoice; name: string; note: string }> = [
-  { value: 'system', name: 'Match my system', note: 'Follows your device, and changes with it.' },
-  { value: 'light', name: 'Light', note: 'Always the light canvas, whatever your device says.' },
-  { value: 'dark', name: 'Dark', note: 'Always the dark canvas, whatever your device says.' },
+/* Light, System, Dark — in that order, so the track reads from lightest to
+   darkest and the thumb's position means something at a glance. */
+const THEME_OPTIONS: Array<{ value: ThemeChoice; label: string }> = [
+  { value: 'light', label: 'Light' },
+  { value: 'system', label: 'System' },
+  { value: 'dark', label: 'Dark' },
 ]
 
 interface SettingsViewProps {
@@ -146,28 +148,33 @@ export function SettingsView({ env, onClear, theme, resolvedTheme, onThemeChange
   return (
     <>
       <section className="wk-section">
-        <div className="wk-section-head">
-          <h2 className="wk-display wk-h2">Appearance</h2>
-          {/* Say which one is actually in effect: on "Match my system" the
-              chosen option alone doesn't tell you what you're looking at. */}
-          <span className="wk-label">Showing {resolvedTheme}</span>
-        </div>
+        <h2 className="wk-display wk-h2">Appearance</h2>
         <div className="wk-card">
-          <div className="wk-choice" role="group" aria-label="Appearance">
+          <div
+            className="wk-seg"
+            data-active={THEME_OPTIONS.findIndex((option) => option.value === theme)}
+            role="radiogroup"
+            aria-label="Appearance"
+          >
+            <span className="wk-seg-thumb" aria-hidden="true" />
             {THEME_OPTIONS.map((option) => (
-              <button
-                key={option.value}
-                type="button"
-                aria-pressed={theme === option.value}
-                onClick={() => onThemeChange(option.value)}
-              >
-                <span>
-                  <span className="wk-choice-name">{option.name}</span>
-                  <span className="wk-choice-note">{option.note}</span>
-                </span>
-              </button>
+              <label key={option.value} className="wk-seg-option">
+                <input
+                  type="radio"
+                  name="reclaim-appearance"
+                  value={option.value}
+                  checked={theme === option.value}
+                  onChange={() => onThemeChange(option.value)}
+                />
+                <span>{option.label}</span>
+              </label>
             ))}
           </div>
+          <p className="wk-dim" style={{ marginTop: 14, fontSize: 13 }}>
+            {theme === 'system'
+              ? `Following your device, which is set to ${resolvedTheme}.`
+              : `Pinned to ${theme}, whatever your device is set to.`}
+          </p>
         </div>
       </section>
       <section className="wk-section">

@@ -41,6 +41,10 @@
      must not be derived from --bg. */
   --scrim: rgb(0 0 0 / 0.74);
 
+  /* Segmented control: a well, and a thumb that lifts out of it. */
+  --seg-track: #141414;
+  --seg-thumb: #3a3a3a;
+
   --f-display: 'Barlow Condensed', 'Anton', ui-sans-serif, system-ui, sans-serif;
   --f-text: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --f-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
@@ -94,6 +98,9 @@ html[data-theme='light'] .wk {
   --info: #0369a1;
 
   --scrim: rgb(0 0 0 / 0.45);
+
+  --seg-track: #e9e7e4;
+  --seg-thumb: #fff;
 }
 
 .wk *,
@@ -318,40 +325,63 @@ html[data-theme='light'] .wk {
 .wk-timeline-what { font-size: 13.5px; }
 .wk-timeline-detail { font-size: 12.5px; color: var(--text-muted); margin-top: 2px; }
 
-/* ---------- choice list ---------- */
-/* A settings choice, set as rows rather than a segmented control: each option
-   gets room to say what it does. The marker is the same filled square the
-   status marks use, so selection reads in the established language and no
-   capsule ever wraps a word. */
-.wk-choice { display: flex; flex-direction: column; gap: 2px; }
-.wk-choice button {
+/* ---------- segmented control ---------- */
+/* The appearance switch: one track, three segments, and a thumb that slides
+   between them. This is the one place a capsule wraps a word, because a
+   segmented control IS the capsule — the thumb has to be a shape that moves,
+   and a bare marker cannot slide.
+ *
+ * The thumb is a single element translated by whole multiples of its own
+ * width, so the three stops are exact at any track width and the motion is one
+ * transform rather than three competing transitions. */
+.wk-seg {
+  position: relative;
   display: grid;
-  grid-template-columns: 11px 1fr;
-  gap: 12px;
-  align-items: start;
+  grid-template-columns: repeat(3, 1fr);
   width: 100%;
-  padding: 11px 10px;
-  border: 0;
-  border-radius: 8px;
-  background: none;
-  color: inherit;
-  font: inherit;
-  text-align: left;
+  max-width: 330px;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--seg-track);
+}
+.wk-seg-thumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: calc((100% - 6px) / 3);
+  height: calc(100% - 6px);
+  border-radius: 999px;
+  background: var(--seg-thumb);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.16);
+  transition: transform .26s cubic-bezier(.4, 0, .2, 1);
+}
+.wk-seg[data-active='1'] .wk-seg-thumb { transform: translateX(100%); }
+.wk-seg[data-active='2'] .wk-seg-thumb { transform: translateX(200%); }
+
+.wk-seg-option {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+  border-radius: 999px;
+  font-size: 13px;
+  color: var(--text-muted);
   cursor: pointer;
-  transition: background-color .14s ease;
+  user-select: none;
+  transition: color .2s ease;
 }
-.wk-choice button:hover { background: var(--raised-hi); }
-.wk-choice button::before {
-  content: '';
-  width: 11px;
-  height: 11px;
-  margin-top: 4px;
-  border: 1px solid var(--text-muted);
+/* A real radio group underneath: arrow keys, screen-reader semantics and form
+   behaviour come free, and the visible control is only the paint on top. */
+.wk-seg-option input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.wk-seg-option:has(input:checked) { color: var(--text); font-weight: 600; }
+.wk-seg-option:has(input:focus-visible) { outline: 2px solid var(--accent-ink); outline-offset: 2px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .wk-seg-thumb { transition: none; }
 }
-.wk-choice button[aria-pressed='true']::before { background: var(--accent-ink); border-color: var(--accent-ink); }
-.wk-choice-name { display: block; font-size: 14px; }
-.wk-choice button[aria-pressed='true'] .wk-choice-name { font-weight: 600; }
-.wk-choice-note { display: block; margin-top: 2px; font-size: 12.5px; color: var(--text-muted); }
 
 /* ---------- empty + misc ---------- */
 .wk-empty { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; padding: 43px 21px; border: 1px dashed var(--line); border-radius: 14px; color: var(--text-muted); }
