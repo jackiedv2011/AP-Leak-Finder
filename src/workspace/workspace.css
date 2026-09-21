@@ -346,14 +346,15 @@ html[data-theme='light'] .wk {
 .wk-ladder {
   display: flex;
   flex-direction: column;
-  gap: 1px;
-  background: var(--line);
   border: 1px solid var(--line);
   border-radius: 14px;
   overflow: hidden;
 }
+/* The rungs sit straight on the canvas. A filled cell behind each one put a
+   second edge on every boundary the hairline was already drawing, and the
+   figures are large enough not to need a panel holding them up. */
+.wk-ladder > * + * { border-top: 1px solid var(--line); }
 .wk-ladder > * {
-  background: var(--raised);
   padding: 17px 21px;
   display: grid;
   /* Sized for an eight-figure amount set in full, not for the sample's
@@ -379,8 +380,8 @@ html[data-theme='light'] .wk {
    queue is not a result, and the moment it reads as one the screen is lying. */
 .wk-rung-queued { border: 1px dashed var(--text-muted); }
 
-/* Where the money actually sits right now — one rule down the side, no badge. */
-.wk-ladder > [data-frontier] { box-shadow: inset 2px 0 0 var(--accent-ink); }
+/* Where the money actually sits right now, said by the label alone — the rungs
+   past it are already demoted, so the pair reads without a marker on the edge. */
 .wk-ladder > [data-frontier] .wk-label { color: var(--accent-ink); }
 
 /* Past the frontier nothing has arrived, so the figure states itself at a size
