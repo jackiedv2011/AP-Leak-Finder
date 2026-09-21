@@ -144,7 +144,7 @@ export function Reports({ env }: { env: LedgerEnvironment }) {
                         </span>
                       )}
                     </td>
-                    <td className="wk-right wk-table-money" style={{ color: v.recovered > 0 ? 'var(--accent)' : undefined }}>
+                    <td className="wk-right wk-table-money" style={{ color: v.recovered > 0 ? 'var(--accent-ink)' : undefined }}>
                       {v.recovered > 0 ? formatCurrency(v.recovered) : '—'}
                     </td>
                     <td className="wk-right wk-table-money">{v.potential > 0 ? formatCurrency(v.potential) : '—'}</td>
