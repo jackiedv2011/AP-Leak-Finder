@@ -65,6 +65,66 @@
 }
 
 
+/* ---------- theme cross-fade ---------- */
+/* Flipping the canvas between black and white in one frame is physically
+   unpleasant to look at. `data-theme-transition` is set on <html> for the
+   length of the change only, so the palette eases across instead of snapping,
+   and nothing carries a permanent transition that would make hover states
+   feel laggy or fight the existing ones.
+ *
+ * It is never set on first paint — a page that faded in from the opposite
+ * theme on load would be the same problem with extra steps. */
+:root { --theme-fade: 320ms; }
+
+html[data-theme-transition],
+html[data-theme-transition] body {
+  transition: background-color var(--theme-fade) ease;
+}
+html[data-theme-transition] .wk,
+html[data-theme-transition] .wk *,
+html[data-theme-transition] .wk *::before,
+html[data-theme-transition] .wk *::after {
+  transition:
+    background-color var(--theme-fade) ease,
+    color var(--theme-fade) ease,
+    border-color var(--theme-fade) ease,
+    outline-color var(--theme-fade) ease,
+    box-shadow var(--theme-fade) ease,
+    fill var(--theme-fade) ease,
+    stroke var(--theme-fade) ease;
+}
+
+/* The three elements whose own motion is not colour. The blanket rule above
+   would replace their transition outright, and the thumb in particular is
+   mid-slide at exactly the moment the theme changes — losing that would make
+   the switch jump precisely when it is being watched. */
+html[data-theme-transition] .wk-seg-thumb {
+  transition:
+    transform .26s cubic-bezier(.4, 0, .2, 1),
+    background-color var(--theme-fade) ease,
+    box-shadow var(--theme-fade) ease;
+}
+html[data-theme-transition] .wk-overlay {
+  transition: opacity .18s ease, background-color var(--theme-fade) ease;
+}
+html[data-theme-transition] .wk-panel {
+  transition:
+    opacity .16s ease,
+    scale .2s ease,
+    translate .2s ease,
+    background-color var(--theme-fade) ease,
+    border-color var(--theme-fade) ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html[data-theme-transition],
+  html[data-theme-transition] body,
+  html[data-theme-transition] .wk,
+  html[data-theme-transition] .wk *,
+  html[data-theme-transition] .wk *::before,
+  html[data-theme-transition] .wk *::after { transition: none; }
+}
+
 /* ---------- light ---------- */
 /* The same workspace with the greyscale inverted: black becomes white, white
    becomes black, and the dark greys become their light counterparts at the

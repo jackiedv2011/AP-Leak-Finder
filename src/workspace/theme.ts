@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 /**
  * Appearance. Three choices, two outcomes: `system` follows the OS and is the
@@ -41,9 +41,38 @@ export function resolveTheme(choice: ThemeChoice): ResolvedTheme {
   return choice === 'system' ? systemTheme() : choice
 }
 
-export function applyTheme(theme: ResolvedTheme): void {
+/** Must match --theme-fade in workspace.css. */
+const FADE_MS = 320
+let fadeTimer: number | undefined
+
+function prefersReducedMotion(): boolean {
+  return typeof window !== 'undefined' && !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+}
+
+/**
+ * `animate` eases the palette across instead of snapping it. It is off for the
+ * first application — a page that faded in from the opposite theme on load
+ * would be the same eye-strain with extra steps — and on for every change
+ * after, including the OS flipping underneath a `system` choice.
+ */
+export function applyTheme(theme: ResolvedTheme, options: { animate?: boolean } = {}): void {
   if (typeof document === 'undefined') return
-  document.documentElement.dataset.theme = theme
+  const root = document.documentElement
+  if (root.dataset.theme === theme) return
+
+  if (options.animate && !prefersReducedMotion()) {
+    root.dataset.themeTransition = ''
+    // Flush the transition declaration before the colours change, so the
+    // browser has something to interpolate from rather than resolving both in
+    // one pass and painting the end state.
+    void root.offsetWidth
+    window.clearTimeout(fadeTimer)
+    fadeTimer = window.setTimeout(() => {
+      delete root.dataset.themeTransition
+    }, FADE_MS + 60)
+  }
+
+  root.dataset.theme = theme
 }
 
 /**
@@ -54,16 +83,21 @@ export function useTheme() {
   const [choice, setChoice] = useState<ThemeChoice>(loadThemeChoice)
   const [resolved, setResolved] = useState<ResolvedTheme>(() => resolveTheme(loadThemeChoice()))
 
+  // The first pass only confirms what index.html already painted, so it must
+  // not fade; everything after is a real change the eye should be eased into.
+  const settled = useRef(false)
+
   useEffect(() => {
     const next = resolveTheme(choice)
     setResolved(next)
-    applyTheme(next)
+    applyTheme(next, { animate: settled.current })
+    settled.current = true
     if (choice !== 'system') return
     const mq = window.matchMedia(QUERY)
     const onChange = () => {
       const live = systemTheme()
       setResolved(live)
-      applyTheme(live)
+      applyTheme(live, { animate: true })
     }
     mq.addEventListener('change', onChange)
     return () => mq.removeEventListener('change', onChange)
