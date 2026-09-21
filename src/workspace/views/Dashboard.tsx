@@ -145,7 +145,7 @@ export function Dashboard({ env, visible, auditCount, auditLabel, onOpenCase, on
             <p style={{ marginTop: 8, fontSize: 15, fontWeight: 500 }}>
               {l.awaitingDecision > 0 ? (
                 <>
-                  <span className="wk-num wk-accent">{formatCurrency(l.awaitingDecision)}</span> is waiting on your review.
+                  <span className="wk-num">{formatCurrency(l.awaitingDecision)}</span> is waiting on your review.
                 </>
               ) : l.counts.potential > 0 ? (
                 <>Every finding has a decision. Start a new audit to keep going.</>
