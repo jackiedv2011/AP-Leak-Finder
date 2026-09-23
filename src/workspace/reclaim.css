@@ -328,7 +328,6 @@ button.wk-total:hover { background: var(--surface-hi); }
 button.wk-total:hover .wk-total-label svg { transform: translateX(2px); color: var(--text); }
 .wk-total-value { margin-top: 8px; font: 600 clamp(26px, 2.4vw, 32px)/1.1 var(--f-text); letter-spacing: -.045em; font-variant-numeric: tabular-nums; }
 .wk-total-note { color: var(--text-muted); font-size: 12.5px; }
-.wk-total[data-emphasis]::before { content: ''; position: absolute; inset: 0 auto 0 0; width: 2px; background: var(--accent); }
 .wk-total[data-empty] .wk-total-value { color: var(--text-muted); }
 
 .wk-ov-grid { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(300px, 1fr); align-items: start; gap: var(--gap); }
