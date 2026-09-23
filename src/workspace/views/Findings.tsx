@@ -121,7 +121,7 @@ export function Findings({ env, visible, onOpenCase }: FindingsProps) {
       {ordered.map((o) => {
         const locked = !visible.has(o.finding.id)
         return <button type="button" className="wk-grid-row wk-finding-row" key={o.finding.id} data-locked={locked || undefined} onClick={() => (locked ? setUpgradeOpen(true) : onOpenCase(o.finding.id))} aria-label={locked ? `${o.typeLabel}, ${formatCurrency(o.finding.dollarImpact)}, part of Pro` : `${o.typeLabel}, ${o.finding.vendor}, ${formatCurrency(o.finding.dollarImpact)}`}>
-          <span className="wk-cell-main">{locked ? <><strong style={{ color: 'var(--text-muted)' }}>Shown on Pro</strong><small>Vendor and invoices hidden on Free</small></> : <><strong>{o.finding.vendor}</strong><small>{findingReference(o.finding)}</small></>}</span>
+          <span className="wk-cell-main">{locked ? <><strong style={{ color: 'var(--text-muted)' }}>Shown on Pro</strong><small>Vendor and invoices hidden on Free</small></> : <><strong>{o.finding.vendor}</strong><small>{findingReference(o.finding)}</small></>}<span className="wk-mobile-meta" aria-hidden="true"><KindChip finding={o.finding} label={o.typeLabel} />{decisionChip(o)}</span></span>
           <span><KindChip finding={o.finding} label={o.typeLabel} /></span>
           <span className="wk-finding-state"><Strength level={o.evidence} /></span>
           <span>{decisionChip(o)}</span>

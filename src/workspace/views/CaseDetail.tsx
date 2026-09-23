@@ -63,7 +63,7 @@ function Evidence({ finding }: { finding: Finding }) {
           </p>
         </div>
       </div>
-      <div style={{ overflowX: 'auto' }}>
+      <div className="wk-evidence-table" style={{ overflowX: 'auto' }}>
         <table className="wk-table">
           <thead>
             <tr>
@@ -85,6 +85,21 @@ function Evidence({ finding }: { finding: Finding }) {
           </tbody>
         </table>
       </div>
+      <ul className="wk-evidence-cards">
+        {records.map((record) => (
+          <li key={record.id}>
+            {showVendor ? <strong>{record.vendor}</strong> : null}
+            <dl className="wk-kv">
+              {COLUMNS.map((c) => (
+                <div key={c.label}>
+                  <dt>{c.label}</dt>
+                  <dd>{repeated(c, record) ? <span className="wk-cell-hit">{c.value(record)}</span> : c.value(record)}</dd>
+                </div>
+              ))}
+            </dl>
+          </li>
+        ))}
+      </ul>
     </section>
   )
 }

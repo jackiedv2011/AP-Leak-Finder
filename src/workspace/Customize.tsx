@@ -174,7 +174,8 @@ export function CustomizeSheet({ open, onOpenChange }: { open: boolean; onOpenCh
       <Dialog.Portal>
         <Dialog.Overlay className="wk wk-overlay" style={{ background: 'transparent' }} />
         <Dialog.Content className="wk wk-sheet" aria-describedby="customize-desc">
-            <div className="wk-sheet-head">
+            <div className="wk-sheet-grab" aria-hidden="true" />
+          <div className="wk-sheet-head">
               <div>
                 <Dialog.Title asChild>
                   <h2>Customize</h2>

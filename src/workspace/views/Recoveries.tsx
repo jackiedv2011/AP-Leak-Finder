@@ -47,7 +47,7 @@ export function Recoveries({ env, onOpenCase, onOpenFindings }: { env: LedgerEnv
 
   return (
     <>
-      <section className="wk-totals" aria-label="Recovery totals" style={{ gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' }}>
+      <section className="wk-totals wk-totals-3" aria-label="Recovery totals">
         <div className="wk-total" data-total="ready-to-send" data-amount={readyValue}>
           <span className="wk-label">Ready to send</span>
           <strong className="wk-total-value"><CountUp value={readyValue} format={money} /></strong>
@@ -70,7 +70,7 @@ export function Recoveries({ env, onOpenCase, onOpenFindings }: { env: LedgerEnv
           const inStage = rows.filter((o) => o.state.recoveryStage === stage)
           const total = inStage.reduce((sum, o) => sum + amountOf(o), 0)
           return (
-            <section className="wk-lane" key={stage} data-stage={stage} data-has-money={total > 0 || undefined} aria-labelledby={`lane-${stage}`}>
+            <section className="wk-lane" key={stage} data-stage={stage} data-empty={inStage.length === 0 || undefined} data-has-money={total > 0 || undefined} aria-labelledby={`lane-${stage}`}>
               <div className="wk-lane-head">
                 <h2 id={`lane-${stage}`} style={{ font: '600 13px var(--f-text)' }}>{RECOVERY_STAGE_LABEL[stage]}</h2>
                 <span>{inStage.length}</span>

@@ -475,7 +475,7 @@ export function AuditApp() {
               Back
             </button>
           ) : (
-            <button type="button" className="wk-btn" data-variant="dark" data-size="sm" onClick={() => openImport('new')}>
+            <button type="button" className="wk-btn" data-variant="dark" data-size="sm" onClick={() => openImport('new')} aria-label="Start an audit">
               <Plus aria-hidden="true" />
               <span>Start an audit</span>
             </button>

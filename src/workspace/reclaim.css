@@ -325,11 +325,13 @@ button.wk-total { cursor: pointer; transition: background-color .14s ease; }
 button.wk-total:hover { background: var(--surface-hi); }
 .wk-total-label { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .wk-total-label svg { width: 14px; height: 14px; color: var(--text-muted); transition: transform .14s ease, color .14s ease; }
-button.wk-total:hover .wk-total-label svg { transform: translateX(2px); color: var(--text); }
+@media (hover: hover) { button.wk-total:hover .wk-total-label svg { transform: translateX(2px); color: var(--text); } }
 .wk-total-value { margin-top: 8px; font: 600 clamp(26px, 2.4vw, 32px)/1.1 var(--f-text); letter-spacing: -.045em; font-variant-numeric: tabular-nums; }
 .wk-total-note { color: var(--text-muted); font-size: 12.5px; }
 .wk-total[data-empty] .wk-total-value { color: var(--text-muted); }
 
+.wk-totals-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.wk-evidence-cards { display: none; }
 .wk-ov-grid { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(300px, 1fr); align-items: start; gap: var(--gap); }
 .wk-ov-col { display: flex; min-width: 0; flex-direction: column; gap: var(--gap); }
 .wk-ov-grid[data-single] { grid-template-columns: minmax(0, 1fr); }
@@ -612,10 +614,10 @@ html[data-surface='workspace'] :is(.wk-input, .wk-field input, .wk-field select,
 /* Press feedback: a small, quick give, released with a hair of spring. */
 html[data-surface='workspace'] :is(.wk-btn, .wk-icon-btn, .wk-decide-btn, .wk-ticket, .wk-total, .wk-queue-go, .wk-swatch, .wk-theme-card, .wk-seg button) { transition: background-color var(--t-fast) ease, border-color var(--t-fast) ease, color var(--t-fast) ease, box-shadow var(--t-fast) ease, opacity var(--t-fast) ease, transform var(--t-med) var(--ease-spring); }
 html[data-surface='workspace'] :is(.wk-btn, .wk-icon-btn, .wk-decide-btn, .wk-ticket, .wk-queue-go, .wk-swatch, .wk-theme-card, .wk-seg button):active:not(:disabled) { transform: scale(.97); transition-duration: 80ms; }
-.wk-ticket:hover { transform: translateY(-1px); }
+@media (hover: hover) { .wk-ticket:hover { transform: translateY(-1px); } }
 .wk-queue-row, .wk-grid-row, .wk-nav-item, .wk-command-result, .wk-menu button, .wk-bars-row, .wk-side-btn, .wk-find, .wk-switcher-btn { transition: background-color var(--t-fast) ease, color var(--t-fast) ease, border-color var(--t-fast) ease; }
 .wk-queue-go svg, .wk-grid-row > svg, .wk-more svg { transition: transform var(--t-med) var(--ease-out); }
-.wk-queue-row:hover .wk-queue-go svg, button.wk-grid-row:hover > svg, .wk-more:hover svg { transform: translateX(3px); }
+@media (hover: hover) { .wk-queue-row:hover .wk-queue-go svg, button.wk-grid-row:hover > svg, .wk-more:hover svg { transform: translateX(3px); } }
 .wk-toggle::after { transition: translate var(--t-med) var(--ease-spring); }
 .wk-toggle { transition: background-color var(--t-med) ease; }
 .wk-app { transition: grid-template-columns var(--t-slow) var(--ease-out); }
@@ -639,7 +641,7 @@ html[data-surface='workspace'] .wk-panel[data-state='closed'] { animation: wk-zo
 }
 
 /* ---------- mobile ---------- */
-.wk-mobile-bar, .wk-mobile-scrim, .wk-menu-btn { display: none; }
+.wk-mobile-bar, .wk-mobile-scrim, .wk-menu-btn, .wk-drawer-close, .wk-mobile-meta, .wk-sheet-grab { display: none; }
 
 @media (max-width: 1180px) {
   .wk-ov-grid { grid-template-columns: minmax(0, 1fr); }
@@ -649,11 +651,8 @@ html[data-surface='workspace'] .wk-panel[data-state='closed'] { animation: wk-zo
 }
 @media (max-width: 900px) {
   html[data-surface='workspace'] .wk-app, html[data-surface='workspace'] .wk-app[data-collapsed] { --sidebar-w: 0px; grid-template-columns: minmax(0, 1fr); }
-  .wk-app .wk-side { position: fixed; z-index: 51; top: 0; bottom: 0; left: 0; width: min(290px, 86vw); height: 100dvh; transform: translateX(-102%); transition: transform .22s ease; }
-  .wk-app .wk-side[data-mobile-open] { transform: none; box-shadow: var(--shadow-pop); }
   .wk-app[data-collapsed] :is(.wk-brandrow b, .wk-plan-chip, .wk-find span, .wk-find kbd, .wk-nav-item > span, .wk-nav-label, .wk-side-btn span, .wk-account-copy) { display: revert; }
   .wk-app[data-collapsed] .wk-nav-item { grid-template-columns: 16px 1fr auto; justify-items: stretch; padding: 0 10px; }
-  .wk-mobile-scrim { position: fixed; z-index: 50; inset: 0; display: block; width: 100%; border: 0; background: var(--scrim); }
   .wk-menu-btn { display: inline-grid; }
   .wk-collapse-btn { display: none !important; }
   .wk-totals { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -690,6 +689,142 @@ html[data-surface='workspace'] .wk-panel[data-state='closed'] { animation: wk-zo
   .wk-search { max-width: none; flex-basis: 100%; }
   .wk-upsell { flex-direction: column; align-items: flex-start; }
   .wk-bars[data-columns='2'] { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* ---------- phones and small tablets ----------
+ * The sidebar becomes a drawer that slides over the page, dialogs become
+ * bottom sheets you can reach with a thumb, every tap target is at least
+ * 40px, text fields are 16px so iOS does not zoom on focus, and the notch
+ * and home indicator are kept clear. */
+@media (max-width: 900px) {
+  html[data-surface='workspace'] .wk-app .wk-side {
+    position: fixed; z-index: 51; inset: 0 auto 0 0; display: flex; flex-direction: column; align-items: stretch; justify-content: flex-start; gap: 0;
+    width: min(300px, 86vw); height: 100dvh; overflow-y: auto; overscroll-behavior: contain;
+    padding: calc(14px + env(safe-area-inset-top, 0px)) 12px calc(14px + env(safe-area-inset-bottom, 0px));
+    border-right: 1px solid var(--line); border-bottom: 0; background: var(--bg);
+    transform: translateX(-104%); visibility: hidden;
+    transition: transform var(--t-slow) var(--ease-out), visibility 0s linear var(--t-slow);
+  }
+  html[data-surface='workspace'] .wk-app .wk-side[data-mobile-open] { transform: none; visibility: visible; box-shadow: var(--shadow-pop); transition: transform var(--t-slow) var(--ease-out), visibility 0s; }
+  html[data-surface='workspace'] .wk-app .wk-side nav { display: block; }
+  html[data-surface='workspace'] .wk-app .wk-side .wk-nav { flex-direction: column; }
+  html[data-surface='workspace'] .wk-app .wk-side-foot { display: flex; flex-direction: column; }
+  html[data-surface='workspace'] .wk-app .wk-nav-item { grid-template-columns: 18px 1fr auto; min-height: 44px; font-size: 15px; white-space: normal; }
+  .wk-app .wk-brandrow { padding-right: 44px; }
+  .wk-drawer-close { position: absolute; top: calc(18px + env(safe-area-inset-top, 0px)); right: 12px; display: inline-grid; }
+  .wk-mobile-scrim { position: fixed; z-index: 50; inset: 0; display: block; width: 100%; border: 0; background: var(--scrim); animation: wk-fade var(--t-med) ease both; }
+  html[data-surface='workspace'] .wk-app .wk-topbar { padding-top: env(safe-area-inset-top, 0px); min-height: calc(56px + env(safe-area-inset-top, 0px)); }
+  html[data-surface='workspace'] .wk-app .wk-body { padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px)); }
+  html[data-surface='workspace'] .wk-icon-btn { width: 40px; height: 40px; }
+  html[data-surface='workspace'] .wk-btn { min-height: 40px; }
+  .wk-switcher-btn { height: 40px; }
+  html[data-surface='workspace'] :is(.wk-search input, .wk-select select, .wk-command-input-row input, .wk-input, .wk-field input, .wk-field select, .wk-field textarea) { font-size: 16px; }
+  .wk-search, .wk-select { height: 44px; }
+  .wk-find { height: 44px; }
+
+  /* Findings: the hidden columns come back as a line under the vendor. */
+  .wk-mobile-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; margin-top: 2px; }
+  .wk-mobile-meta .wk-chip, .wk-mobile-meta .wk-strength span { font-size: 12px; }
+
+  /* Dialogs and Customize: bottom sheets. */
+  html[data-surface='workspace'] .wk-panel {
+    top: auto; right: 0; bottom: 0; left: 0; width: 100% !important; max-width: none; max-height: 92dvh; translate: none;
+    padding: 12px 20px calc(20px + env(safe-area-inset-bottom, 0px)); border-width: 1px 0 0; border-radius: var(--r-lg) var(--r-lg) 0 0;
+  }
+  html[data-surface='workspace'] .wk-panel::before { content: ''; align-self: center; flex: none; width: 36px; height: 5px; margin-bottom: 4px; border-radius: 3px; background: var(--line-strong); }
+  html[data-surface='workspace'] .wk-panel[data-state='open'] { animation: wk-sheet-up 460ms var(--ease-out) both; }
+  html[data-surface='workspace'] .wk-panel[data-state='closed'] { animation: wk-sheet-down 240ms var(--ease-in-out) both; }
+  html[data-surface='workspace'] .wk-panel-foot { position: sticky; bottom: calc(-20px - env(safe-area-inset-bottom, 0px)); margin: 0 -20px calc(-20px - env(safe-area-inset-bottom, 0px)); padding: 12px 20px calc(12px + env(safe-area-inset-bottom, 0px)); border-top: 1px solid var(--line-soft); background: var(--surface); }
+  html[data-surface='workspace'] .wk-panel-foot .wk-btn { flex: 1; }
+  .wk-sheet { inset: auto 0 0 0; width: 100%; height: 88dvh; border-width: 1px 0 0; border-radius: var(--r-lg) var(--r-lg) 0 0; }
+  .wk-sheet[data-state='open'] { animation: wk-sheet-up 480ms var(--ease-out) both; }
+  .wk-sheet[data-state='closed'] { animation: wk-sheet-down 260ms var(--ease-in-out) both; }
+  .wk-sheet-grab { display: block; align-self: center; width: 36px; height: 5px; margin-top: 8px; border-radius: 3px; background: var(--line-strong); }
+  .wk-sheet-head { padding-top: 10px; }
+  .wk-sheet-foot { padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px)); }
+  .wk-sheet-foot .wk-btn { flex: 1; }
+
+  .wk-command-backdrop { padding: calc(10px + env(safe-area-inset-top, 0px)) 10px 10px; }
+  .wk-command { max-height: calc(100dvh - 20px - env(safe-area-inset-top, 0px)); display: flex; flex-direction: column; }
+  .wk-command-results { max-height: none; flex: 1; }
+  .wk-command-result { min-height: 48px; }
+  .wk-command-footer { display: none; }
+  .wk-menu { position: fixed; top: calc(60px + env(safe-area-inset-top, 0px)); right: 10px; left: 10px; width: auto; }
+}
+/* Touch screens: no hover that sticks after a tap; press feedback instead. */
+@media (hover: none) {
+  html[data-surface='workspace'] :is(.wk-queue-row, button.wk-grid-row, button.wk-total, .wk-nav-item, .wk-command-result, .wk-menu button, .wk-side-btn, .wk-brandrow):hover { background: none; }
+  html[data-surface='workspace'] .wk-app .wk-nav-item[aria-current='page']:hover { background: var(--surface); }
+  html[data-surface='workspace'] :is(.wk-queue-row, button.wk-grid-row, button.wk-total, .wk-nav-item, .wk-command-result, .wk-menu button, .wk-side-btn):active { background: var(--surface-hi); transition-duration: 0ms; }
+  html[data-surface='workspace'] .wk { -webkit-tap-highlight-color: transparent; }
+}
+@keyframes wk-sheet-up { from { transform: translateY(100%); } to { transform: none; } }
+@keyframes wk-sheet-down { from { transform: none; } to { transform: translateY(100%); } }
+
+@media (max-width: 640px) {
+  .wk-case { align-items: stretch; }
+  .wk-case-main > *, .wk-case-side > * { min-width: 0; max-width: 100%; }
+  .wk-head { gap: 16px; }
+  .wk-head-meta > span + span::before { display: none; }
+  .wk-head-meta { gap: 2px 12px; }
+  .wk-head-actions .wk-btn { flex: 1; }
+  .wk-head-copy[style] { align-items: flex-start !important; text-align: left !important; }
+  .wk-total { padding: 16px; }
+  .wk-total-value { font-size: 24px; }
+  .wk-total-note { font-size: 12px; }
+  .wk-panelcard-head { padding: 14px 16px; }
+  .wk-panelcard-body { padding: 16px; }
+  .wk-queue-row { padding: 12px 16px; min-height: 60px; }
+  .wk-queue-foot, .wk-upsell { padding: 14px 16px; }
+  .wk-upsell .wk-btn { width: 100%; }
+  .wk-flow-steps { gap: 16px 12px; }
+
+  /* Findings controls: search full width, the two selects share a row, export is an icon. */
+  .wk-toolbar { display: grid; grid-template-columns: 1fr 1fr auto; }
+  .wk-toolbar:has(.wk-tabs) { display: flex; margin-inline: -16px; padding-inline: 16px; overflow: hidden; }
+  .wk-tabs { gap: 18px; scrollbar-width: none; -webkit-overflow-scrolling: touch; mask-image: linear-gradient(90deg, #000 85%, transparent); }
+  .wk-tabs::-webkit-scrollbar { display: none; }
+  .wk-search { grid-column: 1 / -1; }
+  .wk-select { min-width: 0; }
+  .wk-toolbar > .wk-btn svg { width: 18px; height: 18px; }
+  .wk-grid-head { display: none; }
+  .wk-grid-row { min-height: 72px; padding-block: 12px; }
+
+  .wk-lane { padding: 10px; }
+  /* Evidence: one card per payment instead of a table that scrolls sideways. */
+  .wk-evidence-table { display: none; }
+  .wk-evidence-cards { display: flex; flex-direction: column; }
+  .wk-evidence-cards li { display: flex; flex-direction: column; gap: 10px; padding: 14px 16px; border-top: 1px solid var(--line-soft); }
+  .wk-evidence-cards li:first-child { border-top: 0; }
+  .wk-evidence-cards strong { font-size: 14px; font-weight: 600; }
+  .wk-evidence-cards .wk-kv > div { padding: 7px 0; }
+
+  /* Recoveries: totals stack as rows; empty lanes shrink to a single line. */
+  .wk-totals-3 { grid-template-columns: minmax(0, 1fr); }
+  .wk-totals-3 .wk-total + .wk-total { border-top: 1px solid var(--line-soft); border-left: 0; }
+  .wk-totals-3 .wk-total { display: grid; grid-template-columns: 1fr auto; align-items: baseline; gap: 2px 12px; }
+  .wk-totals-3 .wk-total-value { grid-column: 2; grid-row: 1 / span 2; margin: 0; align-self: center; }
+  .wk-totals-3 .wk-total-note { grid-column: 1; }
+  .wk-lane[data-empty] { flex-direction: row; align-items: center; justify-content: space-between; padding: 12px 14px; }
+  .wk-lane[data-empty] :is(.wk-lane-total, .wk-lane-empty) { display: none; }
+  .wk-lane[data-empty] .wk-lane-head { flex: 1; padding: 0; }
+
+  /* Tables with a few columns fit the screen; cells wrap instead of scrolling. */
+  html[data-surface='workspace'] .wk-table thead, html[data-surface='workspace'] .wk-table tbody { min-width: 0; }
+  html[data-surface='workspace'] .wk-table td { white-space: normal; height: auto; padding: 12px 14px; }
+  html[data-surface='workspace'] .wk-table th { padding: 10px 14px; }
+  html[data-surface='workspace'] .wk-section-head { flex-direction: column; align-items: flex-start; gap: 4px; }
+  html[data-surface='workspace'] .wk-card-flat dl { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 18px 16px !important; }
+
+  html[data-surface='workspace'] .wk-toolbar > .wk-btn { width: 44px; height: 44px; padding: 0; font-size: 0; gap: 0; }
+
+  .wk-evidence-scroll { margin: 0; }
+  .wk-settings-prefs { gap: 24px; }
+  .wk-theme-cards { gap: 6px; }
+  .wk-feed li { grid-template-columns: 28px minmax(0, 1fr); }
+  .wk-feed time { grid-column: 2; margin-top: -6px; }
+  html[data-surface='workspace'] .wk-timeline li { grid-template-columns: 52px 14px minmax(0, 1fr); gap: 10px; }
+  html[data-surface='workspace'] .wk-timeline li::before { left: 68px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .wk-app, .wk-app .wk-side, .wk-sheet, .wk-toggle, .wk-toggle::after { transition: none; }

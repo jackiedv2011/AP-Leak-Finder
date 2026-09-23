@@ -139,6 +139,13 @@ function Shell({ mode, onModeChange, auditCount, findingCount, recoveryCount, wo
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
   })
+  // While the drawer is open the page underneath must not scroll with it.
+  useEffect(() => {
+    if (!mobileNavOpen) return
+    const previous = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => { document.body.style.overflow = previous }
+  }, [mobileNavOpen])
   useEffect(() => {
     if (!switcherOpen) return
     function closeOnOutside(event: MouseEvent) {
@@ -157,8 +164,9 @@ function Shell({ mode, onModeChange, auditCount, findingCount, recoveryCount, wo
 
   return <div className="wk wk-app" data-collapsed={prefs.sidebarCollapsed || undefined}>
     {mobileNavOpen ? <button className="wk-mobile-scrim" type="button" aria-label="Close navigation" onClick={() => setMobileNavOpen(false)} /> : null}
-    <aside className="wk-side" data-mobile-open={mobileNavOpen || undefined}>
-      <button type="button" className="wk-brandrow" onClick={() => onModeChange('dashboard')} aria-label="Reclaim overview">
+    <aside className="wk-side" data-mobile-open={mobileNavOpen || undefined} aria-label="Navigation">
+      <button type="button" className="wk-icon-btn wk-drawer-close" onClick={() => setMobileNavOpen(false)} aria-label="Close navigation"><X aria-hidden="true" /></button>
+      <button type="button" className="wk-brandrow" onClick={() => { onModeChange('dashboard'); setMobileNavOpen(false) }} aria-label="Reclaim overview">
         <Mark /><b>Reclaim</b><span className="wk-plan-chip" data-plan={plan}>{plan === 'local' ? 'Local' : plan}</span>
       </button>
       <button ref={findTrigger} type="button" className="wk-find" onClick={openFind} title="Find (F)"><Search aria-hidden="true" /><span>Find</span><kbd aria-hidden="true">F</kbd></button>
