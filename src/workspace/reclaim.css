@@ -586,6 +586,13 @@ html[data-surface='workspace'] :is(.wk-input, .wk-field input, .wk-field select,
 .wk-command-empty { padding: 24px 10px; color: var(--text-muted); text-align: center; }
 .wk-command-footer { display: flex; gap: 16px; padding: 10px 16px; border-top: 1px solid var(--line-soft); background: var(--surface-sunk); color: var(--text-muted); font: 400 12px var(--f-text); }
 
+/* ---------- theme switch ----------
+ * The whole page cross-fades as one picture (see applyTheme), so text never
+ * trails the background. Nothing else animates during the swap. */
+html[data-theme-swap]::view-transition-old(root),
+html[data-theme-swap]::view-transition-new(root) { animation-duration: 360ms; animation-timing-function: var(--ease-in-out, ease); }
+html[data-theme-swap] .wk, html[data-theme-swap] .wk * { transition: none !important; }
+
 /* ---------- motion ----------
  * Apple-style: things arrive quickly and settle slowly, nothing bounces
  * except what you press, and motion always explains where something came
