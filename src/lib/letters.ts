@@ -135,7 +135,7 @@ export function generateLetter(
 
     case 'unclaimed_discount': {
       const invoices = invoiceList(finding)
-      return letter(`Request for early-payment discount credit — ${invoices}`, [
+      return letter(`Request for early-payment discount ${resolutionNoun(method)} — ${invoices}`, [
         `${finding.explanation}`,
         `We request ${resolutionAsk(method, finding.dollarImpact)}, reflecting the early-payment discount we were entitled to under the agreed terms on ${invoices}.`,
       ])

@@ -116,7 +116,7 @@ export function Audits({
                   <th>Records</th>
                   <th>Open findings</th>
                   <th>Last updated</th>
-                  <th className="wk-right">Potential recovery</th>
+                  <th className="wk-right">Open flagged value</th>
                 </tr>
               </thead>
               <tbody>
@@ -143,7 +143,7 @@ export function Audits({
                     <tr key={p.id} onClick={() => onOpenProject(p.id)} aria-current={isActive ? 'true' : undefined}>
                       <td>
                         <div className="wk-table-vendor" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          {p.name}
+                          <button type="button" className="wk-table-action" onClick={(event) => { event.stopPropagation(); onOpenProject(p.id) }} aria-label={`Open ${p.name} audit`}>{p.name}</button>
                           {isActive ? (
                             <span className="wk-pill" data-tone="strong">
                               Open

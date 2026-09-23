@@ -77,7 +77,7 @@ async function uploadSampleLedger() {
   fireEvent.change(input, { target: { files: [new File([sampleLedgerCsv], 'ledger.csv', { type: 'text/csv' })] } })
   await screen.findByText('ledger.csv')
   fireEvent.click(screen.getByRole('button', { name: /run the audit/i }))
-  await screen.findByRole('heading', { name: 'Recent findings' })
+  await screen.findByRole('heading', { name: 'Priority findings' })
   await waitFor(() => expect(projectSync.pending).toBe(0))
 }
 
@@ -120,12 +120,12 @@ describe('accounts, data isolation and persistence', () => {
     await logIn(bob)
     expect((await live.api('/api/projects')).body.projects).toHaveLength(0)
     expect(await screen.findByRole('button', { name: /upload a ledger/i })).toBeInTheDocument()
-    expect(screen.queryByRole('heading', { name: 'Recent findings' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Priority findings' })).not.toBeInTheDocument()
     await logOut()
 
     // Alice again: her audit comes back from the server with its findings and is shown
     await logIn(alice)
-    expect(await screen.findByRole('heading', { name: 'Recent findings' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Priority findings' })).toBeInTheDocument()
     expect((await live.api('/api/projects')).body.projects[0].environment.result.findings.length).toBeGreaterThan(0)
   })
 
@@ -171,7 +171,7 @@ describe('legacy (pre-account) audits', () => {
     const { body } = await live.api('/api/projects')
     expect(body.projects.map((p: { id: string }) => p.id)).toEqual([legacy.id])
     expect(listLegacyProjects()).toHaveLength(0)
-    expect(await screen.findByRole('heading', { name: 'Recent findings' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Priority findings' })).toBeInTheDocument()
 
     await logOut()
     await logIn(bob)
@@ -226,7 +226,7 @@ describe('session bootstrap', () => {
     })
     mountWorkspace()
     await screen.findByText(`ready:${alice.email}`)
-    expect(await screen.findByRole('heading', { name: 'Recent findings' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Priority findings' })).toBeInTheDocument()
     const user = auth!.user as AuthUser
     expect(user.isGuest).toBe(false)
   })

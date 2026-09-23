@@ -5,6 +5,7 @@ import { ladder, opportunities, type Opportunity } from '../selectors'
 import { lockedSummary } from '../planGates'
 import { Locked } from '@/components/plan/Locked'
 import { Strength } from './Strength'
+import { recoveryStatusLabel } from '@/recovery/model'
 
 interface FindingsProps {
   env: LedgerEnvironment
@@ -51,7 +52,7 @@ export function Findings({ env, visible, onOpenCase }: FindingsProps) {
           {list.map((o) => (
             <tr key={o.finding.id} onClick={interactive ? () => onOpenCase(o.finding.id) : undefined}>
               <td>
-                <div className="wk-table-vendor">{o.finding.vendor}</div>
+                {interactive ? <button type="button" className="wk-table-action wk-table-vendor" onClick={(event) => { event.stopPropagation(); onOpenCase(o.finding.id) }} aria-label={`Open ${o.finding.vendor} finding`}>{o.finding.vendor}</button> : <div className="wk-table-vendor">{o.finding.vendor}</div>}
                 <div className="wk-table-sub">
                   {o.finding.relatedRecords.length} {plural(o.finding.relatedRecords.length, 'record')}
                 </div>
@@ -65,8 +66,8 @@ export function Findings({ env, visible, onOpenCase }: FindingsProps) {
               </td>
               <td>
                 {o.state.decision ? (
-                  <span className="wk-mark" data-tone={o.state.decision === 'confirmed' ? 'strong' : 'quiet'}>
-                    {DECISION_LABEL[o.state.decision]}
+                  <span className="wk-mark" data-tone={o.state.recoveryStage === 'recovered' && o.finding.class === 'recoverable' && (o.state.recoveredAmount ?? 0) > 0 ? 'strong' : o.state.decision === 'expected' || o.state.recoveryStage === 'not_recovered' ? 'quiet' : 'info'}>
+                    {o.state.recoveryStage ? recoveryStatusLabel(o.state, o.finding.class !== 'recoverable') : DECISION_LABEL[o.state.decision]}
                   </span>
                 ) : (
                   <span className="wk-dim" style={{ fontSize: 13 }}>
@@ -87,7 +88,7 @@ export function Findings({ env, visible, onOpenCase }: FindingsProps) {
       <section className="wk-section">
         <div className="wk-pipeline">
           <div>
-            <span className="wk-label">Potential recovery</span>
+            <span className="wk-label">Open flagged value</span>
             <span className="wk-pipeline-figure wk-accent">{formatCurrency(l.potential)}</span>
             <span className="wk-ladder-note">
               {l.counts.potential} open {plural(l.counts.potential, 'finding')}

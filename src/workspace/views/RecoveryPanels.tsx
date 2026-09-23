@@ -4,7 +4,7 @@ import { formatCurrency } from '@/lib/format'
 import { generateLetter } from '@/lib/letters'
 import type { SenderProfile } from '@/lib/senderProfile'
 import { buildDraftRequest, DraftUnavailableError, requestAiDraft } from '@/lib/ai/draftClient'
-import { validateRecoveredAmount, type CaseState, type RecoveryMethod } from '@/ledger/caseState'
+import { type CaseState, type RecoveryMethod } from '@/ledger/caseState'
 import type { Finding } from '@/types'
 import type { PlanLimits } from '@/lib/plans'
 import { UpgradeDialog } from '@/components/plan/UpgradeDialog'
@@ -20,6 +20,7 @@ export interface RequestPackage {
   body: string
   requestedAmount: number
   method: RecoveryMethod
+  recipientEmail: string
 }
 
 function MethodSelect({ id, value, onChange }: { id: string; value: RecoveryMethod; onChange: (m: RecoveryMethod) => void }) {
@@ -50,16 +51,22 @@ export function RecoveryRequestPanel({
   sender,
   limits,
   onMarkRequested,
+  onApprove,
+  onContactHold,
+  recommendation,
 }: {
   finding: Finding
   state: CaseState
   sender: SenderProfile
   limits: PlanLimits
   onMarkRequested: (pkg: RequestPackage) => void
+  onApprove: (pkg: RequestPackage, knownBeforeReclaim: boolean, knownBeforeNote: string | null) => void
+  onContactHold: (reason: string | null) => void
+  recommendation?: { method: RecoveryMethod; reason: string }
 }) {
   const [upgrade, setUpgrade] = useState<string | null>(null)
   const canEdit = limits.fullLetters
-  const [method, setMethod] = useState<RecoveryMethod>(state.requestedResolution ?? 'refund')
+  const [method, setMethod] = useState<RecoveryMethod>(state.requestedResolution ?? recommendation?.method ?? 'refund')
   const [amountInput, setAmountInput] = useState(() => (state.requestedAmount ?? finding.dollarImpact).toFixed(2))
   const generated = useMemo(() => {
     const amount = parseMoney(amountInput)
@@ -70,6 +77,10 @@ export function RecoveryRequestPanel({
   const [body, setBody] = useState(state.recoveryDraft ?? generated.body)
   const [edited, setEdited] = useState(Boolean(state.recoveryDraft))
   const [context, setContext] = useState('')
+  const [recipientEmail, setRecipientEmail] = useState(state.recoveryRecipientEmail ?? '')
+  const [knownBeforeReclaim, setKnownBeforeReclaim] = useState<boolean | null>(state.knownBeforeReclaim ?? null)
+  const [knownBeforeNote, setKnownBeforeNote] = useState(state.knownBeforeNote ?? '')
+  const [holdReason, setHoldReason] = useState(state.contactHold ?? '')
   const [drafting, setDrafting] = useState(false)
   const [notice, setNotice] = useState<string | null>(null)
 
@@ -85,11 +96,15 @@ export function RecoveryRequestPanel({
   const amountError =
     !Number.isFinite(amount) || amount <= 0
       ? 'Enter the amount to request.'
+      : Math.abs(amount * 100 - Math.round(amount * 100)) > 0.000001
+        ? 'Enter dollars and cents only.'
       : Math.round(amount * 100) > Math.round(finding.dollarImpact * 100)
         ? `The records only support ${formatCurrency(finding.dollarImpact)}.`
         : null
 
   const isVendorLetter = finding.class === 'recoverable'
+  const pkg: RequestPackage = { subject, body, requestedAmount: amount, method, recipientEmail: recipientEmail.trim() }
+  const approvedForCurrent = Boolean(state.approvedAt) && state.recoverySubject === subject && state.recoveryDraft === body && state.requestedAmount === amount && state.requestedResolution === method && (state.recoveryRecipientEmail ?? '') === recipientEmail.trim() && state.knownBeforeReclaim === knownBeforeReclaim && (state.knownBeforeNote ?? null) === (knownBeforeReclaim ? knownBeforeNote.trim() || null : null) && !state.contactHold
 
   const copy = async () => {
     try {
@@ -140,7 +155,7 @@ export function RecoveryRequestPanel({
       </p>
 
       {isVendorLetter ? (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 14, marginTop: 16 }}>
+        <><div className="wk-recommendation"><span className="wk-label">Suggested recovery method</span><strong>{recommendation?.method === 'credit' ? 'Applied credit' : 'Cash refund'}</strong><p>{recommendation?.reason ?? 'Choose the resolution that will actually return usable value.'}</p></div><div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 14, marginTop: 16 }}>
           <div className="wk-field">
             <label htmlFor="request-amount">Amount to request</label>
             <input
@@ -164,7 +179,8 @@ export function RecoveryRequestPanel({
             <label htmlFor="request-method">Ask for</label>
             <MethodSelect id="request-method" value={method} onChange={setMethod} />
           </div>
-        </div>
+          <div className="wk-field"><label htmlFor="request-recipient">Vendor email (optional)</label><input id="request-recipient" className="wk-input" type="email" value={recipientEmail} onChange={(e) => setRecipientEmail(e.target.value)} placeholder="ap@vendor.com" /></div>
+        </div></>
       ) : null}
 
       <div className="wk-field" style={{ marginTop: 16 }}>
@@ -264,14 +280,29 @@ export function RecoveryRequestPanel({
       ) : null}
 
       <hr className="wk-rule" style={{ margin: '18px 0' }} />
+      {isVendorLetter ? <div className="wk-approval">
+        <span className="wk-label">Customer approval</span>
+        <p className="wk-dim">Check the evidence, amount, resolution, recipient and message before contacting the vendor. Approving records your decision; it does not send an email.</p>
+        <fieldset className="wk-attribution">
+          <legend>Was this issue already known before Reclaim found it?</legend>
+          <label className="wk-check"><input type="radio" name={`prior-knowledge-${finding.id}`} checked={knownBeforeReclaim === false} onChange={() => setKnownBeforeReclaim(false)} /> No, Reclaim surfaced it</label>
+          <label className="wk-check"><input type="radio" name={`prior-knowledge-${finding.id}`} checked={knownBeforeReclaim === true} onChange={() => setKnownBeforeReclaim(true)} /> Yes, we already knew</label>
+          {knownBeforeReclaim ? <div className="wk-field"><label htmlFor={`known-before-note-${finding.id}`}>How did your team know?</label><textarea id={`known-before-note-${finding.id}`} className="wk-input" rows={2} value={knownBeforeNote} onChange={(e) => setKnownBeforeNote(e.target.value)} placeholder="For example, AP flagged this in August" /></div> : null}
+          <p className="wk-table-sub">Choose one before approval so the case records who identified the issue.</p>
+        </fieldset>
+        <div className="wk-flow-inline"><div className="wk-field"><label htmlFor="contact-hold">Hold vendor contact (optional reason)</label><input id="contact-hold" className="wk-input" value={holdReason} onChange={(e) => setHoldReason(e.target.value)} placeholder="For example, strategic relationship" /></div><button type="button" className="wk-btn" data-variant="outline" data-size="sm" disabled={!holdReason.trim()} onClick={() => onContactHold(holdReason.trim())}>{state.contactHold ? 'Update hold' : 'Put on hold'}</button>{state.contactHold ? <button type="button" className="wk-btn" data-variant="ghost" data-size="sm" onClick={() => { setHoldReason(''); onContactHold(null) }}>Remove hold</button> : null}</div>
+        {state.contactHold ? <p className="wk-field-error" role="status">Contact is on hold: {state.contactHold}</p> : null}
+        <button type="button" className="wk-btn" data-variant="outline" data-size="sm" disabled={Boolean(amountError) || Boolean(state.contactHold) || knownBeforeReclaim === null || (knownBeforeReclaim === true && !knownBeforeNote.trim())} onClick={() => { if (knownBeforeReclaim !== null) onApprove(pkg, knownBeforeReclaim, knownBeforeReclaim ? knownBeforeNote.trim() : null) }}>{approvedForCurrent ? 'Approved for outreach' : 'Approve recovery request'}</button>
+        {state.approvedAt && !approvedForCurrent ? <span className="wk-table-sub">The request changed after approval. Review and approve this version.</span> : null}
+      </div> : null}
       <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
         <button
           type="button"
           className="wk-btn"
           data-variant="primary"
           data-size="sm"
-          disabled={isVendorLetter && Boolean(amountError)}
-          onClick={() => onMarkRequested({ subject, body, requestedAmount: isVendorLetter ? amount : finding.dollarImpact, method })}
+          disabled={isVendorLetter && (Boolean(amountError) || !approvedForCurrent)}
+          onClick={() => onMarkRequested({ ...pkg, requestedAmount: isVendorLetter ? amount : finding.dollarImpact })}
         >
           {isVendorLetter ? 'Mark request sent' : 'Mark as filed'}
         </button>
@@ -283,107 +314,23 @@ export function RecoveryRequestPanel({
   )
 }
 
-/** Stage "requested": record what actually came back. */
-export function RecoveryOutcomePanel({
-  finding,
-  state,
-  limits,
-  onRecordOutcome,
-}: {
-  finding: Finding
-  state: CaseState
-  limits: PlanLimits
-  onRecordOutcome: (outcome: 'recovered' | 'not_recovered', amount: number | null, note: string | null, method: RecoveryMethod | null) => void
-}) {
-  const requested = state.requestedAmount ?? finding.dollarImpact
-  const [amountInput, setAmountInput] = useState(requested.toFixed(2))
-  const [method, setMethod] = useState<RecoveryMethod>(state.requestedResolution ?? 'refund')
+/** Internal investigations close with a note and do not record returned money. */
+export function InternalReviewPanel({ onClose }: { onClose: (note: string) => void }) {
   const [note, setNote] = useState('')
-  const [touched, setTouched] = useState(false)
-  const [upgrade, setUpgrade] = useState(false)
-  const error = validateRecoveredAmount(amountInput, requested)
-  const full = limits.fullRecoveryWorkflow
-
-  if (!full) {
-    // Free: the outcome is the whole amount or nothing. Partial amounts and methods are Pro.
-    return (
-      <div className="wk-card" data-testid="recovery-outcome">
-        <span className="wk-label">Record the outcome</span>
-        <p className="wk-dim" style={{ marginTop: 6, fontSize: 13, maxWidth: 620 }}>
-          {formatCurrency(requested)} was requested. Did it come back?
-        </p>
-        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 16, alignItems: 'center' }}>
-          <button type="button" className="wk-btn" data-variant="primary" data-size="sm" onClick={() => onRecordOutcome('recovered', requested, null, null)}>
-            Money came back
-          </button>
-          <button type="button" className="wk-btn" data-variant="ghost" data-size="sm" onClick={() => onRecordOutcome('not_recovered', null, null, null)}>
-            Close without recovery
-          </button>
-          <button type="button" className="wk-linklike" style={{ marginLeft: 'auto' }} onClick={() => setUpgrade(true)}>
-            Only part of it came back? That&apos;s Pro.
-          </button>
-        </div>
-        <UpgradeDialog open={upgrade} onOpenChange={setUpgrade} reason="Partial recoveries and recovery methods are part of Pro." />
-      </div>
-    )
-  }
-
-  return (
-    <div className="wk-card" data-testid="recovery-outcome">
-      <span className="wk-label">Record the outcome</span>
-      <p className="wk-dim" style={{ marginTop: 6, fontSize: 13, maxWidth: 620 }}>
-        {formatCurrency(requested)} was requested. Enter what actually arrived — a partial amount is fine — or close the case if nothing did.
-      </p>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 14, marginTop: 16 }}>
-        <div className="wk-field">
-          <label htmlFor="outcome-amount">Amount received</label>
-          <input
-            id="outcome-amount"
-            className="wk-input"
-            inputMode="decimal"
-            value={amountInput}
-            onChange={(e) => {
-              setAmountInput(e.target.value)
-              setTouched(true)
-            }}
-            aria-invalid={touched && error ? 'true' : undefined}
-            aria-describedby={touched && error ? 'outcome-amount-error' : undefined}
-          />
-          {touched && error ? (
-            <span className="wk-field-error" id="outcome-amount-error" role="alert">
-              {error}
-            </span>
-          ) : null}
-        </div>
-        <div className="wk-field">
-          <label htmlFor="outcome-method">Came back as</label>
-          <MethodSelect id="outcome-method" value={method} onChange={setMethod} />
-        </div>
-        <div className="wk-field">
-          <label htmlFor="outcome-note">Reference (optional)</label>
-          <input id="outcome-note" className="wk-input" placeholder="e.g. credit memo CM-42" value={note} onChange={(e) => setNote(e.target.value)} />
-        </div>
-      </div>
-      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 16 }}>
-        <button
-          type="button"
-          className="wk-btn"
-          data-variant="primary"
-          data-size="sm"
-          onClick={() => {
-            setTouched(true)
-            if (error) return
-            onRecordOutcome('recovered', parseMoney(amountInput), note.trim() || null, method)
-          }}
-        >
-          Money came back
-        </button>
-        <button type="button" className="wk-btn" data-variant="ghost" data-size="sm" onClick={() => onRecordOutcome('not_recovered', null, note.trim() || null, null)}>
-          Close without recovery
-        </button>
-      </div>
+  const [error, setError] = useState(false)
+  return <div className="wk-card" data-testid="internal-review-outcome">
+    <span className="wk-label">Internal investigation</span>
+    <p className="wk-dim" style={{ marginTop: 6, fontSize: 13, maxWidth: 620 }}>Record what your team checked and concluded. This does not record returned money.</p>
+    <div className="wk-field" style={{ marginTop: 16 }}>
+      <label htmlFor="internal-review-note">Investigation outcome</label>
+      <textarea id="internal-review-note" className="wk-input" rows={3} value={note} onChange={(event) => { setNote(event.target.value); setError(false) }} />
+      {error ? <span className="wk-field-error" role="alert">Add an investigation note before closing this review.</span> : null}
     </div>
-  )
+    <button type="button" className="wk-btn" data-variant="primary" data-size="sm" style={{ marginTop: 16 }} onClick={() => {
+      if (!note.trim()) { setError(true); return }
+      onClose(note.trim())
+    }}>Close internal review</button>
+  </div>
 }
 
 export { METHOD_LABEL }

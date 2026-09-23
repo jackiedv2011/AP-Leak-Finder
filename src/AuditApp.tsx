@@ -49,7 +49,10 @@ import {
   type DecisionValue,
   type DismissalTag,
   type RecoveryMethod,
+  type RecoveryVerification,
+  type VendorUpdate,
 } from '@/ledger/caseState'
+import { approveRecovery, closeWithoutRecovery, recordVendorUpdate, reconcileRecovery, reopenRemainingBalance, setContactHold, setNextFollowUp, startRecoveryRequest, verifyRecovery } from '@/recovery/model'
 import { useEntitlements, useOptionalAuth } from '@/lib/auth/AuthContext'
 import { Locked } from '@/components/plan/Locked'
 import { OnboardingTour } from '@/components/tutorial/OnboardingTour'
@@ -270,7 +273,8 @@ export function AuditApp() {
       const env = environmentRef.current
       if (!env) return
       const current = getCaseState(env, findingId)
-      const next = setCaseState(env, findingId, withHistory(current, update(current), actor))
+      const internal = env.result.findings.find((finding) => finding.id === findingId)?.class !== 'recoverable'
+      const next = setCaseState(env, findingId, withHistory(current, update(current), actor, internal))
       const currentProject = projectRef.current
       if (currentProject) {
         const saved = saveProject({ ...currentProject, environment: next })
@@ -311,15 +315,43 @@ export function AuditApp() {
 
   const handleMarkRequested = useCallback(
     (findingId: string, pkg: RequestPackage) => {
-      persistCaseState(findingId, (current) =>
-        markRecoveryRequested(
-          updateRecoveryPackage(current, { subject: pkg.subject, body: pkg.body, requestedResolution: pkg.method }),
-          pkg.requestedAmount
-        )
-      )
+      persistCaseState(findingId, (current) => {
+        const finding = environmentRef.current?.result.findings.find((row) => row.id === findingId)
+        if (finding?.class !== 'recoverable') return markRecoveryRequested(updateRecoveryPackage(current, { subject: pkg.subject, body: pkg.body, requestedResolution: pkg.method }), pkg.requestedAmount)
+        if (current.recoverySubject !== pkg.subject || current.recoveryDraft !== pkg.body || current.requestedAmount !== pkg.requestedAmount || current.requestedResolution !== pkg.method || (current.recoveryRecipientEmail ?? '') !== pkg.recipientEmail) return current
+        return startRecoveryRequest(current, pkg.requestedAmount)
+      })
     },
     [persistCaseState]
   )
+
+  const handleApproveRecovery = useCallback((findingId: string, pkg: RequestPackage, knownBeforeReclaim: boolean, knownBeforeNote: string | null) => {
+    persistCaseState(findingId, (current) => approveRecovery(updateRecoveryPackage(current, { subject: pkg.subject, body: pkg.body, recipientEmail: pkg.recipientEmail, requestedResolution: pkg.method, requestedAmount: pkg.requestedAmount }), { knownBeforeReclaim, knownBeforeNote }))
+  }, [persistCaseState])
+
+  const handleContactHold = useCallback((findingId: string, reason: string | null) => {
+    persistCaseState(findingId, (current) => setContactHold(current, reason))
+  }, [persistCaseState])
+
+  const handleVendorUpdate = useCallback((findingId: string, update: VendorUpdate) => {
+    persistCaseState(findingId, (current) => recordVendorUpdate(current, update))
+  }, [persistCaseState])
+
+  const handleFollowUp = useCallback((findingId: string, at: number | null) => {
+    persistCaseState(findingId, (current) => setNextFollowUp(current, at))
+  }, [persistCaseState])
+
+  const handleVerifyRecovery = useCallback((findingId: string, proof: RecoveryVerification) => {
+    persistCaseState(findingId, (current) => verifyRecovery(current, proof))
+  }, [persistCaseState])
+
+  const handleCloseRecovery = useCallback((findingId: string, reason: string) => {
+    persistCaseState(findingId, (current) => closeWithoutRecovery(current, reason))
+  }, [persistCaseState])
+
+  const handleReconcileRecovery = useCallback((findingId: string, note: string, rootCause: string) => {
+    persistCaseState(findingId, (current) => reconcileRecovery(current, { note, rootCause }))
+  }, [persistCaseState])
 
   const handleRecordOutcome = useCallback(
     (findingId: string, outcome: 'recovered' | 'not_recovered', amount: number | null, note: string | null, method: RecoveryMethod | null) => {
@@ -338,6 +370,10 @@ export function AuditApp() {
     },
     [persistCaseState]
   )
+
+  const handleReopenBalance = useCallback((findingId: string) => {
+    persistCaseState(findingId, (current) => reopenRemainingBalance(current))
+  }, [persistCaseState])
 
   const handleImport = useCallback(
     (input: ImportInput) =>
@@ -436,10 +472,10 @@ export function AuditApp() {
 
   const overview = overviewSummary(environment)
   const activeFinding = activeCase?.finding ?? null
+  const activeDiscoveredAt = activeFinding ? environment.imports.find((batch) => batch.findingIds?.includes(activeFinding.id))?.importedAt ?? null : null
   const visible = visibleFindingIds(environment, entitlements)
   const activeLocked = activeFinding !== null && !visible.has(activeFinding.id)
   const auditCount = projects.length + (sampleSession ? 1 : 0)
-  const auditLabel = sampleSession ? 'the sample ledger' : project?.name ?? 'this audit'
 
   return (
     <>
@@ -452,7 +488,7 @@ export function AuditApp() {
         findingCount={environment.result.findings.filter((f) => getCaseState(environment, f.id).decision === null).length}
         recoveryCount={overview.recoveryActiveCount}
         title={activeFinding ? activeFinding.vendor : TITLES[route.mode]}
-        subtitle={activeFinding ? 'Finding' : sampleSession ? 'Sample ledger' : project?.name}
+        subtitle={activeFinding ? activeCase?.state.recoveryStage ? activeFinding.class === 'recoverable' ? 'Recovery case' : 'Internal review' : 'Finding' : sampleSession ? 'Sample ledger' : project?.name}
         actions={
           activeFinding ? (
             <button type="button" className="wk-btn" data-variant="ghost" data-size="sm" onClick={goBack}>
@@ -475,31 +511,50 @@ export function AuditApp() {
             <CaseDetail
               finding={activeFinding}
               state={activeCase.state}
+              records={environment.records}
+              discoveredAt={activeDiscoveredAt}
               sender={sender}
               onDecide={() => {}}
               onMarkRequested={() => {}}
               onRecordOutcome={() => {}}
               onReopen={() => {}}
+              onReopenBalance={() => {}}
+              onApproveRecovery={() => {}}
+              onContactHold={() => {}}
+              onVendorUpdate={() => {}}
+              onFollowUp={() => {}}
+              onVerifyRecovery={() => {}}
+              onCloseRecovery={() => {}}
+              onReconcileRecovery={() => {}}
             />
           </Locked>
         ) : activeFinding && activeCase ? (
-          <CaseDetail
-            finding={activeFinding}
-            state={activeCase.state}
-            sender={sender}
-            onDecide={handleDecide}
-            onMarkRequested={handleMarkRequested}
-            onRecordOutcome={handleRecordOutcome}
-            onReopen={handleReopen}
-          />
+            <CaseDetail
+              finding={activeFinding}
+              state={activeCase.state}
+              records={environment.records}
+              discoveredAt={activeDiscoveredAt}
+              sender={sender}
+              onDecide={handleDecide}
+              onMarkRequested={handleMarkRequested}
+              onRecordOutcome={handleRecordOutcome}
+              onReopen={handleReopen}
+              onReopenBalance={handleReopenBalance}
+              onApproveRecovery={handleApproveRecovery}
+              onContactHold={handleContactHold}
+              onVendorUpdate={handleVendorUpdate}
+              onFollowUp={handleFollowUp}
+              onVerifyRecovery={handleVerifyRecovery}
+              onCloseRecovery={handleCloseRecovery}
+              onReconcileRecovery={handleReconcileRecovery}
+            />
         ) : route.mode === 'dashboard' ? (
           <Dashboard
             env={environment}
             visible={visible}
-            auditCount={auditCount}
-            auditLabel={auditLabel}
             onOpenCase={handleOpenCase}
             onSeeAllFindings={() => navigate({ mode: 'findings', caseId: null, draft: false })}
+            onSeeRecoveries={() => navigate({ mode: 'recoveries', caseId: null, draft: false })}
             onStartAudit={() => openImport('new')}
           />
         ) : route.mode === 'audits' ? (

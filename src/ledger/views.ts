@@ -142,15 +142,15 @@ export function overviewSummary(env: LedgerEnvironment): OverviewSummary {
   const worthInvestigatingTotal = active.reduce((sum, f) => sum + f.dollarImpact, 0)
   const recoveryActive = findings.filter((f) => {
     const state = getCaseState(env, f.id)
-    return state.recoveryStage === 'confirmed' || state.recoveryStage === 'requested'
+    return f.class === 'recoverable' && (state.recoveryStage === 'confirmed' || state.recoveryStage === 'requested')
   })
   const recoveryActiveCount = recoveryActive.length
   const recoveryActiveValue = recoveryActive.reduce((sum, finding) => sum + finding.dollarImpact, 0)
-  const recovered = findings.filter((finding) => getCaseState(env, finding.id).recoveryStage === 'recovered')
+  const recovered = findings.filter((finding) => finding.class === 'recoverable' && (getCaseState(env, finding.id).recoveredAmount ?? 0) > 0)
   const recoveredCount = recovered.length
   const recoveredValue = recovered.reduce((sum, finding) => {
     const state = getCaseState(env, finding.id)
-    return sum + (state.recoveredAmount ?? finding.dollarImpact)
+    return sum + (state.recoveredAmount ?? 0)
   }, 0)
   // What Reclaim originally estimated for the cases that have since closed as
   // recovered. Shown beside the actual figure so the business can judge how
@@ -228,9 +228,9 @@ export interface RecoveryQueueGroup {
 
 const RECOVERY_STAGE_ORDER: RecoveryStage[] = ['confirmed', 'requested', 'recovered', 'not_recovered']
 
-/** Recovery lens: every confirmed case grouped by its explicit money outcome. */
+/** Vendor recovery cases grouped by their explicit money outcome. */
 export function recoveryQueue(env: LedgerEnvironment): RecoveryQueueGroup[] {
-  const inRecovery = env.result.findings.filter((f) => isInRecoveryQueue(getCaseState(env, f.id)))
+  const inRecovery = env.result.findings.filter((f) => f.class === 'recoverable' && isInRecoveryQueue(getCaseState(env, f.id)))
   return RECOVERY_STAGE_ORDER.map((stage) => {
     const cases = inRecovery
       .filter((f) => getCaseState(env, f.id).recoveryStage === stage)

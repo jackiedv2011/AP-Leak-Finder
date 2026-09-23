@@ -7,6 +7,27 @@ export type DecisionValue = 'confirmed' | 'needs_info' | 'expected'
 export type RecoveryStage = 'confirmed' | 'requested' | 'recovered' | 'not_recovered'
 export type RecoveryMethod = 'refund' | 'credit' | 'offset'
 
+export type VendorUpdateStatus = 'acknowledged' | 'accepted' | 'partial_acceptance' | 'already_refunded' | 'payment_not_found' | 'no_action_required' | 'needs_documents' | 'disputed' | 'promised' | 'credit_issued' | 'wrong_contact' | 'no_response' | 'followed_up'
+export interface VendorUpdate {
+  at: number
+  status: VendorUpdateStatus
+  note: string
+  amount?: number
+  /** Full-claim acceptance implies the remaining amount when the vendor gave no separate figure. */
+  amountInferred?: boolean
+  method?: RecoveryMethod
+  expectedAt?: number
+}
+export interface RecoveryVerification {
+  amount: number
+  method: RecoveryMethod
+  source: 'bank' | 'accounting' | 'document' | 'manual'
+  reference: string
+  settledAt: number
+  /** Required for credits and offsets: issuance alone is not returned value. */
+  appliedToBill?: string
+}
+
 /**
  * Where an undecided (or needs-info) case sits in the queue.
  *
@@ -72,6 +93,20 @@ export interface CaseState {
   dismissalTag?: DismissalTag | null
   /** Which evidence-gap labels (from buildEvidenceGaps) a reviewer actually flagged as blocking. */
   requestedEvidence?: string[] | null
+  /** Customer approval to pursue the first vendor contact. Older cases may have no approval record. */
+  approvedAt?: number | null
+  knownBeforeReclaim?: boolean | null
+  /** Customer disclosure supporting a prior-knowledge answer at approval. */
+  knownBeforeNote?: string | null
+  contactHold?: string | null
+  nextFollowUpAt?: number | null
+  vendorUpdates?: VendorUpdate[]
+  /** Individual customer-recorded settlements; older cases may only have recoveryVerification. */
+  recoverySettlements?: RecoveryVerification[] | null
+  recoveryVerification?: RecoveryVerification | null
+  reconciledAt?: number | null
+  reconciliationNote?: string | null
+  rootCause?: string | null
 }
 
 export const EMPTY_CASE_STATE: CaseState = { decision: null, reason: null, decidedAt: null, recoveryStage: null }
@@ -110,7 +145,7 @@ export function updateRecoveryDraft(state: CaseState, recoveryDraft: string): Ca
 
 export function updateRecoveryPackage(
   state: CaseState,
-  update: { subject?: string; body?: string; recipientEmail?: string; requestedResolution?: RecoveryMethod }
+  update: { subject?: string; body?: string; recipientEmail?: string; requestedResolution?: RecoveryMethod; requestedAmount?: number }
 ): CaseState {
   return {
     ...state,
@@ -118,6 +153,7 @@ export function updateRecoveryPackage(
     recoveryDraft: update.body ?? state.recoveryDraft,
     recoveryRecipientEmail: update.recipientEmail ?? state.recoveryRecipientEmail,
     requestedResolution: update.requestedResolution ?? state.requestedResolution,
+    requestedAmount: update.requestedAmount ?? state.requestedAmount,
   }
 }
 
@@ -168,27 +204,64 @@ export function recordRecoveryOutcome(
  * event describing it. Called by the one place that persists case state, so
  * every transition — including reopenings — is on the record.
  */
-export function withHistory(previous: CaseState, next: CaseState, actor: string | null): CaseState {
+export function withHistory(previous: CaseState, next: CaseState, actor: string | null, internal = false): CaseState {
   const decisionChanged = previous.decision !== next.decision
   const stageChanged = previous.recoveryStage !== next.recoveryStage
   const amountChanged = (previous.recoveredAmount ?? null) !== (next.recoveredAmount ?? null)
   const requestedChanged = (previous.requestedAmount ?? null) !== (next.requestedAmount ?? null)
-  if (!decisionChanged && !stageChanged && !amountChanged && !requestedChanged) return next
+  const approvalChanged = (previous.approvedAt ?? null) !== (next.approvedAt ?? null)
+  const attributionChanged = (previous.knownBeforeReclaim ?? null) !== (next.knownBeforeReclaim ?? null) || (previous.knownBeforeNote ?? null) !== (next.knownBeforeNote ?? null)
+  const holdChanged = (previous.contactHold ?? null) !== (next.contactHold ?? null)
+  const vendorChanged = (previous.vendorUpdates?.length ?? 0) !== (next.vendorUpdates?.length ?? 0)
+  const settlementsChanged = (previous.recoverySettlements?.length ?? 0) !== (next.recoverySettlements?.length ?? 0)
+  const settlementAdded = (next.recoverySettlements?.length ?? 0) > (previous.recoverySettlements?.length ?? 0)
+  const followUpChanged = (previous.nextFollowUpAt ?? null) !== (next.nextFollowUpAt ?? null)
+  const reconciliationChanged = (previous.reconciledAt ?? null) !== (next.reconciledAt ?? null)
+  const reconciliationDetailsChanged = (previous.reconciliationNote ?? null) !== (next.reconciliationNote ?? null) || (previous.rootCause ?? null) !== (next.rootCause ?? null)
+  if (!decisionChanged && !stageChanged && !amountChanged && !requestedChanged && !approvalChanged && !attributionChanged && !holdChanged && !vendorChanged && !settlementsChanged && !followUpChanged && !reconciliationChanged && !reconciliationDetailsChanged) return next
 
   let action: string
   let summary: string
-  if (stageChanged && next.recoveryStage === 'recovered') {
+  if (stageChanged && previous.recoveryStage === 'recovered' && next.recoveryStage === 'requested' && (previous.recoveredAmount ?? 0) > 0 && previous.recoveredAmount === next.recoveredAmount) {
+    action = 'recovery:remainder_reopened'
+    summary = 'Remaining balance reopened'
+  } else if (stageChanged && next.recoveryStage === 'requested' && (previous.recoveryStage === 'recovered' || previous.recoveryStage === 'not_recovered')) {
+    action = 'outcome:reopened'
+    summary = 'Outcome reopened'
+  } else if (settlementAdded) {
+    action = 'recovery:settlement_recorded'
+    summary = 'Money received recorded'
+  } else if (stageChanged && next.recoveryStage === 'recovered' && (previous.recoveredAmount ?? 0) > 0) {
+    action = 'recovery:remainder_closed'
+    summary = 'Remaining balance closed'
+  } else if (stageChanged && next.recoveryStage === 'recovered') {
     action = 'outcome:recovered'
     summary = 'Money received recorded'
   } else if (stageChanged && next.recoveryStage === 'not_recovered') {
     action = 'outcome:not_recovered'
     summary = 'Closed without recovery'
-  } else if (stageChanged && next.recoveryStage === 'requested' && (previous.recoveryStage === 'recovered' || previous.recoveryStage === 'not_recovered')) {
-    action = 'outcome:reopened'
-    summary = 'Outcome reopened'
   } else if (stageChanged && next.recoveryStage === 'requested') {
     action = 'stage:requested'
     summary = 'Recovery request sent'
+  } else if ((approvalChanged || attributionChanged) && next.approvedAt) {
+    action = 'recovery:approved'
+    summary = 'Customer approved recovery outreach'
+  } else if (holdChanged) {
+    action = next.contactHold ? 'recovery:contact_held' : 'recovery:contact_released'
+    summary = next.contactHold ? 'Vendor contact put on hold' : 'Vendor contact hold removed'
+  } else if (vendorChanged) {
+    const status = next.vendorUpdates?.at(-1)?.status ?? 'update'
+    action = `vendor:${status}`
+    summary = `Vendor update: ${status.replace(/_/g, ' ')}`
+  } else if (next.reconciledAt && !previous.reconciledAt) {
+    action = 'accounting:reconciled'
+    summary = 'Accounting reconciliation recorded'
+  } else if (next.reconciledAt && (reconciliationChanged || reconciliationDetailsChanged)) {
+    action = 'accounting:corrected'
+    summary = 'Accounting reconciliation updated'
+  } else if (followUpChanged) {
+    action = 'recovery:followup_changed'
+    summary = next.nextFollowUpAt ? 'Follow-up scheduled' : 'Follow-up cleared'
   } else if (decisionChanged && next.decision === null) {
     action = 'decision:reopened'
     summary = 'Decision taken back'
@@ -203,18 +276,132 @@ export function withHistory(previous: CaseState, next: CaseState, actor: string 
     summary = 'Requested amount changed'
   }
 
+  if (internal) {
+    if (action === 'stage:requested') { action = 'review:filed'; summary = 'Internal review filed' }
+    else if (action === 'outcome:not_recovered') { action = 'review:closed'; summary = 'Internal review closed' }
+    else if (action === 'outcome:reopened') { action = 'review:reopened'; summary = 'Internal review reopened' }
+  }
+
+  const lastSettlement = next.recoverySettlements?.at(-1)
+  const lastVendorUpdate = next.vendorUpdates?.at(-1)
+  const remaining = next.requestedAmount == null ? null : Math.max(0, Math.round(next.requestedAmount * 100) - Math.round((next.recoveredAmount ?? 0) * 100)) / 100
+  let eventAmount: number | null = null
+  if (action === 'outcome:reopened') eventAmount = previous.recoveryStage === 'not_recovered' ? previous.requestedAmount ?? null : -(previous.recoveredAmount ?? 0)
+  else if (action === 'recovery:remainder_reopened') eventAmount = Math.max(0, Math.round((previous.requestedAmount ?? 0) * 100) - Math.round((previous.recoveredAmount ?? 0) * 100)) / 100
+  else if (action === 'recovery:remainder_closed' || action === 'outcome:not_recovered') eventAmount = remaining
+  else if (action === 'recovery:settlement_recorded') eventAmount = lastSettlement?.amount ?? null
+  else if (action.startsWith('vendor:')) eventAmount = lastVendorUpdate?.amount ?? null
+  else if (action === 'recovery:approved' || action === 'stage:requested' || action === 'request:amount_changed') eventAmount = next.requestedAmount ?? null
+  else if (action === 'outcome:recovered' || action === 'outcome:amount_changed' || action.startsWith('accounting:')) eventAmount = next.recoveredAmount ?? null
+  let eventMethod: RecoveryMethod | null = null
+  if (action === 'recovery:settlement_recorded') eventMethod = lastSettlement?.method ?? null
+  else if (action.startsWith('vendor:')) eventMethod = lastVendorUpdate?.method ?? null
+  else if (action === 'recovery:approved' || action === 'stage:requested' || action === 'request:amount_changed') eventMethod = next.requestedResolution ?? null
+  else if (action === 'outcome:recovered' || action === 'outcome:amount_changed') eventMethod = next.recoveredVia ?? null
+  let eventNote: string | null = null
+  if (action === 'recovery:settlement_recorded') eventNote = lastSettlement?.reference ?? null
+  else if (action.startsWith('accounting:')) eventNote = next.reconciliationNote ?? null
+  else if (action.startsWith('vendor:')) eventNote = lastVendorUpdate?.note ?? null
+  else if (action === 'recovery:contact_held') eventNote = next.contactHold ?? null
+  else if (action === 'recovery:followup_changed' && next.nextFollowUpAt) eventNote = new Date(next.nextFollowUpAt).toLocaleDateString()
+  else if (action === 'recovery:approved') eventNote = next.knownBeforeReclaim ? `Known before Reclaim: ${next.knownBeforeNote ?? 'No explanation recorded'}` : 'Newly identified by Reclaim'
+  else if (action === 'recovery:remainder_closed' || action === 'outcome:not_recovered' || action === 'outcome:recovered' || action === 'review:closed') eventNote = next.recoveryOutcomeNote ?? null
+  else if (action.startsWith('decision:')) eventNote = next.reason ?? null
+
+  let eventAt = Date.now()
+  if (settlementAdded && lastSettlement?.settledAt) eventAt = lastSettlement.settledAt
+  else if ((reconciliationChanged || reconciliationDetailsChanged) && next.reconciledAt) eventAt = next.reconciledAt
+  else if (approvalChanged && next.approvedAt) eventAt = next.approvedAt
+  else if (vendorChanged && lastVendorUpdate?.at) eventAt = lastVendorUpdate.at
+  else if (stageChanged && previous.recoveryStage === 'confirmed' && next.recoveryStage === 'requested' && next.recoveryRequestedAt) eventAt = next.recoveryRequestedAt
+  else if (stageChanged && (next.recoveryStage === 'recovered' || next.recoveryStage === 'not_recovered') && next.recoveryResolvedAt) eventAt = next.recoveryResolvedAt
   const event: CaseEvent = {
-    at: Date.now(),
+    at: eventAt,
     action,
     summary,
     from: { decision: previous.decision, recoveryStage: previous.recoveryStage },
     to: { decision: next.decision, recoveryStage: next.recoveryStage },
-    amount: next.recoveryStage === 'recovered' ? next.recoveredAmount ?? null : next.recoveryStage === 'requested' ? next.requestedAmount ?? null : null,
-    method: next.recoveryStage === 'recovered' ? next.recoveredVia ?? null : next.requestedResolution ?? null,
-    note: next.recoveryStage === 'recovered' || next.recoveryStage === 'not_recovered' ? next.recoveryOutcomeNote ?? null : next.reason ?? null,
+    amount: eventAmount,
+    method: eventMethod,
+    note: eventNote,
     actor,
   }
-  return { ...next, history: [...(previous.history ?? []), event] }
+  const history = previous.history ?? []
+  const backfilled: CaseEvent[] = []
+  if (action === 'outcome:reopened' && (previous.recoveredAmount ?? 0) > 0) {
+    const proofs = previous.recoverySettlements ?? (previous.recoveryVerification ? [previous.recoveryVerification] : [])
+    for (const proof of proofs) {
+      const recorded = history.some((earlier) =>
+        earlier.action === 'recovery:settlement_recorded' && earlier.at === proof.settledAt &&
+        earlier.amount === proof.amount && earlier.note === proof.reference
+      )
+      if (!recorded) backfilled.push({
+        at: proof.settledAt,
+        action: 'recovery:settlement_recorded',
+        summary: 'Earlier money received recorded',
+        from: { decision: previous.decision, recoveryStage: previous.recoveryStage },
+        to: { decision: previous.decision, recoveryStage: previous.recoveryStage },
+        amount: proof.amount,
+        method: proof.method,
+        note: proof.reference,
+        actor: null,
+      })
+    }
+    if (!proofs.length && !history.some((earlier) =>
+      earlier.action === 'outcome:recovered' || earlier.action === 'recovery:settlement_recorded'
+    )) {
+      backfilled.push({
+        at: previous.recoveryResolvedAt ?? Math.max(1, event.at - 1),
+        action: 'outcome:recovered',
+        summary: 'Earlier money received recorded',
+        from: { decision: previous.decision, recoveryStage: previous.recoveryStage },
+        to: { decision: previous.decision, recoveryStage: previous.recoveryStage },
+        amount: previous.recoveredAmount,
+        method: previous.recoveredVia ?? null,
+        note: previous.recoveryOutcomeNote ?? null,
+        actor: null,
+      })
+    }
+  }
+  if (action === 'outcome:reopened' && previous.recoveryStage === 'not_recovered' && !history.some((earlier) => earlier.action === 'outcome:not_recovered')) {
+    backfilled.push({
+      at: previous.recoveryResolvedAt ?? Math.max(1, event.at - 1),
+      action: 'outcome:not_recovered',
+      summary: 'Earlier balance closed without recovery',
+      from: { decision: previous.decision, recoveryStage: previous.recoveryStage },
+      to: { decision: previous.decision, recoveryStage: previous.recoveryStage },
+      amount: previous.requestedAmount ?? null,
+      method: null,
+      note: previous.recoveryOutcomeNote ?? null,
+      actor: null,
+    })
+  }
+  const closedRemainder = previous.requestedAmount == null ? 0 : Math.max(0, Math.round(previous.requestedAmount * 100) - Math.round((previous.recoveredAmount ?? 0) * 100)) / 100
+  if (action === 'outcome:reopened' && previous.recoveryStage === 'recovered' && (previous.recoveredAmount ?? 0) > 0 && closedRemainder > 0) {
+    if (!history.some((earlier) => earlier.action === 'recovery:remainder_closed')) backfilled.push({
+      at: previous.recoveryResolvedAt ?? Math.max(1, event.at - 1),
+      action: 'recovery:remainder_closed',
+      summary: 'Earlier remaining balance closed',
+      from: { decision: previous.decision, recoveryStage: previous.recoveryStage },
+      to: { decision: previous.decision, recoveryStage: previous.recoveryStage },
+      amount: closedRemainder,
+      method: null,
+      note: previous.recoveryOutcomeNote ?? null,
+      actor: null,
+    })
+    backfilled.push({
+      at: event.at,
+      action: 'recovery:remainder_reopened',
+      summary: 'Remaining balance reopened',
+      from: { decision: previous.decision, recoveryStage: previous.recoveryStage },
+      to: { decision: next.decision, recoveryStage: next.recoveryStage },
+      amount: closedRemainder,
+      method: null,
+      note: 'Outcome corrected',
+      actor,
+    })
+  }
+  return { ...next, history: [...history, ...backfilled, event] }
 }
 
 /**
@@ -230,7 +417,7 @@ export function reopenDecision(state: CaseState): CaseState {
 /** Undo a recorded outcome: the request is still out, and the money figure is cleared rather than kept as a stale claim. */
 export function reopenOutcome(state: CaseState): CaseState {
   if (state.recoveryStage !== 'recovered' && state.recoveryStage !== 'not_recovered') return state
-  return { ...state, recoveryStage: 'requested', recoveredAmount: null, recoveredVia: null, recoveryOutcomeNote: null, recoveryResolvedAt: null }
+  return { ...state, recoveryStage: 'requested', recoveredAmount: null, recoveredVia: null, recoveryOutcomeNote: null, recoveryResolvedAt: null, recoveryVerification: null, recoverySettlements: null, reconciledAt: null, reconciliationNote: null, rootCause: null }
 }
 
 export function queueGroupFor(finding: Finding, state: CaseState | undefined): QueueGroup {
@@ -265,6 +452,8 @@ export const RECOVERY_STAGE_LABEL: Record<RecoveryStage, string> = {
 const INTERNAL_STAGE_LABEL: Partial<Record<RecoveryStage, string>> = {
   confirmed: 'Ready to file',
   requested: 'Filed, following up',
+  recovered: 'Review closed',
+  not_recovered: 'Review closed',
 }
 
 export function recoveryStageLabel(stage: RecoveryStage, isInternal: boolean): string {

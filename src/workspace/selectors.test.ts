@@ -7,15 +7,17 @@
  *                 that already came back.
  *   verified    — recoverable-class findings the rules support that have not
  *                 been dismissed and have not moved on to a request/outcome.
- *   inRecovery  — a request has gone out and nothing has come back yet.
+ *   inRecovery  — outstanding balance on requests that are still open.
  *   recovered   — only the amount recorded as actually settled.
- *   A case sits on exactly one of verified / inRecovery / recovered.
+ *   A partially returned case contributes separate amounts to inRecovery and recovered.
  */
 import { describe, expect, it } from 'vitest'
 import { parseCsv } from '@/lib/csv'
 import { mergeImport, setCaseState, type LedgerEnvironment } from '@/ledger/store'
 import { confirmCase, markExpected, markNeedsInfo, markRecoveryRequested, recordRecoveryOutcome, EMPTY_CASE_STATE } from '@/ledger/caseState'
-import { ladder, opportunities, recoveries, rootCauses, vendors } from '@/workspace/selectors'
+import { verifyRecovery } from '@/recovery/model'
+import { internalReviews, ladder, opportunities, recentReturns, recoveries, recoveryAging, recordedRootCauses, rootCauses, timelineFor, vendorCommitments, vendors } from '@/workspace/selectors'
+import { approveRecovery, recordVendorUpdate, startRecoveryRequest } from '@/recovery/model'
 
 const HEADER = 'vendor,invoice_number,invoice_date,payment_date,invoice_amount,amount_paid,terms,bank_account_last4'
 function envFrom(rows: string[]): LedgerEnvironment {
@@ -39,7 +41,72 @@ function baseline(): LedgerEnvironment {
 
 const findingFor = (env: LedgerEnvironment, vendor: string) => env.result.findings.find((f) => f.vendor === vendor)!
 
+describe('recovery dashboard activity', () => {
+  it('does not infer a full return from a legacy recovered stage without an amount', () => {
+    let env = baseline()
+    const alpha = findingFor(env, 'Alpha')
+    env = setCaseState(env, alpha.id, { ...confirmCase(null), recoveryStage: 'recovered', requestedAmount: 1000, recoveredAmount: null, recoveryResolvedAt: 500, reconciledAt: 600, rootCause: 'Payment retry' })
+    expect(ladder(env).recovered).toBe(0)
+    expect(ladder(env).counts.recovered).toBe(0)
+    expect(recentReturns(env)).toEqual([])
+    expect(recordedRootCauses(env)).toEqual([])
+  })
+  it('ages only open vendor requests and keeps missing request dates explicit', () => {
+    let env = baseline()
+    const today = new Date(2026, 8, 21, 12).getTime()
+    const sevenDaysAgo = new Date(2026, 8, 14, 12).getTime()
+    const thirtyTwoDaysAgo = new Date(2026, 7, 20, 12).getTime()
+    const alpha = findingFor(env, 'Alpha')
+    const beta = findingFor(env, 'Beta')
+    const gamma = findingFor(env, 'Gamma')
+    const alphaRequest = startRecoveryRequest(approveRecovery(confirmCase(null), { at: sevenDaysAgo, knownBeforeReclaim: false }), 1000, sevenDaysAgo)
+    env = setCaseState(env, alpha.id, verifyRecovery(alphaRequest, { amount: 100, method: 'refund', source: 'bank', reference: 'ACH-1', settledAt: today - 1000 }))
+    env = setCaseState(env, beta.id, startRecoveryRequest(approveRecovery(confirmCase(null), { at: thirtyTwoDaysAgo, knownBeforeReclaim: false }), 500, thirtyTwoDaysAgo))
+    env = setCaseState(env, gamma.id, { ...markRecoveryRequested(confirmCase(null), 250), recoveryRequestedAt: null })
+    expect(recoveryAging(env, today)).toEqual([
+      { label: '0–14 days', count: 1, outstanding: 900 },
+      { label: '15–30 days', count: 0, outstanding: 0 },
+      { label: '31+ days', count: 1, outstanding: 500 },
+      { label: 'Date unknown', count: 1, outstanding: 250 },
+    ])
+  })
+
+  it('lists recent recorded returns by settlement date, including partial returns', () => {
+    let env = baseline()
+    const alpha = findingFor(env, 'Alpha')
+    const beta = findingFor(env, 'Beta')
+    const alphaRequest = startRecoveryRequest(approveRecovery(confirmCase(null), { at: 100, knownBeforeReclaim: false }), 1000, 200)
+    const betaRequest = startRecoveryRequest(approveRecovery(confirmCase(null), { at: 100, knownBeforeReclaim: false }), 500, 200)
+    env = setCaseState(env, alpha.id, verifyRecovery(alphaRequest, { amount: 300, method: 'refund', source: 'bank', reference: 'ACH-1', settledAt: 300 }))
+    env = setCaseState(env, beta.id, verifyRecovery(betaRequest, { amount: 500, method: 'credit', source: 'accounting', reference: 'CM-1', appliedToBill: 'BILL-1', settledAt: 400 }))
+    expect(recentReturns(env)).toMatchObject([
+      { findingId: beta.id, amount: 500, settledAt: 400, partial: false },
+      { findingId: alpha.id, amount: 300, settledAt: 300, partial: true },
+    ])
+  })
+
+  it('lists each settlement at its own amount and date instead of dating the case total by the latest return', () => {
+    let env = baseline()
+    const alpha = findingFor(env, 'Alpha')
+    const requested = startRecoveryRequest(approveRecovery(confirmCase(null), { at: 100, knownBeforeReclaim: false }), 1000, 200)
+    const first = verifyRecovery(requested, { amount: 300, method: 'refund', source: 'bank', reference: 'ACH-1', settledAt: 300 })
+    env = setCaseState(env, alpha.id, verifyRecovery(first, { amount: 700, method: 'refund', source: 'bank', reference: 'ACH-2', settledAt: 400 }))
+    expect(recentReturns(env)).toMatchObject([
+      { findingId: alpha.id, amount: 700, settledAt: 400, reference: 'ACH-2' },
+      { findingId: alpha.id, amount: 300, settledAt: 300, reference: 'ACH-1' },
+    ])
+  })
+})
+
 describe('ladder — fresh audit', () => {
+  it('uses the finding discovery time, never a historical payment date, in the case timeline', () => {
+    const env = baseline()
+    const finding = findingFor(env, 'Alpha')
+    const importedAt = env.imports.find((batch) => batch.findingIds?.includes(finding.id))?.importedAt
+    expect(importedAt).toBeTypeOf('number')
+    expect(timelineFor(finding, EMPTY_CASE_STATE, importedAt)[0].when).toBe(new Date(importedAt!).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }).toUpperCase())
+    expect(timelineFor(finding, EMPTY_CASE_STATE)[0].when).toBe('—')
+  })
   it('counts every finding as potential, only recoverable ones as verified, nothing in recovery', () => {
     const l = ladder(baseline())
     expect(l.counts.potential).toBe(5)
@@ -49,11 +116,73 @@ describe('ladder — fresh audit', () => {
     expect(l.awaitingDecision).toBe(1750)
     expect(l.inRecovery).toBe(0)
     expect(l.recovered).toBe(0)
-    expect(l.protected).toBe(20)
+    expect(l.protected).toBe(0)
   })
 })
 
 describe('ladder — the recovery lifecycle moves money along, never duplicating it', () => {
+  it('separates vendor agreement and pending return from recovered value', () => {
+    let env = baseline()
+    const alpha = findingFor(env, 'Alpha')
+    const requested = startRecoveryRequest(approveRecovery(confirmCase(null), { at: 100, knownBeforeReclaim: false }), 1000, 200)
+    const promised = recordVendorUpdate(requested, { status: 'promised', note: 'Will refund 800', amount: 800, at: 300 })
+    env = setCaseState(env, alpha.id, promised)
+    expect(vendorCommitments(env)).toMatchObject({ confirmed: 800, pendingReturn: 800, confirmedCases: 1, pendingCases: 1 })
+    expect(ladder(env).recovered).toBe(0)
+    const partial = verifyRecovery(promised, { amount: 300, method: 'refund', source: 'bank', reference: 'ACH-1', settledAt: 400 })
+    env = setCaseState(env, alpha.id, partial)
+    expect(vendorCommitments(env)).toMatchObject({ confirmed: 500, pendingReturn: 500 })
+    expect(ladder(env).recovered).toBe(300)
+    const disputed = recordVendorUpdate(partial, { status: 'disputed', note: 'Disputes the remainder', at: 500 })
+    env = setCaseState(env, alpha.id, disputed)
+    expect(vendorCommitments(env)).toMatchObject({ confirmed: 0, pendingReturn: 0 })
+  })
+
+  it('does not invent a vendor commitment amount when a partial claim, promise, or credit has no amount', () => {
+    let env = baseline()
+    const alpha = findingFor(env, 'Alpha')
+    const requested = startRecoveryRequest(approveRecovery(confirmCase(null), { at: 100, knownBeforeReclaim: false }), 1000, 200)
+    for (const status of ['partial_acceptance', 'promised', 'credit_issued'] as const) {
+      env = setCaseState(env, alpha.id, recordVendorUpdate(requested, { status, note: 'No amount given', at: 300 }))
+      expect(vendorCommitments(env)).toMatchObject({ confirmed: 0, pendingReturn: 0, confirmedCases: 0, pendingCases: 0 })
+    }
+    const accepted = recordVendorUpdate(requested, { status: 'accepted', note: 'Accepted the full claim', at: 300 })
+    env = setCaseState(env, alpha.id, accepted)
+    expect(vendorCommitments(env)).toMatchObject({ confirmed: 1000, pendingReturn: 0 })
+    env = setCaseState(env, alpha.id, verifyRecovery(accepted, { amount: 300, method: 'refund', source: 'bank', reference: 'ACH-2', settledAt: 400 }))
+    expect(vendorCommitments(env)).toMatchObject({ confirmed: 700, pendingReturn: 0 })
+  })
+
+  it('splits a partial return between outstanding and recovered without double counting', () => {
+    let env = baseline()
+    const alpha = findingFor(env, 'Alpha')
+    const requested = markRecoveryRequested(confirmCase(null), 1000)
+    env = setCaseState(env, alpha.id, verifyRecovery(requested, { amount: 400, method: 'refund', source: 'bank', reference: 'ACH-1', settledAt: 500 }))
+    const l = ladder(env)
+    expect(l.inRecovery).toBe(600)
+    expect(l.recovered).toBe(400)
+    expect(l.potential).toBe(2490 - 400)
+    expect(vendors(env).find((row) => row.vendor === 'Alpha')).toMatchObject({ potential: 600, recovered: 400 })
+  })
+
+  it('keeps an internal investigation note out of vendor-request dollars', () => {
+    let env = baseline()
+    const review = findingFor(env, 'Delta')
+    env = setCaseState(env, review.id, markRecoveryRequested(confirmCase(null), review.dollarImpact))
+    expect(ladder(env).inRecovery).toBe(0)
+    env = setCaseState(env, review.id, recordRecoveryOutcome(env.caseStates[review.id], 'recovered', review.dollarImpact, 'Legacy review outcome'))
+    expect(ladder(env).recovered).toBe(0)
+    expect(vendors(env).find((row) => row.vendor === 'Delta')?.recovered).toBe(0)
+    expect(timelineFor(review, env.caseStates[review.id]).at(-1)?.what).toBe('Internal review closed')
+  })
+  it('keeps an open internal investigation in Findings work rather than vendor Recoveries', () => {
+    let env = baseline()
+    const review = findingFor(env, 'Delta')
+    env = setCaseState(env, review.id, markRecoveryRequested(confirmCase('Check bank update'), review.dollarImpact))
+    expect(recoveries(env).some((row) => row.finding.id === review.id)).toBe(false)
+    expect(internalReviews(env).map((row) => row.finding.id)).toEqual([review.id])
+    expect(opportunities(env).some((row) => row.finding.id === review.id)).toBe(true)
+  })
   it('confirm → request → recovered: a case is on exactly one rung at a time', () => {
     let env = baseline()
     const alpha = findingFor(env, 'Alpha')
@@ -92,7 +221,7 @@ describe('ladder — the recovery lifecycle moves money along, never duplicating
     env = setCaseState(env, beta.id, recordRecoveryOutcome(env.caseStates[beta.id], 'recovered', 0, 'nothing came'))
     const l = ladder(env)
     expect(l.recovered).toBe(400)
-    expect(l.counts.recovered).toBe(2)
+    expect(l.counts.recovered).toBe(1)
     expect(l.inRecovery).toBe(0)
   })
 
@@ -171,6 +300,13 @@ describe('ladder — the recovery lifecycle moves money along, never duplicating
     expect(recovered).toBe(l.recovered)
     expect(vendors(env).reduce((s, v) => s + v.recovered, 0)).toBe(l.recovered)
   })
+
+  it('counts the requested amount in recovery when the customer claims less than the finding value', () => {
+    let env = baseline()
+    const alpha = findingFor(env, 'Alpha')
+    env = setCaseState(env, alpha.id, markRecoveryRequested(confirmCase(null), 600))
+    expect(ladder(env).inRecovery).toBe(600)
+  })
 })
 
 describe('opportunities ordering', () => {
@@ -179,4 +315,13 @@ describe('opportunities ordering', () => {
     expect(rows[0].finding.vendor).toBe('Alpha')
     expect(rows.at(-1)!.finding.vendor).toBe('Epsilon')
   })
+})
+
+it('groups actual customer-recorded root causes by recovered value', () => {
+  let env = baseline()
+  const alpha = findingFor(env, 'Alpha')
+  const beta = findingFor(env, 'Beta')
+  env = setCaseState(env, alpha.id, { ...recordRecoveryOutcome(markRecoveryRequested(confirmCase(null), 1000), 'recovered', 600, null), rootCause: 'Payment retry', reconciledAt: 100 })
+  env = setCaseState(env, beta.id, { ...recordRecoveryOutcome(markRecoveryRequested(confirmCase(null), 500), 'recovered', 400, null), rootCause: 'Payment retry', reconciledAt: 200 })
+  expect(recordedRootCauses(env)).toEqual([{ label: 'Payment retry', count: 2, recovered: 1000 }])
 })
