@@ -4,6 +4,7 @@ import { RECOVERY_STAGE_LABEL, type RecoveryStage } from '@/ledger/caseState'
 import type { LedgerEnvironment } from '@/ledger/store'
 import { ladder, recoveries, type Opportunity } from '../selectors'
 import { useHeadlineMoney } from '../preferences'
+import { CountUp } from './CountUp'
 
 const STAGES: Array<{ stage: RecoveryStage; hint: string }> = [
   { stage: 'confirmed', hint: 'Confirmed. Send the request.' },
@@ -49,17 +50,17 @@ export function Recoveries({ env, onOpenCase, onOpenFindings }: { env: LedgerEnv
       <section className="wk-totals" aria-label="Recovery totals" style={{ gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' }}>
         <div className="wk-total" data-total="ready-to-send" data-amount={readyValue}>
           <span className="wk-label">Ready to send</span>
-          <strong className="wk-total-value">{money(readyValue)}</strong>
+          <strong className="wk-total-value"><CountUp value={readyValue} format={money} /></strong>
           <span className="wk-total-note">{readyCount} confirmed, request not sent</span>
         </div>
         <div className="wk-total" data-total="inRecovery" data-amount={l.inRecovery} data-empty={l.inRecovery === 0 || undefined}>
           <span className="wk-label">In recovery</span>
-          <strong className="wk-total-value">{money(l.inRecovery)}</strong>
+          <strong className="wk-total-value"><CountUp value={l.inRecovery} format={money} /></strong>
           <span className="wk-total-note">{l.counts.inRecovery} {plural(l.counts.inRecovery, 'request')} out with vendors</span>
         </div>
         <div className="wk-total" data-total="recovered" data-amount={l.recovered} data-empty={l.recovered === 0 || undefined} data-accent={l.recovered > 0 || undefined}>
           <span className="wk-label">Recovered</span>
-          <strong className="wk-total-value" style={l.recovered > 0 ? { color: 'var(--accent-ink)' } : undefined}>{money(l.recovered)}</strong>
+          <strong className="wk-total-value" style={l.recovered > 0 ? { color: 'var(--accent-ink)' } : undefined}><CountUp value={l.recovered} format={money} /></strong>
           <span className="wk-total-note">{l.counts.recovered} {plural(l.counts.recovered, 'case')} settled</span>
         </div>
       </section>

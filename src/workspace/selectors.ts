@@ -289,7 +289,7 @@ export interface TimelineStep {
 
 export function timelineFor(finding: Finding, state: CaseState): TimelineStep[] {
   const at = (ts: number | null | undefined) =>
-    ts ? new Date(ts).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }).toUpperCase() : '—'
+    ts ? new Date(ts).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—'
 
   const steps: TimelineStep[] = [
     {

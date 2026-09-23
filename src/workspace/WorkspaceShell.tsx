@@ -206,7 +206,7 @@ function Shell({ mode, onModeChange, auditCount, findingCount, recoveryCount, wo
           {actions}
         </div>
       </header>
-      <main className="wk-body" id="workspace-main">
+      <main className="wk-body" id="workspace-main" key={finding ? `finding:${finding}` : mode}>
         {mode === 'dashboard' || finding ? null : <header className="wk-head"><div className="wk-head-copy"><h1>{title}</h1><p>{descriptions[mode]}</p></div></header>}
         {children}
       </main>

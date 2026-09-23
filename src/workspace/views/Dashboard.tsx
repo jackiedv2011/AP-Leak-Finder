@@ -8,6 +8,7 @@ import { ladder, opportunities, rootCauses, vendors, type Opportunity } from '..
 import { usePreferences, useHeadlineMoney, type OverviewSectionId } from '../preferences'
 import type { WorkspaceMode } from '../WorkspaceShell'
 import { KindChip } from './KindChip'
+import { CountUp } from './CountUp'
 import { findingReference } from './findingText'
 
 interface DashboardProps {
@@ -95,22 +96,22 @@ export function Dashboard({ env, visible, auditLabel, onOpenCase, onSeeAllFindin
       <section className="wk-totals" aria-label="Totals" key="totals">
         <button type="button" className="wk-total" data-total="ready" data-amount={l.verified} data-emphasis={l.verified > 0 || undefined} onClick={() => onSeeFindingsKind('recoverable')}>
           <span className="wk-total-label"><span className="wk-label">Ready to claim</span><ArrowRight aria-hidden="true" /></span>
-          <strong className="wk-total-value">{money(l.verified)}</strong>
+          <strong className="wk-total-value"><CountUp value={l.verified} format={money} /></strong>
           <span className="wk-total-note">{l.counts.verified} {plural(l.counts.verified, 'finding')} the records support</span>
         </button>
         <button type="button" className="wk-total" data-total="review" data-amount={needsContextValue} onClick={() => onSeeFindingsKind('review')}>
           <span className="wk-total-label"><span className="wk-label">Needs more context</span><ArrowRight aria-hidden="true" /></span>
-          <strong className="wk-total-value">{money(needsContextValue)}</strong>
+          <strong className="wk-total-value"><CountUp value={needsContextValue} format={money} /></strong>
           <span className="wk-total-note">{needsContext.length} {plural(needsContext.length, 'finding')} to check against a PO or statement</span>
         </button>
         <button type="button" className="wk-total" data-total="inRecovery" data-amount={l.inRecovery} data-empty={l.inRecovery === 0 || undefined} onClick={() => onNavigate('recoveries')}>
           <span className="wk-total-label"><span className="wk-label">In recovery</span><ArrowRight aria-hidden="true" /></span>
-          <strong className="wk-total-value">{money(l.inRecovery)}</strong>
+          <strong className="wk-total-value"><CountUp value={l.inRecovery} format={money} /></strong>
           <span className="wk-total-note">{l.counts.inRecovery === 0 ? 'No requests out yet' : `${l.counts.inRecovery} ${plural(l.counts.inRecovery, 'request')} out with vendors`}</span>
         </button>
         <button type="button" className="wk-total" data-total="recovered" data-amount={l.recovered} data-empty={l.recovered === 0 || undefined} data-accent={l.recovered > 0 || undefined} onClick={() => onNavigate('recoveries')}>
           <span className="wk-total-label"><span className="wk-label">Recovered</span><ArrowRight aria-hidden="true" /></span>
-          <strong className="wk-total-value" style={l.recovered > 0 ? { color: 'var(--accent-ink)' } : undefined}>{money(l.recovered)}</strong>
+          <strong className="wk-total-value" style={l.recovered > 0 ? { color: 'var(--accent-ink)' } : undefined}><CountUp value={l.recovered} format={money} /></strong>
           <span className="wk-total-note">{l.counts.recovered === 0 ? 'Counts only money that came back' : `${l.counts.recovered} ${plural(l.counts.recovered, 'case')} settled`}</span>
         </button>
       </section>
