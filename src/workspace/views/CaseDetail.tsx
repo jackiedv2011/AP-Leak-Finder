@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { CircleCheck, CircleHelp, CircleX, FileCheck2, TriangleAlert } from 'lucide-react'
 import { formatCurrency, formatDate } from '@/lib/format'
 import { DECISION_LABEL, RECOVERY_STAGE_LABEL, type DecisionValue, type DismissalTag, type RecoveryMethod } from '@/ledger/caseState'
 import { DecisionDialog } from '@/components/audit/DecisionDialog'
@@ -6,11 +7,13 @@ import { Locked } from '@/components/plan/Locked'
 import { useEntitlements } from '@/lib/auth/AuthContext'
 import type { CaseState } from '@/ledger/caseState'
 import type { SenderProfile } from '@/lib/senderProfile'
-import type { Finding } from '@/types'
+import type { APRecord, Finding } from '@/types'
+import { FINDING_TYPE_LABELS } from '@/lib/labels'
 import { evidenceOf, openQuestion, timelineFor } from '../selectors'
-import { Facts } from './Reports'
 import { METHOD_LABEL, RecoveryOutcomePanel, RecoveryRequestPanel, type RequestPackage } from './RecoveryPanels'
+import { KIND_LABEL, KindChip } from './KindChip'
 import { Strength } from './Strength'
+import { findingReference } from './findingText'
 
 interface CaseDetailProps {
   finding: Finding
@@ -23,158 +26,187 @@ interface CaseDetailProps {
   onReopen: (findingId: string) => void
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+const stamp = (ts: number) => new Date(ts).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+
+const CHOICES: Array<{ value: DecisionValue; title: string; detail: string; icon: typeof CircleCheck }> = [
+  { value: 'confirmed', title: 'This is real', detail: 'The records show money to get back. Prepare the request next.', icon: CircleCheck },
+  { value: 'needs_info', title: 'I need more detail', detail: 'Keep it open while you check a PO, statement or the vendor.', icon: CircleHelp },
+  { value: 'expected', title: 'Not an issue', detail: 'Expected, or a detection mistake. It leaves the open findings.', icon: CircleX },
+]
+
+type Column = { label: string; value: (r: APRecord) => string; key: (r: APRecord) => string | null; right?: boolean }
+const COLUMNS: Column[] = [
+  { label: 'Invoice', value: (r) => r.invoiceNumber ?? '—', key: (r) => r.invoiceNumber },
+  { label: 'Invoice date', value: (r) => formatDate(r.invoiceDate), key: (r) => r.invoiceDate?.toDateString() ?? null },
+  { label: 'Paid on', value: (r) => formatDate(r.paymentDate), key: (r) => r.paymentDate.toDateString() },
+  { label: 'Invoiced', value: (r) => (r.invoiceAmount === null ? '—' : formatCurrency(r.invoiceAmount)), key: (r) => (r.invoiceAmount === null ? null : String(r.invoiceAmount)), right: true },
+  { label: 'Amount paid', value: (r) => formatCurrency(r.amountPaid), key: (r) => String(r.amountPaid), right: true },
+]
+
+/** The records behind the finding. Values repeated across rows are what made them match, so they are marked. */
+function Evidence({ finding }: { finding: Finding }) {
+  const records = finding.relatedRecords
+  const showVendor = new Set(records.map((r) => r.vendor.trim().toLowerCase())).size > 1
+  const repeated = (column: Column, record: APRecord) => {
+    if (records.length < 2) return false
+    const key = column.key(record)
+    return key !== null && records.filter((r) => column.key(r) === key).length > 1
+  }
   return (
-    <section className="wk-section">
-      <h2 className="wk-display wk-h2">{title}</h2>
-      {children}
+    <section className="wk-panelcard" aria-labelledby="case-evidence">
+      <div className="wk-panelcard-head">
+        <div>
+          <h2 id="case-evidence">Evidence</h2>
+          <p>
+            {records.length} {records.length === 1 ? 'payment' : 'payments'} from the ledger you loaded
+            {records.length > 1 ? '. Highlighted values match across rows.' : '.'}
+          </p>
+        </div>
+      </div>
+      <div style={{ overflowX: 'auto' }}>
+        <table className="wk-table">
+          <thead>
+            <tr>
+              {showVendor ? <th>Vendor</th> : null}
+              {COLUMNS.map((c) => <th key={c.label} className={c.right ? 'wk-right' : undefined}>{c.label}</th>)}
+            </tr>
+          </thead>
+          <tbody>
+            {records.map((record) => (
+              <tr key={record.id} style={{ cursor: 'default' }}>
+                {showVendor ? <td className="wk-table-vendor">{record.vendor}</td> : null}
+                {COLUMNS.map((c) => (
+                  <td key={c.label} className={c.right ? 'wk-right wk-table-money' : 'wk-num'}>
+                    {repeated(c, record) ? <span className="wk-cell-hit">{c.value(record)}</span> : c.value(record)}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </section>
   )
 }
 
-const stamp = (ts: number) =>
-  new Date(ts).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }).toUpperCase()
-
-/**
- * The money on a case, each figure kept apart: what the records support,
- * what was asked for, what actually arrived, and what is still outstanding.
- */
-function RecoverySummary({ finding, state }: { finding: Finding; state: CaseState }) {
+/** Only the figures that exist yet. A column of dashes says nothing. */
+function RecoveryFacts({ finding, state }: { finding: Finding; state: CaseState }) {
   const requested = state.recoveryStage && state.recoveryStage !== 'confirmed' ? state.requestedAmount ?? finding.dollarImpact : null
-  const received = state.recoveryStage === 'recovered' ? state.recoveredAmount ?? 0 : null
-  const remaining = requested !== null && state.recoveryStage === 'recovered' ? Math.max(0, requested - (received ?? 0)) : null
+  const received = state.recoveryStage === 'recovered' ? state.recoveredAmount ?? 0 : state.recoveryStage === 'not_recovered' ? 0 : null
+  const outstanding = requested !== null && received !== null ? Math.max(0, requested - received) : null
   const method = state.recoveredVia ?? state.requestedResolution ?? null
+  const rows: Array<[string, string, boolean?]> = [
+    ['Records support', formatCurrency(finding.dollarImpact)],
+    ['Status', state.recoveryStage ? RECOVERY_STAGE_LABEL[state.recoveryStage] : state.decision ? DECISION_LABEL[state.decision] : 'Not reviewed'],
+  ]
+  if (requested !== null) rows.push(['Requested', formatCurrency(requested)])
+  if (received !== null) rows.push(['Received', formatCurrency(received), received > 0])
+  if (outstanding !== null) rows.push(['Still outstanding', formatCurrency(outstanding)])
+  if (method) rows.push(['Method', METHOD_LABEL[method]])
   return (
-    <Facts
-      rows={[
-        ['Original opportunity', formatCurrency(finding.dollarImpact)],
-        ['Confirmed', state.decision === 'confirmed' ? formatCurrency(finding.dollarImpact) : '—'],
-        ['Requested', requested === null ? '—' : formatCurrency(requested)],
-        ['Received', received === null ? (state.recoveryStage === 'not_recovered' ? formatCurrency(0) : '—') : formatCurrency(received)],
-        ['Still outstanding', remaining === null ? (state.recoveryStage === 'not_recovered' && requested !== null ? formatCurrency(requested) : '—') : formatCurrency(remaining)],
-        ['Status', state.recoveryStage ? RECOVERY_STAGE_LABEL[state.recoveryStage] : state.decision ? DECISION_LABEL[state.decision] : 'Not reviewed'],
-        ['Method', method ? METHOD_LABEL[method] : '—'],
-      ]}
-    />
+    <dl className="wk-kv" data-testid="recovery-facts">
+      {rows.map(([label, value, accent]) => (
+        <div key={label}>
+          <dt>{label}</dt>
+          <dd data-accent={accent || undefined}>{value}</dd>
+        </div>
+      ))}
+    </dl>
   )
 }
 
-/** §29 — summary, evidence, recovery, accounting, with the timeline alongside. */
+/** §29 — summary and evidence to read, the decision and money alongside, history below. */
 export function CaseDetail({ finding, state, sender, onDecide, onMarkRequested, onRecordOutcome, onReopen }: CaseDetailProps) {
   const entitlements = useEntitlements()
-  const [deciding, setDeciding] = useState(false)
+  const [deciding, setDeciding] = useState<DecisionValue | null>(null)
   const canChangeDecision = state.decision !== null && (state.recoveryStage === null || state.recoveryStage === 'confirmed')
   const canReopenOutcome = state.recoveryStage === 'recovered' || state.recoveryStage === 'not_recovered'
   const evidence = evidenceOf(finding)
   const question = openQuestion(finding)
   const steps = timelineFor(finding, state)
+  const typeLabel = FINDING_TYPE_LABELS[finding.type] ?? finding.type
+  const history = state.history ?? []
+
+  const timeline = history.length > 0 ? (
+    <ul className="wk-timeline" data-testid="case-history">
+      <li data-done="true">
+        <span className="wk-timeline-when">{steps[0].when}</span>
+        <span className="wk-timeline-dot" aria-hidden="true" />
+        <div>
+          <div className="wk-timeline-what">Finding created</div>
+          <div className="wk-timeline-detail">{steps[0].detail}</div>
+        </div>
+      </li>
+      {history.map((event, i) => (
+        <li key={`${event.at}-${i}`} data-done="true">
+          <span className="wk-timeline-when">{stamp(event.at)}</span>
+          <span className="wk-timeline-dot" aria-hidden="true" />
+          <div>
+            <div className="wk-timeline-what">
+              {event.summary}
+              {event.amount != null ? ` · ${formatCurrency(event.amount)}` : ''}
+              {event.method ? ` · ${METHOD_LABEL[event.method]}` : ''}
+            </div>
+            <div className="wk-timeline-detail">
+              {event.actor ? `By ${event.actor}` : 'Guest session'}
+              {event.note ? ` · ${event.note}` : ''}
+            </div>
+          </div>
+        </li>
+      ))}
+    </ul>
+  ) : (
+    <ul className="wk-timeline">
+      {steps.map((step) => (
+        <li key={step.what} data-done={step.done || undefined}>
+          <span className="wk-timeline-when">{step.done ? step.when : ''}</span>
+          <span className="wk-timeline-dot" aria-hidden="true" />
+          <div>
+            <div className="wk-timeline-what">{step.what}</div>
+            {step.detail ? <div className="wk-timeline-detail">{step.detail}</div> : null}
+          </div>
+        </li>
+      ))}
+    </ul>
+  )
 
   return (
     <>
-      <section className="wk-section">
-        <div className="wk-card">
-          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 24, flexWrap: 'wrap' }}>
-            <div>
-              <span className="wk-label">{finding.vendor}</span>
-              <h2 className="wk-display wk-figure-sm" style={{ marginTop: 8 }}>
-                {formatCurrency(finding.dollarImpact)}
-              </h2>
-              <p className="wk-dim" style={{ marginTop: 8, maxWidth: 560 }}>
-                {finding.explanation}
-              </p>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'flex-start' }}>
-              <Strength level={evidence} />
-              {state.recoveryStage ? (
-                <span className="wk-mark" data-tone={state.recoveryStage === 'recovered' ? 'strong' : 'info'}>
-                  {RECOVERY_STAGE_LABEL[state.recoveryStage]}
-                </span>
-              ) : null}
-            </div>
+      <header className="wk-head">
+        <div className="wk-head-copy">
+          <div className="wk-head-meta">
+            <span>{KIND_LABEL[finding.class]}</span>
+            <span>{findingReference(finding)}</span>
           </div>
-
-          {question ? (
-            <>
-              <hr className="wk-rule" style={{ margin: '18px 0' }} />
-              <span className="wk-label">Still open</span>
-              <p style={{ marginTop: 6, fontSize: 13.5 }}>{question}</p>
-            </>
-          ) : null}
-
-          <hr className="wk-rule" style={{ margin: '18px 0' }} />
-          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-            {state.decision === null ? (
-              <>
-                <button type="button" className="wk-btn" data-variant="primary" onClick={() => setDeciding(true)}>
-                  Review this finding
-                </button>
-                <span className="wk-dim" style={{ fontSize: 12.5, alignSelf: 'center' }}>
-                  Say whether it&apos;s real, needs a closer look, or was expected.
-                </span>
-                <DecisionDialog
-                  finding={finding}
-                  open={deciding}
-                  onOpenChange={setDeciding}
-                  onSave={(input) => {
-                    setDeciding(false)
-                    onDecide(finding.id, input.decision, input.reason, input.dismissalTag)
-                  }}
-                />
-              </>
-            ) : (
-              <>
-                <span className="wk-mark" data-tone={state.decision === 'confirmed' ? 'strong' : 'quiet'}>
-                  {DECISION_LABEL[state.decision]}
-                </span>
-                {canChangeDecision ? (
-                  <button type="button" className="wk-btn" data-variant="ghost" data-size="sm" onClick={() => onReopen(finding.id)}>
-                    Change decision
-                  </button>
-                ) : null}
-                {canReopenOutcome ? (
-                  <button type="button" className="wk-btn" data-variant="ghost" data-size="sm" onClick={() => onReopen(finding.id)}>
-                    Reopen outcome
-                  </button>
-                ) : null}
-              </>
-            )}
+          <h1>{finding.vendor}</h1>
+          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 12 }}>
+            <KindChip finding={finding} label={typeLabel} />
+            <Strength level={evidence} />
           </div>
         </div>
-      </section>
+        <div className="wk-head-copy" style={{ alignItems: 'flex-end', textAlign: 'right' }}>
+          <span className="wk-label">Records support</span>
+          <strong className="wk-money" style={{ fontSize: 'clamp(40px, 4vw, 56px)', lineHeight: 0.9 }}>{formatCurrency(finding.dollarImpact)}</strong>
+        </div>
+      </header>
 
-      <Section title="Evidence">
-        <div className="wk-table-wrap"><table className="wk-table">
-          <thead>
-            <tr>
-              <th>Vendor</th>
-              <th>Invoice</th>
-              <th>Paid</th>
-              <th className="wk-right">Invoiced</th>
-              <th className="wk-right">Amount paid</th>
-            </tr>
-          </thead>
-          <tbody>
-            {finding.relatedRecords.map((record) => (
-              <tr key={record.id} style={{ cursor: 'default' }}>
-                <td>{record.vendor}</td>
-                <td className="wk-num">{record.invoiceNumber ?? '—'}</td>
-                <td className="wk-num">{formatDate(record.paymentDate)}</td>
-                <td className="wk-right wk-table-money">
-                  {record.invoiceAmount === null ? '—' : formatCurrency(record.invoiceAmount)}
-                </td>
-                <td className="wk-right wk-table-money">{formatCurrency(record.amountPaid)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table></div>
-        <p className="wk-table-sub">
-          Every row above came from the ledger you loaded. Nothing here is inferred.
-        </p>
-      </Section>
+      <div className="wk-case">
+        <div className="wk-case-main">
+          <section className="wk-panelcard" aria-labelledby="case-what">
+            <div className="wk-panelcard-head"><h2 id="case-what">What happened</h2></div>
+            <div className="wk-panelcard-body wk-case-summary">
+              <p>{finding.explanation}</p>
+              {question ? (
+                <div className="wk-question" role="note">
+                  <TriangleAlert aria-hidden="true" />
+                  <span><strong>Still open:</strong> {question}</span>
+                </div>
+              ) : null}
+            </div>
+          </section>
 
-      <Section title="Recovery">
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <RecoverySummary finding={finding} state={state} />
+          <Evidence finding={finding} />
+
           {state.recoveryStage === 'confirmed' ? (
             <RecoveryRequestPanel
               key={finding.id}
@@ -194,86 +226,80 @@ export function CaseDetail({ finding, state, sender, onDecide, onMarkRequested, 
               onRecordOutcome={(outcome, amount, note, method) => onRecordOutcome(finding.id, outcome, amount, note, method)}
             />
           ) : null}
-        </div>
-      </Section>
 
-      <Section title="History">
-        {state.history && state.history.length > 0 && !entitlements.limits.fullRecoveryWorkflow ? (
-          <Locked title="The full case history is part of Pro" note="Who did what, when, with the amounts and methods — for every case.">
-            <ul className="wk-timeline">
-              {state.history.map((event, i) => (
-                <li key={i} data-done="true">
-                  <span className="wk-timeline-when">{stamp(event.at)}</span>
-                  <span className="wk-timeline-dot" aria-hidden="true" />
-                  <div>
-                    <div className="wk-timeline-what">{event.summary}</div>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </Locked>
-        ) : state.history && state.history.length > 0 ? (
-          <ul className="wk-timeline" data-testid="case-history">
-            <li data-done="true">
-              <span className="wk-timeline-when">{steps[0].when}</span>
-              <span className="wk-timeline-dot" aria-hidden="true" />
+          <section className="wk-panelcard" aria-labelledby="case-history-title">
+            <div className="wk-panelcard-head"><h2 id="case-history-title">History</h2></div>
+            <div className="wk-panelcard-body">
+              {history.length > 0 && !entitlements.limits.fullRecoveryWorkflow ? (
+                <Locked title="The full case history is part of Pro" note="Who did what, when, with the amounts and methods.">{timeline}</Locked>
+              ) : timeline}
+            </div>
+          </section>
+        </div>
+
+        <aside className="wk-case-side">
+          <section className="wk-panelcard" aria-labelledby="case-decision">
+            <div className="wk-panelcard-head">
               <div>
-                <div className="wk-timeline-what">Finding created</div>
-                <div className="wk-timeline-detail">{steps[0].detail}</div>
+                <h2 id="case-decision">{state.decision === null ? 'Your decision' : 'Decision'}</h2>
+                <p>{state.decision === null ? 'Nothing is sent to a vendor until you confirm.' : 'Recorded on this finding.'}</p>
               </div>
-            </li>
-            {state.history.map((event, i) => (
-              <li key={`${event.at}-${i}`} data-done="true">
-                <span className="wk-timeline-when">{stamp(event.at)}</span>
-                <span className="wk-timeline-dot" aria-hidden="true" />
-                <div>
-                  <div className="wk-timeline-what">
-                    {event.summary}
-                    {event.amount != null ? ` · ${formatCurrency(event.amount)}` : ''}
-                    {event.method ? ` · ${METHOD_LABEL[event.method]}` : ''}
-                  </div>
-                  <div className="wk-timeline-detail">
-                    {event.actor ? `By ${event.actor}` : 'Guest session'}
-                    {event.note ? ` · ${event.note}` : ''}
-                  </div>
+            </div>
+            <div className="wk-panelcard-body">
+              {state.decision === null ? (
+                <div className="wk-decide" role="group" aria-label="Review this finding">
+                  {CHOICES.map(({ value, title, detail, icon: Icon }) => (
+                    <button key={value} type="button" className="wk-decide-btn" data-primary={value === 'confirmed' || undefined} onClick={() => setDeciding(value)}>
+                      <Icon aria-hidden="true" />
+                      <span><strong>{title}</strong><small>{detail}</small></span>
+                    </button>
+                  ))}
                 </div>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <ul className="wk-timeline">
-            {steps.map((step) => (
-              <li key={step.what} data-done={step.done || undefined}>
-                <span className="wk-timeline-when">{step.done ? step.when : '—'}</span>
-                <span className="wk-timeline-dot" aria-hidden="true" />
-                <div>
-                  <div className="wk-timeline-what">{step.what}</div>
-                  {step.detail ? <div className="wk-timeline-detail">{step.detail}</div> : null}
+              ) : (
+                <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
+                  <span className="wk-chip" data-tone={state.decision === 'confirmed' ? 'done' : undefined}>{DECISION_LABEL[state.decision]}</span>
+                  {canChangeDecision ? (
+                    <button type="button" className="wk-btn" data-variant="ghost" data-size="sm" onClick={() => onReopen(finding.id)}>Change decision</button>
+                  ) : null}
+                  {canReopenOutcome ? (
+                    <button type="button" className="wk-btn" data-variant="ghost" data-size="sm" onClick={() => onReopen(finding.id)}>Reopen outcome</button>
+                  ) : null}
                 </div>
-              </li>
-            ))}
-          </ul>
-        )}
-      </Section>
+              )}
+              <DecisionDialog
+                finding={finding}
+                open={deciding !== null}
+                initial={deciding ?? 'confirmed'}
+                onOpenChange={(open) => { if (!open) setDeciding(null) }}
+                onSave={(input) => {
+                  setDeciding(null)
+                  onDecide(finding.id, input.decision, input.reason, input.dismissalTag)
+                }}
+              />
+            </div>
+          </section>
 
-      <Section title="Accounting">
-        <div className="wk-card-flat">
-          <p className="wk-dim" style={{ fontSize: 13.5, maxWidth: 620 }}>
-            {state.recoveryStage === 'recovered' ? (
-              <>
-                {formatCurrency(state.recoveredAmount ?? 0)} came back
-                {state.recoveredVia ? ` as ${METHOD_LABEL[state.recoveredVia].toLowerCase()}` : ''}. Clear that amount against the
-                corresponding payable to close this out in your books.
-              </>
-            ) : (
-              <>
-                Nothing to reconcile yet. Once a refund or credit actually settles, this is where the entry to
-                make against your books will appear.
-              </>
-            )}
-          </p>
-        </div>
-      </Section>
+          <section className="wk-panelcard" aria-labelledby="case-money">
+            <div className="wk-panelcard-head"><h2 id="case-money">Recovery</h2></div>
+            <div className="wk-panelcard-body">
+              <RecoveryFacts finding={finding} state={state} />
+            </div>
+          </section>
+
+          {state.recoveryStage === 'recovered' ? (
+            <section className="wk-panelcard" aria-labelledby="case-books">
+              <div className="wk-panelcard-head"><h2 id="case-books">In your books</h2></div>
+              <div className="wk-panelcard-body" style={{ display: 'flex', gap: 10 }}>
+                <FileCheck2 aria-hidden="true" style={{ width: 16, height: 16, flex: 'none', marginTop: 2, color: 'var(--accent-ink)' }} />
+                <p className="wk-dim" style={{ fontSize: 13 }}>
+                  {formatCurrency(state.recoveredAmount ?? 0)} came back
+                  {state.recoveredVia ? ` as ${METHOD_LABEL[state.recoveredVia].toLowerCase()}` : ''}. Clear it against the matching payable to close this out.
+                </p>
+              </div>
+            </section>
+          ) : null}
+        </aside>
+      </div>
     </>
   )
 }

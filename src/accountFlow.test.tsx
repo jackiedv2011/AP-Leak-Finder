@@ -135,7 +135,7 @@ describe('accounts, data isolation and persistence', () => {
     await logIn(alice)
     await uploadSampleLedger()
     fireEvent.click(document.querySelectorAll('.wk-table tbody tr')[0])
-    fireEvent.click(await screen.findByRole('button', { name: 'Review this finding' }))
+    fireEvent.click(await screen.findByRole('button', { name: /^This is real/ }))
     const dialog = await screen.findByTestId('decision-dialog')
     fireEvent.click(within(dialog).getByLabelText(/^This is real/))
     fireEvent.click(within(dialog).getByRole('button', { name: 'Save decision' }))

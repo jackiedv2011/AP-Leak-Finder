@@ -434,6 +434,15 @@ export function AuditApp() {
     )
   }
 
+  // Findings reads its filters from the query string when it mounts, so they
+  // are written right after navigating there.
+  const openFindings = (params: Record<string, string>) => {
+    navigate({ mode: 'findings', caseId: null, draft: false })
+    const target = new URL(window.location.href)
+    for (const key of ['kind', 'q', 'decision', 'sort']) target.searchParams.delete(key)
+    for (const [key, value] of Object.entries(params)) target.searchParams.set(key, value)
+    window.history.replaceState(window.history.state, '', target.pathname + target.search)
+  }
   const overview = overviewSummary(environment)
   const activeFinding = activeCase?.finding ?? null
   const visible = visibleFindingIds(environment, entitlements)
@@ -444,7 +453,7 @@ export function AuditApp() {
   return (
     <>
       <WorkspaceShell
-        mode={route.mode}
+        mode={activeFinding ? 'findings' : route.mode}
         onModeChange={(mode) => navigate({ mode, caseId: null, draft: false })}
         auditCount={auditCount}
         // The badges are workloads: findings still waiting on a decision, and
@@ -457,8 +466,8 @@ export function AuditApp() {
         onOpenWorkspace={handleOpenProject}
         searchableFindings={environment.result.findings.map((finding) => ({ id: finding.id, title: finding.title, vendor: finding.vendor }))}
         onOpenFinding={handleOpenCase}
-        title={activeFinding ? activeFinding.vendor : TITLES[route.mode]}
-        subtitle={activeFinding ? 'Finding' : sampleSession ? 'Sample ledger' : project?.name}
+        title={TITLES[route.mode]}
+        finding={activeFinding ? activeFinding.vendor : null}
         actions={
           activeFinding ? (
             <button type="button" className="wk-btn" data-variant="ghost" data-size="sm" onClick={goBack}>
@@ -466,9 +475,9 @@ export function AuditApp() {
               Back
             </button>
           ) : (
-            <button type="button" className="wk-btn" data-variant="outline" data-size="sm" onClick={() => openImport('new')}>
+            <button type="button" className="wk-btn" data-variant="dark" data-size="sm" onClick={() => openImport('new')}>
               <Plus aria-hidden="true" />
-              Start an audit
+              <span>Start an audit</span>
             </button>
           )
         }
@@ -502,17 +511,12 @@ export function AuditApp() {
           <Dashboard
             env={environment}
             visible={visible}
-            auditCount={auditCount}
             auditLabel={auditLabel}
             onOpenCase={handleOpenCase}
-            onSeeAllFindings={() => navigate({ mode: 'findings', caseId: null, draft: false })}
-            onSeeFindingsKind={(kind) => {
-              navigate({ mode: 'findings', caseId: null, draft: false })
-              const target = new URL(window.location.href)
-              target.searchParams.set('kind', kind)
-              window.history.replaceState(window.history.state, '', target.pathname + target.search)
-            }}
-            onStartAudit={() => openImport('new')}
+            onSeeAllFindings={() => openFindings({})}
+            onSeeFindingsKind={(kind) => openFindings({ kind })}
+            onSearchFindings={(q) => openFindings({ q })}
+            onNavigate={(mode) => navigate({ mode, caseId: null, draft: false })}
           />
         ) : route.mode === 'audits' ? (
           <Audits
@@ -528,7 +532,7 @@ export function AuditApp() {
         ) : route.mode === 'findings' ? (
           <Findings env={environment} visible={visible} onOpenCase={handleOpenCase} />
         ) : route.mode === 'recoveries' ? (
-          <Recoveries env={environment} onOpenCase={handleOpenCase} />
+          <Recoveries env={environment} onOpenCase={handleOpenCase} onOpenFindings={() => openFindings({})} />
         ) : route.mode === 'reports' ? (
           <Reports env={environment} />
         ) : (

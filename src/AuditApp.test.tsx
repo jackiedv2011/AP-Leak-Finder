@@ -59,41 +59,46 @@ function navLabels(): string[] {
     .map((button) => button.querySelector('span')?.textContent ?? '')
 }
 
-/** One stage of a recovery pipeline (Overview's stage list or the Recoveries strip), by its label. */
+/** A headline total (Overview or Recoveries), by its label. */
+const TOTAL_KEY: Record<string, string> = { Verified: 'ready', 'In recovery': 'inRecovery', Recovered: 'recovered' }
 function stage(label: string): HTMLElement {
-  const found = Array.from(document.querySelectorAll<HTMLElement>('.wk-stage-list > div, .wk-pipeline > div')).find(
-    (node) => node.querySelector('span')?.textContent === label
-  )
-  if (!found) throw new Error(`No pipeline stage labelled "${label}"`)
+  const found = document.querySelector<HTMLElement>(`[data-total="${TOTAL_KEY[label]}"]`)
+  if (!found) throw new Error(`No total labelled "${label}"`)
   return found
 }
 
+/** Headline figures round to whole dollars on screen, so compare the exact amount they carry. */
 function stageValue(label: string): string {
-  return stage(label).querySelector('strong, .wk-pipeline-figure')?.textContent ?? ''
+  return formatCurrency(Number(stage(label).dataset.amount))
 }
 
-/** The Overview's "Potential impact" figure. */
+function overviewRoot(): HTMLElement {
+  const root = document.querySelector<HTMLElement>('.wk-ov')
+  if (!root) throw new Error('Not on the Overview')
+  return root
+}
+
 function potentialValue(): string {
-  return fact('Potential impact')
+  return formatCurrency(Number(overviewRoot().dataset.potential))
 }
 
-/** "16 surfaced across 1 audit": the finding count and the audit count. */
 function findingsFact(): { findings: string; audits: string } {
-  const [, findings = '', audits = ''] = /^(\d+) surfaced across (\d+)/.exec(fact('Findings')) ?? []
-  return { findings, audits }
+  const nav = screen.getByRole('navigation', { name: /workspace/i })
+  const audits = within(nav).getByRole('button', { name: /^Audits/ }).querySelector('.wk-nav-count')?.textContent ?? ''
+  return { findings: overviewRoot().dataset.openFindings ?? '', audits }
 }
 
-/** The Overview's finding queue, highest priority first. */
+/** The Overview's "Up next" queue: the rows this plan can open. */
 function dashboardRows(): HTMLElement[] {
-  return Array.from(document.querySelectorAll<HTMLElement>('.wk-overview-row'))
+  return Array.from(document.querySelectorAll<HTMLElement>('.wk-queue-row:not([data-locked])'))
 }
 
 function rowVendor(row: HTMLElement): string {
-  return row.children[1]?.textContent ?? ''
+  return row.querySelector('.wk-queue-main strong')?.textContent ?? ''
 }
 
 function rowMoney(row: HTMLElement): string {
-  return row.querySelector('.wk-overview-amount')?.textContent ?? ''
+  return formatCurrency(Number(row.dataset.amount))
 }
 
 function tableRows(table: HTMLElement | Document = document): HTMLElement[] {
@@ -108,14 +113,14 @@ function lastTable(): HTMLElement {
 
 /** Make a decision through the review dialog. */
 async function decide(option: 'This is real' | 'I need more detail' | 'Not an issue') {
-  fireEvent.click(await screen.findByRole('button', { name: 'Review this finding' }))
+  fireEvent.click(await screen.findByRole('button', { name: new RegExp(`^${option}`) }))
   const dialog = await screen.findByTestId('decision-dialog')
   fireEvent.click(within(dialog).getByLabelText(new RegExp(`^${option}`)))
   fireEvent.click(within(dialog).getByRole('button', { name: 'Save decision' }))
   await waitFor(() => expect(screen.queryByTestId('decision-dialog')).not.toBeInTheDocument())
 }
 
-const DASHBOARD_READY = () => expect(screen.getByRole('heading', { name: 'Prioritize next' })).toBeInTheDocument()
+const DASHBOARD_READY = () => expect(screen.getByRole('heading', { name: 'Up next' })).toBeInTheDocument()
 
 /** Read one figure out of a `<dl>` fact block (Audits / Reports / Settings). */
 function fact(label: string): string {
@@ -181,7 +186,7 @@ describe('AuditApp', () => {
 
   it('offers exactly the six sections, in order', async () => {
     await runSampleFromLaunch()
-    expect(navLabels()).toEqual(['Overview', 'Audits', 'Findings', 'Recoveries', 'Reports', 'Settings'])
+    expect(navLabels()).toEqual(['Overview', 'Findings', 'Recoveries', 'Reports', 'Audits', 'Settings'])
   })
 
   // Found money and returned money are different numbers. The stages are
@@ -328,9 +333,9 @@ describe('AuditApp', () => {
     goToMode('Overview')
     expect(potentialValue()).toBe(formatCurrency(sumImpact(sampleFindings()) - impact))
     expect(findingsFact().findings).toBe(String(sampleFindings().length - 1))
-    const causes = Array.from(document.querySelectorAll('.wk-cause-list strong')).map((n) => n.textContent)
+    const causes = Array.from(document.querySelectorAll<HTMLElement>('.wk-bars-row[data-amount]')).map((n) => Number(n.dataset.amount))
     const dupTotal = sumImpact(sampleFindings().filter((f) => f.type === 'exact_duplicate')) - impact
-    expect(causes).toContain(formatCurrency(dupTotal))
+    expect(causes).toContainEqual(dupTotal)
   })
 
   it('a decision can be changed until a request is sent, and an outcome can be reopened after', async () => {
@@ -341,7 +346,7 @@ describe('AuditApp', () => {
     // wrong click: dismissed → change decision → confirm instead
     await decide('Not an issue')
     fireEvent.click(await screen.findByRole('button', { name: 'Change decision' }))
-    expect(await screen.findByRole('button', { name: 'Review this finding' })).toBeInTheDocument()
+    expect(await screen.findByRole('group', { name: 'Review this finding' })).toBeInTheDocument()
     await decide('This is real')
     fireEvent.click(await screen.findByRole('button', { name: 'Mark request sent' }))
     // once sent, the decision is locked
@@ -353,7 +358,7 @@ describe('AuditApp', () => {
     goToMode('Overview')
     expect(stageValue('Recovered')).toBe(formatCurrency(0))
     goToMode('Recoveries')
-    fireEvent.click(tableRows()[0])
+    fireEvent.click(document.querySelector<HTMLElement>('.wk-ticket')!)
     fireEvent.click(await screen.findByRole('button', { name: 'Reopen outcome' }))
     fireEvent.click(await screen.findByRole('button', { name: 'Money came back' }))
     await waitFor(() => expect(screen.getAllByText('Money back').length).toBeGreaterThan(0))
@@ -389,7 +394,7 @@ describe('AuditApp', () => {
     fireEvent.click(within(outcome).getByRole('button', { name: 'Money came back' }))
     await waitFor(() => expect(screen.getAllByText('Money back').length).toBeGreaterThan(0))
 
-    expect(fact('Original opportunity')).toBe(value)
+    expect(fact('Records support')).toBe(value)
     expect(fact('Requested')).toBe(value)
     expect(fact('Received')).toBe(formatCurrency(partial))
     expect(fact('Still outstanding')).toBe(formatCurrency(impact - partial))
@@ -410,7 +415,7 @@ describe('AuditApp', () => {
     goToMode('Recoveries')
     expect(stageValue('Recovered')).toBe(formatCurrency(partial))
     expect(screen.getByRole('heading', { name: 'Money back' })).toBeInTheDocument()
-    expect(lastTable().querySelector('.wk-table-money')?.textContent).toBe(formatCurrency(partial))
+    expect(document.querySelector('[data-stage="recovered"] .wk-ticket-money')?.textContent).toBe(formatCurrency(partial))
   })
 
   it('rejects an invalid recovered amount and records nothing', async () => {
@@ -426,7 +431,8 @@ describe('AuditApp', () => {
       expect(within(outcome).getByRole('alert')).toBeInTheDocument()
       expect(screen.queryByTestId('case-history')).not.toHaveTextContent('Money received recorded')
     }
-    expect(fact('Received')).toBe('—')
+    // Nothing arrived, so the case shows no Received row at all rather than a dash.
+    expect(fact('Received')).toBe('')
     goToMode('Overview')
     expect(stageValue('Recovered')).toBe(formatCurrency(0))
   })
@@ -510,7 +516,7 @@ describe('AuditApp', () => {
     render(<AuditApp />)
     await waitFor(DASHBOARD_READY)
     fireEvent.click(dashboardRows()[0])
-    fireEvent.click(await screen.findByRole('button', { name: 'Review this finding' }))
+    fireEvent.click(await screen.findByRole('button', { name: /^This is real/ }))
     const dialog = await screen.findByTestId('decision-dialog')
     fireEvent.click(within(dialog).getByLabelText(/^Not an issue/))
     fireEvent.change(within(dialog).getByLabelText('Why is it expected?'), { target: { value: 'known_vendor_exception' } })
@@ -534,6 +540,30 @@ describe('AuditApp', () => {
     const search = screen.getByLabelText('Search findings')
     fireEvent.keyDown(search, { key: 'f' })
     expect(screen.queryByRole('dialog', { name: 'Find in workspace' })).not.toBeInTheDocument()
+  })
+
+  it('Customize changes theme, accent, density and Overview sections, and remembers them', async () => {
+    await runSampleFromLaunch()
+    fireEvent.click(screen.getAllByRole('button', { name: 'Customize' })[0])
+    const sheet = await screen.findByRole('dialog', { name: 'Customize' })
+
+    fireEvent.click(within(sheet).getByRole('button', { name: /^Dark/ }))
+    fireEvent.click(within(sheet).getByRole('button', { name: 'Purple' }))
+    fireEvent.click(within(sheet).getByRole('button', { name: 'Compact' }))
+    fireEvent.click(within(sheet).getByLabelText(/^Up next/))
+    fireEvent.click(within(sheet).getByRole('button', { name: 'Move Recent activity up' }))
+
+    const root = document.documentElement
+    await waitFor(() => expect(root.dataset.theme).toBe('dark'))
+    expect(root.dataset.accent).toBe('purple')
+    expect(root.dataset.density).toBe('compact')
+    expect(screen.queryByRole('heading', { name: 'Up next' })).not.toBeInTheDocument()
+
+    const saved = JSON.parse(window.localStorage.getItem('reclaim.preferences.v1')!)
+    expect(saved).toMatchObject({ accent: 'purple', density: 'compact' })
+    expect(saved.sections.find((section: { id: string }) => section.id === 'next').visible).toBe(false)
+    expect(saved.sections.map((section: { id: string }) => section.id).indexOf('activity')).toBe(4)
+    expect(window.localStorage.getItem('reclaim.theme.v1')).toBe('dark')
   })
 
   it('renders each of the six workspace sections without crashing', async () => {

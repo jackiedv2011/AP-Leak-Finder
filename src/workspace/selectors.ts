@@ -295,7 +295,7 @@ export function timelineFor(finding: Finding, state: CaseState): TimelineStep[] 
     {
       when: at(finding.relatedRecords[0]?.paymentDate?.getTime()),
       what: 'Opportunity detected',
-      detail: `${FINDING_TYPE_LABELS[finding.type] ?? finding.type} · ${finding.relatedRecords.length} records matched`,
+      detail: `${FINDING_TYPE_LABELS[finding.type] ?? finding.type} · ${finding.relatedRecords.length} ${finding.relatedRecords.length === 1 ? 'record' : 'records'} matched`,
       done: true,
     },
     {

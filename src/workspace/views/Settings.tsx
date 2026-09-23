@@ -3,6 +3,7 @@ import type { LedgerEnvironment } from '@/ledger/store'
 import { useOptionalAuth } from '@/lib/auth/AuthContext'
 import { TERMS_VERSION } from '@/legal/terms'
 import { Facts } from './Reports'
+import { CustomizeControls } from '../Customize'
 import { useState } from 'react'
 import { UpgradeDialog } from '@/components/plan/UpgradeDialog'
 import { PLAN_FEATURES, PLAN_LABEL, PLAN_PRICE_USD } from '@/lib/plans'
@@ -46,6 +47,16 @@ export function SettingsView({ env, onClear, onShowTour }: { env: LedgerEnvironm
             </a>
           </div>
         )}
+      </section>
+
+      <section className="wk-section" aria-labelledby="settings-appearance">
+        <div className="wk-section-head">
+          <h2 className="wk-display wk-h2" id="settings-appearance">Appearance and layout</h2>
+          <p>Saved in this browser</p>
+        </div>
+        <div className="wk-card wk-settings-prefs">
+          <CustomizeControls />
+        </div>
       </section>
 
       <section className="wk-section" data-testid="plan-panel">
