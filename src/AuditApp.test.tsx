@@ -59,26 +59,41 @@ function navLabels(): string[] {
     .map((button) => button.querySelector('span')?.textContent ?? '')
 }
 
-/** One of the dashboard's stat tiles, by its label. */
-function stat(label: string): HTMLElement {
-  const found = Array.from(document.querySelectorAll<HTMLElement>('.wk-ladder > div')).find(
-    (node) => node.querySelector('.wk-label')?.textContent === label
+/** One stage of a recovery pipeline (Overview's stage list or the Recoveries strip), by its label. */
+function stage(label: string): HTMLElement {
+  const found = Array.from(document.querySelectorAll<HTMLElement>('.wk-stage-list > div, .wk-pipeline > div')).find(
+    (node) => node.querySelector('span')?.textContent === label
   )
-  if (!found) throw new Error(`No stat tile labelled "${label}"`)
+  if (!found) throw new Error(`No pipeline stage labelled "${label}"`)
   return found
 }
 
-function statValue(label: string): string {
-  return stat(label).querySelector('.wk-figure')?.textContent ?? ''
+function stageValue(label: string): string {
+  return stage(label).querySelector('strong, .wk-pipeline-figure')?.textContent ?? ''
 }
 
-/** One stage of the recovery pipeline strip, by its label. */
-function stageValue(label: string): string {
-  const found = Array.from(document.querySelectorAll<HTMLElement>('.wk-pipeline > div')).find(
-    (node) => node.querySelector('.wk-label')?.textContent === label
-  )
-  if (!found) throw new Error(`No pipeline stage labelled "${label}"`)
-  return found.querySelector('.wk-pipeline-figure')?.textContent ?? ''
+/** The Overview's "Potential impact" figure. */
+function potentialValue(): string {
+  return fact('Potential impact')
+}
+
+/** "16 surfaced across 1 audit": the finding count and the audit count. */
+function findingsFact(): { findings: string; audits: string } {
+  const [, findings = '', audits = ''] = /^(\d+) surfaced across (\d+)/.exec(fact('Findings')) ?? []
+  return { findings, audits }
+}
+
+/** The Overview's finding queue, highest priority first. */
+function dashboardRows(): HTMLElement[] {
+  return Array.from(document.querySelectorAll<HTMLElement>('.wk-overview-row'))
+}
+
+function rowVendor(row: HTMLElement): string {
+  return row.children[1]?.textContent ?? ''
+}
+
+function rowMoney(row: HTMLElement): string {
+  return row.querySelector('.wk-overview-amount')?.textContent ?? ''
 }
 
 function tableRows(table: HTMLElement | Document = document): HTMLElement[] {
@@ -100,7 +115,7 @@ async function decide(option: 'This is real' | 'I need more detail' | 'Not an is
   await waitFor(() => expect(screen.queryByTestId('decision-dialog')).not.toBeInTheDocument())
 }
 
-const DASHBOARD_READY = () => expect(screen.getByRole('heading', { name: 'Recent findings' })).toBeInTheDocument()
+const DASHBOARD_READY = () => expect(screen.getByRole('heading', { name: 'Prioritize next' })).toBeInTheDocument()
 
 /** Read one figure out of a `<dl>` fact block (Audits / Reports / Settings). */
 function fact(label: string): string {
@@ -158,15 +173,15 @@ describe('AuditApp', () => {
 
     const findings = sampleFindings()
     expect(findings.length).toBeGreaterThan(0)
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Dashboard')
-    expect(statValue('Potential recovery')).toBe(formatCurrency(sumImpact(findings)))
-    expect(statValue('Findings')).toBe(String(findings.length))
-    expect(statValue('Audits run')).toBe('1')
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Overview')
+    expect(potentialValue()).toBe(formatCurrency(sumImpact(findings)))
+    expect(findingsFact().findings).toBe(String(findings.length))
+    expect(findingsFact().audits).toBe('1')
   })
 
   it('offers exactly the six sections, in order', async () => {
     await runSampleFromLaunch()
-    expect(navLabels()).toEqual(['Dashboard', 'Audits', 'Findings', 'Recoveries', 'Reports', 'Settings'])
+    expect(navLabels()).toEqual(['Overview', 'Audits', 'Findings', 'Recoveries', 'Reports', 'Settings'])
   })
 
   // Found money and returned money are different numbers. The stages are
@@ -180,16 +195,16 @@ describe('AuditApp', () => {
     const verified = sumImpact(findings.filter((finding) => finding.class === 'recoverable'))
     expect(verified).toBeGreaterThan(0)
 
-    expect(statValue('Potential recovery')).toBe(formatCurrency(potential))
+    expect(potentialValue()).toBe(formatCurrency(potential))
     expect(stageValue('Verified')).toBe(formatCurrency(verified))
     expect(stageValue('In recovery')).toBe(formatCurrency(0))
     expect(stageValue('Recovered')).toBe(formatCurrency(0))
-    expect(statValue('Recovered')).toBe(formatCurrency(0))
+    expect(stageValue('Recovered')).toBe(formatCurrency(0))
     expect(screen.queryByText(formatCurrency(potential + verified))).not.toBeInTheDocument()
 
     // $0.00 recovered is not an achievement, so it must not wear the accent
     // that belongs to money which actually came back.
-    expect(stat('Recovered')).not.toHaveAttribute('data-accent')
+    expect(stage('Recovered')).not.toHaveAttribute('data-accent')
   })
 
   it('"Start an audit" opens the import dialog for a new audit, not a merge into the open one', async () => {
@@ -201,9 +216,10 @@ describe('AuditApp', () => {
   it('opening a case from the Dashboard table routes to ?case= and shows its records as evidence', async () => {
     await runSampleFromLaunch()
 
-    const [topRow] = tableRows()
-    const vendor = topRow.querySelector('.wk-table-vendor')?.textContent ?? ''
-    const recordCount = Number(/^\d+/.exec(topRow.querySelector('.wk-table-sub')?.textContent ?? '')?.[0])
+    const [topRow] = dashboardRows()
+    const vendor = rowVendor(topRow)
+    const money = rowMoney(topRow)
+    const recordCount = sampleFindings().find((f) => f.vendor === vendor && formatCurrency(f.dollarImpact) === money)?.relatedRecords.length ?? 0
     expect(vendor).not.toBe('')
     expect(recordCount).toBeGreaterThan(0)
 
@@ -220,7 +236,7 @@ describe('AuditApp', () => {
   // is one of three words, and nothing on a case may read as a confidence score.
   it('states evidence strength as a word and never as a confidence percentage', async () => {
     await runSampleFromLaunch()
-    fireEvent.click(tableRows()[0])
+    fireEvent.click(dashboardRows()[0])
     await waitFor(() => expect(screen.getByRole('heading', { name: 'Evidence' })).toBeInTheDocument())
 
     const strength = document.querySelector('.wk-strength')
@@ -237,8 +253,8 @@ describe('AuditApp', () => {
     render(<AuditApp />)
     await waitFor(DASHBOARD_READY)
 
-    const [topRow] = tableRows()
-    const vendor = topRow.querySelector('.wk-table-vendor')?.textContent ?? ''
+    const [topRow] = dashboardRows()
+    const vendor = rowVendor(topRow)
     fireEvent.click(topRow)
     await waitFor(() => expect(screen.getByRole('heading', { name: 'Evidence' })).toBeInTheDocument())
 
@@ -259,8 +275,8 @@ describe('AuditApp', () => {
   it('walks a case through the whole recovery ladder and moves the money onto the Recovered rung', async () => {
     await runSampleFromLaunch()
 
-    const [topRow] = tableRows()
-    const value = topRow.querySelector('.wk-table-money')?.textContent ?? ''
+    const [topRow] = dashboardRows()
+    const value = rowMoney(topRow)
     fireEvent.click(topRow)
     await waitFor(() => expect(screen.getByRole('heading', { name: 'Evidence' })).toBeInTheDocument())
 
@@ -269,9 +285,9 @@ describe('AuditApp', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Money came back' }))
     await waitFor(() => expect(screen.getAllByText('Money back').length).toBeGreaterThan(0))
 
-    goToMode('Dashboard')
-    expect(statValue('Recovered')).toBe(value)
-    expect(stat('Recovered')).toHaveAttribute('data-accent')
+    goToMode('Overview')
+    expect(stageValue('Recovered')).toBe(value)
+    expect(stage('Recovered')).toHaveAttribute('data-accent')
     // A settled case has left the "in recovery" stage rather than counting twice.
     expect(stageValue('In recovery')).toBe(formatCurrency(0))
     expect(stageValue('Recovered')).toBe(value)
@@ -279,11 +295,11 @@ describe('AuditApp', () => {
 
   it('a recovered case leaves Potential recovery and Verified, so found money is never shown as still findable', async () => {
     await runSampleFromLaunch()
-    const potentialBefore = statValue('Potential recovery')
+    const potentialBefore = potentialValue()
     const verifiedBefore = stageValue('Verified')
 
-    const [topRow] = tableRows()
-    const value = topRow.querySelector('.wk-table-money')?.textContent ?? ''
+    const [topRow] = dashboardRows()
+    const value = rowMoney(topRow)
     const impact = sampleFindings().find((f) => formatCurrency(f.dollarImpact) === value)!.dollarImpact
     fireEvent.click(topRow)
     await decide('This is real')
@@ -291,35 +307,35 @@ describe('AuditApp', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Money came back' }))
     await waitFor(() => expect(screen.getAllByText('Money back').length).toBeGreaterThan(0))
 
-    goToMode('Dashboard')
+    goToMode('Overview')
     const potential = sumImpact(sampleFindings()) - impact
     expect(potentialBefore).toBe(formatCurrency(sumImpact(sampleFindings())))
-    expect(statValue('Potential recovery')).toBe(formatCurrency(potential))
+    expect(potentialValue()).toBe(formatCurrency(potential))
     expect(stageValue('Verified')).toBe(formatCurrency(sumImpact(sampleFindings().filter((f) => f.class === 'recoverable')) - impact))
     expect(verifiedBefore).not.toBe(stageValue('Verified'))
-    expect(statValue('Recovered')).toBe(value)
+    expect(stageValue('Recovered')).toBe(value)
   })
 
   it('dismissing a finding removes it from Potential recovery and from "Where the money went"', async () => {
     await runSampleFromLaunch()
-    const [topRow] = tableRows()
-    const value = topRow.querySelector('.wk-table-money')?.textContent ?? ''
+    const [topRow] = dashboardRows()
+    const value = rowMoney(topRow)
     const impact = sampleFindings().find((f) => formatCurrency(f.dollarImpact) === value)!.dollarImpact
     fireEvent.click(topRow)
     await decide('Not an issue')
     await waitFor(() => expect(screen.getAllByText('Expected').length).toBeGreaterThan(0))
 
-    goToMode('Dashboard')
-    expect(statValue('Potential recovery')).toBe(formatCurrency(sumImpact(sampleFindings()) - impact))
-    expect(statValue('Findings')).toBe(String(sampleFindings().length - 1))
-    const causes = Array.from(document.querySelectorAll('.wk-card-flat li .wk-num')).map((n) => n.textContent)
+    goToMode('Overview')
+    expect(potentialValue()).toBe(formatCurrency(sumImpact(sampleFindings()) - impact))
+    expect(findingsFact().findings).toBe(String(sampleFindings().length - 1))
+    const causes = Array.from(document.querySelectorAll('.wk-cause-list strong')).map((n) => n.textContent)
     const dupTotal = sumImpact(sampleFindings().filter((f) => f.type === 'exact_duplicate')) - impact
     expect(causes).toContain(formatCurrency(dupTotal))
   })
 
   it('a decision can be changed until a request is sent, and an outcome can be reopened after', async () => {
     await runSampleFromLaunch()
-    const [topRow] = tableRows()
+    const [topRow] = dashboardRows()
     fireEvent.click(topRow)
 
     // wrong click: dismissed → change decision → confirm instead
@@ -334,23 +350,23 @@ describe('AuditApp', () => {
     // wrong outcome: closed without recovery → reopen → money came back
     fireEvent.click(await screen.findByRole('button', { name: 'Close without recovery' }))
     await waitFor(() => expect(screen.getAllByText('Closed, no money back').length).toBeGreaterThan(0))
-    goToMode('Dashboard')
-    expect(statValue('Recovered')).toBe(formatCurrency(0))
+    goToMode('Overview')
+    expect(stageValue('Recovered')).toBe(formatCurrency(0))
     goToMode('Recoveries')
     fireEvent.click(tableRows()[0])
     fireEvent.click(await screen.findByRole('button', { name: 'Reopen outcome' }))
     fireEvent.click(await screen.findByRole('button', { name: 'Money came back' }))
     await waitFor(() => expect(screen.getAllByText('Money back').length).toBeGreaterThan(0))
-    goToMode('Dashboard')
-    expect(statValue('Recovered')).not.toBe(formatCurrency(0))
+    goToMode('Overview')
+    expect(stageValue('Recovered')).not.toBe(formatCurrency(0))
     // nav badges are workloads: one fewer finding waiting, nothing left in flight
     expect(stageValue('In recovery')).toBe(formatCurrency(0))
   })
 
   it('records a partial recovery: dashboard, reports, recoveries and the case summary all show what actually came back', async () => {
     await runSampleFromLaunch()
-    const [topRow] = tableRows()
-    const value = topRow.querySelector('.wk-table-money')?.textContent ?? ''
+    const [topRow] = dashboardRows()
+    const value = rowMoney(topRow)
     const impact = sampleFindings().find((f) => formatCurrency(f.dollarImpact) === value)!.dollarImpact
     fireEvent.click(topRow)
     await decide('This is real')
@@ -385,9 +401,9 @@ describe('AuditApp', () => {
     expect(history).toHaveTextContent('CM-42')
     expect(history).toHaveTextContent('Guest session')
 
-    goToMode('Dashboard')
-    expect(statValue('Recovered')).toBe(formatCurrency(partial))
-    expect(statValue('Potential recovery')).toBe(formatCurrency(sumImpact(sampleFindings()) - impact))
+    goToMode('Overview')
+    expect(stageValue('Recovered')).toBe(formatCurrency(partial))
+    expect(potentialValue()).toBe(formatCurrency(sumImpact(sampleFindings()) - impact))
     expect(stageValue('In recovery')).toBe(formatCurrency(0))
     goToMode('Reports')
     expect(fact('Recovered')).toBe(formatCurrency(partial))
@@ -399,7 +415,7 @@ describe('AuditApp', () => {
 
   it('rejects an invalid recovered amount and records nothing', async () => {
     await runSampleFromLaunch()
-    fireEvent.click(tableRows()[0])
+    fireEvent.click(dashboardRows()[0])
     await decide('This is real')
     fireEvent.click(await screen.findByRole('button', { name: 'Mark request sent' }))
     const outcome = await screen.findByTestId('recovery-outcome')
@@ -411,8 +427,8 @@ describe('AuditApp', () => {
       expect(screen.queryByTestId('case-history')).not.toHaveTextContent('Money received recorded')
     }
     expect(fact('Received')).toBe('—')
-    goToMode('Dashboard')
-    expect(statValue('Recovered')).toBe(formatCurrency(0))
+    goToMode('Overview')
+    expect(stageValue('Recovered')).toBe(formatCurrency(0))
   })
 
   it('a partial recovery survives a full reload and re-login', async () => {
@@ -420,7 +436,7 @@ describe('AuditApp', () => {
     setLocation('/audit')
     render(<AuditApp />)
     await waitFor(DASHBOARD_READY)
-    fireEvent.click(tableRows()[0])
+    fireEvent.click(dashboardRows()[0])
     await decide('This is real')
     fireEvent.click(await screen.findByRole('button', { name: 'Mark request sent' }))
     const outcome = await screen.findByTestId('recovery-outcome')
@@ -432,13 +448,13 @@ describe('AuditApp', () => {
     render(<AuditApp />)
     await waitFor(() => expect(fact('Received')).toBe(formatCurrency(12.34)))
     expect(screen.getByTestId('case-history')).toHaveTextContent('Money received recorded')
-    goToMode('Dashboard')
-    expect(statValue('Recovered')).toBe(formatCurrency(12.34))
+    goToMode('Overview')
+    expect(stageValue('Recovered')).toBe(formatCurrency(12.34))
   })
 
   it('copies and downloads the recovery request without sending anything', async () => {
     await runSampleFromLaunch()
-    fireEvent.click(tableRows()[0])
+    fireEvent.click(dashboardRows()[0])
     await decide('This is real')
     const panel = await screen.findByTestId('recovery-request')
     const writeText = vi.fn().mockResolvedValue(undefined)
@@ -467,7 +483,7 @@ describe('AuditApp', () => {
     setLocation('/audit')
     render(<AuditApp />)
     await waitFor(DASHBOARD_READY)
-    fireEvent.click(tableRows()[0])
+    fireEvent.click(dashboardRows()[0])
     await decide('This is real')
     const panel = await screen.findByTestId('recovery-request')
     fireEvent.change(within(panel).getByLabelText('Message'), { target: { value: 'Hand-written request.' } })
@@ -493,7 +509,7 @@ describe('AuditApp', () => {
     setLocation('/audit')
     render(<AuditApp />)
     await waitFor(DASHBOARD_READY)
-    fireEvent.click(tableRows()[0])
+    fireEvent.click(dashboardRows()[0])
     fireEvent.click(await screen.findByRole('button', { name: 'Review this finding' }))
     const dialog = await screen.findByTestId('decision-dialog')
     fireEvent.click(within(dialog).getByLabelText(/^Not an issue/))
@@ -507,11 +523,24 @@ describe('AuditApp', () => {
     expect(state.history[0].note).toBe('Agreed split with vendor')
   })
 
+  it('F opens Find from anywhere in the workspace, but not while typing in a field', async () => {
+    await runSampleFromLaunch()
+    fireEvent.keyDown(window, { key: 'f' })
+    const find = await screen.findByRole('dialog', { name: 'Find in workspace' })
+    fireEvent.keyDown(window, { key: 'Escape' })
+    await waitFor(() => expect(find).not.toBeInTheDocument())
+
+    goToMode('Findings')
+    const search = screen.getByLabelText('Search findings')
+    fireEvent.keyDown(search, { key: 'f' })
+    expect(screen.queryByRole('dialog', { name: 'Find in workspace' })).not.toBeInTheDocument()
+  })
+
   it('renders each of the six workspace sections without crashing', async () => {
     await runSampleFromLaunch()
 
     const modes: Array<[RouteMode, string]> = [
-      ['dashboard', 'Dashboard'],
+      ['dashboard', 'Overview'],
       ['audits', 'Audits'],
       ['findings', 'Findings'],
       ['recoveries', 'Recoveries'],
@@ -569,8 +598,8 @@ describe('AuditApp', () => {
     await waitFor(DASHBOARD_READY)
 
     const findings = sampleFindings()
-    expect(statValue('Potential recovery')).toBe(formatCurrency(sumImpact(findings)))
-    expect(statValue('Findings')).toBe(String(findings.length))
+    expect(potentialValue()).toBe(formatCurrency(sumImpact(findings)))
+    expect(findingsFact().findings).toBe(String(findings.length))
 
     // One import, not three: the record count is the sample's, not a multiple.
     goToMode('Audits')

@@ -35,6 +35,12 @@ export function Mark() {
   </svg>
 }
 
+/** True when a keystroke belongs to a field, so single-key shortcuts leave it alone. */
+function isTyping(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false
+  return target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)
+}
+
 function initialsOf(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean)
   return ((parts[0]?.[0] ?? '') + (parts[1]?.[0] ?? '')).toUpperCase() || 'R'
@@ -87,6 +93,7 @@ export function WorkspaceShell({ mode, onModeChange, auditCount, findingCount, r
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') { event.preventDefault(); openFind() }
+      else if (!findOpen && event.key.toLowerCase() === 'f' && !event.metaKey && !event.ctrlKey && !event.altKey && !isTyping(event.target)) { event.preventDefault(); openFind() }
       else if (event.key === 'Escape') { if (findOpen) closeFind(); else { setMobileNavOpen(false); setProjectMenuOpen(false) } }
       else if (findOpen && event.key === 'ArrowDown') { event.preventDefault(); setActiveIndex((index) => results.length ? (index + 1) % results.length : 0) }
       else if (findOpen && event.key === 'ArrowUp') { event.preventDefault(); setActiveIndex((index) => results.length ? (index - 1 + results.length) % results.length : 0) }
@@ -116,9 +123,9 @@ export function WorkspaceShell({ mode, onModeChange, auditCount, findingCount, r
     <aside className="wk-side" data-mobile-open={mobileNavOpen || undefined}>
       <button type="button" className="wk-team-switcher" onClick={() => onModeChange('dashboard')} aria-label="Reclaim workspace overview">
         <span className="wk-brand-icon"><Mark /></span><span className="wk-team-name">Reclaim</span>
-        <span className="wk-team-plan">{!user ? 'Local' : user.isGuest ? 'Guest' : user.plan === 'pro' ? 'Pro' : 'Free'}</span><ChevronDown aria-hidden="true" />
+        <span className="wk-team-plan">{!user ? 'Local' : user.isGuest ? 'Guest' : user.plan === 'pro' ? 'Pro' : 'Free'}</span>
       </button>
-      <button ref={findTrigger} type="button" className="wk-find-trigger" onClick={openFind}><Search aria-hidden="true" /><span>Find</span><kbd>F</kbd></button>
+      <button ref={findTrigger} type="button" className="wk-find-trigger" onClick={openFind}><Search aria-hidden="true" /><span>Find</span><kbd aria-hidden="true">F</kbd></button>
       <nav aria-label="Workspace" className="wk-sidebar-nav"><ul className="wk-nav">{primary.map(renderItem)}</ul><div className="wk-nav-separator" /><ul className="wk-nav">{secondary.map(renderItem)}</ul></nav>
       <div className="wk-side-foot">
         {user ? <><div className="wk-account"><span className="wk-avatar" aria-hidden="true">{initialsOf(user.name)}</span><div className="wk-account-copy"><div className="wk-account-name">{user.isGuest ? 'Guest session' : user.name}</div><div className="wk-account-sub">{user.isGuest ? 'Local workspace' : user.company || user.email}</div></div></div><button type="button" className="wk-logout" onClick={handleLogOut}><LogOut aria-hidden="true" />{user.isGuest ? 'Exit guest session' : 'Log out'}</button></> : <span className="wk-local-label">Local workspace</span>}
