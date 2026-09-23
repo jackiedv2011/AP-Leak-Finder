@@ -460,7 +460,7 @@ export function AuditApp() {
               Back
             </button>
           ) : (
-            <button type="button" className="wk-btn" data-variant="primary" data-size="sm" onClick={() => openImport('new')}>
+            <button type="button" className="wk-btn" data-variant="outline" data-size="sm" onClick={() => openImport('new')}>
               <Plus aria-hidden="true" />
               Start an audit
             </button>

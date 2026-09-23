@@ -4,19 +4,39 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=3" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <!-- One text face for the whole product surface. -->
+    <!-- The marketing site's three families, so the product is set in the same
+         type it is: Barlow Condensed for display and figures, Inter for text,
+         JetBrains Mono for labels and tabular numbers. -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300..700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:opsz,wght@14..32,300..700&family=JetBrains+Mono:wght@400;500&display=swap"
       rel="stylesheet"
     />
-    <meta name="theme-color" content="#f7f4ee" />
-    <meta name="color-scheme" content="light" />
+    <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+    <script>
+      /* Resolve the theme before first paint, so the workspace never flashes
+         the wrong canvas on a full navigation. Mirrors workspace/theme.ts —
+         same key, same three choices — and stays deliberately tiny and
+         dependency-free because it blocks rendering. */
+      (function () {
+        try {
+          var c = localStorage.getItem('reclaim.theme.v1');
+          if (c !== 'light' && c !== 'dark') {
+            c = matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+          }
+          document.documentElement.dataset.theme = c;
+        } catch (e) {
+          document.documentElement.dataset.theme = 'dark';
+        }
+      })();
+    </script>
     <style>
       /* Set before hydration so full navigations into the app never flash a
-         differently-coloured frame. */
-      html, body { background: #f7f4ee; margin: 0; }
+         differently-coloured frame. The marketing pages set their own. */
+      html, body { margin: 0; background: #000; }
+      html[data-theme='light'], html[data-theme='light'] body { background: #fff; }
     </style>
     <meta name="description" content="Reclaim reviews your payment ledger and shows the records behind every payment that needs attention." />
     <meta property="og:title" content="Reclaim. | Evidence-first payment review" />

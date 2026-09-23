@@ -61,14 +61,26 @@ html:has(.reclaim-theme) body {
   background: #090b0c;
 }
 
-/* The product surface: warm white, light colour scheme. */
+/* The product surface. The canvas is repeated here because the app grid does
+   not cover overscroll or the area outside a portalled dialog; it must track
+   `--bg` in workspace.css, and the theme is resolved onto <html data-theme>
+   before first paint by the script in index.html. */
 html:has(.wk) {
-  color-scheme: light;
-  background: #f7f4ee;
+  color-scheme: dark;
+  background: #000;
 }
 
 html:has(.wk) body {
-  background: #f7f4ee;
+  background: #000;
+}
+
+html[data-theme='light']:has(.wk) {
+  color-scheme: light;
+  background: #fff;
+}
+
+html[data-theme='light']:has(.wk) body {
+  background: #fff;
 }
 
 @media (prefers-reduced-motion: reduce) {

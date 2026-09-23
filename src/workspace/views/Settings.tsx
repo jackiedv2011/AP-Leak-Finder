@@ -70,7 +70,7 @@ export function SettingsView({ env, onClear, onShowTour }: { env: LedgerEnvironm
                 <ul className="wk-plan-features" style={{ marginTop: 12 }}>
                   {PLAN_FEATURES.pro.slice(1, 5).map((f) => (
                     <li key={f}>
-                      <span aria-hidden="true" style={{ color: 'var(--accent)' }}>
+                      <span aria-hidden="true" style={{ color: 'var(--accent-ink)' }}>
                         +
                       </span>
                       {f}

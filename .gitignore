@@ -37,3 +37,6 @@ __pycache__/
 .env.*
 !.env.example
 data/
+
+# Standalone preview build of the workspace (see vite.demo.config.ts)
+demo-dist
