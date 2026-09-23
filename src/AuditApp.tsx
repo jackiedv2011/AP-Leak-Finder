@@ -63,7 +63,7 @@ import { getSampleLedger } from '@/data/sampleLedger'
 import type { ImportInput } from '@/components/audit/ImportPanel'
 
 const TITLES: Record<RouteMode, string> = {
-  dashboard: 'Dashboard',
+  dashboard: 'Overview',
   audits: 'Audits',
   findings: 'Findings',
   recoveries: 'Recoveries',
@@ -451,6 +451,12 @@ export function AuditApp() {
         // recoveries still moving (ready to send or out with a vendor).
         findingCount={environment.result.findings.filter((f) => getCaseState(environment, f.id).decision === null).length}
         recoveryCount={overview.recoveryActiveCount}
+        workspaceLabel={sampleSession ? 'Sample payment ledger' : project?.name ?? 'Current audit'}
+        workspaceId={sampleSession ? null : project?.id ?? null}
+        availableWorkspaces={projects.map((item) => ({ id: item.id, name: item.name }))}
+        onOpenWorkspace={handleOpenProject}
+        searchableFindings={environment.result.findings.map((finding) => ({ id: finding.id, title: finding.title, vendor: finding.vendor }))}
+        onOpenFinding={handleOpenCase}
         title={activeFinding ? activeFinding.vendor : TITLES[route.mode]}
         subtitle={activeFinding ? 'Finding' : sampleSession ? 'Sample ledger' : project?.name}
         actions={
@@ -500,6 +506,12 @@ export function AuditApp() {
             auditLabel={auditLabel}
             onOpenCase={handleOpenCase}
             onSeeAllFindings={() => navigate({ mode: 'findings', caseId: null, draft: false })}
+            onSeeFindingsKind={(kind) => {
+              navigate({ mode: 'findings', caseId: null, draft: false })
+              const target = new URL(window.location.href)
+              target.searchParams.set('kind', kind)
+              window.history.replaceState(window.history.state, '', target.pathname + target.search)
+            }}
             onStartAudit={() => openImport('new')}
           />
         ) : route.mode === 'audits' ? (

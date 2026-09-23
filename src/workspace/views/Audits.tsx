@@ -46,57 +46,6 @@ export function Audits({
   return (
     <>
       <section className="wk-section">
-        <div className="wk-card" data-testid="audits-explainer">
-          <span className="wk-label">What an audit is</span>
-          <p style={{ marginTop: 8, fontSize: 15, fontWeight: 500, maxWidth: 640 }}>
-            One payment ledger — a CSV export from your accounting system — run through Reclaim&apos;s eight checks.
-          </p>
-          <p className="wk-dim" style={{ marginTop: 6, fontSize: 13.5, maxWidth: 640 }}>
-            Each audit keeps its own findings, decisions and recoveries. Start a new audit for a new file (a new month, a new entity); add records to the open
-            audit when you export more of the same books.
-          </p>
-          <div className="wk-launch-steps" style={{ marginTop: 18 }} aria-label="How an audit works">
-            <div>
-              <b>
-                <Upload aria-hidden="true" style={{ width: 14, height: 14, verticalAlign: '-2px', marginRight: 6 }} />
-                1. Upload
-              </b>
-              <span>A CSV with vendor, payment date and amount paid. More columns, more checks.</span>
-            </div>
-            <div>
-              <b>
-                <Search aria-hidden="true" style={{ width: 14, height: 14, verticalAlign: '-2px', marginRight: 6 }} />
-                2. Review findings
-              </b>
-              <span>Open each one, read the rows behind it, and say whether it&apos;s real.</span>
-            </div>
-            <div>
-              <b>
-                <Banknote aria-hidden="true" style={{ width: 14, height: 14, verticalAlign: '-2px', marginRight: 6 }} />
-                3. Recover
-              </b>
-              <span>Send the request from your own email, then record what came back.</span>
-            </div>
-          </div>
-          <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', marginTop: 18 }}>
-            <button type="button" className="wk-btn" data-variant="primary" data-size="sm" onClick={onStartAudit}>
-              <Plus aria-hidden="true" />
-              Start a new audit
-            </button>
-            <button type="button" className="wk-btn" data-variant="ghost" data-size="sm" onClick={onRunSample}>
-              <Sparkles aria-hidden="true" />
-              Try the sample ledger
-            </button>
-            <span className="wk-dim" style={{ fontSize: 12.5, marginLeft: 'auto' }} data-testid="audit-usage">
-              {limit === null
-                ? 'Unlimited audits on Pro'
-                : `${entitlements.usage.auditsThisMonth} of ${limit} audits used this month on Free`}
-            </span>
-          </div>
-        </div>
-      </section>
-
-      <section className="wk-section">
         <div className="wk-section-head">
           <h2 className="wk-display wk-h2">Your audits</h2>
           <p>Click one to open it. The open audit is what every other page shows.</p>
@@ -163,6 +112,57 @@ export function Audits({
             </table>
           </div>
         )}
+      </section>
+
+      <section className="wk-section">
+        <div className="wk-card" data-testid="audits-explainer">
+          <span className="wk-label">What an audit is</span>
+          <p style={{ marginTop: 8, fontSize: 15, fontWeight: 500, maxWidth: 640 }}>
+            One payment ledger — a CSV export from your accounting system — run through Reclaim&apos;s eight checks.
+          </p>
+          <p className="wk-dim" style={{ marginTop: 6, fontSize: 13.5, maxWidth: 640 }}>
+            Each audit keeps its own findings, decisions and recoveries. Start a new audit for a new file (a new month, a new entity); add records to the open
+            audit when you export more of the same books.
+          </p>
+          <div className="wk-launch-steps" style={{ marginTop: 18 }} aria-label="How an audit works">
+            <div>
+              <b>
+                <Upload aria-hidden="true" style={{ width: 14, height: 14, verticalAlign: '-2px', marginRight: 6 }} />
+                1. Upload
+              </b>
+              <span>A CSV with vendor, payment date and amount paid. More columns, more checks.</span>
+            </div>
+            <div>
+              <b>
+                <Search aria-hidden="true" style={{ width: 14, height: 14, verticalAlign: '-2px', marginRight: 6 }} />
+                2. Review findings
+              </b>
+              <span>Open each one, read the rows behind it, and say whether it&apos;s real.</span>
+            </div>
+            <div>
+              <b>
+                <Banknote aria-hidden="true" style={{ width: 14, height: 14, verticalAlign: '-2px', marginRight: 6 }} />
+                3. Recover
+              </b>
+              <span>Send the request from your own email, then record what came back.</span>
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', marginTop: 18 }}>
+            <button type="button" className="wk-btn" data-variant="primary" data-size="sm" onClick={onStartAudit}>
+              <Plus aria-hidden="true" />
+              Start a new audit
+            </button>
+            <button type="button" className="wk-btn" data-variant="ghost" data-size="sm" onClick={onRunSample}>
+              <Sparkles aria-hidden="true" />
+              Try the sample ledger
+            </button>
+            <span className="wk-dim" style={{ fontSize: 12.5, marginLeft: 'auto' }} data-testid="audit-usage">
+              {limit === null
+                ? 'Unlimited audits on Pro'
+                : `${entitlements.usage.auditsThisMonth} of ${limit} audits used this month on Free`}
+            </span>
+          </div>
+        </div>
       </section>
 
       <section className="wk-section">

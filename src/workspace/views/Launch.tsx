@@ -1,7 +1,7 @@
 import { ArrowRight, Upload } from 'lucide-react'
 import { Mark } from '../WorkspaceShell'
-import { ScreenshotDrift } from '@/components/art/ScreenshotDrift'
 import '../workspace.css'
+import '../vercel.css'
 
 interface LaunchProps {
   onRunSample: () => void
@@ -14,8 +14,7 @@ interface LaunchProps {
 /** The first screen for a workspace with no audit in it yet. */
 export function Launch({ onRunSample, onUseOwn, running = false, note }: LaunchProps) {
   return (
-    <div className="wk wk-launch">
-      <ScreenshotDrift />
+    <div className="wk wk-vercel wk-launch">
       <div className="wk-launch-card">
         <a href="/" className="wk-brand" style={{ padding: 0 }}>
           <Mark />
