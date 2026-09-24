@@ -304,11 +304,8 @@ html[data-theme='light'] .wk {
 @media (max-width: 1100px) { .wk-ladder { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 620px) { .wk-ladder { grid-template-columns: minmax(0, 1fr); } }
 
-/* ---------- pipeline strip (verified → in recovery → recovered) ---------- */
-/* The three stages are disjoint in `ladder()` — a case that settles leaves
-   `requested` — so nothing here nests and nothing sums. Each bar is that
-   stage measured against the largest figure on the board, which is the only
-   claim three separate stages can honestly share: a proportion. */
+/* ---------- recovery pipeline ---------- */
+/* Each bar compares its stage to the largest figure shown. */
 .wk-dash-pipeline { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 34px; }
 .wk-pipeline { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
 .wk-pipeline > * { padding: 18px 20px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
@@ -318,12 +315,6 @@ html[data-theme='light'] .wk {
 /* Square ends, to sit with the blocky language of the renders. */
 .wk-rung-track { position: relative; width: 100%; height: 10px; background: var(--line); }
 .wk-rung-track i { position: absolute; top: 0; bottom: 0; left: 0; display: block; background: var(--text); }
-/* Where the money actually sits right now, said by the label alone — the
-   stages past it are already demoted, so the pair reads without a badge. */
-.wk-pipeline > [data-frontier] .wk-label { color: var(--accent-ink); }
-/* Past the frontier nothing has arrived, so the figure states itself at a size
-   that matches — still exact, no longer shouting over the stages that have. */
-.wk-pipeline > [data-unreached] .wk-pipeline-figure { font-size: 22px; color: var(--text-muted); }
 /* The accent belongs to money that actually came back. */
 .wk-pipeline > [data-accent='true'] .wk-rung-track i { background: var(--accent-ink); }
 
@@ -374,7 +365,7 @@ html[data-theme='light'] .wk {
 .wk-strength span { font-family: var(--f-mono); font-size: 11.5px; letter-spacing: 0.075em; text-transform: uppercase; color: var(--text-dim); }
 
 /* ---------- table ---------- */
-.wk-table-wrap { border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); overflow: hidden; }
+.wk-table-wrap { border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); overflow-x: auto; }
 .wk-table { width: 100%; border-collapse: collapse; }
 .wk-table th {
   text-align: left;
@@ -396,6 +387,9 @@ html[data-theme='light'] .wk {
 .wk-table .wk-right { text-align: right; }
 .wk-table-money { font-family: var(--f-mono); font-variant-numeric: tabular-nums; font-size: 13.5px; }
 .wk-table-vendor { font-weight: 550; }
+.wk-table-action { padding: 0; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.wk-table-action:hover { text-decoration: underline; text-underline-offset: 3px; }
+.wk-table-action:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 2px; }
 .wk-table-sub { font-size: 12.5px; color: var(--text-muted); margin-top: 2px; }
 
 /* ---------- buttons ---------- */
@@ -1003,3 +997,5 @@ html[data-theme-transition] .wk-panel {
 .wk-btn[data-variant='outline']:hover { border-color: var(--accent-ink); color: var(--accent-ink); }
 .wk-btn[data-variant='ghost']:hover { color: var(--accent-ink); }
 .wk-panel-close:hover { color: var(--accent-ink); }
+/* ---------- screen-reader text ---------- */
+.wk-sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }

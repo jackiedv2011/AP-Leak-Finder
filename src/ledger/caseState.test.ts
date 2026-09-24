@@ -36,6 +36,13 @@ function finding(overrides: Partial<Finding>): Finding {
 }
 
 describe('case-state transitions', () => {
+  it('records an internal review closeout as an investigation with its note and no money event', () => {
+    const confirmed = confirmCase('Bank details need checking')
+    const filed = withHistory(confirmed, markRecoveryRequested(confirmed, 100), null, true)
+    const closed = withHistory(filed, recordRecoveryOutcome(filed, 'not_recovered', null, 'Bank details confirmed internally'), null, true)
+    expect(filed.history?.at(-1)).toMatchObject({ action: 'review:filed', summary: 'Internal review filed', amount: null })
+    expect(closed.history?.at(-1)).toMatchObject({ action: 'review:closed', summary: 'Internal review closed', amount: null, note: 'Bank details confirmed internally' })
+  })
   it('confirming a case puts it into the real recovery lifecycle', () => {
     const state = confirmCase('vendor confirmed')
     expect(state.decision).toBe('confirmed')

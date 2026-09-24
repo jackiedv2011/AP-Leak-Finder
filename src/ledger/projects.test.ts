@@ -20,6 +20,14 @@ function environment() {
 describe('local ledger projects', () => {
   afterEach(() => window.localStorage.clear())
 
+  it('keeps internal reviews out of the project recovery shortcut', () => {
+    let env = environment()
+    const review = env.result.findings.find((finding) => finding.class === 'review')!
+    env = setCaseState(env, review.id, confirmCase('Investigate bank change'))
+    createProject({ name: 'Internal review', sourceLabel: 'march.csv', mode: 'upload', environment: env })
+    expect(listProjects()[0].recoveryActiveCount).toBe(0)
+  })
+
   it('every recovery field survives save → reload, and the dashboard figures come back identical', () => {
     let env = environment()
     const [first, second] = env.result.findings.filter((f) => f.class === 'recoverable')

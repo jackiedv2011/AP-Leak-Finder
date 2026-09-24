@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import * as DialogPrimitive from '@radix-ui/react-dialog'
 import { X } from 'lucide-react'
 import { DISMISSAL_TAG_LABEL, type DecisionValue, type DismissalTag } from '@/ledger/caseState'
@@ -17,6 +17,8 @@ interface DecisionDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   onSave: (input: DecisionInput) => void
+  /** The choice already selected when the dialog opens. */
+  initial?: DecisionValue
 }
 
 const OPTIONS: Array<{ value: DecisionValue; title: string; body: string }> = [
@@ -29,8 +31,11 @@ const OPTIONS: Array<{ value: DecisionValue; title: string; body: string }> = [
  * The one decision a reviewer makes on a finding, asked once, in one place,
  * with room to say why. Nothing is saved until "Save decision".
  */
-export function DecisionDialog({ finding, open, onOpenChange, onSave }: DecisionDialogProps) {
-  const [decision, setDecision] = useState<DecisionValue>('confirmed')
+export function DecisionDialog({ finding, open, onOpenChange, onSave, initial = 'confirmed' }: DecisionDialogProps) {
+  const [decision, setDecision] = useState<DecisionValue>(initial)
+  useEffect(() => {
+    if (open) setDecision(initial)
+  }, [open, initial])
   const [reason, setReason] = useState('')
   const [tag, setTag] = useState<DismissalTag>('intentional')
 
@@ -57,7 +62,7 @@ export function DecisionDialog({ finding, open, onOpenChange, onSave }: Decision
                 <input type="radio" name="decision" value={option.value} checked={decision === option.value} onChange={() => setDecision(option.value)} />
                 <span>
                   <b>{option.title}</b>
-                  <span className="wk-dim">{option.body}</span>
+                  <span className="wk-dim">{option.value === 'confirmed' && finding.class !== 'recoverable' ? 'Keep this finding for an internal investigation. Reclaim will prepare a note for your team; this does not record recoverable money.' : option.body}</span>
                 </span>
               </label>
             ))}

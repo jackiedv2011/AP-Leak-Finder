@@ -34,6 +34,9 @@ describe('letter generator', () => {
     expect(generateLetter(dup, undefined, 'refund').body).toMatch(/a refund of/)
     expect(generateLetter(dup, undefined, 'credit').body).toMatch(/an account credit of/)
     expect(generateLetter(dup, undefined, 'offset').body).toMatch(/applied against our next payment/)
+    const discount = findings.find((f) => f.type === 'unclaimed_discount')!
+    expect(generateLetter(discount, undefined, 'refund').subject).toMatch(/refund/i)
+    expect(generateLetter(discount, undefined, 'credit').subject).toMatch(/credit/i)
   })
 
   it('names every invoice the duplicate covers, once', () => {

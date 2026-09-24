@@ -40,7 +40,7 @@ export function Reports({ env }: { env: LedgerEnvironment }) {
             ['Payment records', String(s.recordCount)],
             ['Vendors', String(s.vendorCount)],
             ['Findings', String(l.counts.potential)],
-            ['Potential recovery', formatCurrency(l.potential)],
+            ['Open flagged value', formatCurrency(l.potential)],
             ['Verified', formatCurrency(l.verified)],
             ['Recovered', formatCurrency(l.recovered)],
           ]}
@@ -93,7 +93,7 @@ export function Reports({ env }: { env: LedgerEnvironment }) {
           </p>
         </div>
         {rows.length > 0 && !entitlements.limits.advancedReports ? (
-          <Locked title="The every-vendor report is part of Pro" note="Findings, strongest evidence, potential and recovered — per vendor.">
+          <Locked title="The every-vendor report is part of Pro" note="Findings, strongest evidence, flagged value and recovered — per vendor.">
             <div className="wk-table-wrap">
               <table className="wk-table">
                 <tbody>
@@ -117,7 +117,7 @@ export function Reports({ env }: { env: LedgerEnvironment }) {
                   <th>Findings</th>
                   <th>Strongest evidence</th>
                   <th className="wk-right">Recovered</th>
-                  <th className="wk-right">Potential</th>
+                  <th className="wk-right">Flagged value</th>
                 </tr>
               </thead>
               <tbody>

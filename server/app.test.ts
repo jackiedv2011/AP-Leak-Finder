@@ -342,8 +342,8 @@ describe('plans and entitlements', () => {
     await signUpAndVerify(c, alice)
     const draftPayload = {
       vendor: 'V', findingType: 'T', findingTitle: 'X', explanation: 'E', evidenceStrength: 'strong', amountFlagged: 1, amountRequested: 1, method: 'refund', recoveryStage: 'confirmed',
-      rows: [{ invoiceNumber: null, invoiceDate: null, paymentDate: '2025-01-01', invoiceAmount: null, amountPaid: 1, terms: null, bankAccountLast4: null }],
-      reviewerNote: null, userContext: '', sender: { businessName: '', senderName: '', senderEmail: '' },
+      rows: [{ invoiceNumber: null, invoiceDate: null, paymentDate: '2025-01-01', invoiceAmount: null, amountPaid: 1, terms: null }],
+      userContext: '', sender: { businessName: '', senderName: '', senderEmail: '' },
     }
     vi.mocked(drafts.draft).mockClear()
     const refused = await c.post('/api/ai/draft', draftPayload)
@@ -394,14 +394,15 @@ describe('ai drafting', () => {
     const payload = {
       vendor: 'Sierra Coffee Supply', findingType: 'Exact duplicate payment', findingTitle: 'Duplicate payment of invoice INV-1', explanation: 'Paid twice.', evidenceStrength: 'strong',
       amountFlagged: 6800, amountRequested: 6800, method: 'refund', recoveryStage: 'confirmed',
-      rows: [{ invoiceNumber: 'INV-1', invoiceDate: '2025-01-05', paymentDate: '2025-02-02', invoiceAmount: 6800, amountPaid: 6800, terms: null, bankAccountLast4: null }],
-      reviewerNote: null, userContext: '', sender: { businessName: 'Bean Co', senderName: 'Alice Ng', senderEmail: 'alice@example.com' },
+      rows: [{ invoiceNumber: 'INV-1', invoiceDate: '2025-01-05', paymentDate: '2025-02-02', invoiceAmount: 6800, amountPaid: 6800, terms: null }],
+      userContext: '', sender: { businessName: 'Bean Co', senderName: 'Alice Ng', senderEmail: 'alice@example.com' },
     }
     expect((await new Client().post('/api/ai/draft', payload)).status).toBe(401)
     const c = new Client()
     await signUpAndVerify(c, alice)
     await c.post('/api/dev/plan', { plan: 'pro' })
-    expect((await c.post('/api/ai/draft', { ...payload, extra: 'smuggled', rows: [] })).status).toBe(400)
+    expect((await c.post('/api/ai/draft', { ...payload, extra: 'smuggled' })).status).toBe(400)
+    expect((await c.post('/api/ai/draft', { ...payload, rows: [{ ...payload.rows[0], bankAccountLast4: '1234' }] })).status).toBe(400)
     const ok = await c.post('/api/ai/draft', payload)
     expect(ok.status).toBe(200)
     expect(ok.body).toEqual({ subject: 'Re: Sierra Coffee Supply', body: 'Please refund 6800.' })

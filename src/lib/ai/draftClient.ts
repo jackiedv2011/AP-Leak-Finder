@@ -27,9 +27,7 @@ export interface DraftRequest {
     invoiceAmount: number | null
     amountPaid: number
     terms: string | null
-    bankAccountLast4: string | null
   }>
-  reviewerNote: string | null
   /** Anything the reviewer typed to steer the draft, e.g. "we have a good relationship, keep it warm". */
   userContext: string
   sender: SenderProfile
@@ -63,9 +61,7 @@ export function buildDraftRequest(
       invoiceAmount: r.invoiceAmount,
       amountPaid: r.amountPaid,
       terms: r.terms,
-      bankAccountLast4: r.bankAccountLast4,
     })),
-    reviewerNote: state.reason ?? null,
     userContext: options.userContext,
     sender: options.sender,
   }

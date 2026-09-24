@@ -22,6 +22,20 @@ function buildSampleEnv() {
 }
 
 describe('views', () => {
+  it('does not count an internal investigation as an active vendor recovery', () => {
+    let env = buildSampleEnv()
+    const review = env.result.findings.find((finding) => finding.class === 'review')!
+    env = setCaseState(env, review.id, confirmCase('Check the changed bank details'))
+    expect(overviewSummary(env).recoveryActiveCount).toBe(0)
+    expect(recoveryQueue(env).flatMap((group) => group.cases).some((row) => row.finding.id === review.id)).toBe(false)
+  })
+  it('does not count a legacy internal review outcome as recovered money', () => {
+    let env = buildSampleEnv()
+    const review = env.result.findings.find((finding) => finding.class === 'review')!
+    env = setCaseState(env, review.id, { ...confirmCase('Reviewed'), recoveryStage: 'recovered', recoveredAmount: review.dollarImpact })
+    expect(overviewSummary(env).recoveredValue).toBe(0)
+    expect(overviewSummary(env).recoveredCount).toBe(0)
+  })
   it('overview reflects real undecided totals and groups everything as three lenses over the same data', () => {
     const env = buildSampleEnv()
     const overview = overviewSummary(env)

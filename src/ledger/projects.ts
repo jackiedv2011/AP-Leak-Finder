@@ -48,7 +48,7 @@ function summaryFor(project: LedgerProject): LedgerProjectSummary {
   const recoveryValue = openFindings.reduce((total, finding) => total + finding.dollarImpact, 0)
   const activeRecovery = project.environment.result.findings.filter((finding) => {
     const stage = project.environment.caseStates[finding.id]?.recoveryStage
-    return stage === 'confirmed' || stage === 'requested'
+    return finding.class === 'recoverable' && (stage === 'confirmed' || stage === 'requested')
   })
 
   return {

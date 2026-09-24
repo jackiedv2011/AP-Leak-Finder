@@ -60,18 +60,36 @@ export function applyTheme(theme: ResolvedTheme, options: { animate?: boolean } 
   const root = document.documentElement
   if (root.dataset.theme === theme) return
 
-  if (options.animate && !prefersReducedMotion()) {
-    root.dataset.themeTransition = ''
-    // Flush the transition declaration before the colours change, so the
-    // browser has something to interpolate from rather than resolving both in
-    // one pass and painting the end state.
-    void root.offsetWidth
-    window.clearTimeout(fadeTimer)
-    fadeTimer = window.setTimeout(() => {
-      delete root.dataset.themeTransition
-    }, FADE_MS + 60)
+  if (!options.animate || prefersReducedMotion()) {
+    root.dataset.theme = theme
+    return
   }
 
+  // Preferred: the browser snapshots the page and cross-fades the whole
+  // picture at once, so text, fills and borders all change in the same frame.
+  // Per-element colour transitions can't do that: inherited text colour
+  // re-starts its fade at every nesting level and ends up trailing the page.
+  const doc = document as Document & { startViewTransition?: (update: () => void) => unknown }
+  if (typeof doc.startViewTransition === 'function') {
+    root.dataset.themeSwap = ''
+    const transition = doc.startViewTransition(() => {
+      root.dataset.theme = theme
+    }) as { finished?: Promise<unknown> } | undefined
+    const done = () => { delete root.dataset.themeSwap }
+    if (transition?.finished) transition.finished.then(done, done)
+    else done()
+    return
+  }
+
+  root.dataset.themeTransition = ''
+  // Flush the transition declaration before the colours change, so the
+  // browser has something to interpolate from rather than resolving both in
+  // one pass and painting the end state.
+  void root.offsetWidth
+  window.clearTimeout(fadeTimer)
+  fadeTimer = window.setTimeout(() => {
+    delete root.dataset.themeTransition
+  }, FADE_MS + 60)
   root.dataset.theme = theme
 }
 
