@@ -75,12 +75,18 @@ html[data-surface='workspace'] .wk {
   --radius-sm: var(--r-sm);
 
   --sidebar-w: 248px;
-  --gutter: 36px;
-  --pad: 24px;
-  --gap: 24px;
-  --row: 60px;
-  --control: 36px;
-  --fs: 14px;
+  --d-gutter: 36px;
+  --d-pad: 24px;
+  --d-gap: 24px;
+  --d-row: 60px;
+  --d-control: 36px;
+  --d-fs: 14px;
+  --gutter: var(--d-gutter);
+  --pad: var(--d-pad);
+  --gap: var(--d-gap);
+  --row: var(--d-row);
+  --control: var(--d-control);
+  --fs: var(--d-fs);
 }
 
 html[data-surface='workspace'][data-theme='dark'] .wk {
@@ -146,14 +152,29 @@ html[data-surface='workspace'][data-theme='dark'][data-accent='orange'] .wk { --
 html[data-surface='workspace'][data-theme='dark'][data-accent='purple'] .wk { --accent-ink: #c99bff; --accent-soft: rgb(184 116 252 / .14); --accent-ring: rgb(184 116 252 / .28); }
 html[data-surface='workspace'][data-theme='dark'][data-accent='mono'] .wk { --accent: #fff; --accent-hover: #e6e6e6; --on-accent: #000; --accent-ink: #fff; --accent-soft: #1d1d1d; --accent-ring: rgb(255 255 255 / .22); }
 
-/* ---------- density ---------- */
+/* ---------- density ----------
+ * The --d-* sizes are registered as lengths so the browser can interpolate
+ * them. Switching density eases these few numbers on .wk, and every padding,
+ * gap, row height and font size that reads them follows in the same frame,
+ * so the page settles into its new spacing instead of jumping. */
+@property --d-gutter { syntax: '<length>'; inherits: true; initial-value: 36px; }
+@property --d-pad { syntax: '<length>'; inherits: true; initial-value: 24px; }
+@property --d-gap { syntax: '<length>'; inherits: true; initial-value: 24px; }
+@property --d-row { syntax: '<length>'; inherits: true; initial-value: 60px; }
+@property --d-control { syntax: '<length>'; inherits: true; initial-value: 36px; }
+@property --d-fs { syntax: '<length>'; inherits: true; initial-value: 14px; }
+html[data-surface='workspace'] .wk {
+  transition-property: --d-gutter, --d-pad, --d-gap, --d-row, --d-control, --d-fs;
+  transition-duration: 520ms;
+  transition-timing-function: cubic-bezier(.45, 0, .2, 1);
+}
 html[data-surface='workspace'][data-density='compact'] .wk {
-  --gutter: 24px;
-  --pad: 16px;
-  --gap: 16px;
-  --row: 46px;
-  --control: 32px;
-  --fs: 13px;
+  --d-gutter: 24px;
+  --d-pad: 16px;
+  --d-gap: 16px;
+  --d-row: 46px;
+  --d-control: 32px;
+  --d-fs: 13px;
 }
 
 /* ---------- base ---------- */
