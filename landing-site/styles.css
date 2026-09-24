@@ -1014,3 +1014,45 @@ img, video, canvas, svg { display: block; max-width: 100%; }
 @media (prefers-reduced-motion: reduce) {
   .site-in { display: none; }
 }
+
+/* ---------- home: refinements (2026-09-24) ---------- */
+/* hero: the description carries the two calls to action, so it can grow past the fixed frame */
+.hero-home { aspect-ratio: auto; min-height: 80rem; padding-top: calc(var(--nav-height) + 6.4rem); }
+.hero-home .desc { margin-top: 3.2rem; }
+.hero-ctas { display: flex; flex-wrap: wrap; align-items: center; gap: .8rem 2.4rem; margin-top: 2.4rem; }
+.hero-ctas .cta-button[theme="none"] { color: var(--cl-black); }
+.hero-ctas .cta-button[theme="none"].hovering { color: var(--cl-grey-600); }
+
+/* connect / find / recover: a quiet index above each word, so the columns read as one sequence */
+.content-column .step-no { display: block; margin-bottom: 1.6rem; color: var(--cl-grey-500); }
+.content-column .heading.type-h4 + .desc { margin-top: 1.2rem; }
+
+/* integrations: the two direct connections are solid and wide; exports sit a step back */
+.grid1 .grid-item-wrap.is-wide { grid-column: span 2; }
+.grid1 .is-wide .grid-item-brand { aspect-ratio: 628 / 140; }
+.grid1 a.grid-item-brand { display: block; }
+.grid-item-brand .depth { position: absolute; left: 2.8rem; top: 2.4rem; display: flex; align-items: center; gap: .8rem; color: var(--cl-grey-500); text-transform: uppercase; transition: color .2s; }
+.grid-item-brand[idx="0"] .depth::before { content: ""; width: .6rem; height: .6rem; border-radius: 50%; background: var(--cl-reclaim); }
+.grid1 .grid-item-brand[idx="1"] .wrap { background: var(--cl-grey-100); color: var(--cl-black); }
+.grid1 .grid-item-brand:hover[idx="1"] .wrap { background: var(--cl-grey-200); }
+.grid1 .grid-item-brand:hover .depth { color: var(--cl-black); }
+.grid1 .grid-item-brand:hover[idx="0"] .depth::before { background: var(--cl-black); }
+
+/* footer: the three promises that hold on every page, opposite the copyright */
+.the-footer .bottom { align-items: end; }
+.the-footer .bottom .promise { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .4rem 2.4rem; grid-column: 6 / span 7; }
+.the-footer .bottom .promise span { display: inline-flex; align-items: center; gap: .8rem; }
+.the-footer .bottom .promise span::before { content: ""; width: .6rem; height: .6rem; border-radius: 50%; background: var(--cl-reclaim); }
+
+@media (max-width: 1023px) {
+  .hero-home { min-height: 0; padding-top: calc(var(--nav-height) + var(--section-margin)); }
+  .hero-home .desc { margin-top: 3.2rem; }
+  .hero-ctas { margin-top: 2.4rem; }
+  .grid1 .is-wide .grid-item-brand { aspect-ratio: 302 / 100; }
+  .grid-item-brand .depth { left: 1.6rem; top: 1.4rem; font-size: 1rem; }
+  .grid1 .grid-item-brand:not(.is-wide *) .wm { margin-top: 1.6rem; }
+  .the-footer .bottom .promise { grid-column: 1 / -1; justify-content: flex-start; flex-direction: column; margin-top: 3.2rem; }
+}
+@media (min-width: 600px) and (max-width: 1023px) {
+  .hero-home .desc { grid-column: 1 / span 4; }
+}
