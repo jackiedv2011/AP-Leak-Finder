@@ -2,6 +2,7 @@ import * as DialogPrimitive from '@radix-ui/react-dialog'
 import { X } from 'lucide-react'
 import { ImportPanel, type ImportInput } from '@/components/audit/ImportPanel'
 import '@/workspace/workspace.css'
+import '@/workspace/reclaim.css'
 
 export type ImportIntent = 'new' | 'add'
 
@@ -31,7 +32,7 @@ const COPY: Record<ImportIntent, { title: string; description: string; intro: st
 
 /**
  * Radix owns the portal, the focus trap and escape; the workspace owns every
- * pixel of it, through `.wk-overlay` / `.wk-panel` in workspace.css.
+ * pixel of it, through `.wk-overlay` / `.wk-panel` in workspace.css and reclaim.css.
  */
 export function ImportDialog({ open, onOpenChange, onImport, error, intent }: ImportDialogProps) {
   const copy = COPY[intent]
@@ -39,7 +40,7 @@ export function ImportDialog({ open, onOpenChange, onImport, error, intent }: Im
     <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
       <DialogPrimitive.Portal>
         <DialogPrimitive.Overlay className="wk wk-overlay" />
-        <DialogPrimitive.Content className="wk wk-panel">
+        <DialogPrimitive.Content className="wk wk-panel wk-flow-panel">
           <header className="wk-panel-head">
             <div>
               <DialogPrimitive.Title className="wk-display wk-h2">{copy.title}</DialogPrimitive.Title>

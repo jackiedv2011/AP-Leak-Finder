@@ -952,3 +952,203 @@ html[data-surface='workspace'] .wk-panel[data-state='closed'] { animation: wk-zo
 @media (prefers-reduced-motion: reduce) {
   .wk-app, .wk-app .wk-side, .wk-sheet, .wk-toggle, .wk-toggle::after { transition: none; }
 }
+
+/* ==========================================================================
+ * Launch and import: the upload flow.
+ *
+ * The first-run screen (views/Launch.tsx), the import dialog and panel
+ * (components/audit/ImportDialog + ImportPanel), the legacy-audit dialog and
+ * the first-run tour. AuditApp mounts PreferencesProvider around the pre-audit
+ * screen, so these carry the same <html data-surface> tokens as the dashboard
+ * and read as its first page rather than a separate interstitial.
+ *
+ * Hover changes colour and background only; nothing moves under the pointer.
+ * ========================================================================== */
+
+/* Portalled surfaces. Every `.wk` picks up the canvas colour from the base
+   rule above, which would make a scrim opaque and a dialog grey; a scrim is a
+   shade and a dialog is a card. */
+html[data-surface='workspace'] .wk-overlay { background: var(--scrim); }
+html[data-surface='workspace'] .wk-panel { background: var(--surface); color: var(--text); line-height: 1.5; }
+html[data-surface='workspace'] .wk-panel .wk-import { background: transparent; }
+
+/* ---------- launch: the page ---------- */
+html[data-surface='workspace'] .wk-launch { display: flex; flex-direction: column; min-height: 100dvh; padding: 0; place-items: normal; }
+html[data-surface='workspace'] .wk-launch-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 60px; padding: 0 var(--gutter); border-bottom: 1px solid var(--line); background: color-mix(in srgb, var(--bg) 88%, transparent); }
+html[data-surface='workspace'] .wk-launch-brand { margin: 0 0 0 -8px; }
+html[data-surface='workspace'] .wk-launch-main { display: flex; flex: 1; justify-content: center; align-items: flex-start; padding: clamp(40px, 9vh, 104px) var(--gutter) 80px; }
+html[data-surface='workspace'] .wk-launch-card { display: flex; width: min(760px, 100%); flex-direction: column; gap: 28px; padding: 0; border: 0; background: none; }
+
+html[data-surface='workspace'] .wk-launch-head { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; }
+html[data-surface='workspace'] .wk-launch-head h1 { max-width: 24ch; font: 600 clamp(28px, 2.8vw, 36px)/1.14 var(--f-text); letter-spacing: -.035em; text-wrap: balance; }
+html[data-surface='workspace'] .wk-launch-head p { max-width: 64ch; color: var(--text-muted); font-size: 14.5px; line-height: 1.6; }
+
+/* The three steps read like the dashboard's totals row: one card, hairline
+   dividers, a label, a figure-weight title and a muted note. */
+html[data-surface='workspace'] .wk-launch-steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; overflow: hidden; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface); box-shadow: var(--shadow-rest); }
+html[data-surface='workspace'] .wk-launch-steps > li { display: flex; min-width: 0; flex-direction: column; gap: 6px; padding: var(--pad); border: 0; border-radius: 0; background: none; }
+html[data-surface='workspace'] .wk-launch-steps > li + li { border-left: 1px solid var(--line-soft); }
+html[data-surface='workspace'] .wk-launch-steps .wk-label { display: flex; align-items: center; gap: 7px; }
+html[data-surface='workspace'] .wk-launch-steps .wk-label::before { content: ''; width: 7px; height: 7px; flex: none; border-radius: 50%; background: var(--line-strong); }
+html[data-surface='workspace'] .wk-launch-steps > li[data-first] .wk-label::before { background: var(--accent); box-shadow: 0 0 0 3px var(--accent-ring); }
+html[data-surface='workspace'] .wk-launch-steps strong { margin-top: 6px; font: 600 15px/1.3 var(--f-text); letter-spacing: -.01em; }
+html[data-surface='workspace'] .wk-launch-steps small { color: var(--text-muted); font-size: 13px; line-height: 1.5; }
+
+html[data-surface='workspace'] .wk-launch-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+
+/* Running: one card with a spinner and an indeterminate bar along its foot. */
+html[data-surface='workspace'] .wk-launch-status { position: relative; display: flex; align-items: center; gap: 12px; overflow: hidden; padding: 14px 16px 16px; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface); box-shadow: var(--shadow-rest); }
+html[data-surface='workspace'] .wk-launch-status:empty { display: none; }
+html[data-surface='workspace'] .wk-launch-status > * { animation: wk-fade var(--t-med) ease both; }
+html[data-surface='workspace'] .wk-launch-spinner { width: 18px; height: 18px; flex: none; border: 2px solid var(--line); border-top-color: var(--accent-ink); border-radius: 50%; animation: wk-spin 800ms linear infinite; }
+html[data-surface='workspace'] .wk-launch-status-copy { display: flex; min-width: 0; flex-direction: column; gap: 2px; }
+html[data-surface='workspace'] .wk-launch-status-copy strong { font: 600 14px/1.35 var(--f-text); }
+html[data-surface='workspace'] .wk-launch-status-copy small { color: var(--text-muted); font-size: 12.5px; }
+html[data-surface='workspace'] .wk-launch-progress { position: absolute; right: 0; bottom: 0; left: 0; height: 3px; overflow: hidden; background: var(--surface-hi); }
+html[data-surface='workspace'] .wk-launch-progress::after { content: ''; position: absolute; top: 0; bottom: 0; left: 0; width: 40%; border-radius: 2px; background: var(--accent); animation: wk-indeterminate 1.2s var(--ease-in-out) infinite; }
+@keyframes wk-spin { to { transform: rotate(360deg); } }
+@keyframes wk-indeterminate { from { transform: translateX(-100%); } to { transform: translateX(260%); } }
+
+/* The page settles in the way a dashboard page does: blocks rise, a beat apart. */
+html[data-surface='workspace'] .wk-launch-card > * { animation: wk-rise var(--t-slow) var(--ease-out) both; }
+html[data-surface='workspace'] .wk-launch-card > :nth-child(2) { animation-delay: 60ms; }
+html[data-surface='workspace'] .wk-launch-card > :nth-child(3) { animation-delay: 120ms; }
+html[data-surface='workspace'] .wk-launch-card > :nth-child(n + 4) { animation-delay: 0ms; animation-name: wk-fade; }
+
+/* ---------- callouts: danger tone and inline actions ---------- */
+html[data-surface='workspace'] .wk-callout[data-tone='danger'] { border-color: color-mix(in srgb, var(--danger) 32%, transparent); background: var(--danger-soft); color: var(--text); }
+html[data-surface='workspace'] .wk-callout[data-tone='danger'] > svg { color: var(--danger); }
+html[data-surface='workspace'] .wk-callout-body { display: flex; flex: 1; min-width: 0; flex-direction: column; gap: 8px; }
+html[data-surface='workspace'] .wk-callout-actions { display: flex; flex-wrap: wrap; gap: 4px 18px; }
+html[data-surface='workspace'] .wk-callout-actions .wk-link { color: var(--text); font: 500 13px var(--f-text); text-decoration: underline; text-decoration-color: color-mix(in srgb, currentColor 35%, transparent); text-underline-offset: 3px; }
+html[data-surface='workspace'] .wk-callout-actions .wk-link:hover { text-decoration-color: currentColor; }
+
+/* ---------- dialogs in the flow ---------- */
+html[data-surface='workspace'] .wk-flow-panel { width: min(600px, calc(100vw - 32px)); }
+html[data-surface='workspace'] .wk-flow-panel[data-size='narrow'] { width: min(520px, calc(100vw - 32px)); }
+html[data-surface='workspace'] .wk-flow-panel[data-size='wide'] { width: min(680px, calc(100vw - 32px)); }
+html[data-surface='workspace'] .wk-flow-panel .wk-panel-head { gap: 16px; }
+html[data-surface='workspace'] .wk-flow-panel .wk-panel-head p { max-width: 56ch; margin-top: 6px; color: var(--text-muted); font-size: 13.5px; line-height: 1.5; }
+html[data-surface='workspace'] .wk-flow-panel .wk-panel-close { margin: -4px -6px 0 0; border-radius: var(--r-sm); color: var(--text-muted); }
+html[data-surface='workspace'] .wk-flow-panel .wk-panel-close:hover { background: var(--bg-deep); color: var(--text); }
+html[data-surface='workspace'] .wk-flow-panel .wk-panel-foot-start { margin-right: auto; }
+html[data-surface='workspace'] .wk-flow-panel .wk-panel-foot-note { flex: 1 1 220px; margin-right: auto; color: var(--text-dim); font-size: 13px; line-height: 1.45; }
+html[data-surface='workspace'] .wk-flow-panel .wk-btn[data-variant='danger'] { border-color: transparent; background: var(--danger); color: var(--on-inverse); }
+html[data-surface='workspace'] .wk-flow-panel .wk-btn[data-variant='danger']:hover { background: color-mix(in srgb, var(--danger) 86%, var(--text)); }
+/* Actions sit in a footer strip, right-aligned, and stay in view when the dialog scrolls. */
+@media (min-width: 901px) {
+  html[data-surface='workspace'] .wk-flow-panel .wk-panel-foot { position: sticky; z-index: 1; bottom: -26px; margin: 4px -26px -26px; padding: 14px 26px; border-top: 1px solid var(--line-soft); background: var(--surface-sunk); }
+}
+
+/* ---------- import panel ---------- */
+html[data-surface='workspace'] .wk-import { gap: 16px; font-size: 14px; }
+html[data-surface='workspace'] .wk-import-intro { color: var(--text-dim); font-size: 13.5px; line-height: 1.5; }
+
+html[data-surface='workspace'] .wk-drop { display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 32px 24px 28px; border: 1.5px dashed var(--line-strong); border-radius: var(--r-md); background: var(--surface-sunk); color: var(--text); text-align: center; cursor: pointer; transition: background-color var(--t-fast) ease, border-color var(--t-fast) ease; }
+html[data-surface='workspace'] .wk-drop:hover { border-color: var(--text-muted); background: var(--surface-hi); }
+html[data-surface='workspace'] .wk-drop[data-dragging='true'] { border-style: solid; border-color: var(--accent-ink); background: var(--accent-soft); }
+html[data-surface='workspace'] .wk-drop[data-invalid] { border-color: color-mix(in srgb, var(--danger) 55%, var(--line-strong)); }
+html[data-surface='workspace'] .wk-drop-icon { display: grid; place-items: center; width: 44px; height: 44px; flex: none; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--surface); color: var(--text); box-shadow: var(--shadow-rest); transition: background-color var(--t-fast) ease, border-color var(--t-fast) ease, color var(--t-fast) ease; }
+html[data-surface='workspace'] .wk-drop-icon svg { width: 20px; height: 20px; stroke-width: 1.7; }
+html[data-surface='workspace'] .wk-drop[data-dragging='true'] .wk-drop-icon { border-color: transparent; background: var(--accent); color: var(--on-accent); }
+html[data-surface='workspace'] .wk-drop-copy strong { display: block; font: 600 15px/1.35 var(--f-text); letter-spacing: -.01em; }
+html[data-surface='workspace'] .wk-drop-copy span { display: block; max-width: 44ch; margin: 4px auto 0; color: var(--text-muted); font-size: 13px; line-height: 1.5; }
+html[data-surface='workspace'] .wk-drop > .wk-btn { margin-top: 2px; }
+
+html[data-surface='workspace'] .wk-import-links { display: flex; flex-wrap: wrap; gap: 8px 20px; }
+html[data-surface='workspace'] .wk-import-links .wk-link { gap: 7px; color: var(--text-dim); font: 500 13px var(--f-text); transition: color var(--t-fast) ease; }
+html[data-surface='workspace'] .wk-import-links .wk-link svg { color: var(--text-muted); }
+html[data-surface='workspace'] .wk-import-links .wk-link:hover { color: var(--text); text-decoration: underline; text-underline-offset: 3px; }
+html[data-surface='workspace'] .wk-import-privacy { display: flex; align-items: flex-start; gap: 8px; color: var(--text-muted); font-size: 12.5px; line-height: 1.5; }
+html[data-surface='workspace'] .wk-import-privacy svg { width: 14px; height: 14px; flex: none; margin-top: 2px; }
+html[data-surface='workspace'] .wk-import-or { display: flex; align-items: center; gap: 12px; }
+html[data-surface='workspace'] .wk-import-or hr { flex: 1; }
+html[data-surface='workspace'] .wk-import-sample .wk-btn { width: 100%; margin-top: 12px; }
+
+/* The chosen file, then what Reclaim read from it, in the totals style. */
+html[data-surface='workspace'] .wk-import-file { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface); box-shadow: var(--shadow-rest); }
+html[data-surface='workspace'] .wk-import-file-icon { display: grid; place-items: center; width: 40px; height: 40px; flex: none; border-radius: var(--r-sm); background: var(--accent-soft); color: var(--accent-ink); }
+html[data-surface='workspace'] .wk-import-file-icon svg { width: 18px; height: 18px; stroke-width: 1.8; }
+html[data-surface='workspace'] .wk-import-file-copy { display: flex; flex: 1; min-width: 0; flex-direction: column; gap: 2px; }
+html[data-surface='workspace'] .wk-import-file-copy strong { overflow: hidden; font: 600 14px/1.35 var(--f-text); text-overflow: ellipsis; white-space: nowrap; }
+html[data-surface='workspace'] .wk-import-file-copy small { color: var(--text-muted); font-size: 12.5px; font-variant-numeric: tabular-nums; }
+html[data-surface='workspace'] .wk-import-stats { display: grid; grid-auto-columns: minmax(0, 1fr); grid-auto-flow: column; overflow: hidden; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface); }
+html[data-surface='workspace'] .wk-import-stats > div { display: flex; min-width: 0; flex-direction: column; gap: 6px; padding: 14px 16px; }
+html[data-surface='workspace'] .wk-import-stats > div + div { border-left: 1px solid var(--line-soft); }
+html[data-surface='workspace'] .wk-import-stats > div[data-wide] { grid-column: span 2; }
+html[data-surface='workspace'] .wk-import-stats dd { font: 600 22px/1.1 var(--f-text); letter-spacing: -.04em; font-variant-numeric: tabular-nums; }
+html[data-surface='workspace'] .wk-import-stats > div[data-wide] dd { margin-top: auto; font-size: 14px; font-weight: 500; line-height: 1.4; letter-spacing: -.005em; }
+html[data-surface='workspace'] .wk-import-weaker { display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--surface-sunk); }
+html[data-surface='workspace'] .wk-import-weaker ul { display: flex; flex-direction: column; gap: 6px; }
+html[data-surface='workspace'] .wk-import-weaker li { position: relative; padding-left: 16px; color: var(--text-dim); font-size: 13px; line-height: 1.5; }
+html[data-surface='workspace'] .wk-import-weaker li::before { content: ''; position: absolute; top: 7px; left: 2px; width: 6px; height: 6px; border-radius: 50%; background: var(--kind-review-dot); }
+
+/* The required-format reference: the dashboard's table, read-only. */
+html[data-surface='workspace'] .wk-format-table { overflow: auto; box-shadow: none; }
+html[data-surface='workspace'] .wk-format-table .wk-table { display: table; width: 100%; }
+html[data-surface='workspace'] .wk-format-table .wk-table thead { display: table-header-group; min-width: 0; }
+html[data-surface='workspace'] .wk-format-table .wk-table tbody { display: table-row-group; min-width: 0; }
+html[data-surface='workspace'] .wk-format-table .wk-table th { padding: 10px 16px; text-align: left; }
+html[data-surface='workspace'] .wk-format-table .wk-table td { height: auto; padding: 11px 16px; color: var(--text-dim); font-size: 13px; line-height: 1.45; vertical-align: top; white-space: normal; }
+html[data-surface='workspace'] .wk-format-table .wk-table td:first-child { width: 1%; white-space: nowrap; }
+html[data-surface='workspace'] .wk-format-table .wk-table tbody tr { cursor: default; animation: none; }
+html[data-surface='workspace'] .wk-format-table .wk-table tbody tr:hover { background: transparent; }
+html[data-surface='workspace'] .wk-format-table .wk-table tbody tr:hover td { color: var(--text-dim); }
+html[data-surface='workspace'] .wk-format-table .wk-table tbody tr:last-child td { border-bottom: 0; }
+html[data-surface='workspace'] .wk-format-table code { padding: 2px 6px; border-radius: var(--r-xs); background: var(--surface-hi); color: var(--text); font: 500 12.5px/1.4 var(--f-mono); }
+
+/* ---------- legacy audits list ---------- */
+html[data-surface='workspace'] .wk-flow-list { display: flex; max-height: 240px; flex-direction: column; overflow-y: auto; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface-sunk); }
+html[data-surface='workspace'] .wk-flow-list li { display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 10px 14px; border-top: 1px solid var(--line-soft); font-size: 13.5px; font-weight: 500; }
+html[data-surface='workspace'] .wk-flow-list li:first-child { border-top: 0; }
+html[data-surface='workspace'] .wk-flow-list svg { width: 15px; height: 15px; flex: none; color: var(--text-muted); }
+html[data-surface='workspace'] .wk-flow-list span { overflow: hidden; min-width: 0; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ---------- first-run tour ---------- */
+html[data-surface='workspace'] .wk-tour-head { display: flex; min-width: 0; align-items: flex-start; gap: 14px; }
+html[data-surface='workspace'] .wk-tour-copy { display: flex; min-width: 0; flex-direction: column; gap: 6px; }
+html[data-surface='workspace'] .wk-tour .wk-tour-icon { width: 40px; height: 40px; border-radius: var(--r-sm); background: var(--accent-soft); color: var(--accent-ink); }
+html[data-surface='workspace'] .wk-tour .wk-tour-icon svg { width: 19px; height: 19px; stroke-width: 1.8; }
+html[data-surface='workspace'] .wk-tour .wk-tour-body { margin-top: 2px; color: var(--text-dim); font-size: 14px; line-height: 1.6; }
+html[data-surface='workspace'] .wk-tour .wk-tour-tip { margin-top: 8px; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--surface-sunk); color: var(--text-dim); font-size: 13px; line-height: 1.5; }
+html[data-surface='workspace'] .wk-tour .wk-tour-dots { display: flex; justify-content: center; gap: 6px; padding: 0; }
+html[data-surface='workspace'] .wk-tour .wk-tour-dots i { width: 6px; height: 6px; border-radius: 3px; background: var(--line-strong); transition: width var(--t-med) var(--ease-out), background-color var(--t-med) ease; }
+html[data-surface='workspace'] .wk-tour .wk-tour-dots i[data-active] { width: 18px; background: var(--accent-ink); }
+
+/* ---------- touch and small screens ---------- */
+@media (hover: none) {
+  html[data-surface='workspace'] .wk-drop:hover { border-color: var(--line-strong); background: var(--surface-sunk); }
+}
+@media (max-width: 900px) {
+  /* Bottom sheet: the footer strip (pinned by the sheet rules above) wraps rather than squeezing. */
+  html[data-surface='workspace'] .wk-flow-panel .wk-panel-foot { flex-wrap: wrap; background: var(--surface-sunk); }
+  html[data-surface='workspace'] .wk-flow-panel .wk-panel-foot .wk-btn { flex: 1 1 auto; }
+  html[data-surface='workspace'] .wk-flow-panel .wk-panel-foot-start { margin-right: 0; }
+  html[data-surface='workspace'] .wk-flow-panel .wk-panel-foot-note { flex-basis: 100%; }
+  html[data-surface='workspace'] .wk-flow-panel .wk-panel-close { width: 40px; height: 40px; margin: -6px -8px 0 0; }
+  html[data-surface='workspace'] .wk-import-links .wk-link { min-height: 40px; }
+}
+@media (max-width: 640px) {
+  html[data-surface='workspace'] .wk-launch-top { min-height: calc(56px + env(safe-area-inset-top, 0px)); padding: env(safe-area-inset-top, 0px) 10px 0 16px; }
+  html[data-surface='workspace'] .wk-launch-main { padding: 28px 16px calc(40px + env(safe-area-inset-bottom, 0px)); }
+  html[data-surface='workspace'] .wk-launch-card { gap: 22px; }
+  html[data-surface='workspace'] .wk-launch-head h1 { font-size: 26px; }
+  html[data-surface='workspace'] .wk-launch-head p { font-size: 14px; }
+  html[data-surface='workspace'] .wk-launch-steps { grid-template-columns: minmax(0, 1fr); }
+  html[data-surface='workspace'] .wk-launch-steps > li { padding: 14px 16px; }
+  html[data-surface='workspace'] .wk-launch-steps > li + li { border-top: 1px solid var(--line-soft); border-left: 0; }
+  html[data-surface='workspace'] .wk-launch-steps strong { margin-top: 2px; }
+  html[data-surface='workspace'] .wk-launch-actions { flex-direction: column; }
+  html[data-surface='workspace'] .wk-launch-actions .wk-btn { width: 100%; min-height: 48px; }
+
+  html[data-surface='workspace'] .wk-drop { padding: 24px 16px 20px; }
+  html[data-surface='workspace'] .wk-drop > .wk-btn { width: 100%; min-height: 44px; }
+  html[data-surface='workspace'] .wk-import-stats { grid-auto-flow: row; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  html[data-surface='workspace'] .wk-import-stats > div[data-wide] { grid-column: 1 / -1; border-top: 1px solid var(--line-soft); border-left: 0; }
+  html[data-surface='workspace'] .wk-import-stats dd { font-size: 20px; }
+  html[data-surface='workspace'] .wk-tour .wk-tour-icon { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html[data-surface='workspace'] .wk-launch-spinner { animation-duration: 2.4s !important; }
+  html[data-surface='workspace'] .wk-launch-progress::after { left: 0; width: 100%; animation: none; opacity: .6; }
+}

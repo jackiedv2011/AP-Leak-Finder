@@ -3,6 +3,7 @@ import * as DialogPrimitive from '@radix-ui/react-dialog'
 import { Banknote, FileSearch, FolderOpen, LayoutDashboard, Settings, Sparkles, X } from 'lucide-react'
 import type { Entitlements } from '@/lib/plans'
 import '@/workspace/workspace.css'
+import '@/workspace/reclaim.css'
 
 interface Step {
   icon: typeof LayoutDashboard
@@ -67,20 +68,20 @@ export function OnboardingTour({ open, entitlements, onDone }: { open: boolean; 
     <DialogPrimitive.Root open={open} onOpenChange={(next) => !next && onDone()}>
       <DialogPrimitive.Portal>
         <DialogPrimitive.Overlay className="wk wk-overlay" />
-        <DialogPrimitive.Content className="wk wk-panel" style={{ width: 'min(540px, calc(100vw - 32px))' }} data-testid="onboarding-tour">
+        <DialogPrimitive.Content className="wk wk-panel wk-flow-panel wk-tour" data-size="narrow" data-testid="onboarding-tour">
           <header className="wk-panel-head">
-            <div style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
+            <div className="wk-tour-head">
               <span className="wk-tour-icon" aria-hidden="true">
                 <Icon />
               </span>
-              <div>
+              <div className="wk-tour-copy">
                 <span className="wk-label">
                   Step {index + 1} of {list.length}
                 </span>
-                <DialogPrimitive.Title className="wk-display wk-h2" style={{ marginTop: 4 }}>
+                <DialogPrimitive.Title className="wk-display wk-h2">
                   {step.title}
                 </DialogPrimitive.Title>
-                <DialogPrimitive.Description className="wk-dim" style={{ marginTop: 8, fontSize: 14, lineHeight: 1.55 }}>
+                <DialogPrimitive.Description className="wk-tour-body">
                   {step.body}
                 </DialogPrimitive.Description>
                 {step.tip ? (
@@ -100,7 +101,7 @@ export function OnboardingTour({ open, entitlements, onDone }: { open: boolean; 
           </div>
 
           <div className="wk-panel-foot">
-            <button type="button" className="wk-btn" data-variant="ghost" onClick={onDone} style={{ marginRight: 'auto' }}>
+            <button type="button" className="wk-btn wk-panel-foot-start" data-variant="ghost" onClick={onDone}>
               Skip tour
             </button>
             {index > 0 ? (
