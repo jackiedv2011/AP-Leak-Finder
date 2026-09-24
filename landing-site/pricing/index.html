@@ -5,11 +5,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Pricing — Reclaim</title>
-<meta name="description" content="A monthly plan sized to your vendor spend, plus an Autopilot rate that only applies to money that actually comes back. Three plans, no setup fees, cancel anytime.">
+<meta name="description" content="Reclaim's prices aren't set yet. What is settled: refunds and credits go straight to you, only money that actually comes back is counted as recovered, and nothing reaches a vendor without your approval.">
 <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Anton&family=Barlow+Condensed:wght@700&family=Bebas+Neue&family=Inter:ital,opsz,wght@0,14..32,300..800;1,14..32,300..800&family=JetBrains+Mono:wght@400;500&display=block" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Barlow+Condensed:wght@700&family=Bebas+Neue&family=Geist:wght@400..700&family=Inter:ital,opsz,wght@0,14..32,300..800;1,14..32,300..800&family=JetBrains+Mono:wght@400;500&display=block" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11.2.6/swiper-bundle.min.css">
 <link rel="stylesheet" href="/styles.css">
 <link rel="stylesheet" href="/pages.css">
@@ -62,6 +62,25 @@
   <symbol id="hx-wheel" viewBox="-13 -11.5 26 23">
     <path d="M-2.056,-4.6 L-5.751,-11 L5.751,-11 L2.056,-4.6 Z"/><path d="M2.956,-4.081 L6.651,-10.481 L12.402,-0.520 L5.012,-0.520 Z"/><path d="M5.012,0.520 L12.402,0.520 L6.651,10.481 L2.956,4.081 Z"/><path d="M2.056,4.6 L5.751,11 L-5.751,11 L-2.056,4.6 Z"/><path d="M-2.956,4.081 L-6.651,10.481 L-12.402,0.520 L-5.012,0.520 Z"/><path d="M-5.012,-0.520 L-12.402,-0.520 L-6.651,-10.481 L-2.956,-4.081 Z"/>
   </symbol>
+  <!-- dashboard mock-ups: the lucide icons the workspace uses (src/workspace/WorkspaceShell.tsx) -->
+  <symbol id="d-grid" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></g></symbol>
+  <symbol id="d-search" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></g></symbol>
+  <symbol id="d-banknote" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></g></symbol>
+  <symbol id="d-report" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4M8 18v-2M12 18v-4M16 18v-6"/></g></symbol>
+  <symbol id="d-folder" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M10.7 20H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H20a2 2 0 0 1 2 2v4.1"/><circle cx="17" cy="17" r="3"/><path d="m21 21-1.9-1.9"/></g></symbol>
+  <symbol id="d-settings" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></g></symbol>
+  <symbol id="d-sliders" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 4h-7M10 4H3M21 12h-9M8 12H3M21 20h-5M12 20H3M14 2v4M8 10v4M16 18v4"/></g></symbol>
+  <symbol id="d-panel" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18M16 15l-3-3 3-3"/></g></symbol>
+  <symbol id="d-moon" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></g></symbol>
+  <symbol id="d-chev-r" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="d-chev-d" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="d-arrow-r" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="d-plus" viewBox="0 0 24 24"><path d="M5 12h14M12 5v14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="d-clock" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></g></symbol>
+  <symbol id="d-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="d-send" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z"/><path d="m21.854 2.147-10.94 10.939"/></g></symbol>
+  <symbol id="d-upload" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5M12 3v12"/></g></symbol>
+  <symbol id="d-mail" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></g></symbol>
 </svg>
 
 <!-- intro (first page of a visit only) -->
@@ -97,6 +116,12 @@
 
 <main class="page">
 
+  <!-- PRICING.
+       No prices, rates or plan limits are published here, because none have been decided: the product spec
+       (plans/RECLAIM_V2_PRODUCT_AND_PRICING_SPEC.md §45) says the economics are still to be modelled. This page
+       states only what is settled: what the product includes and in what order (§35), what counts as
+       recovered (§3, §22–23, §31, §40), who holds the money (§0) and who approves outreach (§17, §19). -->
+
   <!-- HERO (black): the pricing idea in one line, with jump rows -->
   <section class="section hero-solutions" theme="black">
     <div class="nav-slot" data-theme="black"></div>
@@ -104,10 +129,10 @@
       <div class="the-grid">
         <div class="content">
           <h1 class="heading heading1 type-h2" data-split="h1">You keep what<br>comes <span class="highlight">back</span></h1>
-          <p class="desc type-body-medium cl-grey-500">A monthly plan sized to your vendor spend covers the detection, the evidence, and the Recovery Ledger. On top of it, Autopilot takes a share of recoveries — and only of money that actually settles. A vendor promising a refund is not a recovery, so it is not billed like one.</p>
+          <p class="desc type-body-medium cl-grey-500">We haven't set prices yet, and we won't publish numbers we might have to change. What is settled: refunds and credits go straight to you, never through Reclaim, and money only counts as recovered once it has actually come back. A vendor promising a refund is not a recovery, so Reclaim never reports it as one.</p>
           <ul class="links">
-            <li><a href="#plans" class="hero-services-nav-item type-h4" data-idx="0"><span class="heading">Plans</span><span class="hover-loop down-right cta-button-square cta" theme="outline" size="large"><span class="inner"><svg class="icon"><use href="#i-arrow-dr"/></svg></span></span><span class="line"><span class="line-bg"></span></span></a></li>
-            <li><a href="#lifecycle" class="hero-services-nav-item type-h4" data-idx="1"><span class="heading">What a recovery goes through</span><span class="hover-loop down-right cta-button-square cta" theme="outline" size="large"><span class="inner"><svg class="icon"><use href="#i-arrow-dr"/></svg></span></span><span class="line"><span class="line-bg"></span></span></a></li>
+            <li><a href="#plans" class="hero-services-nav-item type-h4" data-idx="0"><span class="heading">What's included</span><span class="hover-loop down-right cta-button-square cta" theme="outline" size="large"><span class="inner"><svg class="icon"><use href="#i-arrow-dr"/></svg></span></span><span class="line"><span class="line-bg"></span></span></a></li>
+            <li><a href="#lifecycle" class="hero-services-nav-item type-h4" data-idx="1"><span class="heading">What counts as recovered</span><span class="hover-loop down-right cta-button-square cta" theme="outline" size="large"><span class="inner"><svg class="icon"><use href="#i-arrow-dr"/></svg></span></span><span class="line"><span class="line-bg"></span></span></a></li>
             <li><a href="#faq" class="hero-services-nav-item type-h4" data-idx="2"><span class="heading">FAQ</span><span class="hover-loop down-right cta-button-square cta" theme="outline" size="large"><span class="inner"><svg class="icon"><use href="#i-arrow-dr"/></svg></span></span><span class="line"><span class="line-bg"></span></span></a></li>
           </ul>
         </div>
@@ -117,7 +142,7 @@
 
   <div class="article-sections hide-nav">
 
-    <!-- PLANS: three tiers, then the terms that apply to all of them -->
+    <!-- WHAT'S INCLUDED: the three releases in the spec (§35), in order. These are stages, not tiers. -->
     <section class="rounded-section shouldAnimate hide-nav" id="plans" theme="white">
       <div class="bg bg-top" theme="black"></div>
       <div class="bg bg-bottom" theme="white"></div>
@@ -129,8 +154,8 @@
 
             <div class="article-module article-head">
               <div class="the-grid">
-                <div class="the-col"><div class="generic"><div class="icon"><svg aria-hidden="true"><use href="#i-tile-decide"/></svg></div><div class="name type-h5">Plans</div></div></div>
-                <h2 class="type-h3 heading" data-split="h2">Priced on the spend you run through it</h2>
+                <div class="the-col"><div class="generic"><div class="icon"><svg aria-hidden="true"><use href="#i-tile-decide"/></svg></div><div class="name type-h5">What's included</div></div></div>
+                <h2 class="type-h3 heading" data-split="h2">What Reclaim does, in the order it arrives</h2>
               </div>
             </div>
 
@@ -138,81 +163,71 @@
               <div class="the-grid">
                 <ul class="plans">
 
-                  <li class="plan">
-                    <div class="plan-top">
-                      <div class="plan-name type-h5">Core</div>
-                      <p class="plan-note type-body-xs">For a first connected ledger and a clean historical sweep.</p>
-                      <div class="plan-price"><b>$99</b><span>/mo</span></div>
-                    </div>
-                    <ul class="plan-list type-body-xs">
-                      <li><span class="tick" aria-hidden="true"></span>Up to $5M vendor spend</li>
-                      <li><span class="tick" aria-hidden="true"></span>12-month lookback</li>
-                      <li><span class="tick" aria-hidden="true"></span>Duplicate payment detection</li>
-                      <li><span class="tick" aria-hidden="true"></span>Invoice mismatch detection</li>
-                      <li><span class="tick" aria-hidden="true"></span>Vendor credit detection</li>
-                      <li><span class="tick" aria-hidden="true"></span>Continuous monitoring</li>
-                      <li><span class="tick" aria-hidden="true"></span>Recovery Ledger</li>
-                      <li><span class="tick" aria-hidden="true"></span>Basic evidence packages</li>
-                      <li><span class="tick" aria-hidden="true"></span>1 accounting connection</li>
-                      <li><span class="tick" aria-hidden="true"></span>3 users</li>
-                    </ul>
-                    <div class="plan-rate"><b>12.5%</b> Autopilot</div>
-                    <a href="/audit?entry=sample" class="cta cta-button plan-cta" size="large" theme="black"><span class="hover-loop"><span class="inner">Get Started</span></span></a>
-                  </li>
-
                   <li class="plan is-featured">
-                    <div class="plan-flag" aria-label="Most popular plan"></div>
                     <div class="plan-top">
-                      <div class="plan-name type-h5">Continuous</div>
-                      <p class="plan-note type-body-xs">For a team that wants the recovery run, not just the finding.</p>
-                      <div class="plan-price"><b>$249</b><span>/mo</span></div>
+                      <div class="plan-name type-h5">Recovery core</div>
+                      <p class="plan-note type-body-xs">Everything a recovery needs, from the first finding to the money back.</p>
+                      <div class="plan-price plan-stage"><b>01</b><span>First</span></div>
                     </div>
                     <ul class="plan-list type-body-xs">
-                      <li><span class="tick" aria-hidden="true"></span>Up to $30M vendor spend</li>
-                      <li><span class="tick" aria-hidden="true"></span>36-month lookback</li>
-                      <li><span class="tick" aria-hidden="true"></span>Everything in Core</li>
-                      <li><span class="tick" aria-hidden="true"></span>Pre-payment warnings</li>
-                      <li><span class="tick" aria-hidden="true"></span>Root-cause analysis</li>
-                      <li><span class="tick" aria-hidden="true"></span>Full recovery workflow</li>
-                      <li><span class="tick" aria-hidden="true"></span>AI Recovery Assistant</li>
-                      <li><span class="tick" aria-hidden="true"></span>Automated follow-ups</li>
-                      <li><span class="tick" aria-hidden="true"></span>Multiple connections</li>
-                      <li><span class="tick" aria-hidden="true"></span>Unlimited users</li>
+                      <li><span class="tick" aria-hidden="true"></span>Connect QuickBooks Online or Xero, or upload a CSV</li>
+                      <li><span class="tick" aria-hidden="true"></span>Duplicate payments and bills paid twice</li>
+                      <li><span class="tick" aria-hidden="true"></span>Overpayments and unused vendor credits</li>
+                      <li><span class="tick" aria-hidden="true"></span>The evidence and a verification check on every finding</li>
+                      <li><span class="tick" aria-hidden="true"></span>Recovery cases you approve before anything goes out</li>
+                      <li><span class="tick" aria-hidden="true"></span>Vendor emails, reply tracking and follow-ups</li>
+                      <li><span class="tick" aria-hidden="true"></span>The Recovery Ledger, and checks that the money came back</li>
+                      <li><span class="tick" aria-hidden="true"></span>Steps to reconcile it in your books</li>
+                      <li><span class="tick" aria-hidden="true"></span>Dashboard and a full history of every action</li>
                     </ul>
-                    <div class="plan-rate"><b>10%</b> Autopilot</div>
-                    <a href="/audit?entry=sample" class="cta cta-button plan-cta" size="large" theme="green"><span class="hover-loop"><span class="inner">Get Started</span></span></a>
-                    <div class="plan-launch type-body-xs">Founding price: <b>$199/mo</b> for the first 12 months</div>
                   </li>
 
                   <li class="plan">
                     <div class="plan-top">
-                      <div class="plan-name type-h5">Scale</div>
-                      <p class="plan-note type-body-xs">For several entities, deeper history, and your own rules.</p>
-                      <div class="plan-price"><b>$599</b><span>/mo</span></div>
+                      <div class="plan-name type-h5">Recovery agent</div>
+                      <p class="plan-note type-body-xs">More of the routine work done for you, inside the same approvals.</p>
+                      <div class="plan-price plan-stage"><b>02</b><span>Next</span></div>
                     </div>
                     <ul class="plan-list type-body-xs">
-                      <li><span class="tick" aria-hidden="true"></span>Up to $100M vendor spend</li>
-                      <li><span class="tick" aria-hidden="true"></span>60+ month lookback</li>
-                      <li><span class="tick" aria-hidden="true"></span>Everything in Continuous</li>
-                      <li><span class="tick" aria-hidden="true"></span>Multi-entity support</li>
-                      <li><span class="tick" aria-hidden="true"></span>Custom detection rules</li>
-                      <li><span class="tick" aria-hidden="true"></span>Advanced reporting</li>
-                      <li><span class="tick" aria-hidden="true"></span>Advanced permissions</li>
-                      <li><span class="tick" aria-hidden="true"></span>SSO + audit logs</li>
-                      <li><span class="tick" aria-hidden="true"></span>Higher processing limits</li>
-                      <li><span class="tick" aria-hidden="true"></span>Unlimited users</li>
+                      <li><span class="tick" aria-hidden="true"></span>Vendor replies read and sorted</li>
+                      <li><span class="tick" aria-hidden="true"></span>Evidence gathered and cases summarised automatically</li>
+                      <li><span class="tick" aria-hidden="true"></span>Follow-ups scheduled for you</li>
+                      <li><span class="tick" aria-hidden="true"></span>A recommendation: cash refund or vendor credit</li>
+                      <li><span class="tick" aria-hidden="true"></span>Suggested next steps, and cases ranked by what they're worth</li>
+                      <li><span class="tick" aria-hidden="true"></span>Accounting guidance for closing each case</li>
+                      <li><span class="tick" aria-hidden="true"></span>Better vendor matching that learns from what you dismiss</li>
+                      <li><span class="tick" aria-hidden="true"></span>How long each case has been open</li>
                     </ul>
-                    <div class="plan-rate"><b>7.5%</b> Autopilot</div>
-                    <a href="#contact" class="cta cta-button plan-cta" size="large" theme="black" data-modal="talk"><span class="hover-loop"><span class="inner">Talk to Us</span></span></a>
+                  </li>
+
+                  <li class="plan">
+                    <div class="plan-top">
+                      <div class="plan-name type-h5">Recovery network</div>
+                      <p class="plan-note type-body-xs">Reclaim sees more than your ledger, and keeps watching.</p>
+                      <div class="plan-price plan-stage"><b>03</b><span>After that</span></div>
+                    </div>
+                    <ul class="plan-list type-body-xs">
+                      <li><span class="tick" aria-hidden="true"></span>Your AP inbox</li>
+                      <li><span class="tick" aria-hidden="true"></span>Supplier statements, requested, read and reconciled</li>
+                      <li><span class="tick" aria-hidden="true"></span>Credits your vendor shows that your books don't</li>
+                      <li><span class="tick" aria-hidden="true"></span>Refunds confirmed against your bank</li>
+                      <li><span class="tick" aria-hidden="true"></span>Invoices, documents and purchase orders</li>
+                      <li><span class="tick" aria-hidden="true"></span>Root causes: why the money left</li>
+                      <li><span class="tick" aria-hidden="true"></span>Continuous monitoring for new mistakes</li>
+                    </ul>
                   </li>
 
                 </ul>
                 <ul class="plan-terms type-body-small">
-                  <li><span class="tick" aria-hidden="true"></span>Annual: 2 months free</li>
-                  <li><span class="tick" aria-hidden="true"></span>No setup fees</li>
-                  <li><span class="tick" aria-hidden="true"></span>Cancel anytime</li>
-                  <li><span class="tick" aria-hidden="true"></span>Autopilot only charges on money actually recovered</li>
+                  <li><span class="tick" aria-hidden="true"></span>Refunds and credits go straight to you</li>
+                  <li><span class="tick" aria-hidden="true"></span>A promise is never counted as recovered</li>
+                  <li><span class="tick" aria-hidden="true"></span>You approve before the first vendor email</li>
+                  <li><span class="tick" aria-hidden="true"></span>Setup, billing and cancelling all happen in the product</li>
                 </ul>
+                <div class="plan-ask">
+                  <p class="type-body-large">These are stages of the product, not plans, and none of them has a price yet. Tell us about your business and we'll tell you where things stand.</p>
+                  <a href="#contact" class="cta cta-button" size="large" theme="black" data-modal="talk"><span class="hover-loop"><span class="inner">Talk to Us</span></span></a>
+                </div>
               </div>
             </div>
 
@@ -221,7 +236,7 @@
       </div>
     </section>
 
-    <!-- LIFECYCLE: what the Autopilot rate is actually charged against -->
+    <!-- LIFECYCLE: what "recovered" means -->
     <section class="rounded-section hide-nav" id="lifecycle" theme="white">
       <div class="bg bg-top" theme="white"></div>
       <div class="bg bg-bottom" theme="white"></div>
@@ -233,7 +248,7 @@
             <div class="article-module article-head">
               <div class="the-grid">
                 <div class="the-col"><div class="generic"><div class="icon"><svg aria-hidden="true"><use href="#i-tile-row"/></svg></div><div class="name type-h5">The Recovery Ledger</div></div></div>
-                <h2 class="type-h3 heading" data-split="h2">Billed at the last step, not the first</h2>
+                <h2 class="type-h3 heading" data-split="h2">Counted when it's back, not when it's found</h2>
               </div>
             </div>
 
@@ -241,7 +256,7 @@
               <div class="the-grid">
                 <div class="left">
                   <div class="desc type-body-headline">Found money and recovered money are different numbers, and Reclaim never blurs them.</div>
-                  <div class="desc2 type-body-large">Every case moves through the same five stages, and the Recovery Ledger records the amount at each one. The Autopilot rate applies to the last stage only: cash that settled, or a credit that actually offset a real bill. Nothing earlier is billable.</div>
+                  <div class="desc2 type-body-large">Every case moves through the same stages, and the Recovery Ledger records the amount at each one, along with how the issue was discovered and whether your team already knew about it. Only one stage counts as recovered: cash that settled, or a credit that actually offset a real bill.</div>
                 </div>
               </div>
             </div>
@@ -249,11 +264,11 @@
             <div class="article-module stage-row">
               <div class="the-grid">
                 <ol class="stages">
-                  <li class="stage"><span class="stage-no type-mono">01</span><div class="stage-name type-h5">Discover</div><p class="type-body-xs">A signal turns into one case: same vendor, same obligation, both payments settled.</p></li>
+                  <li class="stage"><span class="stage-no type-mono">01</span><div class="stage-name type-h5">Discover</div><p class="type-body-xs">Related signals become one case: same vendor, same obligation, both payments settled.</p></li>
                   <li class="stage"><span class="stage-no type-mono">02</span><div class="stage-name type-h5">Verify</div><p class="type-body-xs">The records are checked against each other until the amount is provable, or marked as needing review.</p></li>
-                  <li class="stage"><span class="stage-no type-mono">03</span><div class="stage-name type-h5">Recover</div><p class="type-body-xs">You approve it. The playbook builds the evidence, contacts the vendor, and tracks every reply.</p></li>
-                  <li class="stage"><span class="stage-no type-mono">04</span><div class="stage-name type-h5">Reconcile</div><p class="type-body-xs">The refund or credit is confirmed against your books, and the accounting is closed out.</p></li>
-                  <li class="stage is-billed"><span class="stage-no type-mono">05</span><div class="stage-name type-h5">Recovered</div><p class="type-body-xs">Money is back. This is the only figure the Autopilot rate is calculated on.</p></li>
+                  <li class="stage"><span class="stage-no type-mono">03</span><div class="stage-name type-h5">Recover</div><p class="type-body-xs">You approve it. Reclaim sends the request with the evidence, tracks every reply, and follows up.</p></li>
+                  <li class="stage is-counted"><span class="stage-no type-mono">04</span><div class="stage-name type-h5">Recovered</div><p class="type-body-xs">The refund settled, or the credit offset a real bill. This is the only figure Reclaim reports as recovered.</p></li>
+                  <li class="stage"><span class="stage-no type-mono">05</span><div class="stage-name type-h5">Reconcile</div><p class="type-body-xs">Reclaim gives you the accounting steps to close the case in your books, and you confirm them.</p></li>
                 </ol>
               </div>
             </div>
@@ -282,14 +297,14 @@
               <div class="the-grid">
                 <div class="the-col">
                   <ul class="items">
-                    <li><details><summary class="type-body-medium">What counts as recovered?</summary><p class="desc type-body-small">Cash that settled, or a credit that actually offset a real bill. A vendor agreeing that they owe you is not recovered. A credit note sitting unapplied is not recovered either — it is tracked as confirmed but unapplied until it is used. The Autopilot rate applies only once value has genuinely returned.</p></details></li>
-                    <li><details><summary class="type-body-medium">Which plan do I need?</summary><p class="desc type-body-small">Plans are sized on annual vendor spend, not headcount or transaction count: $5M for Core, $30M for Continuous, $100M for Scale. If your spend grows past a tier mid-term, you move up at renewal rather than being cut off.</p></details></li>
-                    <li><details><summary class="type-body-medium">Does the Autopilot rate apply to everything Reclaim finds?</summary><p class="desc type-body-small">No. It applies to recoveries Reclaim caused. Every case records how it was discovered, when, and whether you had already flagged it, so an issue your team was already working is not billed as ours.</p></details></li>
-                    <li><details><summary class="type-body-medium">What about a credit we already had?</summary><p class="desc type-body-small">An unused vendor credit is money you already own, so recovering it needs no outreach at all — Reclaim just shows you the credit and the bill it should be applied against. It counts once the credit is actually used.</p></details></li>
+                    <li><details><summary class="type-body-medium">How much does Reclaim cost?</summary><p class="desc type-body-small">We haven't set prices yet, and we'd rather not publish numbers we might have to change. <a href="#contact" data-modal="talk">Talk to us</a> and we'll tell you where things stand. Whatever the price turns out to be, refunds and credits go directly to you, and Reclaim never reports promised money as recovered.</p></details></li>
+                    <li><details><summary class="type-body-medium">What counts as recovered?</summary><p class="desc type-body-small">Cash that settled, or a credit that actually offset a real bill. A vendor agreeing that they owe you is not recovered. A credit note sitting unapplied is not recovered either: it is tracked as confirmed but unapplied until it is used.</p></details></li>
+                    <li><details><summary class="type-body-medium">Will any of the price depend on what's recovered?</summary><p class="desc type-body-small">That isn't decided. If it does, it will be worked out from the Recovery Ledger, which records for every case how the issue was discovered, when, and whether your team already knew about it. An issue your team was already working on would not count as Reclaim's.</p></details></li>
+                    <li><details><summary class="type-body-medium">What about a credit we already had?</summary><p class="desc type-body-small">An unused vendor credit is money you already own, so recovering it may need no outreach at all. Reclaim shows you the credit and recommends whether to apply it to an upcoming bill or ask for a cash refund. It counts once the credit is actually used or the refund arrives.</p></details></li>
                     <li><details><summary class="type-body-medium">Can Reclaim move money or change our books?</summary><p class="desc type-body-small">No. The accounting connection is read-only. Reclaim cannot move money, cannot alter your ledger, and cannot send anything to a vendor without your approval. Refunds go directly to you; Reclaim never takes custody of recovered funds.</p></details></li>
-                    <li><details><summary class="type-body-medium">Will you contact our vendors without asking?</summary><p class="desc type-body-small">Not unless you set that rule yourself. The first outreach on any case needs your approval. You can later let approved playbooks run automatically within limits you define, and you can mark any vendor Do Not Contact — detection keeps running, outreach stops.</p></details></li>
+                    <li><details><summary class="type-body-medium">Will you contact our vendors without asking?</summary><p class="desc type-body-small">No. The first outreach on any case needs your approval, and you can mark any vendor Do Not Contact: detection keeps running, outreach stops. Later, we plan to let you choose rules under which approved playbooks start on their own, such as exact duplicates under an amount you set. That mode, Recovery Autopilot, is software you configure, not a person working your cases, and it isn't part of the first release.</p></details></li>
                     <li><details><summary class="type-body-medium">What happens to a disputed case?</summary><p class="desc type-body-small">Automation stops and the case comes back to you. Anything subjective, contested, or legal is a decision for your team, not a step a playbook takes on its own.</p></details></li>
-                    <li><details><summary class="type-body-medium">Is there a setup fee or a contract?</summary><p class="desc type-body-small">No setup fee, and you can cancel anytime. Annual billing takes two months off. Onboarding is self-service: connect the accounting system, pick the lookback period, and the first sweep starts.</p></details></li>
+                    <li><details><summary class="type-body-medium">How do we get started?</summary><p class="desc type-body-small">Onboarding is self-service: connect QuickBooks Online or Xero, or upload your exports, choose how far back to look, and the first sweep starts. Billing and cancelling happen in the product too, with no call needed.</p></details></li>
                   </ul>
                 </div>
               </div>
@@ -313,7 +328,7 @@
             <div class="button"><span class="hover-loop up-right" data-duration=".9"><span class="inner"><svg class="arrow"><use href="#i-arrow-ur"/></svg></span></span></div>
           </div>
         </div>
-        <p class="desc type-body-small">Upload your records and see what Reclaim finds, with the evidence behind every result.</p>
+        <p class="desc type-body-small">Connect your books or upload your records, and see what Reclaim finds, with the evidence behind every result.</p>
       </a></li>
       <li><a href="#contact" class="entry-item1" idx="1" data-modal="talk">
         <div class="bg"></div>
@@ -323,7 +338,7 @@
             <div class="button"><span class="hover-loop up-right" data-duration=".9"><span class="inner"><svg class="arrow"><use href="#i-arrow-ur"/></svg></span></span></div>
           </div>
         </div>
-        <p class="desc type-body-small">Not sure which records to upload? We'll help you pick the right ones.</p>
+        <p class="desc type-body-small">Not sure whether to connect or upload? We'll help you pick the right records.</p>
       </a></li>
     </ul>
   </section>
@@ -440,7 +455,7 @@
             <button type="button" class="hover-loop cta-button-square close" theme="outline" size="medium" aria-label="Close"><span class="inner"><svg class="icon"><use href="#i-close"/></svg></span></button>
             <svg class="icon-check" aria-hidden="true"><use href="#i-check-circle"/></svg>
             <h2 class="heading" id="modal-success-heading">Thanks,<br>we have it</h2>
-            <p class="desc">We'll email you about next steps, including which records to export.</p>
+            <p class="desc">We'll email you about next steps, including how to connect your books or which records to export.</p>
             <button type="button" class="hover-loop cta-button submit done" theme="black" size="large"><span class="inner">Back to the site</span></button>
           </div>
         </div>

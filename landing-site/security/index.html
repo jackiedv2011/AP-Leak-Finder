@@ -5,11 +5,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Security — Reclaim</title>
-<meta name="description" content="Reclaim works from files you export and upload. It has no connection to your accounting system, no credentials, and no ability to move money.">
+<meta name="description" content="Connect your accounting system read-only, or upload exports instead. Reclaim cannot move money or change your books, contacts no vendor without your approval, and gives AI only the minimum it needs for one task.">
 <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Anton&family=Barlow+Condensed:wght@700&family=Bebas+Neue&family=Inter:ital,opsz,wght@0,14..32,300..800;1,14..32,300..800&family=JetBrains+Mono:wght@400;500&display=block" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Barlow+Condensed:wght@700&family=Bebas+Neue&family=Geist:wght@400..700&family=Inter:ital,opsz,wght@0,14..32,300..800;1,14..32,300..800&family=JetBrains+Mono:wght@400;500&display=block" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11.2.6/swiper-bundle.min.css">
 <link rel="stylesheet" href="/styles.css">
 <link rel="stylesheet" href="/pages.css">
@@ -62,6 +62,25 @@
   <symbol id="hx-wheel" viewBox="-13 -11.5 26 23">
     <path d="M-2.056,-4.6 L-5.751,-11 L5.751,-11 L2.056,-4.6 Z"/><path d="M2.956,-4.081 L6.651,-10.481 L12.402,-0.520 L5.012,-0.520 Z"/><path d="M5.012,0.520 L12.402,0.520 L6.651,10.481 L2.956,4.081 Z"/><path d="M2.056,4.6 L5.751,11 L-5.751,11 L-2.056,4.6 Z"/><path d="M-2.956,4.081 L-6.651,10.481 L-12.402,0.520 L-5.012,0.520 Z"/><path d="M-5.012,-0.520 L-12.402,-0.520 L-6.651,-10.481 L-2.956,-4.081 Z"/>
   </symbol>
+  <!-- dashboard mock-ups: the lucide icons the workspace uses (src/workspace/WorkspaceShell.tsx) -->
+  <symbol id="d-grid" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></g></symbol>
+  <symbol id="d-search" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></g></symbol>
+  <symbol id="d-banknote" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></g></symbol>
+  <symbol id="d-report" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4M8 18v-2M12 18v-4M16 18v-6"/></g></symbol>
+  <symbol id="d-folder" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M10.7 20H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H20a2 2 0 0 1 2 2v4.1"/><circle cx="17" cy="17" r="3"/><path d="m21 21-1.9-1.9"/></g></symbol>
+  <symbol id="d-settings" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></g></symbol>
+  <symbol id="d-sliders" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 4h-7M10 4H3M21 12h-9M8 12H3M21 20h-5M12 20H3M14 2v4M8 10v4M16 18v4"/></g></symbol>
+  <symbol id="d-panel" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18M16 15l-3-3 3-3"/></g></symbol>
+  <symbol id="d-moon" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></g></symbol>
+  <symbol id="d-chev-r" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="d-chev-d" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="d-arrow-r" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="d-plus" viewBox="0 0 24 24"><path d="M5 12h14M12 5v14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="d-clock" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></g></symbol>
+  <symbol id="d-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="d-send" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z"/><path d="m21.854 2.147-10.94 10.939"/></g></symbol>
+  <symbol id="d-upload" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5M12 3v12"/></g></symbol>
+  <symbol id="d-mail" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></g></symbol>
 </svg>
 
 <!-- intro (first page of a visit only) -->
@@ -98,9 +117,10 @@
 <main class="page">
 
   <!-- SECURITY.
-       Everything stated on this page is true of the product as it works today. Anything that depends on
-       how files are stored, encrypted, retained or deleted is deliberately NOT claimed here — that
-       section says so plainly and is the one to replace once those decisions are settled and verified. -->
+       Describes the control model the product is built to (plans/RECLAIM_V2_PRODUCT_AND_PRICING_SPEC.md:
+       §0 trust zones and minimum AI context, §17 approval, §19 what the agent may never do, §33 security
+       and control). Where data is held, how long, and the named encryption standards are deliberately NOT
+       claimed — that section says so plainly and is the one to replace once they are settled and verified. -->
 
   <!-- HERO (black) -->
   <section class="section hero-generic" theme="black">
@@ -108,7 +128,7 @@
     <div class="the-container">
       <div class="the-grid">
         <h1 class="heading heading1 type-h1" data-split="h1">You choose<br>what we see</h1>
-        <p class="desc type-body-large">Reclaim works from files you export and upload. No connection to your accounting system, no credentials, no way to move money.</p>
+        <p class="desc type-body-large">Connect your accounting system with read-only access, or upload exports instead. Either way, Reclaim can't move money, can't change your books, and contacts no vendor until you approve it.</p>
         <div class="bottom"><a href="#contact" class="cta cta-button has-arrow" size="large" theme="white" data-modal="talk"><span class="hover-loop"><span class="inner">Talk to us<svg class="icon"><use href="#i-arrow"/></svg></span></span></a></div>
       </div>
     </div>
@@ -135,20 +155,20 @@
               <div class="the-grid">
                 <ul class="items" data-cols="2">
                   <li class="type-article-columns-item-card1 item-wrap"><div class="article-columns-item-card1 item">
-                    <div class="top"><div class="images"><svg class="icon" aria-hidden="true"><use href="#i-tile-files"/></svg></div><div class="heading">The files you choose</div></div>
-                    <div class="desc">You export the records you want checked and upload them. Nothing else comes with them.</div>
+                    <div class="top"><div class="images"><svg class="icon" aria-hidden="true"><use href="#i-tile-files"/></svg></div><div class="heading">The source you choose</div></div>
+                    <div class="desc">Connect QuickBooks Online or Xero with the narrowest read access they offer, or export the records you want checked and upload them instead.</div>
                   </div></li>
                   <li class="type-article-columns-item-card1 item-wrap"><div class="article-columns-item-card1 item">
-                    <div class="top"><div class="images"><svg class="icon" aria-hidden="true"><use href="#i-tile-unlinked"/></svg></div><div class="heading">No system access</div></div>
-                    <div class="desc">Reclaim doesn't connect to your accounting system and never asks for a login.</div>
+                    <div class="top"><div class="images"><svg class="icon" aria-hidden="true"><use href="#i-tile-unlinked"/></svg></div><div class="heading">Yours to revoke</div></div>
+                    <div class="desc">A connection can be removed whenever you like. You can also export or delete your data.</div>
                   </div></li>
                   <li class="type-article-columns-item-card1 item-wrap"><div class="article-columns-item-card1 item">
                     <div class="top"><div class="images"><svg class="icon" aria-hidden="true"><use href="#i-tile-view"/></svg></div><div class="heading">Read, never write</div></div>
-                    <div class="desc">Nothing in your books changes. Reclaim reads the exports and reports what it finds.</div>
+                    <div class="desc">Nothing in your books changes. Reclaim reads your records, and when a case is closed it gives you the accounting steps to make yourself.</div>
                   </div></li>
                   <li class="type-article-columns-item-card1 item-wrap"><div class="article-columns-item-card1 item">
                     <div class="top"><div class="images"><svg class="icon" aria-hidden="true"><use href="#i-tile-nomoney"/></svg></div><div class="heading">No payment rights</div></div>
-                    <div class="desc">Reclaim cannot move money, release a payment, or contact a vendor.</div>
+                    <div class="desc">Reclaim cannot move money or release a payment. Refunds and credits go straight to you; Reclaim never holds recovered funds.</div>
                   </div></li>
                 </ul>
               </div>
@@ -170,7 +190,7 @@
 
             <div class="article-module article-head2">
               <div class="the-grid">
-                <div class="left"><h2 class="heading type-h3" data-split="h2">Every result points<br>at a row</h2></div>
+                <div class="left"><h2 class="heading type-h3" data-split="h2">Every result points<br>at a record</h2></div>
               </div>
             </div>
 
@@ -179,8 +199,8 @@
                 <ul class="items" data-cols="2">
                   <li class="type-generic-item item-wrap"><div class="item article-columns-item-generic type-body-small">
                     <svg class="icon" aria-hidden="true"><use href="#i-mark-doc"/></svg>
-                    <div class="heading">Traced to a file</div>
-                    <div class="desc type-body-xs">Every finding names the file it came from, the row inside it, and the fields that matched.</div>
+                    <div class="heading">Traced to the source</div>
+                    <div class="desc type-body-xs">Every finding names the records it rests on, where each one came from in your books or your file, and the fields that matched.</div>
                   </div></li>
                   <li class="type-generic-item item-wrap"><div class="item article-columns-item-generic type-body-small">
                     <svg class="icon" aria-hidden="true"><use href="#i-mark-scale"/></svg>
@@ -190,12 +210,12 @@
                   <li class="type-generic-item item-wrap"><div class="item article-columns-item-generic type-body-small">
                     <svg class="icon" aria-hidden="true"><use href="#i-mark-eye"/></svg>
                     <div class="heading">Yours to check</div>
-                    <div class="desc type-body-xs">You can open the export you uploaded and check any result against the original rows.</div>
+                    <div class="desc type-body-xs">You can open any record behind a result and check it against your books or the export you uploaded.</div>
                   </div></li>
                   <li class="type-generic-item item-wrap"><div class="item article-columns-item-generic type-body-small">
                     <svg class="icon" aria-hidden="true"><use href="#i-mark-flag"/></svg>
                     <div class="heading">Yours to decide</div>
-                    <div class="desc type-body-xs">Reclaim doesn't act on anything it finds. What happens next is your decision, not its.</div>
+                    <div class="desc type-body-xs">Nothing goes to a vendor until you approve the recovery, and every step taken after that is logged: who, what, when and why.</div>
                   </div></li>
                 </ul>
               </div>
@@ -217,13 +237,13 @@
 
             <div class="article-module article-head2">
               <div class="the-grid">
-                <div class="left"><h2 class="heading type-h3" data-split="h2">What we<br>never ask for</h2></div>
+                <div class="left"><h2 class="heading type-h3" data-split="h2">What Reclaim<br>never gets</h2></div>
               </div>
             </div>
 
             <div class="article-module article-content">
               <div class="the-grid">
-                <div class="the-col"><div class="richtext"><p>Three things Reclaim has no use for, and does not request.</p></div></div>
+                <div class="the-col"><div class="richtext"><p>Three things Reclaim has no use for, and is built never to have.</p></div></div>
               </div>
             </div>
 
@@ -231,16 +251,16 @@
               <div class="the-grid">
                 <ul class="items" data-cols="2">
                   <li class="type-article-columns-item-card1 item-wrap"><div class="article-columns-item-card1 item">
-                    <div class="top"><div class="images"><svg class="icon" aria-hidden="true"><use href="#i-tile-unlinked"/></svg></div><div class="heading">Logins</div></div>
-                    <div class="desc">Reclaim never needs credentials for your bank, your accounting system or a vendor portal. It never asks, and there is nowhere in the product to enter them.</div>
+                    <div class="top"><div class="images"><svg class="icon" aria-hidden="true"><use href="#i-tile-unlinked"/></svg></div><div class="heading">Your passwords</div></div>
+                    <div class="desc">Connecting QuickBooks Online or Xero happens on their own sign-in and approval screen. Reclaim never asks for your password to your accounting system, your bank or a vendor portal.</div>
                   </div></li>
                   <li class="type-article-columns-item-card1 item-wrap"><div class="article-columns-item-card1 item">
                     <div class="top"><div class="images"><svg class="icon" aria-hidden="true"><use href="#i-tile-nomoney"/></svg></div><div class="heading">Payment authority</div></div>
                     <div class="desc">Nothing in Reclaim can approve, release or reverse a payment. Whoever holds that authority today still holds it afterwards.</div>
                   </div></li>
                   <li class="type-article-columns-item-card1 item-wrap"><div class="article-columns-item-card1 item">
-                    <div class="top"><div class="images"><svg class="icon" aria-hidden="true"><use href="#i-tile-decide"/></svg></div><div class="heading">Your whole ledger</div></div>
-                    <div class="desc">You pick the reports and the date range. Anything outside what you exported never reaches Reclaim at all.</div>
+                    <div class="top"><div class="images"><svg class="icon" aria-hidden="true"><use href="#i-tile-decide"/></svg></div><div class="heading">Your ledger, in an AI prompt</div></div>
+                    <div class="desc">AI never browses your books. The financial engine works out the numbers; AI gets only the few facts one task needs, like the vendor, invoice and amount for a single email.</div>
                   </div></li>
                 </ul>
               </div>
@@ -267,7 +287,7 @@
                   <div class="body"><div class="richtext">
                     <p><span class="type-body-headline">Some of what belongs on a security page depends on decisions we are still making about storage.</span></p>
                     <p></p>
-                    <p>Where an uploaded file is held, how it is encrypted, how long it is kept and how it is removed are not settled yet. We would rather leave that blank than write something we might have to correct later. It will be published here before Reclaim opens to customers.</p>
+                    <p>Reclaim is built to keep each customer's data separate, encrypt your financial records and connection tokens, and let you export or delete what it holds. Where that data is kept, how long, and exactly which standards protect it are not settled yet. We would rather leave that blank than write something we might have to correct later. It will be published here before Reclaim opens to customers.</p>
                   </div></div>
                 </div>
                 <div class="right"><div class="panel square"><svg class="icon" aria-hidden="true"><use href="#i-shield"/></svg></div></div>
@@ -280,7 +300,7 @@
                   <li class="type-generic-item item-wrap"><div class="item article-columns-item-generic type-body-small">
                     <svg class="icon" aria-hidden="true"><use href="#i-mark-clock"/></svg>
                     <div class="heading">Storage</div>
-                    <div class="desc type-body-xs">Where an uploaded file is held, and for how long.</div>
+                    <div class="desc type-body-xs">Where your records are held, and for how long.</div>
                   </div></li>
                   <li class="type-generic-item item-wrap"><div class="item article-columns-item-generic type-body-small">
                     <svg class="icon" aria-hidden="true"><use href="#i-shield"/></svg>
@@ -290,7 +310,7 @@
                   <li class="type-generic-item item-wrap"><div class="item article-columns-item-generic type-body-small">
                     <svg class="icon" aria-hidden="true"><use href="#i-close"/></svg>
                     <div class="heading">Deletion</div>
-                    <div class="desc type-body-xs">How you remove what you uploaded, and what happens then.</div>
+                    <div class="desc type-body-xs">How you remove your data or disconnect, and what happens then.</div>
                   </div></li>
                 </ul>
               </div>
@@ -375,7 +395,7 @@
               <ul>
                 <li><a class="item" href="#reads"><span class="dot"></span><span class="label type-h6">What it reads</span></a></li>
                 <li><a class="item" href="#evidence"><span class="dot"></span><span class="label type-h6">Evidence</span></a></li>
-                <li><a class="item" href="#never"><span class="dot"></span><span class="label type-h6">Never asked for</span></a></li>
+                <li><a class="item" href="#never"><span class="dot"></span><span class="label type-h6">Never gets</span></a></li>
                 <li><a class="item" href="#pending"><span class="dot"></span><span class="label type-h6">Before launch</span></a></li>
                 <li><a class="item" href="#reporting"><span class="dot"></span><span class="label type-h6">Reporting</span></a></li>
                 <li><a class="item" href="#elsewhere"><span class="dot"></span><span class="label type-h6">Elsewhere</span></a></li>
@@ -500,7 +520,7 @@
             <button type="button" class="hover-loop cta-button-square close" theme="outline" size="medium" aria-label="Close"><span class="inner"><svg class="icon"><use href="#i-close"/></svg></span></button>
             <svg class="icon-check" aria-hidden="true"><use href="#i-check-circle"/></svg>
             <h2 class="heading" id="modal-success-heading">Thanks,<br>we have it</h2>
-            <p class="desc">We'll email you about next steps, including which records to export.</p>
+            <p class="desc">We'll email you about next steps, including how to connect your books or which records to export.</p>
             <button type="button" class="hover-loop cta-button submit done" theme="black" size="large"><span class="inner">Back to the site</span></button>
           </div>
         </div>

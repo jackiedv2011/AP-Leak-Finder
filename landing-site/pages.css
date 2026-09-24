@@ -892,8 +892,9 @@ pre.code .hl { background: var(--cl-reclaim); color: var(--cl-black); }
 
 /* ---------- Pricing ----------------------------------------------------------
    Rhythm mirrors the reference plans page: 3 cards on 4 grid columns each, a 2px
-   rule under the price, an 8px bullet sitting in the list gutter, and the CTA
-   pinned to the card foot by a flex filler so all three cards end level. */
+   rule under the big figure, an 8px bullet sitting in the list gutter. No prices are
+   published yet, so the cards are the product's three stages and the figure is the
+   stage number (.plan-stage); one Talk to Us row (.plan-ask) sits under the terms. */
 .plan-grid { padding-block: 9.6rem; }
 .plan-grid .plans { display: contents; }
 .plan { position: relative; grid-column: auto / span 4; display: flex; flex-direction: column; height: 100%; padding: 3.2rem; border: 1px solid var(--cl-grey-300); border-radius: 4rem; background: var(--cl-white); }
@@ -925,14 +926,18 @@ pre.code .hl { background: var(--cl-reclaim); color: var(--cl-black); }
 .plan-terms { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(4, 1fr); gap: 2.4rem; margin-top: 8rem; padding-top: 4rem; border-top: 1px solid var(--cl-grey-300); list-style: none; }
 .plan-terms > li { position: relative; padding-left: 2.4rem; color: var(--cl-grey-600); }
 .plan-terms .tick { position: absolute; left: 0; top: .5em; width: .8rem; height: .8rem; border-radius: 50%; background: var(--cl-reclaim); }
+.plan-stage b { font-family: "JetBrains Mono", monospace; letter-spacing: -.02em; }
+.plan-ask { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: 4rem; margin-top: 6.4rem; padding: 4rem; border-radius: 4rem; background: var(--cl-grey-100); }
+.plan-ask p { max-width: 64rem; }
+.plan-ask .cta-button { flex: none; }
 
-/* lifecycle: five stages on one rule, the billed one marked */
+/* lifecycle: five stages on one rule, the one that counts as recovered marked */
 .stage-row .stages { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(5, 1fr); gap: 2.4rem; list-style: none; }
 .stage { position: relative; padding-top: 3.2rem; }
 .stage::before { content: ""; position: absolute; top: 0; left: 0; width: calc(100% + 2.4rem); height: 2px; background: var(--cl-grey-300); }
 .stage:last-child::before { width: 100%; -webkit-mask-image: linear-gradient(90deg, #000 45%, transparent); mask-image: linear-gradient(90deg, #000 45%, transparent); }
 .stage::after { content: ""; position: absolute; top: -.5rem; left: 0; width: 1.2rem; height: 1.2rem; border-radius: 50%; background: var(--cl-grey-300); }
-.stage.is-billed::before, .stage.is-billed::after { background: var(--cl-reclaim); }
+.stage.is-counted::before, .stage.is-counted::after { background: var(--cl-reclaim); }
 .stage-no { display: block; margin-bottom: .8rem; color: var(--cl-grey-500); }
 .stage-name { margin-bottom: .8rem; }
 .stage p { color: var(--cl-grey-600); }
@@ -944,6 +949,7 @@ pre.code .hl { background: var(--cl-reclaim); color: var(--cl-black); }
   .plan .plan-cta { margin-top: 2.4rem; }
   .plan-price b { font-size: 5.6rem; }
   .plan-terms { grid-template-columns: 1fr; gap: 1.6rem; margin-top: 4rem; }
+  .plan-ask { flex-direction: column; align-items: flex-start; gap: 2.4rem; margin-top: 4rem; padding: 3.2rem 2.4rem; border-radius: 3.2rem; }
   .stage-row .stages { grid-template-columns: 1fr; gap: 0; }
   .stage { padding: 0 0 2.4rem 3.2rem; }
   .stage::before { top: 0; left: .5rem; width: 2px; height: 100%; }
