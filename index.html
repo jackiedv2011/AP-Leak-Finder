@@ -30,6 +30,8 @@
         } catch (e) {
           document.documentElement.dataset.theme = 'dark';
         }
+        /* The log-in and sign-up pages take over from the marketing site's page fade, which ends on its grey. */
+        if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.dataset.route = 'auth';
       })();
     </script>
     <style>
@@ -37,6 +39,7 @@
          differently-coloured frame. The marketing pages set their own. */
       html, body { margin: 0; background: #000; }
       html[data-theme='light'], html[data-theme='light'] body { background: #fff; }
+      html[data-route='auth'], html[data-route='auth'] body { background: #e5e5e5; }
     </style>
     <meta name="description" content="Reclaim reviews your payment ledger and shows the records behind every payment that needs attention." />
     <meta property="og:title" content="Reclaim. | Evidence-first payment review" />

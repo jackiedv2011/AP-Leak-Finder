@@ -1,5 +1,6 @@
-"""Side-by-side sheet: DayOS reference frame (left) vs our render (right), one pair per row.
-Transparent frames are laid over black so both sides sit on the same ground as DayOS's MP4s.
+"""Side-by-side sheet: reference frame (left) vs our render (right), one pair per row —
+an old render against a new one, or a frame against whatever you are matching.
+Transparent frames are laid over black so both sides sit on the same ground.
 Run: blender -b --factory-startup --python compare.py -- out=FILE.png tile=720 LEFT|RIGHT LEFT|RIGHT ..."""
 import bpy, sys
 import numpy as np

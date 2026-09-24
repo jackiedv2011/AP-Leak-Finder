@@ -192,13 +192,10 @@ img, video, canvas, svg { display: block; max-width: 100%; }
 }
 .hx-logo .letter { display: inline-block; }
 
-/* ---------- hover-loop (two stacked copies that swap on hover) ---------- */
+/* ---------- hover-loop (label wrapper; hover is colour only, the label never moves) ---------- */
 .hover-loop { position: relative; display: block; overflow: hidden; }
 .entry-item1 .button .hover-loop { width: 100%; height: 100%; }
 .hover-loop .inner { position: relative; display: flex; align-items: center; justify-content: center; height: 100%; }
-.hover-loop .inner.second { position: absolute; left: 0; top: 0; width: 100%; transform: translateY(100%); }
-.hover-loop.right .inner.second { transform: translateX(-100%); }
-.hover-loop.up-right .inner.second { transform: translate(-100%, 100%); }
 
 /* ---------- buttons ---------- */
 .cta { position: relative; display: inline-block; white-space: nowrap; }
@@ -354,7 +351,8 @@ img, video, canvas, svg { display: block; max-width: 100%; }
 .mm-row[aria-expanded="true"] .mm-plus::after { transform: rotate(0deg); }
 .mm-sub { height: 0; overflow: hidden; }
 .mm-sub .inner { display: flex; flex-direction: column; align-items: flex-start; gap: .4rem; padding-bottom: 2rem; color: var(--cl-grey-500); font-size: 1.8rem; font-weight: 500; letter-spacing: -.02em; }
-.mm-sub a { padding-block: .6rem; }
+.mm-sub a { padding-block: .6rem; transition: color .3s ease-in-out; }
+.mm-sub a:hover { color: var(--cl-white); }
 .mm-foot { flex: none; padding: 0 var(--grid-side-margin) calc(2.4rem + env(safe-area-inset-bottom)); }
 .mm-foot .cta { display: block; }
 .mm-foot .cta-button { width: 100%; }
@@ -757,7 +755,10 @@ img, video, canvas, svg { display: block; max-width: 100%; }
 .the-footer .groups .group:nth-child(4) { grid-column: 11 / span 2; }
 .the-footer .groups .group .label { color: var(--cl-white); }
 .the-footer .links { display: flex; flex-direction: column; align-items: flex-start; color: var(--cl-grey-500); }
-.the-footer .links a, .the-footer .groups .group > a { display: block; white-space: nowrap; }
+.the-footer .links a, .the-footer .groups .group > a { display: block; white-space: nowrap; transition: color .3s ease-in-out; }
+.the-footer .links a:hover, .the-footer .groups .group > a:hover, .the-footer .legalLinks a:hover { color: var(--cl-white); }
+.the-footer .legalLinks a { transition: color .3s ease-in-out; }
+.the-footer .mail .cta:hover { text-decoration: underline; text-underline-offset: .15em; }
 .the-footer .links .hover-loop, .the-footer .groups .group > a .hover-loop { height: 1.3em; }
 .the-footer .bottom {
   position: relative;
@@ -780,7 +781,8 @@ img, video, canvas, svg { display: block; max-width: 100%; }
 .the-footer .legalLinks .hover-loop { height: 1.6em; }
 
 .cta-scroll { position: relative; display: flex; align-items: center; justify-content: flex-start; color: var(--cl-grey-500); }
-.cta-scroll .wrap { position: relative; width: 3.2rem; aspect-ratio: 1 / 1; border-radius: 1.2rem; background: var(--cl-white); color: var(--cl-black); padding: 0; }
+.cta-scroll .wrap { position: relative; width: 3.2rem; aspect-ratio: 1 / 1; border-radius: 1.2rem; background: var(--cl-white); color: var(--cl-black); padding: 0; transition: background-color .3s ease-in-out; }
+.cta-scroll:hover .wrap { background: var(--cl-grey-300); }
 .cta-scroll .wrap .hover-loop { position: absolute; inset: 0; }
 .cta-scroll .icon { width: 1.6rem; height: 1.6rem; }
 .cta-scroll .label { margin-left: .8rem; }

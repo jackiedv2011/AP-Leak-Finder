@@ -1,8 +1,8 @@
 import { useState, type FormEvent } from 'react'
-import { AuthLayout, Field } from '@/pages/AuthLayout'
 import { nextAfterAuth } from '@/pages/authRedirect'
 import { useAuth } from '@/lib/auth/AuthContext'
 import { validateLogIn } from '@/lib/auth/localAuthService'
+import { AuthSplit, leavePage, SplitField } from '@/pages/AuthSplit'
 import { DevInbox } from '@/pages/DevInbox'
 import { GoogleButton } from '@/pages/GoogleButton'
 
@@ -45,109 +45,99 @@ export function LoginPage() {
       setUnverified(result.code === 'email_unverified' ? email.trim().toLowerCase() : null)
       return
     }
-    window.location.href = nextAfterAuth()
+    leavePage(nextAfterAuth())
   }
 
   function handleGuest() {
     continueAsGuest()
-    window.location.href = nextAfterAuth()
+    leavePage(nextAfterAuth())
   }
 
   return (
-    <AuthLayout
+    <AuthSplit
+      title={['Log in']}
+      lede="Pick up your audits where you left off."
       alternate={
         <>
-          New to Reclaim? <a href="/signup">Create an account</a>
+          New to Reclaim?{' '}
+          <a href="/signup">Create an account</a>
         </>
       }
     >
-      <div className="wk-auth-card">
-        <div>
-          <h1>Log in</h1>
-          <p>Pick up your audits where you left off.</p>
+      <form className="rc-login-form" onSubmit={handleSubmit} noValidate>
+        {formError ? (
+          <div className="rc-alert" role="alert">
+            <p>{formError}</p>
+            {unverified && !resent ? (
+              <button
+                type="button"
+                className="rc-btn"
+                data-theme="dark"
+                onClick={async () => {
+                  await resendVerification(unverified)
+                  setResent(true)
+                }}
+              >
+                Send the confirmation link again
+              </button>
+            ) : null}
+            {resent ? <p>A new link is on its way.</p> : null}
+          </div>
+        ) : null}
+        {unverified ? <DevInbox email={unverified} subjectMatches={/Confirm your email/} /> : null}
+
+        <SplitField id="login-email" label="Email" error={fieldErrors.email}>
+          <input
+            id="login-email"
+            className="rc-input"
+            type="email"
+            autoComplete="email"
+            required
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            placeholder="you@company.com"
+            aria-invalid={fieldErrors.email ? 'true' : undefined}
+            aria-describedby={fieldErrors.email ? 'login-email-error' : undefined}
+          />
+        </SplitField>
+
+        <SplitField id="login-password" label="Password" error={fieldErrors.password}>
+          <input
+            id="login-password"
+            className="rc-input"
+            type="password"
+            autoComplete="current-password"
+            required
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            placeholder="Your password"
+            aria-invalid={fieldErrors.password ? 'true' : undefined}
+            aria-describedby={fieldErrors.password ? 'login-password-error' : undefined}
+          />
+        </SplitField>
+
+        <div className="rc-login-row">
+          <label className="rc-check">
+            <input type="checkbox" checked={rememberMe} onChange={(event) => setRememberMe(event.target.checked)} />
+            <span>Keep me logged in</span>
+          </label>
+          <a className="rc-link" href="/forgot-password">
+            Forgot password?
+          </a>
         </div>
 
-        <form className="wk-auth-form" onSubmit={handleSubmit} noValidate>
-          {formError ? (
-            <div className="wk-alert" role="alert">
-              <p>{formError}</p>
-              {unverified && !resent ? (
-                <button
-                  type="button"
-                  className="wk-btn"
-                  data-variant="outline"
-                  data-size="sm"
-                  style={{ marginTop: 10 }}
-                  onClick={async () => {
-                    await resendVerification(unverified)
-                    setResent(true)
-                  }}
-                >
-                  Send the confirmation link again
-                </button>
-              ) : null}
-              {resent ? <p style={{ marginTop: 8 }}>A new link is on its way.</p> : null}
-            </div>
-          ) : null}
-          {unverified ? <DevInbox email={unverified} subjectMatches={/Confirm your email/} /> : null}
-
-          <Field id="login-email" label="Email" error={fieldErrors.email}>
-            <input
-              id="login-email"
-              className="wk-input"
-              type="email"
-              autoComplete="email"
-              required
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              placeholder="you@company.com"
-              aria-invalid={fieldErrors.email ? 'true' : undefined}
-              aria-describedby={fieldErrors.email ? 'login-email-error' : undefined}
-            />
-          </Field>
-
-          <Field
-            id="login-password"
-            label="Password"
-            error={fieldErrors.password}
-            aside={<a href="/forgot-password">Forgot password?</a>}
-          >
-            <input
-              id="login-password"
-              className="wk-input"
-              type="password"
-              autoComplete="current-password"
-              required
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              placeholder="Your password"
-              aria-invalid={fieldErrors.password ? 'true' : undefined}
-              aria-describedby={fieldErrors.password ? 'login-password-error' : undefined}
-            />
-          </Field>
-
-          <label className="wk-check">
-            <input type="checkbox" checked={rememberMe} onChange={(event) => setRememberMe(event.target.checked)} />
-            <span>Keep me logged in on this device</span>
-          </label>
-
-          <button className="wk-btn" data-variant="primary" data-size="lg" type="submit" disabled={submitting}>
-            {submitting ? 'Logging in…' : 'Log in'}
-          </button>
-        </form>
-
-        <div className="wk-divider">or</div>
-
-        <GoogleButton label="Continue with Google" />
-
-        <button className="wk-btn" data-variant="outline" type="button" onClick={handleGuest}>
-          Try the sample audit without an account
+        <button className="rc-btn" data-theme="green" type="submit" disabled={submitting}>
+          {submitting ? 'Logging in…' : 'Log in'}
         </button>
+      </form>
 
-        <p className="wk-auth-foot">
-          Don&apos;t have an account? <a href="/signup">Sign up</a>
-        </p>
-      </div>
-    </AuthLayout>
+      <div className="rc-divider">or</div>
+
+      <GoogleButton label="Continue with Google" />
+
+      <button className="rc-btn" data-theme="dark" type="button" onClick={handleGuest}>
+        Try the sample audit without an account
+      </button>
+    </AuthSplit>
   )
 }

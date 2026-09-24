@@ -54,6 +54,9 @@ function ScannerRoute() {
 }
 
 function RouteFallback() {
+  // The log-in and sign-up pages are reached from the marketing site's fade-out, so they hold that
+  // blank grey frame (set in index.html) until they can fade in, rather than flashing a message.
+  if (['/login', '/signup'].includes(window.location.pathname.replace(/\/+$/, ''))) return <main aria-busy="true" />
   return (
     <main className="grid min-h-[100dvh] place-items-center bg-[#f7f4ee] text-[#171716]" aria-busy="true">
       <p className="text-sm text-[#7c786f]">Loading Reclaim…</p>

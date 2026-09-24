@@ -522,7 +522,6 @@ button.cta-button { border: 0; }
 .hero-article .tags-wrap { display: flex; flex-direction: row; flex-wrap: wrap; align-items: center; justify-content: flex-start; gap: .8rem; }
 .hero-article .tag { display: flex; align-items: center; height: 3.2rem; padding-inline: 1.6rem; border-radius: 1.6rem; background: var(--cl-white); text-transform: uppercase; }
 .button-back .icon { margin: 0 .8rem 0 0; transform: rotate(-90deg); }
-.hover-loop.left .inner.second { transform: translateX(100%); }
 
 /* ---------- richtext ---------- */
 .article-content .the-col { grid-column: 4 / span 6; }

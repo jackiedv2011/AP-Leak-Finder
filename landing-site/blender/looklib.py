@@ -1,9 +1,17 @@
-"""Shared look for every render: DayOS-matched materials, sun + fill lighting,
+"""Shared look for every render: paper-and-ink materials, sun + fill lighting,
 Cycles/OptiX settings, motion blur, transparent film.
-Reference values sampled from dayos.com renders (display sRGB, lit faces):
-white terrazzo #e9e1de, pale oak #e2c09e, yellow #f5d836, green #0d6e2b,
-dark wood #3a302c, pink #c33e9a, accent caps: green #9bff7a, pink #f379e7,
-cyan #71edef, orange #f17806."""
+
+Every object on the site is built out of one substance — a block of ledger
+sheets. Seen edge-on it shows its leaves; seen face-on it is plain card. The
+only other surfaces are the ink boards it is filed between and Reclaim's own
+accents, which are the site's palette verbatim (styles.css): green #00fd74,
+blue #00d1ff, orange #ff6838, pink #ff7ef2, purple #b874fc, over the pale
+tints #d1ffca #bef3ff #ffe0c4 #ffd5f8.
+
+The chrome around these renders is monochrome on purpose, so the colour a
+viewer sees on the page is the colour in here. Spend it where it means
+something: on the site, green is money actually back, orange is paid twice,
+blue is paid too much, pink is paid to the wrong place."""
 import bpy, math, os, sys
 from mathutils import Vector
 
@@ -160,9 +168,20 @@ def _base(name):
     return m, nt, nt.nodes['Principled BSDF']
 
 
-def _coords(nt, stretch=(1, 1, 1)):
-    """Object coords, offset per object so sibling pieces never share a pattern."""
+def _coords(nt, stretch=(1, 1, 1), jitter=True):
+    """Object coords, offset per object so sibling pieces never share a pattern.
+
+    `jitter=False` drops that offset, which is what printed rules want: pieces
+    cut from one ring keep their local axes, so the rules run straight across
+    the cuts and the ring reads as a single page someone has divided up."""
     tc = _n(nt, 'ShaderNodeTexCoord')
+    if not jitter:
+        if stretch == (1, 1, 1):
+            return tc.outputs['Object']
+        mp0 = _n(nt, 'ShaderNodeMapping')
+        mp0.inputs['Scale'].default_value = stretch
+        _l(nt, tc.outputs['Object'], mp0.inputs['Vector'])
+        return mp0.outputs[0]
     oi = _n(nt, 'ShaderNodeObjectInfo')
     off = _n(nt, 'ShaderNodeVectorMath', operation='SCALE')
     off.inputs[0].default_value = (37.13, 53.71, 71.37)
@@ -200,124 +219,91 @@ def _bump(nt, b, height, strength, dist=.004):
 
 
 # ---------------------------------------------------------------- materials
-PAL_WHITE = ['#26221f', '#26221f', '#3b3633', '#77706b', '#a39c95', '#c9a23c', '#b4523d', '#5e8b4e', '#cfc6bb', '#8f6f55']
-PAL_YELLOW = ['#26221f', '#a88f1d', '#d9b92a', '#fff39a', '#b4523d', '#77706b']
-
-
-def terrazzo(name, base, pal, big=.30, small=.34, rough=.64, pits=.55, bump=.32):
+def paper(name, base, rough=.78, tone=.055, grain=.05, sheen=.0):
+    """Matte card stock. Two frequencies do all the work: a slow drift so a wide
+    face is never dead flat under a hard sun, and fibre grain fine enough to
+    live in the bump only. No gloss — paper's whole character is that it
+    refuses to reflect."""
     m, nt, b = _base(name)
-    v0 = _coords(nt)
-    # warp so chips come out irregular, not round
-    wn = _n(nt, 'ShaderNodeTexNoise')
-    wn.inputs['Scale'].default_value = 14
-    wn.inputs['Detail'].default_value = 2
-    _l(nt, v0, wn.inputs['Vector'])
-    sub = _n(nt, 'ShaderNodeVectorMath', operation='SUBTRACT')
-    _l(nt, wn.outputs['Color'], sub.inputs[0])
-    sub.inputs[1].default_value = (.5, .5, .5)
-    sc = _n(nt, 'ShaderNodeVectorMath', operation='SCALE')
-    _l(nt, sub.outputs[0], sc.inputs[0])
-    sc.inputs['Scale'].default_value = .022
-    add = _n(nt, 'ShaderNodeVectorMath', operation='ADD')
-    _l(nt, v0, add.inputs[0])
-    _l(nt, sc.outputs[0], add.inputs[1])
-    vec = add.outputs[0]
-
-    col = hexrgb(base)
-    masks = []
-    # checked 1:1 against DayOS crops: theirs is finer; this is a touch grainier on purpose
-    for scale, dens, thr in ((34, big, .26), (82, small, .30)):
-        vo = _n(nt, 'ShaderNodeTexVoronoi', feature='F1')
-        vo.inputs['Scale'].default_value = scale
-        vo.inputs['Randomness'].default_value = 1
-        _l(nt, vec, vo.inputs['Vector'])
-        sep = _n(nt, 'ShaderNodeSeparateColor')
-        _l(nt, vo.outputs['Color'], sep.inputs['Color'])
-        radius = _math(nt, 'MULTIPLY_ADD', sep.outputs['Red'], thr * .9, thr * .45)
-        inside = _math(nt, 'LESS_THAN', vo.outputs['Distance'], radius)
-        present = _math(nt, 'LESS_THAN', sep.outputs['Blue'], dens)
-        mask = _math(nt, 'MULTIPLY', inside, present)
-        chip = _ramp(nt, sep.outputs['Green'], [(i / len(pal), c) for i, c in enumerate(pal)], 'CONSTANT')
-        col = _mix(nt, mask, col, chip)
-        masks.append(mask)
-    _l(nt, col, b.inputs['Base Color'])
-
-    # foam-like pitting + fine grain, as on the DayOS terrazzo
-    pv = _n(nt, 'ShaderNodeTexVoronoi', feature='F1')
-    pv.inputs['Scale'].default_value = 60
-    _l(nt, vec, pv.inputs['Vector'])
-    psep = _n(nt, 'ShaderNodeSeparateColor')
-    _l(nt, pv.outputs['Color'], psep.inputs['Color'])
-    pr = _n(nt, 'ShaderNodeMapRange', interpolation_type='SMOOTHSTEP')
-    _l(nt, pv.outputs['Distance'], pr.inputs['Value'])
-    pr.inputs['From Min'].default_value, pr.inputs['From Max'].default_value = .0, .26
-    pr.inputs['To Min'].default_value, pr.inputs['To Max'].default_value = 1, 0
-    pit = _math(nt, 'MULTIPLY', pr.outputs['Result'], _math(nt, 'LESS_THAN', psep.outputs['Blue'], pits))
-    gn = _n(nt, 'ShaderNodeTexNoise')
-    gn.inputs['Scale'].default_value = 190
-    gn.inputs['Detail'].default_value = 3
-    _l(nt, vec, gn.inputs['Vector'])
-    h = _math(nt, 'SUBTRACT', _math(nt, 'MULTIPLY', gn.outputs['Fac'], .55), _math(nt, 'MULTIPLY', pit, .9))
-    _bump(nt, b, h, bump, .003)
+    dr = _n(nt, 'ShaderNodeTexNoise')
+    dr.inputs['Scale'].default_value = 3.2
+    dr.inputs['Detail'].default_value = 2
+    _l(nt, _coords(nt), dr.inputs['Vector'])
+    mr = _n(nt, 'ShaderNodeMapRange')
+    _l(nt, dr.outputs['Fac'], mr.inputs['Value'])
+    mr.inputs['From Min'].default_value, mr.inputs['From Max'].default_value = .25, .75
+    mr.inputs['To Min'].default_value, mr.inputs['To Max'].default_value = 1 - tone, 1 + tone * .6
+    _l(nt, _mix(nt, 1.0, hexrgb(base), mr.outputs['Result'], 'MULTIPLY'), b.inputs['Base Color'])
+    fb = _n(nt, 'ShaderNodeTexNoise')
+    fb.inputs['Scale'].default_value = 420
+    fb.inputs['Detail'].default_value = 2
+    _l(nt, _coords(nt, (1, 1, 2.6)), fb.inputs['Vector'])
+    _bump(nt, b, fb.outputs['Fac'], grain, .0015)
     b.inputs['Roughness'].default_value = rough
-    b.inputs['Specular IOR Level'].default_value = .45
-    return m
-
-
-def wood(name, light, dark, rough=.55, stretch=(1.5, 1.5, 22), fine=(.86, 1.04), sheen=0.0):
-    m, nt, b = _base(name)
-    v = _coords(nt, stretch)
-    nz = _n(nt, 'ShaderNodeTexNoise')
-    nz.inputs['Scale'].default_value = 1.25
-    nz.inputs['Detail'].default_value = 8
-    nz.inputs['Roughness'].default_value = .62
-    nz.inputs['Distortion'].default_value = 2.4
-    _l(nt, v, nz.inputs['Vector'])
-    col = _ramp(nt, nz.outputs['Fac'], [(.36, light), (.5, light), (.64, dark)])
-    vf = _coords(nt, (6, 6, 230))
-    fz = _n(nt, 'ShaderNodeTexNoise')
-    fz.inputs['Scale'].default_value = 1
-    fz.inputs['Detail'].default_value = 3
-    _l(nt, vf, fz.inputs['Vector'])
-    fr = _n(nt, 'ShaderNodeMapRange')
-    _l(nt, fz.outputs['Fac'], fr.inputs['Value'])
-    fr.inputs['From Min'].default_value, fr.inputs['From Max'].default_value = .3, .7
-    fr.inputs['To Min'].default_value, fr.inputs['To Max'].default_value = fine
-    col = _mix(nt, 1.0, col, fr.outputs['Result'], 'MULTIPLY')
-    _l(nt, col, b.inputs['Base Color'])
-    _bump(nt, b, _math(nt, 'ADD', nz.outputs['Fac'], _math(nt, 'MULTIPLY', fz.outputs['Fac'], .6)), .06, .004)
-    b.inputs['Roughness'].default_value = rough
-    b.inputs['Specular IOR Level'].default_value = .42
+    b.inputs['Specular IOR Level'].default_value = .22
     if sheen:
         b.inputs['Sheen Weight'].default_value = sheen
+        b.inputs['Sheen Roughness'].default_value = .4
     return m
 
 
-def plywood(name, light='#f0d6ab', dark='#b48554', layers=7.0, rough=.55):
-    """Laminated edge: pale plies split by thin dark glue lines (DayOS stacks/discs).
-    layers=7 gives ~22 plies per unit — wide enough not to alias at 1080px."""
+def ream(name, sheet='#f7f5f1', edge='#bdb6ad', leaves=23.0, rough=.76, cut=.42):
+    """A block of ledger sheets seen edge-on: pale leaves split by the hairline
+    shadow between them. `leaves` is a wave scale, ~3.1 bands per unit of it,
+    so 23 lands near 70 sheets per unit — dense enough to read as paper at a
+    glance, wide enough to survive the encoder.
+
+    `cut` biases the ramp: low values give a crisp guillotined edge, high values
+    a softer, thumbed one."""
     m, nt, b = _base(name)
     v = _coords(nt)
     wv = _n(nt, 'ShaderNodeTexWave', wave_type='BANDS', bands_direction='Z', wave_profile='SIN')
-    wv.inputs['Scale'].default_value = layers
-    wv.inputs['Distortion'].default_value = .6
+    wv.inputs['Scale'].default_value = leaves
+    wv.inputs['Distortion'].default_value = .35
     wv.inputs['Detail'].default_value = 1
     _l(nt, v, wv.inputs['Vector'])
-    col = _ramp(nt, wv.outputs['Fac'], [(0.0, light), (.80, light), (.97, dark)])
-    fz = _n(nt, 'ShaderNodeTexNoise')
-    fz.inputs['Scale'].default_value = 1
-    fz.inputs['Detail'].default_value = 5
-    fz.inputs['Distortion'].default_value = 1.2
-    _l(nt, _coords(nt, (3, 3, 90)), fz.inputs['Vector'])
-    fr = _n(nt, 'ShaderNodeMapRange')
-    _l(nt, fz.outputs['Fac'], fr.inputs['Value'])
-    fr.inputs['From Min'].default_value, fr.inputs['From Max'].default_value = .3, .7
-    fr.inputs['To Min'].default_value, fr.inputs['To Max'].default_value = .84, 1.05
-    col = _mix(nt, 1.0, col, fr.outputs['Result'], 'MULTIPLY')
-    _l(nt, col, b.inputs['Base Color'])
-    _bump(nt, b, wv.outputs['Fac'], .08, .003)
+    col = _ramp(nt, wv.outputs['Fac'], [(0.0, sheet), (.62 + cut * .3, sheet), (.99, edge)])
+    # a slow swell across the block, so the stack looks pressed rather than printed
+    sw = _n(nt, 'ShaderNodeTexNoise')
+    sw.inputs['Scale'].default_value = 1.4
+    sw.inputs['Detail'].default_value = 4
+    sw.inputs['Distortion'].default_value = .8
+    _l(nt, _coords(nt, (2.4, 2.4, 40)), sw.inputs['Vector'])
+    sr = _n(nt, 'ShaderNodeMapRange')
+    _l(nt, sw.outputs['Fac'], sr.inputs['Value'])
+    sr.inputs['From Min'].default_value, sr.inputs['From Max'].default_value = .3, .7
+    sr.inputs['To Min'].default_value, sr.inputs['To Max'].default_value = .93, 1.03
+    _l(nt, _mix(nt, 1.0, col, sr.outputs['Result'], 'MULTIPLY'), b.inputs['Base Color'])
+    _bump(nt, b, _math(nt, 'ADD', wv.outputs['Fac'], _math(nt, 'MULTIPLY', sw.outputs['Fac'], .35)), .09, .0025)
     b.inputs['Roughness'].default_value = rough
-    b.inputs['Specular IOR Level'].default_value = .42
+    b.inputs['Specular IOR Level'].default_value = .24
+    return m
+
+
+def ruled(name, base='#f7f5f1', line='#9aa6ad', pitch=46.0, rough=.78):
+    """The face of a ledger sheet: fine printed rules, pressed very slightly in.
+    Bands run along local X, so a card's rules follow its long edge."""
+    m, nt, b = _base(name)
+    v = _coords(nt, jitter=False)
+    wv = _n(nt, 'ShaderNodeTexWave', wave_type='BANDS', bands_direction='Y', wave_profile='SIN')
+    wv.inputs['Scale'].default_value = pitch
+    wv.inputs['Distortion'].default_value = 0
+    _l(nt, v, wv.inputs['Vector'])
+    rules = _ramp(nt, wv.outputs['Fac'], [(0.0, base), (.88, base), (.985, line)])
+    dr = _n(nt, 'ShaderNodeTexNoise')
+    dr.inputs['Scale'].default_value = 3.2
+    _l(nt, v, dr.inputs['Vector'])
+    mr = _n(nt, 'ShaderNodeMapRange')
+    _l(nt, dr.outputs['Fac'], mr.inputs['Value'])
+    mr.inputs['From Min'].default_value, mr.inputs['From Max'].default_value = .25, .75
+    mr.inputs['To Min'].default_value, mr.inputs['To Max'].default_value = .96, 1.03
+    _l(nt, _mix(nt, 1.0, rules, mr.outputs['Result'], 'MULTIPLY'), b.inputs['Base Color'])
+    fb = _n(nt, 'ShaderNodeTexNoise')
+    fb.inputs['Scale'].default_value = 420
+    _l(nt, v, fb.inputs['Vector'])
+    _bump(nt, b, _math(nt, 'ADD', _math(nt, 'MULTIPLY', wv.outputs['Fac'], .5), _math(nt, 'MULTIPLY', fb.outputs['Fac'], .12)), .05, .0015)
+    b.inputs['Roughness'].default_value = rough
+    b.inputs['Specular IOR Level'].default_value = .22
     return m
 
 
@@ -354,24 +340,68 @@ def plain(name, base, rough=.5, streak=0.0, spec=.45, coat=0.0):
     return m
 
 
+# Coloured stock, the way a filing system actually buys paper: the same card in
+# several colours so a drawer can be read at a glance. (sheet, cut edge).
+#
+# These are saturated, not pastel. A pale wash over every card reads as sticky
+# notes and throws away the one thing that makes these objects paper — the
+# leaves in the cut edge, which need a dark enough edge colour to survive. The
+# two greys are what actually stops a frame going white: colour alone gives a
+# picture variety, but only value gives it depth, and on a black section the
+# darks have to come from the stock because they cannot come from the ground.
+STOCKS = {
+    # neutrals, warm to cool and light to dark. Paper is never one white — a
+    # real drawer has bond, manila and board in it — and these carry most of the
+    # variety in a frame without spending any saturation to get it.
+    'cream': ('#f7ead0', '#c3a87e'),
+    'bone': ('#eee9df', '#b2a897'),
+    'mid': ('#bab4ab', '#6f6a62'),
+    'dark': ('#6b6762', '#3b3833'),
+    'green': ('#4dfe97', '#13a75a'),
+    'blue': ('#4ddcff', '#1f88a8'),
+    'orange': ('#ff8452', '#b34a22'),
+    'pink': ('#ff9cf5', '#b854ab'),
+    'purple': ('#c98ffd', '#7b4bb0'),
+}
+
+
 def library():
-    return {
-        'terr': terrazzo('Terrazzo', '#f0ebe7', PAL_WHITE, big=.22, small=.40),
-        'yel': terrazzo('YellowTerrazzo', '#ffe13a', PAL_YELLOW, big=.14, small=.26, rough=.56, pits=.4, bump=.26),
-        'oak': wood('Oak', '#f4dbb8', '#cf9e6a'),
-        'ply': plywood('Ply'),
-        'dark': wood('DarkWood', '#5b4d44', '#3d332d', rough=.44, fine=(.8, 1.08), sheen=.15),
-        'green': plain('Green', '#127536', .5, streak=.10),
-        'pink': plain('Pink', '#e24aa8', .4),
-        'blue': plain('Blue', '#3aa5d9', .4),
-        'white': plain('WhiteLacquer', '#f5f0ec', .42),
-        'taupe': plain('Taupe', '#8c8078', .55, streak=.06),
-        # flat, near-emissive accent caps (the solution loops)
-        'c_green': plain('CapGreen', '#8dff6a', .45),
-        'c_pink': plain('CapPink', '#f472e6', .45),
-        'c_cyan': plain('CapCyan', '#62ecef', .45),
-        'c_orange': plain('CapOrange', '#f47208', .45),
+    """Paper first, ink second, and colour in two strengths.
+
+    The pale half is stock — it can cover a whole card, and several cards at
+    once, without any of them claiming to be the point. The saturated half is
+    reserved for the one event a loop is about. Keeping those two jobs apart is
+    what lets a frame be full of colour and still have a subject.
+
+    Accent bases are the site's hexes as written; this sun and view transform
+    land them a shade under, which is what you want — a face reading exactly
+    #00fd74 under a key light would be lighting itself."""
+    lib = {
+        # stock
+        'ream': ream('Ream'),
+        'ream_w': ream('ReamBright', sheet='#fdfcfa', edge='#c8c2ba', leaves=27.0, cut=.2),
+        'paper': paper('Paper', '#f6f4f0'),
+        'card': paper('Card', '#e6e2db', tone=.045),
+        'ruled': ruled('Ruled'),
+        'ink': paper('Ink', '#3b3b3e', rough=.7, tone=.035, grain=.04, sheen=.12),
+        'carbon': paper('Carbon', '#212124', rough=.66, tone=.03, grain=.04, sheen=.16),
+        # Reclaim accents — money back, paid twice, paid too much, wrong place
+        'green': plain('Green', '#00fd74', .44),
+        'orange': plain('Orange', '#ff6838', .44),
+        'blue': plain('Blue', '#00d1ff', .44),
+        'pink': plain('Pink', '#ff7ef2', .44),
+        'purple': plain('Purple', '#b874fc', .44),
+        # the hero's well: a painted inner wall, not stock, and pale because a
+        # saturated colour down there would only turn to mud
+        't_green': plain('TintGreen', '#d1ffca', .5),
+        'card_cream': paper('CardCream', '#f3e6cc', tone=.05),
+        'card_bone': paper('CardBone', '#eae5da', tone=.045),
+        'card_mid': paper('CardMid', '#b0aaa1', tone=.04),
+        'card_dark': paper('CardDark', '#5f5b56', rough=.72, tone=.035, sheen=.1),
     }
+    for k, (sheet, edge) in STOCKS.items():
+        lib[f'ream_{k}'] = ream(f'Ream{k.title()}', sheet=sheet, edge=edge)
+    return lib
 
 
 # ---------------------------------------------------------------- geometry
