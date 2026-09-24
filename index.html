@@ -31,7 +31,7 @@
           document.documentElement.dataset.theme = 'dark';
         }
         /* The log-in and sign-up pages take over from the marketing site's page fade, which ends on its grey. */
-        if (/^\/(login|signup)\/?$/.test(location.pathname)) document.documentElement.dataset.route = 'auth';
+        if (/^\/(login|signup|forgot-password|reset-password|verify-email)\/?$/.test(location.pathname)) document.documentElement.dataset.route = 'auth';
       })();
     </script>
     <style>

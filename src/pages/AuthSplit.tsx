@@ -57,7 +57,7 @@ interface AuthSplitProps {
   lede: ReactNode
   /** The small line at the top of the panel, e.g. "New to Reclaim? Create an account". */
   alternate?: ReactNode
-  children: ReactNode
+  children?: ReactNode
 }
 
 /**
