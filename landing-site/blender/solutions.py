@@ -1,25 +1,8 @@
-"""Find / Build / Recover loops for the black 'how it works' band.
+"""Upload / Find / Build / Recover loops for the black 'how it works' band.
 Same materials and light as the hero; floating objects, transparent film, motion blur.
-
-These sit on black, so they bottom out at `dark` rather than carbon — anything
-nearer to black stops being an object and becomes a hole in the section. Each
-scene runs the full range of stock, white through grey to dark and through
-colour, because the chrome around these loops is monochrome and this is where
-all of the page's colour has to come from.
-
-What each loop is about, and the colour that event is in:
-
-  find     orange   two records that turn out to be the same record
-  build    blue     nothing is filed until the mark goes on it
-  recover  green    a promise is an empty outline; money is the thing that fills it
-
-The subject is kept legible by contrast rather than by being the only colour —
-the blue mark lands on a plain white record, and the green card drops into a
-file that has no other green in it.
-
-Run: blender -b --factory-startup --python solutions.py -- scene=find|build|recover out=DIR
+Run: blender -b --factory-startup --python solutions.py -- scene=upload|find|build|recover out=DIR
      [res=720 spp=64 frames=1,40,80|all bg=000000 loop=150]"""
-import bpy, math, random, os, sys
+import bpy, bmesh, math, random, os, sys
 from mathutils import Vector, Quaternion
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import looklib as K
@@ -38,78 +21,42 @@ M = K.library()
 rnd = random.Random(5)
 moving = []
 
-# the tab rides the near edge: at this azimuth the camera reads the -Y and +X
-# faces, and a tab on the back would be a detail nobody ever sees. Its width is
-# a fraction of the card, so a bigger record does not get a proportionally
-# smaller tab.
-TAB_W, TAB_D, TAB_T, TAB_IN = .32, .15, .036, .05
+
+def hexpts(r, cx=0.0, cy=0.0, rot=0.0):
+    return [Vector((cx + r * math.cos(rot + k * math.pi / 3), cy + r * math.sin(rot + k * math.pi / 3))) for k in range(6)]
 
 
-def rect(w, d):
-    """Hard-cut card outline, CCW. The bevel on the prism is the only softening
-    these get — paper has an edge, and a rounded corner would read as vinyl."""
-    return [Vector((-w / 2, -d / 2)), Vector((w / 2, -d / 2)), Vector((w / 2, d / 2)), Vector((-w / 2, d / 2))]
+def circle(r, n=96, cx=0.0, cy=0.0):
+    return [Vector((cx + r * math.cos(TAU * k / n), cy + r * math.sin(TAU * k / n))) for k in range(n)]
 
 
-def bundle(name, w, d, t, body='ream', top='ruled', tab=None, tab_u=.68):
-    """A bundle of ledger sheets: ream on the cut edges, a face on top, and one
-    index tab standing off the near edge, offset the way a filed tab is.
-    Returns the bundle; the tab rides it."""
-    ob, _ = K.prism(name, rect(w, d), t, M, body, top=top, bevel=.012)
+def block(name, pts, h, body, cap=None, cap_h=.05, smooth=False, bevel=.02):
+    """Body prism with an optional thin, flat colour cap (the DayOS accent slab).
+    Plywood shows its plies on the sides and an oak veneer on top."""
+    ob, c = K.prism(name, pts, h, M, body, top='oak' if body == 'ply' else None, bevel=bevel, smooth=smooth)
     ob.rotation_mode = 'QUATERNION'
-    if tab:
-        x, tw = -w / 2 + w * tab_u, TAB_W * w
-        pts = [Vector((x - tw / 2, -d / 2 + TAB_IN)), Vector((x - tw / 2, -d / 2 - TAB_D)),
-               Vector((x + tw / 2, -d / 2 - TAB_D)), Vector((x + tw / 2, -d / 2 + TAB_IN))]
-        tb, tc = K.prism(name + '_tab', pts, TAB_T, M, tab, bevel=.006)
-        tb.parent = ob
-        tb.location = (tc.x, tc.y, 0)
+    if cap:
+        cp, _ = K.prism(name + '_cap', pts, cap_h, M, cap, bevel=.008, smooth=smooth)
+        cp.parent = ob
+        cp.location = (0, 0, h / 2 + cap_h / 2 + .002)
     moving.append(ob)
-    return ob
+    return ob, c
 
 
-def slot(name, w, d, t, mat):
-    """The promised refund: a card-shaped outline with nothing in it. A wireframe
-    rather than a translucent solid, because a promise is a drawn boundary — it
-    has a shape and no substance."""
-    ob, _ = K.prism(name, rect(w, d), t, M, mat, bevel=0)
-    wf = ob.modifiers.new('wire', 'WIREFRAME')
-    wf.thickness = .028         # heavy enough to still be a line at 317px
-    wf.use_even_offset = True
+def sphere(name, r, mat):
+    me = bpy.data.meshes.new(name)
+    bm = bmesh.new()
+    bmesh.ops.create_uvsphere(bm, u_segments=96, v_segments=48, radius=r)
+    bm.to_mesh(me)
+    bm.free()
+    for p in me.polygons:
+        p.use_smooth = True
+    me.materials.append(M[mat])
+    ob = bpy.data.objects.new(name, me)
+    sc.collection.objects.link(ob)
     ob.rotation_mode = 'QUATERNION'
     moving.append(ob)
     return ob
-
-
-# Reclaim's mark, traced off assets/favicon.svg — the same six kites the nav
-# logo uses, with SVG's y-down flipped. It appears once on the site as a solid,
-# and this is it: the thing that gets pressed onto an approved record.
-HEX_KITES = [
-    [(-2.056, 4.6), (-5.751, 11), (5.751, 11), (2.056, 4.6)],
-    [(2.956, 4.081), (6.651, 10.481), (12.402, .520), (5.012, .520)],
-    [(5.012, -.520), (12.402, -.520), (6.651, -10.481), (2.956, -4.081)],
-    [(2.056, -4.6), (5.751, -11), (-5.751, -11), (-2.056, -4.6)],
-    [(-2.956, -4.081), (-6.651, -10.481), (-12.402, -.520), (-5.012, -.520)],
-    [(-5.012, .520), (-12.402, .520), (-6.651, 10.481), (-2.956, 4.081)],
-]
-HEX_SPAN = 24.804          # the mark's own width, so `width` below is literal
-
-
-def seal(name, width, thick, mat):
-    """The mark as a solid, on an empty so it moves as one piece."""
-    root = bpy.data.objects.new(name, None)
-    sc.collection.objects.link(root)
-    root.rotation_mode = 'QUATERNION'
-    s = width / HEX_SPAN
-    for i, kite in enumerate(HEX_KITES):
-        pts = [Vector((x * s, y * s)) for x, y in kite]
-        if sum((pts[j].x - pts[j - 1].x) * (pts[j].y + pts[j - 1].y) for j in range(len(pts))) > 0:
-            pts.reverse()          # prism wants CCW; the traced order alternates
-        ob, c = K.prism(f'{name}{i}', pts, thick, M, mat, bevel=.004)
-        ob.parent = root
-        ob.location = (c.x, c.y, 0)
-    moving.append(root)
-    return root
 
 
 def keyall(fr):
@@ -124,134 +71,182 @@ def cycle(t, t_open, t_close, dur):
 
 
 # ------------------------------------------------------------------ FIND
-# Seven records adrift. Two of them carry the same invoice number, and over the
-# loop they cross the pile, find each other and come to rest face to face —
-# which is the whole of what a duplicate is. Everything else keeps breathing and
-# stays out of it; the only colour in the frame is on the two that match, and it
-# doubles when they meet.
+# A honeycomb of seven hex posts; a height wave sweeps round the ring and the
+# centre post (green cap) carries a terrazzo ball up and down.
 if SCENE == 'find':
-    W, D, T = 1.34, .98, .17
-    # three others, low and close in, so the pair meets in clear air above them.
-    # Few and large rather than many and small: at card size a seventh record is
-    # not more evidence, it is just less of everything.
-    # (x, y, z, yaw, stock, face, tab)
-    REST = [(-1.16, .70, -.50, 22, 'ream_dark', 'card_dark', 'blue'),
-            (1.12, .74, -.34, -15, 'ream_purple', 'purple', 'card'),
-            (.04, -1.16, -.58, 9, 'ream_cream', 'card_cream', 'pink')]
-    quiet = []
-    for i, (x, y, z, yaw, stock, face, tab) in enumerate(REST):
-        ob = bundle(f'q{i}', W, D, T, body=stock, top=face, tab=tab, tab_u=.32 + .16 * i)
-        quiet.append((ob, Vector((x, y, z)), math.radians(yaw), rnd.uniform(0, TAU)))
-    MEET = Vector((0, -.06, .56))
-    pair = []
-    # the duplicates are cut from the same stock, so they read as a pair from the
-    # first frame — before they have gone anywhere near each other
-    for i, (fx, fy, fz, fyaw, dz) in enumerate([(-1.52, .26, .92, 15, .0), (1.56, -.30, .10, -19, T + .028)]):
-        ob = bundle(f'm{i}', W, D, T, body='ream_orange', top='orange', tab='card', tab_u=.68)
-        pair.append((ob, Vector((fx, fy, fz)), math.radians(fyaw), MEET + Vector((0, 0, dz))))
+    r, gap = .52, .035
+    step = r * math.sqrt(3) + gap
+    spec = [('terr', 'c_green', 1.10), ('terr', 'c_pink', .78), ('ply', None, .92), ('terr', 'c_cyan', .66),
+            ('taupe', None, .88), ('terr', 'c_orange', .82), ('ply', None, .72)]
+    posts = []
+    for i, (body, cap, h) in enumerate(spec):
+        ang = 0.0 if i == 0 else math.radians(30 + 60 * (i - 1))
+        cx, cy = (0.0, 0.0) if i == 0 else (step * math.cos(ang), step * math.sin(ang))
+        ob, c = block(f'post{i}', hexpts(r, cx, cy), h, body, cap)
+        posts.append((ob, Vector((cx, cy, h / 2)), ang, h + (.052 if cap else 0)))
+    ball = sphere('ball', .21, 'terr')
     for f in range(LOOP + 1):
         t = f / LOOP
-        for ob, home, yaw, ph in quiet:
-            ob.location = home + Vector((0, 0, .085 * math.sin(TAU * t + ph)))
-            ob.rotation_quaternion = Quaternion(ZAX, yaw + math.radians(3.5) * math.sin(TAU * t + ph * .7))
-        e = cycle(t, .16, .66, .26)
-        for ob, loose, yaw, met in pair:
-            ob.location = loose.lerp(met, e)
-            ob.rotation_quaternion = Quaternion(ZAX, yaw * (1 - e))
+        for i, (ob, base, ang, top) in enumerate(posts):
+            dz = .20 * math.sin(TAU * (2 * t) + math.pi) if i == 0 else .24 * math.sin(TAU * t - ang)
+            ob.location = base + Vector((0, 0, dz))
+        ob0, base0, _, top0 = posts[0]
+        # rest the ball on the centre post's cap: cap surface = centre z - h/2 + (h + cap)
+        ball.location = Vector((0, 0, ob0.location.z - base0.z + top0 + .21))
+        ball.rotation_quaternion = Quaternion(ZAX, TAU * t)
         keyall(f + 1)
-    target, el, az, dist = (0, .02, .06), 30, -58, float(A.get('dist', 10.2))
+    target, el, az, dist = (0, 0, .55), 34, -58, float(A.get('dist', 14))
 
 # ------------------------------------------------------------------ BUILD
-# Records arrive loose and file themselves into a stack, bottom first. The last
-# one does not land. It waits, a little proud of the pile, until the mark comes
-# down onto it — and only then do the two of them seat together. That is the
-# order of operations the product actually keeps: nothing goes out until it has
-# been approved, and the approval is a thing you can see sitting on the record.
+# Six wedges of a hexagon, scattered and turned, come in one after another and
+# close around the white ball, which ends up seated in a round opening at the
+# centre; they hold, drift apart again, and the piece turns 120 deg over the loop
+# (keeps the A/B pattern). Same wedges, caps and ball as the original.
 elif SCENE == 'build':
-    W, D, T, g = 1.16, .86, .14, .034
-    HOVER = .30
-    # a drawer's worth of stock, and the record waiting for approval left plain
-    # on top — a blue mark coming down onto a blue card would be a mark nobody
-    # sees land
-    STOCK = [('ream_purple', 'purple', 'card'), ('ream_mid', 'card_mid', 'orange'),
-             ('ream_cream', 'card_cream', 'pink'), ('ream_dark', 'card_dark', 'card'),
-             ('ream_bone', 'card_bone', 'blue')]
-    cards, z = [], 0.0
-    for k, (stock, face, tab) in enumerate(STOCK):
-        ob = bundle(f's{k}', W, D, T, body=stock, top=face, tab=tab, tab_u=.24 + .13 * k)
-        home = Vector((0, 0, z + T / 2))
-        z += T + g
-        loose = home + Vector((rnd.uniform(-.40, .40), rnd.uniform(-.34, .34), .55 + k * .40))
-        axis = Vector((rnd.uniform(-1, 1), rnd.uniform(-1, 1), 0)).normalized()
-        q = Quaternion(ZAX, math.radians(rnd.uniform(-36, 36))) @ Quaternion(axis, math.radians(rnd.uniform(9, 17)))
-        cards.append((ob, home, loose, q))
-    mark = seal('Seal', .68, .085, 'blue')
-    top_ob, top_home, top_loose, top_q = cards[4]
+    R, H, g, RI = .98, .9, .03, float(A.get('hole', .27))
+    wedges = []
+    for k in range(6):
+        a0, a1 = math.radians(60 * k), math.radians(60 * (k + 1))
+        mid = (a0 + a1) / 2
+        off = Vector((math.cos(mid), math.sin(mid))) * g
+        pts = [Vector((RI * math.cos(a0), RI * math.sin(a0))) + off,
+               Vector((R * math.cos(a0), R * math.sin(a0))) + off,
+               Vector((R * math.cos(a1), R * math.sin(a1))) + off]
+        pts += [Vector((RI * math.cos(a1 - (a1 - a0) * i / 10), RI * math.sin(a1 - (a1 - a0) * i / 10))) + off for i in range(10)]
+        body, cap = ('terr', 'c_cyan') if k % 2 == 0 else ('ply', 'c_orange')
+        ob, c = block(f'w{k}', pts, H, body, cap)
+        radial = Vector((math.cos(mid), math.sin(mid), 0))
+        wedges.append((ob, Vector((c.x, c.y, H / 2)), radial, k,
+                       rnd.uniform(-.12, .12), math.radians(rnd.uniform(-28, 28))))
+    core = sphere('core', .2, 'white')
+    SEAT = H + .03                     # the ball sits in the opening, a little proud of the caps
     for f in range(LOOP + 1):
         t = f / LOOP
-        for k, (ob, home, loose, q) in enumerate(cards[:4]):
-            e = cycle(t, .07 + k * .055, .62 + (3 - k) * .045, .20)
-            ob.location = loose.lerp(home, e)
-            ob.rotation_quaternion = q.slerp(Quaternion(), e)
-        # the top record: in position early, seated late
-        a = cycle(t, .10, .70, .20)
-        s = cycle(t, .45, .61, .075)
-        hover = top_home + Vector((0, 0, HOVER))
-        top_ob.location = top_loose.lerp(hover, a).lerp(top_home, s)
-        top_ob.rotation_quaternion = top_q.slerp(Quaternion(), a)
-        # the mark rides down onto it and stays for as long as the record is filed
-        d = cycle(t, .34, .585, .10)
-        rest = top_ob.location + Vector((0, 0, T / 2 + .085 / 2 + .004))
-        mark.location = rest + Vector((0, 0, 1.55 * (1 - d)))
-        mark.rotation_quaternion = Quaternion(ZAX, math.radians(26) * (1 - d))
+        spin = Quaternion(ZAX, math.radians(120) * t)
+        for ob, base, radial, k, dz, roll in wedges:
+            e = 1 - cycle(t, .08 + k * .03, .60 + k * .025, .22)      # 1 = apart, 0 = locked
+            lift = ((.55 if k % 2 == 0 else -.22) + dz) * e
+            tang = Vector((-radial.y, radial.x, 0))
+            loc = base + radial * 1.0 * e + Vector((0, 0, lift))
+            ob.location = spin @ loc
+            ob.rotation_quaternion = spin @ Quaternion(radial, roll * e) @ Quaternion(tang, math.radians(-18) * e)
+        e0 = 1 - cycle(t, .30, .62, .20)
+        core.location = Vector((0, 0, SEAT + .5 * e0))
+        core.rotation_quaternion = spin
         keyall(f + 1)
-    target, el, az, dist = (0, 0, .40), 32, -58, float(A.get('dist', 8.3))
+    target, el, az, dist = (0, 0, .5), 34, -58, float(A.get('dist', 12.5))
 
 # ------------------------------------------------------------------ RECOVER
-# The file fans open and one place in it is empty — an outline with nothing in
-# it, which is what a promised refund is. The card that fills it comes in from
-# outside the pile and drops into that exact gap; the file closes around it and
-# the outline is left as a frame around something real. The green arrives with
-# the card, not with the promise.
+# A stack of coins fans out around a pin like a swatch book, then gathers back.
+# Same motion as the original disc stack; the discs are now coin-shaped: thinner,
+# a milled edge on the stone and metal-yellow ones, and a low raised rim on top.
 elif SCENE == 'recover':
-    W, D, T, g = 1.06, .78, .15, .026
-    GAP = 3                         # which level in the file is still owed
-    pin = Vector((-W / 2 + .08, 0, 0))
-    levels = [Vector((0, 0, k * (T + g) + T / 2)) for k in range(6)]
-    STOCK = {0: ('ream_orange', 'orange', 'card'), 1: ('ream_bone', 'card_bone', 'blue'),
-             2: ('ream_mid', 'card_mid', 'pink'), 4: ('ream_dark', 'card_dark', 'card'),
-             5: ('ream_cream', 'card_cream', 'purple')}
-    solid = []
-    for k, (stock, face, tab) in STOCK.items():
-        ob = bundle(f'd{k}', W, D, T, body=stock, top=face, tab=tab, tab_u=.22 + .12 * k)
-        solid.append((ob, k))
-    # the outline is drawn in the same green the money arrives in: it is the
-    # shape of what is owed, in the colour of what is owed, with nothing in it
-    owed = slot('Owed', W, D, T, 'green')
-    paid = bundle('Paid', W, D, T, body='ream_green', top='green', tab='card', tab_u=.68)
-    away = Vector((1.35, -.95, 1.45))       # comes down into the gap, not in from off-stage
-
-    def fanned(k, e, fan):
-        """Where level k sits once the file has opened by e."""
-        q = Quaternion(ZAX, fan * k * e)
-        rel = levels[k] - Vector((pin.x, pin.y, 0))
-        p = q @ Vector((rel.x, rel.y, 0))
-        return Vector((pin.x + p.x, pin.y + p.y, levels[k].z + .085 * k * e)), q
-
+    Rd, T, g = .72, float(A.get('coinT', .12)), .012
+    RIM_W, RIM_H = .055, .016
+    for key in ('terr', 'yel', 'taupe'):
+        M[key + '_r'] = K.reeded(key.title() + 'Reeded', M[key], freq=190, depth=.34)
+    spec = [('ply', None), ('terr_r', None), ('yel_r', None), ('taupe_r', None), ('terr_r', None),
+            ('yel_r', None), ('terr_r', 'c_green')]
+    discs = []
+    z = 0.0
+    for k, (body, cap) in enumerate(spec):
+        ob, c = block(f'd{k}', circle(Rd), T, body, cap, cap_h=.026, smooth=True, bevel=.012)
+        top = T / 2 + (.028 if cap else 0)
+        rim = K.ring(f'd{k}_rim', Rd, Rd - RIM_W, RIM_H, M[cap or ('oak' if body == 'ply' else body.replace('_r', ''))])
+        rim.parent = ob
+        rim.location = (0, 0, top + RIM_H / 2 - .002)
+        discs.append((ob, Vector((0, 0, z + T / 2)), k))
+        z += T + g + (.028 if cap else 0) + RIM_H
+    pin = Vector((-Rd + .12, -.05, 0))
+    ball = sphere('ball', .17, 'white')
     for f in range(LOOP + 1):
         t = f / LOOP
-        e = cycle(t, .12, .64, .26)
-        fan = math.radians(float(A.get('fan', 14)))
-        for ob, k in solid:
-            ob.location, ob.rotation_quaternion = fanned(k, e, fan)
-        gp, gq = fanned(GAP, e, fan)
-        owed.location, owed.rotation_quaternion = gp, gq
-        # arrives while the file is still open, and is in place before it closes
-        arr = cycle(t, .30, .72, .15)
-        paid.location = away.lerp(gp, arr)
-        paid.rotation_quaternion = Quaternion(ZAX, math.radians(-34)).slerp(gq, arr)
+        e = cycle(t, .14, .62, .26)
+        fan = math.radians(float(A.get('fan', 24)))
+        for ob, base, k in discs:
+            q = Quaternion(ZAX, fan * k * e)
+            rel = Vector((base.x - pin.x, base.y - pin.y, 0))
+            p2 = q @ rel
+            ob.location = Vector((pin.x + p2.x, pin.y + p2.y, base.z + .10 * k * e))
+            ob.rotation_quaternion = q
+        top, tb, tk = discs[-1]
+        ball.location = top.location + Vector((0, 0, T / 2 + .028 + .17))
+        ball.rotation_quaternion = top.rotation_quaternion
         keyall(f + 1)
-    target, el, az, dist = (.22, .16, .62), 34, -58, float(A.get('dist', 9.4))
+    target, el, az, dist = (-.45, .3, .75), 40, -58, float(A.get('dist', 12.5))
+
+# ------------------------------------------------------------------ CONNECT
+# Two hexagonal links, interlocked: one lies flat (terrazzo, green cap), one stands
+# through it (oak, orange cap). Each turns in its own plane (the geometry leaves room
+# for a full turn), so they keep threading through each other without touching.
+# Hexes repeat every 60 deg, so 60 / 120 deg per loop is seamless.
+elif SCENE == 'connect':
+    RO, RIN, HR, CAP = .80, .52, float(A.get('thick', .22)), .03
+    MID = (RO + RIN) / 2 * math.cos(math.pi / 6)      # apothem of the ring's centre line
+    rig = bpy.data.objects.new('Rig', None)
+    sc.collection.objects.link(rig)
+    rig.rotation_mode = 'QUATERNION'
+
+    def link(name, body, cap):
+        ob = K.ring(name, RO, RIN, HR, M[body], sides=6, bevel=.02)
+        cp = K.ring(name + '_cap', RO - .006, RIN + .006, CAP, M[cap], sides=6, bevel=.006)
+        cp.parent = ob
+        cp.location = (0, 0, HR / 2 + CAP / 2 + .002)
+        ob.rotation_mode = 'QUATERNION'
+        ob.parent = rig
+        return ob
+    la = link('LinkA', 'terr', 'c_green')
+    lb = link('LinkB', 'oak', 'c_orange')
+    Z0 = float(A.get('z', 1.0))
+    moving.extend([la, lb, rig])
+    stand = Quaternion(Vector((1, 0, 0)), math.radians(90))     # B's plane is XZ, cap facing the camera side
+    for f in range(LOOP + 1):
+        t = f / LOOP
+        ea = math.radians(60) * K.sstep((t - .05) / .55)
+        eb = -math.radians(120) * K.sstep((t - .30) / .62)
+        la.location = Vector((0, 0, 0))
+        la.rotation_quaternion = Quaternion(ZAX, ea)
+        lb.location = Vector((MID, 0, 0))
+        lb.rotation_quaternion = stand @ Quaternion(ZAX, eb)
+        rig.location = Vector((-MID / 2, 0, Z0 + .05 * math.sin(TAU * t)))
+        rig.rotation_quaternion = Quaternion(ZAX, math.radians(22) * math.sin(TAU * t))
+        keyall(f + 1)
+    target, el, az, dist = (0, 0, Z0), 30, -58, float(A.get('dist', 9.5))
+
+# ------------------------------------------------------------------ UPLOAD
+# Five record slabs drift in loose and tilted, settle into one neat stack
+# (bottom first), hold, then lift apart again (top first).
+elif SCENE == 'upload':
+    W, D, T, g, cr = 1.24, .9, .11, .014, .09
+
+    def rrect(w, d, r, seg=6):
+        pts = []
+        for cx, cy, a0 in ((w / 2 - r, d / 2 - r, 0), (-w / 2 + r, d / 2 - r, 90), (-w / 2 + r, -d / 2 + r, 180), (w / 2 - r, -d / 2 + r, 270)):
+            for i in range(seg + 1):
+                a = math.radians(a0 + 90 * i / seg)
+                pts.append(Vector((cx + r * math.cos(a), cy + r * math.sin(a))))
+        return pts
+
+    spec = [('ply', None), ('terr', None), ('taupe', None), ('ply', 'c_cyan'), ('terr', 'c_green')]
+    slabs = []
+    z = 0.0
+    for k, (body, cap) in enumerate(spec):
+        ob, c = block(f's{k}', rrect(W, D, cr), T, body, cap, cap_h=.03, bevel=.016)
+        stack = Vector((0, 0, z + T / 2))
+        z += T + g + (.032 if cap else 0)
+        loose = Vector((rnd.uniform(-.34, .34), rnd.uniform(-.28, .28), .5 + k * .36))
+        axis = Vector((rnd.uniform(-1, 1), rnd.uniform(-1, 1), 0)).normalized()
+        q = Quaternion(ZAX, math.radians(rnd.uniform(-34, 34))) @ Quaternion(axis, math.radians(rnd.uniform(8, 16)))
+        slabs.append((ob, stack, stack + loose, q, k))
+    n = len(slabs)
+    for f in range(LOOP + 1):
+        t = f / LOOP
+        for ob, stack, loose, q, k in slabs:
+            e = min(1.0, max(0.0, cycle(t, .08 + k * .055, .60 + (n - 1 - k) * .045, .22)))
+            ob.location = loose.lerp(stack, e)
+            ob.rotation_quaternion = q.slerp(Quaternion(), e)
+        keyall(f + 1)
+    target, el, az, dist = (0, 0, .95), 34, -58, float(A.get('dist', 13))
 
 K.camera(sc, target, dist, float(A.get('el', el)), float(A.get('az', az)), lens=float(A.get('lens', 100)))
 K.render(sc, OUT, SCENE, A.get('frames', '1,40,80'), A.get('bg'))

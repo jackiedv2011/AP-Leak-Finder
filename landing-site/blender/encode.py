@@ -1,4 +1,4 @@
-"""Pack a PNG RGBA frame sequence into a VP9 WebM with alpha.
+"""Pack a PNG RGBA frame sequence into a VP9 WebM with alpha (the format DayOS ships).
 With bg=RRGGBB it instead bakes the frames over that flat page colour into an H.264 MP4
 (the Safari fallback: Safari plays WebM but drops its alpha).
 Run: blender -b --factory-startup --python encode.py -- src=DIR prefix=hero out=FILE.webm|.mp4 [crf=30 size=1920 fps=30 bg=e5e5e5]"""
