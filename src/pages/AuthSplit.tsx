@@ -1,4 +1,4 @@
-import { useEffect, useRef, type MouseEvent, type ReactNode } from 'react'
+import { useEffect, useLayoutEffect, useRef, type MouseEvent, type ReactNode } from 'react'
 import '@/pages/authSplit.css'
 
 /** Safari plays WebM but drops its alpha, so it gets the loop baked over the page's white. */
@@ -69,6 +69,12 @@ interface AuthSplitProps {
 export function AuthSplit({ title, titleSize, lede, alternate, children }: AuthSplitProps) {
   const reel = useRef<HTMLVideoElement>(null)
   const root = useRef<HTMLDivElement>(null)
+
+  // index.html sets this for the known account routes before first paint; pages that can't be
+  // known ahead of routing (the 404) set it here, so the fade-in runs over the site's grey.
+  useLayoutEffect(() => {
+    document.documentElement.dataset.route = 'auth'
+  }, [])
 
   // Coming back through the history cache should show the page, not the faded-out frame.
   useEffect(() => {
