@@ -62,7 +62,7 @@ export function DecisionDialog({ finding, open, onOpenChange, onSave, initial = 
                 <input type="radio" name="decision" value={option.value} checked={decision === option.value} onChange={() => setDecision(option.value)} />
                 <span>
                   <b>{option.title}</b>
-                  <span className="wk-dim">{option.body}</span>
+                  <span className="wk-dim">{option.value === 'confirmed' && finding.class !== 'recoverable' ? 'Keep this finding for an internal investigation. Reclaim will prepare a note for your team; this does not record recoverable money.' : option.body}</span>
                 </span>
               </label>
             ))}

@@ -5,7 +5,8 @@ import { getSampleLedger, sampleLedgerCsv } from '@/data/sampleLedger'
 import { detectFindings } from '@/lib/detection'
 import { formatCurrency } from '@/lib/format'
 import { assessRecordReadiness } from '@/audit/dataReadiness'
-import { clearEnvironment, mergeImport } from '@/ledger/store'
+import { clearEnvironment, mergeImport, setCaseState } from '@/ledger/store'
+import { confirmCase, markRecoveryRequested } from '@/ledger/caseState'
 import { createProject } from '@/ledger/projects'
 import type { RouteMode } from '@/audit/useAuditRoute'
 import type { Finding } from '@/types'
@@ -118,6 +119,38 @@ async function decide(option: 'This is real' | 'I need more detail' | 'Not an is
   fireEvent.click(within(dialog).getByLabelText(new RegExp(`^${option}`)))
   fireEvent.click(within(dialog).getByRole('button', { name: 'Save decision' }))
   await waitFor(() => expect(screen.queryByTestId('decision-dialog')).not.toBeInTheDocument())
+}
+
+/** Approve the prepared request (Reclaim surfaced it) and record that it was sent. */
+async function approveAndSend() {
+  const panel = await screen.findByTestId('recovery-request')
+  fireEvent.click(within(panel).getByLabelText('No, Reclaim surfaced it'))
+  fireEvent.click(within(panel).getByRole('button', { name: 'Approve recovery request' }))
+  await waitFor(() => expect(within(panel).getByRole('button', { name: 'Mark request sent' })).toBeEnabled())
+  fireEvent.click(within(panel).getByRole('button', { name: 'Mark request sent' }))
+  return screen.findByTestId('recovery-progress')
+}
+
+/** Record money back on the open request: the whole remaining amount unless one is given. */
+async function recordSettled(amount?: number, method: 'refund' | 'credit' = 'refund') {
+  const panel = await screen.findByTestId('recovery-progress')
+  fireEvent.click(within(panel).getByRole('tab', { name: 'Record money back' }))
+  if (amount !== undefined) fireEvent.change(within(panel).getByLabelText('Amount settled'), { target: { value: String(amount) } })
+  fireEvent.change(within(panel).getByLabelText('Came back as'), { target: { value: method } })
+  fireEvent.change(within(panel).getByLabelText('Settlement reference'), { target: { value: method === 'credit' ? 'CM-42' : 'ACH-42' } })
+  if (method === 'credit') fireEvent.change(within(panel).getByLabelText('Bill where applied'), { target: { value: 'BILL-7' } })
+  fireEvent.click(within(panel).getByRole('button', { name: 'Record settled value' }))
+  await waitFor(() => amount === undefined
+    ? expect(screen.getAllByText('Returned, reconcile').length).toBeGreaterThan(0)
+    : expect(fact('Received')).toBe(formatCurrency(amount)))
+}
+
+/** Close the open request with a reason. */
+async function closeRequest(reason: string) {
+  const panel = await screen.findByTestId('recovery-progress')
+  fireEvent.click(within(panel).getByRole('tab', { name: 'Close' }))
+  fireEvent.change(within(panel).getByLabelText('Reason'), { target: { value: reason } })
+  fireEvent.click(within(panel).getByRole('button', { name: 'Close case' }))
 }
 
 const DASHBOARD_READY = () => expect(screen.getByRole('heading', { name: 'Up next' })).toBeInTheDocument()
@@ -273,8 +306,8 @@ describe('AuditApp', () => {
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(vendor)
 
     goToMode('Recoveries')
-    expect(screen.getByRole('heading', { name: 'Ready to send' })).toBeInTheDocument()
-    expect(screen.getByText(vendor)).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Prepared' })).toBeInTheDocument()
+    expect(screen.getAllByRole('button', { name: `Open ${vendor} recovery case` }).length).toBeGreaterThan(0)
   })
 
   it('walks a case through the whole recovery ladder and moves the money onto the Recovered rung', async () => {
@@ -286,19 +319,17 @@ describe('AuditApp', () => {
     await waitFor(() => expect(screen.getByRole('heading', { name: 'Evidence' })).toBeInTheDocument())
 
     await decide('This is real')
-    fireEvent.click(await screen.findByRole('button', { name: 'Mark request sent' }))
-    fireEvent.click(await screen.findByRole('button', { name: 'Money came back' }))
-    await waitFor(() => expect(screen.getAllByText('Money back').length).toBeGreaterThan(0))
+    await approveAndSend()
+    await recordSettled()
 
     goToMode('Overview')
     expect(stageValue('Recovered')).toBe(value)
     expect(stage('Recovered')).toHaveAttribute('data-accent')
     // A settled case has left the "in recovery" stage rather than counting twice.
     expect(stageValue('In recovery')).toBe(formatCurrency(0))
-    expect(stageValue('Recovered')).toBe(value)
   })
 
-  it('a recovered case leaves Potential recovery and Verified, so found money is never shown as still findable', async () => {
+  it('a recovered case leaves open flagged value and Verified, so returned money is not still shown as open', async () => {
     await runSampleFromLaunch()
     const potentialBefore = potentialValue()
     const verifiedBefore = stageValue('Verified')
@@ -308,14 +339,12 @@ describe('AuditApp', () => {
     const impact = sampleFindings().find((f) => formatCurrency(f.dollarImpact) === value)!.dollarImpact
     fireEvent.click(topRow)
     await decide('This is real')
-    fireEvent.click(await screen.findByRole('button', { name: 'Mark request sent' }))
-    fireEvent.click(await screen.findByRole('button', { name: 'Money came back' }))
-    await waitFor(() => expect(screen.getAllByText('Money back').length).toBeGreaterThan(0))
+    await approveAndSend()
+    await recordSettled()
 
     goToMode('Overview')
-    const potential = sumImpact(sampleFindings()) - impact
     expect(potentialBefore).toBe(formatCurrency(sumImpact(sampleFindings())))
-    expect(potentialValue()).toBe(formatCurrency(potential))
+    expect(potentialValue()).toBe(formatCurrency(sumImpact(sampleFindings()) - impact))
     expect(stageValue('Verified')).toBe(formatCurrency(sumImpact(sampleFindings().filter((f) => f.class === 'recoverable')) - impact))
     expect(verifiedBefore).not.toBe(stageValue('Verified'))
     expect(stageValue('Recovered')).toBe(value)
@@ -341,6 +370,7 @@ describe('AuditApp', () => {
   it('a decision can be changed until a request is sent, and an outcome can be reopened after', async () => {
     await runSampleFromLaunch()
     const [topRow] = dashboardRows()
+    const vendor = rowVendor(topRow)
     fireEvent.click(topRow)
 
     // wrong click: dismissed → change decision → confirm instead
@@ -348,23 +378,21 @@ describe('AuditApp', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Change decision' }))
     expect(await screen.findByRole('group', { name: 'Review this finding' })).toBeInTheDocument()
     await decide('This is real')
-    fireEvent.click(await screen.findByRole('button', { name: 'Mark request sent' }))
+    await approveAndSend()
     // once sent, the decision is locked
     await waitFor(() => expect(screen.queryByRole('button', { name: 'Change decision' })).not.toBeInTheDocument())
 
     // wrong outcome: closed without recovery → reopen → money came back
-    fireEvent.click(await screen.findByRole('button', { name: 'Close without recovery' }))
+    await closeRequest('Vendor disputed the claim')
     await waitFor(() => expect(screen.getAllByText('Closed, no money back').length).toBeGreaterThan(0))
     goToMode('Overview')
     expect(stageValue('Recovered')).toBe(formatCurrency(0))
     goToMode('Recoveries')
-    fireEvent.click(document.querySelector<HTMLElement>('.wk-ticket')!)
-    fireEvent.click(await screen.findByRole('button', { name: 'Reopen outcome' }))
-    fireEvent.click(await screen.findByRole('button', { name: 'Money came back' }))
-    await waitFor(() => expect(screen.getAllByText('Money back').length).toBeGreaterThan(0))
+    fireEvent.click(screen.getAllByRole('button', { name: `Open ${vendor} recovery case` })[0])
+    fireEvent.click(await screen.findByRole('button', { name: 'Reopen case' }))
+    await recordSettled()
     goToMode('Overview')
     expect(stageValue('Recovered')).not.toBe(formatCurrency(0))
-    // nav badges are workloads: one fewer finding waiting, nothing left in flight
     expect(stageValue('In recovery')).toBe(formatCurrency(0))
   })
 
@@ -380,19 +408,19 @@ describe('AuditApp', () => {
     const panel = await screen.findByTestId('recovery-request')
     const subject = () => (within(panel).getByLabelText('Subject') as HTMLInputElement).value
     const message = () => (within(panel).getByLabelText('Message') as HTMLTextAreaElement).value
-    expect(subject()).toContain('Request for refund')
+    // The letter follows the method picked, whatever Reclaim suggested first.
+    fireEvent.change(within(panel).getByLabelText('Ask for'), { target: { value: 'refund' } })
+    await waitFor(() => expect(subject()).toContain('Request for refund'))
     fireEvent.change(within(panel).getByLabelText('Ask for'), { target: { value: 'credit' } })
     await waitFor(() => expect(subject()).toContain('Request for credit'))
     expect(message()).toContain(formatCurrency(impact))
-    fireEvent.click(within(panel).getByRole('button', { name: 'Mark request sent' }))
+    const progress = await approveAndSend()
+    fireEvent.click(within(progress).getByRole('tab', { name: 'Record money back' }))
+    expect(within(progress).getByLabelText('Came back as')).toHaveValue('credit')
 
-    // record 40% of it as received, by credit, with a reference
-    const outcome = await screen.findByTestId('recovery-outcome')
+    // record 40% of it as an applied credit, with a reference
     const partial = Math.round(impact * 0.4 * 100) / 100
-    fireEvent.change(within(outcome).getByLabelText('Amount received'), { target: { value: String(partial) } })
-    fireEvent.change(within(outcome).getByLabelText('Reference (optional)'), { target: { value: 'CM-42' } })
-    fireEvent.click(within(outcome).getByRole('button', { name: 'Money came back' }))
-    await waitFor(() => expect(screen.getAllByText('Money back').length).toBeGreaterThan(0))
+    await recordSettled(partial, 'credit')
 
     expect(fact('Records support')).toBe(value)
     expect(fact('Requested')).toBe(value)
@@ -401,34 +429,41 @@ describe('AuditApp', () => {
     expect(fact('Method')).toBe('Account credit')
     const history = screen.getByTestId('case-history')
     expect(history).toHaveTextContent('Confirmed as real')
+    expect(history).toHaveTextContent('Customer approved recovery outreach')
     expect(history).toHaveTextContent('Recovery request sent')
     expect(history).toHaveTextContent(`Money received recorded · ${formatCurrency(partial)} · Account credit`)
     expect(history).toHaveTextContent('CM-42')
     expect(history).toHaveTextContent('Guest session')
 
+    // Part came back; the rest is still out with the vendor. Neither is counted twice.
     goToMode('Overview')
     expect(stageValue('Recovered')).toBe(formatCurrency(partial))
-    expect(potentialValue()).toBe(formatCurrency(sumImpact(sampleFindings()) - impact))
-    expect(stageValue('In recovery')).toBe(formatCurrency(0))
+    expect(stageValue('In recovery')).toBe(formatCurrency(impact - partial))
+    expect(potentialValue()).toBe(formatCurrency(sumImpact(sampleFindings()) - partial))
+    const returns = screen.getByRole('heading', { name: 'Latest money back' }).parentElement!
+    expect(within(returns).getAllByRole('button')).toHaveLength(1)
+    expect(returns).toHaveTextContent('part of the claim')
     goToMode('Reports')
     expect(fact('Recovered')).toBe(formatCurrency(partial))
     goToMode('Recoveries')
     expect(stageValue('Recovered')).toBe(formatCurrency(partial))
-    expect(screen.getByRole('heading', { name: 'Money back' })).toBeInTheDocument()
-    expect(document.querySelector('[data-stage="recovered"] .wk-ticket-money')?.textContent).toBe(formatCurrency(partial))
+    const lane = document.querySelector('[data-stage="requested"] .wk-ticket-money')
+    expect(lane).toHaveTextContent(formatCurrency(impact - partial))
+    expect(lane).toHaveAttribute('data-label', 'outstanding')
   })
 
   it('rejects an invalid recovered amount and records nothing', async () => {
     await runSampleFromLaunch()
     fireEvent.click(dashboardRows()[0])
     await decide('This is real')
-    fireEvent.click(await screen.findByRole('button', { name: 'Mark request sent' }))
-    const outcome = await screen.findByTestId('recovery-outcome')
-    const amount = within(outcome).getByLabelText('Amount received')
+    const progress = await approveAndSend()
+    fireEvent.click(within(progress).getByRole('tab', { name: 'Record money back' }))
+    fireEvent.change(within(progress).getByLabelText('Settlement reference'), { target: { value: 'ACH-1' } })
+    const amount = within(progress).getByLabelText('Amount settled')
     for (const bad of ['', '-1', 'abc', '999999999']) {
       fireEvent.change(amount, { target: { value: bad } })
-      fireEvent.click(within(outcome).getByRole('button', { name: 'Money came back' }))
-      expect(within(outcome).getByRole('alert')).toBeInTheDocument()
+      fireEvent.click(within(progress).getByRole('button', { name: 'Record settled value' }))
+      expect(within(progress).getByRole('alert')).toBeInTheDocument()
       expect(screen.queryByTestId('case-history')).not.toHaveTextContent('Money received recorded')
     }
     // Nothing arrived, so the case shows no Received row at all rather than a dash.
@@ -444,11 +479,8 @@ describe('AuditApp', () => {
     await waitFor(DASHBOARD_READY)
     fireEvent.click(dashboardRows()[0])
     await decide('This is real')
-    fireEvent.click(await screen.findByRole('button', { name: 'Mark request sent' }))
-    const outcome = await screen.findByTestId('recovery-outcome')
-    fireEvent.change(within(outcome).getByLabelText('Amount received'), { target: { value: '12.34' } })
-    fireEvent.click(within(outcome).getByRole('button', { name: 'Money came back' }))
-    await waitFor(() => expect(fact('Received')).toBe(formatCurrency(12.34)))
+    await approveAndSend()
+    await recordSettled(12.34)
 
     cleanup()
     render(<AuditApp />)
@@ -456,6 +488,72 @@ describe('AuditApp', () => {
     expect(screen.getByTestId('case-history')).toHaveTextContent('Money received recorded')
     goToMode('Overview')
     expect(stageValue('Recovered')).toBe(formatCurrency(12.34))
+  })
+
+  it('requires an explicit prior-knowledge disclosure before approving vendor outreach', async () => {
+    await runSampleFromLaunch()
+    fireEvent.click(dashboardRows()[0])
+    await decide('This is real')
+    const panel = await screen.findByTestId('recovery-request')
+    expect(within(panel).getByRole('button', { name: 'Approve recovery request' })).toBeDisabled()
+    fireEvent.click(within(panel).getByLabelText('Yes, we already knew'))
+    expect(within(panel).getByRole('button', { name: 'Approve recovery request' })).toBeDisabled()
+    fireEvent.change(within(panel).getByLabelText('How did your team know?'), { target: { value: 'AP flagged it in August' } })
+    expect(within(panel).getByRole('button', { name: 'Approve recovery request' })).toBeEnabled()
+    fireEvent.click(within(panel).getByRole('button', { name: 'Approve recovery request' }))
+    expect(within(panel).getByRole('button', { name: 'Approved for outreach' })).toBeInTheDocument()
+    fireEvent.change(within(panel).getByLabelText('How did your team know?'), { target: { value: 'AP flagged it before the CSV import' } })
+    expect(within(panel).getByRole('button', { name: 'Mark request sent' })).toBeDisabled()
+    fireEvent.click(within(panel).getByRole('button', { name: 'Approve recovery request' }))
+    expect(within(panel).getByRole('button', { name: 'Mark request sent' })).toBeEnabled()
+  })
+
+  it('approves and sends in one step, and the history still shows the approval before the send', async () => {
+    await runSampleFromLaunch()
+    fireEvent.click(dashboardRows()[0])
+    await decide('This is real')
+    const panel = await screen.findByTestId('recovery-request')
+    expect(within(panel).getByRole('button', { name: 'Approve and mark sent' })).toBeDisabled()
+    fireEvent.click(within(panel).getByLabelText('No, Reclaim surfaced it'))
+    fireEvent.click(within(panel).getByRole('button', { name: 'Approve and mark sent' }))
+    await screen.findByTestId('recovery-progress')
+    const text = screen.getByTestId('case-history').textContent ?? ''
+    expect(text.indexOf('Customer approved recovery outreach')).toBeGreaterThan(-1)
+    expect(text.indexOf('Customer approved recovery outreach')).toBeLessThan(text.indexOf('Recovery request sent'))
+    expect(fact('Status')).toBe('Waiting on vendor')
+  })
+
+  it('reopens a closed remainder without removing its settled return from the dashboard', async () => {
+    await runSampleFromLaunch()
+    const [topRow] = dashboardRows()
+    const impact = Number(topRow.dataset.amount)
+    fireEvent.click(topRow)
+    await decide('This is real')
+    await approveAndSend()
+    await recordSettled(20)
+    await closeRequest('Vendor declined the rest')
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Reopen remaining balance' })).toBeInTheDocument())
+    fireEvent.click(screen.getByRole('button', { name: 'Reopen remaining balance' }))
+    expect(fact('Received')).toBe(formatCurrency(20))
+    expect(fact('Still outstanding')).toBe(formatCurrency(impact - 20))
+    expect(screen.getByTestId('case-history')).toHaveTextContent('Remaining balance reopened')
+    goToMode('Overview')
+    expect(stageValue('Recovered')).toBe(formatCurrency(20))
+    expect(stageValue('In recovery')).toBe(formatCurrency(impact - 20))
+  })
+
+  it('accepts a settlement on an older saved request that has no requested-amount field', async () => {
+    const environment = mergeImport(null, { sourceLabel: 'ledger.csv', mode: 'upload', parsed: getSampleLedger() })
+    const finding = environment.result.findings.find((row) => row.vendor === 'CloudPOS Software' && row.class === 'recoverable')!
+    const legacy = setCaseState(environment, finding.id, markRecoveryRequested(confirmCase(null)))
+    createProject({ name: 'Legacy ledger', sourceLabel: 'ledger.csv', mode: 'upload', environment: legacy })
+    setLocation('/audit')
+    render(<AuditApp />)
+    await waitFor(DASHBOARD_READY)
+    goToMode('Recoveries')
+    fireEvent.click(screen.getAllByRole('button', { name: 'Open CloudPOS Software recovery case' })[0])
+    await recordSettled()
+    expect(fact('Received')).toBe(formatCurrency(finding.dollarImpact))
   })
 
   it('copies and downloads the recovery request without sending anything', async () => {
@@ -479,8 +577,8 @@ describe('AuditApp', () => {
     expect(createObjectURL).toHaveBeenCalledTimes(1)
     expect(click).toHaveBeenCalledTimes(1)
     click.mockRestore()
-    // nothing was "sent": still ready to send, nothing in recovery
-    expect(fact('Status')).toBe('Ready to send')
+    // nothing was "sent": still awaiting approval, nothing in recovery
+    expect(fact('Status')).toBe('Awaiting approval')
     expect(screen.getByTestId('case-history')).not.toHaveTextContent('Recovery request sent')
   })
 
@@ -499,12 +597,12 @@ describe('AuditApp', () => {
     expect(fetchMock).toHaveBeenCalledWith('/api/ai/draft', expect.objectContaining({ method: 'POST' }))
     const sent = JSON.parse((fetchMock.mock.calls[0][1] as RequestInit).body as string)
     expect(Object.keys(sent).sort()).toEqual(
-      ['amountFlagged', 'amountRequested', 'evidenceStrength', 'explanation', 'findingTitle', 'findingType', 'method', 'recoveryStage', 'reviewerNote', 'rows', 'sender', 'userContext', 'vendor'].sort()
+      ['amountFlagged', 'amountRequested', 'evidenceStrength', 'explanation', 'findingTitle', 'findingType', 'method', 'recoveryStage', 'rows', 'sender', 'userContext', 'vendor'].sort()
     )
+    expect(sent.rows.every((row: Record<string, unknown>) => !('bankAccountLast4' in row))).toBe(true)
     fetchMock.mockRestore()
     expect(within(panel).getByLabelText('Message')).toHaveValue('Hand-written request.')
-    fireEvent.click(within(panel).getByRole('button', { name: 'Mark request sent' }))
-    await screen.findByTestId('recovery-outcome')
+    await approveAndSend()
     cleanup()
     render(<AuditApp />)
     await waitFor(() => expect(fact('Status')).toBe('Waiting on vendor'))
@@ -562,7 +660,7 @@ describe('AuditApp', () => {
     const saved = JSON.parse(window.localStorage.getItem('reclaim.preferences.v1')!)
     expect(saved).toMatchObject({ accent: 'purple', density: 'compact' })
     expect(saved.sections.find((section: { id: string }) => section.id === 'next').visible).toBe(false)
-    expect(saved.sections.map((section: { id: string }) => section.id).indexOf('activity')).toBe(4)
+    expect(saved.sections.map((section: { id: string }) => section.id).indexOf('activity')).toBe(5)
     expect(window.localStorage.getItem('reclaim.theme.v1')).toBe('dark')
   })
 

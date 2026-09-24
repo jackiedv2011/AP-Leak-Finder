@@ -168,7 +168,14 @@ export function mergeImport(env: LedgerEnvironment | null, input: MergeImportInp
 }
 
 export function getCaseState(env: LedgerEnvironment, findingId: string): CaseState {
-  return env.caseStates[findingId] ?? EMPTY_CASE_STATE
+  const state = env.caseStates[findingId] ?? EMPTY_CASE_STATE
+  // Older saved requests had no explicit amount. Their UI used the finding's
+  // value; give transitions the same value so a valid settlement can close.
+  if (state.recoveryStage && state.recoveryStage !== 'confirmed' && state.requestedAmount == null) {
+    const finding = env.result.findings.find((row) => row.id === findingId)
+    if (finding) return { ...state, requestedAmount: finding.dollarImpact }
+  }
+  return state
 }
 
 export function setCaseState(env: LedgerEnvironment, findingId: string, state: CaseState): LedgerEnvironment {

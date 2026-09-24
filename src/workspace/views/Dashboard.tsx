@@ -1,10 +1,11 @@
-import { ArrowRight, Banknote, Check, CircleHelp, Clock, Info, Lock, Send, X } from 'lucide-react'
+import { ArrowRight, Banknote, CalendarClock, Check, CircleHelp, Clock, Info, Lock, Send, X } from 'lucide-react'
 import { formatDate, plural } from '@/lib/format'
 import { getCaseState, type LedgerEnvironment } from '@/ledger/store'
 import type { CaseEvent } from '@/ledger/caseState'
 import { useEntitlements } from '@/lib/auth/AuthContext'
 import { Locked } from '@/components/plan/Locked'
-import { ladder, opportunities, rootCauses, vendors, type Opportunity } from '../selectors'
+import { internalReviews, ladder, opportunities, recentReturns, recordedRootCauses, recoveries, recoveryAging, rootCauses, vendorCommitments, vendors, type Opportunity } from '../selectors'
+import { recoveryNextAction, recoveryStatusLabel, requiresCustomerAction } from '@/recovery/model'
 import { usePreferences, useHeadlineMoney, type OverviewSectionId } from '../preferences'
 import type { WorkspaceMode } from '../WorkspaceShell'
 import { KindChip } from './KindChip'
@@ -24,6 +25,13 @@ interface DashboardProps {
 
 const DAY = 86_400_000
 const shortDate = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' })
+
+function dueLabel(dueAt: number, now: number): { text: string; overdue: boolean } {
+  const days = Math.round((new Date(dueAt).setHours(0, 0, 0, 0) - new Date(now).setHours(0, 0, 0, 0)) / DAY)
+  if (days < 0) return { text: `${-days}d overdue`, overdue: true }
+  if (days === 0) return { text: 'Due today', overdue: true }
+  return { text: `Due ${shortDate.format(dueAt)}`, overdue: false }
+}
 
 function ago(at: number, now: number): string {
   const minutes = Math.round((now - at) / 60_000)
@@ -53,7 +61,8 @@ export function Dashboard({ env, visible, auditLabel, onOpenCase, onSeeAllFindin
   const l = ladder(env)
   const all = opportunities(env)
   const inPlay = (o: Opportunity) => o.state.decision !== 'expected' && o.state.recoveryStage !== 'recovered' && o.state.recoveryStage !== 'not_recovered'
-  const undecided = all.filter((o) => o.state.decision === null && inPlay(o))
+  // Undecided, or parked as "needs more detail": both are waiting on a person.
+  const undecided = all.filter((o) => (o.state.decision === null || o.state.decision === 'needs_info') && inPlay(o))
   const needsContext = all.filter((o) => o.finding.class === 'review' && inPlay(o) && o.state.recoveryStage === null)
   const needsContextValue = needsContext.reduce((sum, o) => sum + o.finding.dollarImpact, 0)
   // The five worth the most attention, plus, on Free, the ones this plan can open,
@@ -71,16 +80,24 @@ export function Dashboard({ env, visible, auditLabel, onOpenCase, onSeeAllFindin
 
   const stageCounts = {
     found: all.filter((o) => o.finding.class === 'recoverable' && o.state.decision === null && inPlay(o)).length,
-    confirmed: all.filter((o) => o.state.recoveryStage === 'confirmed').length,
+    confirmed: all.filter((o) => o.finding.class === 'recoverable' && o.state.recoveryStage === 'confirmed').length,
     requested: l.counts.inRecovery,
     recovered: l.counts.recovered,
   }
-  const notRecovered = all.filter((o) => o.state.recoveryStage === 'not_recovered').length
-  const requestTimes = all
-    .filter((o) => o.state.recoveryStage === 'requested')
-    .map((o) => [...(o.state.history ?? [])].reverse().find((e) => e.to.recoveryStage === 'requested')?.at)
-    .filter((at): at is number => typeof at === 'number')
-  const oldestRequestDays = requestTimes.length ? Math.floor((now - Math.min(...requestTimes)) / DAY) : null
+  const notRecovered = all.filter((o) => o.finding.class === 'recoverable' && o.state.recoveryStage === 'not_recovered').length
+  const commitments = vendorCommitments(env)
+  const aging = recoveryAging(env, now).filter((bucket) => bucket.count > 0)
+  const confirmedCauses = recordedRootCauses(env)
+  const latestReturns = recentReturns(env).slice(0, 3)
+
+  // Recovery work that is waiting on the customer, soonest due first; internal reviews after.
+  const tasks = [
+    ...recoveries(env)
+      .filter(({ state }) => requiresCustomerAction(state, now))
+      .map((o) => ({ o, action: recoveryNextAction(o.state, now), internal: false })),
+    ...internalReviews(env).map((o) => ({ o, action: recoveryNextAction(o.state, now, true), internal: true })),
+  ].sort((a, b) => Number(a.internal) - Number(b.internal) || (a.action.dueAt ?? Infinity) - (b.action.dueAt ?? Infinity) || b.o.finding.dollarImpact - a.o.finding.dollarImpact)
+  const leadTask = tasks.find((task) => visible.has(task.o.finding.id))
 
   const events = env.result.findings
     .flatMap((finding) => (getCaseState(env, finding.id).history ?? []).map((event) => ({ event, finding })))
@@ -88,7 +105,7 @@ export function Dashboard({ env, visible, auditLabel, onOpenCase, onSeeAllFindin
     .slice(0, 6)
 
   const shown = prefs.sections.filter((s) => s.visible).map((s) => s.id)
-  const wide: OverviewSectionId[] = ['next', 'types', 'activity']
+  const wide: OverviewSectionId[] = ['tasks', 'next', 'types', 'activity']
   const side: OverviewSectionId[] = ['pipeline', 'vendors']
 
   const sections: Record<OverviewSectionId, () => React.ReactNode> = {
@@ -112,10 +129,45 @@ export function Dashboard({ env, visible, auditLabel, onOpenCase, onSeeAllFindin
         <button type="button" className="wk-total" data-total="recovered" data-amount={l.recovered} data-empty={l.recovered === 0 || undefined} data-accent={l.recovered > 0 || undefined} onClick={() => onNavigate('recoveries')}>
           <span className="wk-total-label"><span className="wk-label">Recovered</span><ArrowRight aria-hidden="true" /></span>
           <strong className="wk-total-value" style={l.recovered > 0 ? { color: 'var(--accent-ink)' } : undefined}><CountUp value={l.recovered} format={money} /></strong>
-          <span className="wk-total-note">{l.counts.recovered === 0 ? 'Counts only money that came back' : `${l.counts.recovered} ${plural(l.counts.recovered, 'case')} settled`}</span>
+          <span className="wk-total-note">{l.counts.recovered === 0 ? 'Counts only money that came back' : `From ${l.counts.recovered} ${plural(l.counts.recovered, 'case')}`}</span>
         </button>
       </section>
     ),
+
+    tasks: () => {
+      if (!tasks.length) return null
+      return (
+        <section className="wk-panelcard" aria-labelledby="ov-tasks" key="tasks">
+          <div className="wk-panelcard-head">
+            <div>
+              <h2 id="ov-tasks">Recovery tasks</h2>
+              <p>{tasks.length} {plural(tasks.length, 'case')} waiting on you, soonest due first</p>
+            </div>
+            <button type="button" className="wk-more" onClick={() => onNavigate('recoveries')}>Recoveries <ArrowRight aria-hidden="true" /></button>
+          </div>
+          <div className="wk-queue">
+            {tasks.slice(0, 5).map(({ o, action, internal }) => {
+              const due = action.dueAt ? dueLabel(action.dueAt, now) : null
+              const outstanding = o.state.recoveryStage === 'requested' ? Math.max(0, (o.state.requestedAmount ?? o.finding.dollarImpact) - (o.state.recoveredAmount ?? 0)) : o.finding.dollarImpact
+              return (
+                <button key={o.finding.id} type="button" className="wk-queue-row" data-amount={outstanding} onClick={() => onOpenCase(o.finding.id)}>
+                  <span className="wk-queue-main">
+                    <strong>{action.label} · {o.finding.vendor}</strong>
+                    <span>
+                      {due ? <span className="wk-chip" data-tone={due.overdue ? 'accent' : undefined}><CalendarClock aria-hidden="true" style={{ width: 12, height: 12 }} />{due.text}</span> : null}
+                      <em>{recoveryStatusLabel(o.state, internal)}{internal ? ' · internal review' : ''}</em>
+                    </span>
+                  </span>
+                  <span className="wk-queue-amount">{money(outstanding)}</span>
+                  <span className="wk-queue-go">Open<ArrowRight aria-hidden="true" /></span>
+                </button>
+              )
+            })}
+          </div>
+          {tasks.length > 5 ? <div className="wk-queue-foot"><span>{tasks.length - 5} more in Recoveries</span></div> : null}
+        </section>
+      )
+    },
 
     next: () => {
       const lockedCount = undecided.filter((o) => !visible.has(o.finding.id)).length
@@ -136,7 +188,7 @@ export function Dashboard({ env, visible, auditLabel, onOpenCase, onSeeAllFindin
                   <button key={o.finding.id} type="button" className="wk-queue-row" data-amount={o.finding.dollarImpact} data-locked={locked || undefined} onClick={() => onOpenCase(o.finding.id)} aria-label={`${o.finding.vendor}, ${o.typeLabel}, ${money(o.finding.dollarImpact)}${locked ? ', part of Pro' : ''}`}>
                     <span className="wk-queue-main">
                       <strong>{locked ? o.typeLabel : o.finding.vendor}</strong>
-                      <span>{locked ? <em>Vendor and invoices shown on Pro</em> : <><KindChip finding={o.finding} label={o.typeLabel} /><em>{findingReference(o.finding)}</em></>}</span>
+                      <span>{locked ? <em>Vendor and invoices shown on Pro</em> : <><KindChip finding={o.finding} label={o.typeLabel} />{o.state.decision === 'needs_info' ? <span className="wk-chip" data-tone="quiet">Needs information</span> : null}<em>{findingReference(o.finding)}</em></>}</span>
                     </span>
                     <span className="wk-queue-amount">{money(o.finding.dollarImpact)}</span>
                     <span className="wk-queue-go">{locked ? <><Lock aria-hidden="true" />Pro</> : <>Review<ArrowRight aria-hidden="true" /></>}</span>
@@ -189,10 +241,31 @@ export function Dashboard({ env, visible, auditLabel, onOpenCase, onSeeAllFindin
                 </div>
               ))}
             </div>
-            {oldestRequestDays !== null ? (
-              <p className="wk-flow-note"><Clock aria-hidden="true" />Oldest open request: {oldestRequestDays === 0 ? 'sent today' : `${oldestRequestDays} ${plural(oldestRequestDays, 'day')} waiting`}{notRecovered ? ` · ${notRecovered} closed without money back` : ''}</p>
+            {commitments.confirmed > 0 ? (
+              <dl className="wk-kv">
+                <div><dt>Vendor agreed</dt><dd>{money(commitments.confirmed)}</dd></div>
+                <div><dt>Return pending</dt><dd>{money(commitments.pendingReturn)}</dd></div>
+              </dl>
+            ) : null}
+            {aging.length ? (
+              <p className="wk-flow-note"><Clock aria-hidden="true" />Open requests: {aging.map((bucket) => `${bucket.count} ${bucket.label === 'Date unknown' ? 'with no send date' : `at ${bucket.label}`}`).join(' · ')}{notRecovered ? ` · ${notRecovered} closed without money back` : ''}</p>
             ) : notRecovered ? (
               <p className="wk-flow-note"><Info aria-hidden="true" />{notRecovered} {plural(notRecovered, 'case')} closed without money back</p>
+            ) : null}
+            {latestReturns.length ? (
+              <div className="wk-returns">
+                <h3 className="wk-subhead">Latest money back</h3>
+                <ul>
+                  {latestReturns.map((row) => (
+                    <li key={row.id}>
+                      <button type="button" onClick={() => onOpenCase(row.findingId)}>
+                        <span><strong>{row.vendor}</strong><small>{formatDate(new Date(row.settledAt))}{row.partial ? ' · part of the claim' : ''}</small></span>
+                        <b>{money(row.amount)}</b>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             ) : null}
           </div>
         </section>
@@ -221,6 +294,14 @@ export function Dashboard({ env, visible, auditLabel, onOpenCase, onSeeAllFindin
               </button>
             ))}
           </div>
+          {confirmedCauses.length ? (
+            <div className="wk-panelcard-body wk-subsection wk-stack">
+              <h3 className="wk-subhead">Causes you confirmed when reconciling</h3>
+              <dl className="wk-kv">
+                {confirmedCauses.map((cause) => <div key={cause.label}><dt>{cause.label} · {cause.count} {plural(cause.count, 'case')}</dt><dd>{money(cause.recovered)} back</dd></div>)}
+              </dl>
+            </div>
+          ) : null}
         </section>
       )
     },
@@ -311,7 +392,11 @@ export function Dashboard({ env, visible, auditLabel, onOpenCase, onSeeAllFindin
           </p>
         </div>
         <div className="wk-head-actions">
-          {firstOpenable ? (
+          {leadTask ? (
+            <button type="button" className="wk-btn" data-variant="primary" onClick={() => onOpenCase(leadTask.o.finding.id)}>
+              {leadTask.action.label} · {leadTask.o.finding.vendor} <ArrowRight aria-hidden="true" />
+            </button>
+          ) : firstOpenable ? (
             <button type="button" className="wk-btn" data-variant="primary" onClick={() => onOpenCase(firstOpenable.finding.id)}>
               Review next finding <ArrowRight aria-hidden="true" />
             </button>

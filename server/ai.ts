@@ -25,15 +25,13 @@ export const DraftRequestSchema = z.object({
         invoiceAmount: z.number().nullable(),
         amountPaid: z.number(),
         terms: z.string().max(60).nullable(),
-        bankAccountLast4: z.string().max(8).nullable(),
-      })
+      }).strict()
     )
     .min(1)
     .max(50),
-  reviewerNote: z.string().max(2000).nullable(),
   userContext: z.string().max(1000),
-  sender: z.object({ businessName: z.string().max(200), senderName: z.string().max(200), senderEmail: z.string().max(200) }),
-})
+  sender: z.object({ businessName: z.string().max(200), senderName: z.string().max(200), senderEmail: z.string().max(200) }).strict(),
+}).strict()
 export type DraftRequest = z.infer<typeof DraftRequestSchema>
 
 const DraftSchema = z.object({

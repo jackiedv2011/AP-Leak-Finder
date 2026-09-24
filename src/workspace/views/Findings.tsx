@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { ArrowRight, Download, Lock, Search, SlidersHorizontal } from 'lucide-react'
 import { formatCurrency, formatDate, plural } from '@/lib/format'
-import { DECISION_LABEL, RECOVERY_STAGE_LABEL, type DecisionValue } from '@/ledger/caseState'
+import { DECISION_LABEL, type DecisionValue } from '@/ledger/caseState'
+import { recoveryStatusLabel } from '@/recovery/model'
 import type { LedgerEnvironment } from '@/ledger/store'
 import { useEntitlements } from '@/lib/auth/AuthContext'
 import { UpgradeDialog } from '@/components/plan/UpgradeDialog'
@@ -48,7 +49,7 @@ function exportCsv(rows: Opportunity[]) {
     o.finding.relatedRecords.map((r) => formatDate(r.paymentDate)).join('; '),
     EVIDENCE_LABEL[o.evidence],
     o.state.decision ? DECISION_LABEL[o.state.decision] : 'Not reviewed',
-    o.state.recoveryStage ? RECOVERY_STAGE_LABEL[o.state.recoveryStage] : '',
+    o.state.recoveryStage ? recoveryStatusLabel(o.state, o.finding.class !== 'recoverable') : '',
     o.finding.dollarImpact.toFixed(2),
   ])
   const csv = [header, ...lines].map((line) => line.map(csvCell).join(',')).join('\n')
@@ -61,8 +62,9 @@ function exportCsv(rows: Opportunity[]) {
 }
 
 function decisionChip(o: Opportunity) {
-  if (o.state.recoveryStage && o.state.recoveryStage !== 'confirmed') {
-    return <span className="wk-chip" data-tone={o.state.recoveryStage === 'recovered' ? 'accent' : 'done'}>{RECOVERY_STAGE_LABEL[o.state.recoveryStage]}</span>
+  if (o.state.recoveryStage) {
+    const returned = o.state.recoveryStage === 'recovered' && o.finding.class === 'recoverable' && (o.state.recoveredAmount ?? 0) > 0
+    return <span className="wk-chip" data-tone={returned ? 'accent' : o.state.recoveryStage === 'not_recovered' ? 'quiet' : 'done'}>{recoveryStatusLabel(o.state, o.finding.class !== 'recoverable')}</span>
   }
   if (!o.state.decision) return <span className="wk-chip" data-tone="quiet">Not reviewed</span>
   return <span className="wk-chip" data-tone={o.state.decision === 'confirmed' ? 'done' : undefined}>{DECISION_LABEL[o.state.decision]}</span>

@@ -4,14 +4,27 @@
     {
       "name": "ap-leak-finder-dev",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev"],
-      "port": 5173,
-      "autoPort": true
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
+      "port": 5174
+    },
+    {
+      "name": "reclaim-api",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev:server"
+      ],
+      "port": 8790
     },
     {
       "name": "landing-site",
       "runtimeExecutable": "node",
-      "runtimeArgs": ["landing-site/serve.cjs"],
+      "runtimeArgs": [
+        "landing-site/serve.cjs"
+      ],
       "port": 5520,
       "autoPort": true
     }

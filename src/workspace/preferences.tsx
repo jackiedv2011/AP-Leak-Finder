@@ -8,7 +8,7 @@ import { useTheme, type ThemeChoice } from './theme'
  */
 export type Density = 'comfortable' | 'compact'
 export type Accent = 'green' | 'blue' | 'pink' | 'orange' | 'purple' | 'mono'
-export type OverviewSectionId = 'totals' | 'next' | 'pipeline' | 'types' | 'vendors' | 'activity'
+export type OverviewSectionId = 'totals' | 'tasks' | 'next' | 'pipeline' | 'types' | 'vendors' | 'activity'
 
 export interface OverviewSection {
   id: OverviewSectionId
@@ -34,7 +34,8 @@ export const ACCENTS: Array<{ id: Accent; label: string }> = [
 ]
 
 export const SECTION_LABEL: Record<OverviewSectionId, { title: string; detail: string }> = {
-  totals: { title: 'Totals', detail: 'Ready to claim, awaiting a decision, in recovery, recovered' },
+  totals: { title: 'Totals', detail: 'Ready to claim, needs more context, in recovery, recovered' },
+  tasks: { title: 'Recovery tasks', detail: 'Follow-ups due, credits to verify, approvals waiting' },
   next: { title: 'Up next', detail: 'The findings worth your time first, largest first' },
   pipeline: { title: 'Recovery progress', detail: 'Where confirmed money has got to' },
   types: { title: 'By finding type', detail: 'Which checks caught the money' },
@@ -49,6 +50,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
   sidebarCollapsed: false,
   sections: [
     { id: 'totals', visible: true },
+    { id: 'tasks', visible: true },
     { id: 'next', visible: true },
     { id: 'pipeline', visible: true },
     { id: 'types', visible: true },
@@ -73,8 +75,14 @@ function normalize(raw: unknown): Preferences {
     accent: ACCENTS.some((a) => a.id === value.accent) ? (value.accent as Accent) : DEFAULT_PREFERENCES.accent,
     cents: typeof value.cents === 'boolean' ? value.cents : DEFAULT_PREFERENCES.cents,
     sidebarCollapsed: typeof value.sidebarCollapsed === 'boolean' ? value.sidebarCollapsed : false,
-    // Sections added in a later release join the end, visible, rather than vanishing.
-    sections: [...stored, ...DEFAULT_PREFERENCES.sections.filter((s) => !seen.has(s.id))],
+    // A section added in a later release joins where it sits by default, visible, rather than vanishing.
+    sections: DEFAULT_PREFERENCES.sections.reduce((list, section, index) => {
+      if (seen.has(section.id)) return list
+      const placed = new Set(list.map((s) => s.id))
+      const before = DEFAULT_PREFERENCES.sections.slice(0, index).map((s) => s.id).filter((id) => placed.has(id)).at(-1)
+      const at = before ? list.findIndex((s) => s.id === before) + 1 : 0
+      return [...list.slice(0, at), section, ...list.slice(at)]
+    }, stored),
   }
 }
 

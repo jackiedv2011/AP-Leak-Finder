@@ -77,7 +77,7 @@ async function uploadSampleLedger() {
   fireEvent.change(input, { target: { files: [new File([sampleLedgerCsv], 'ledger.csv', { type: 'text/csv' })] } })
   await screen.findByText('ledger.csv')
   fireEvent.click(screen.getByRole('button', { name: /run the audit/i }))
-  await screen.findByRole('heading', { name: 'Recent findings' })
+  await screen.findByRole('heading', { name: 'Up next' })
   await waitFor(() => expect(projectSync.pending).toBe(0))
 }
 
@@ -120,12 +120,12 @@ describe('accounts, data isolation and persistence', () => {
     await logIn(bob)
     expect((await live.api('/api/projects')).body.projects).toHaveLength(0)
     expect(await screen.findByRole('button', { name: /upload a ledger/i })).toBeInTheDocument()
-    expect(screen.queryByRole('heading', { name: 'Recent findings' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Up next' })).not.toBeInTheDocument()
     await logOut()
 
     // Alice again: her audit comes back from the server with its findings and is shown
     await logIn(alice)
-    expect(await screen.findByRole('heading', { name: 'Recent findings' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Up next' })).toBeInTheDocument()
     expect((await live.api('/api/projects')).body.projects[0].environment.result.findings.length).toBeGreaterThan(0)
   })
 
@@ -134,7 +134,7 @@ describe('accounts, data isolation and persistence', () => {
     await screen.findByText('ready:nobody')
     await logIn(alice)
     await uploadSampleLedger()
-    fireEvent.click(document.querySelectorAll('.wk-table tbody tr')[0])
+    fireEvent.click(document.querySelectorAll('.wk-queue-row:not([data-locked])')[0])
     fireEvent.click(await screen.findByRole('button', { name: /^This is real/ }))
     const dialog = await screen.findByTestId('decision-dialog')
     fireEvent.click(within(dialog).getByLabelText(/^This is real/))
@@ -171,7 +171,7 @@ describe('legacy (pre-account) audits', () => {
     const { body } = await live.api('/api/projects')
     expect(body.projects.map((p: { id: string }) => p.id)).toEqual([legacy.id])
     expect(listLegacyProjects()).toHaveLength(0)
-    expect(await screen.findByRole('heading', { name: 'Recent findings' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Up next' })).toBeInTheDocument()
 
     await logOut()
     await logIn(bob)
@@ -226,7 +226,7 @@ describe('session bootstrap', () => {
     })
     mountWorkspace()
     await screen.findByText(`ready:${alice.email}`)
-    expect(await screen.findByRole('heading', { name: 'Recent findings' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Up next' })).toBeInTheDocument()
     const user = auth!.user as AuthUser
     expect(user.isGuest).toBe(false)
   })
@@ -269,18 +269,18 @@ describe('first-run tour and plans', () => {
     await screen.findByText('ready:nobody')
     await logIn(alice)
     await uploadSampleLedger()
-    // dashboard: unlocked rows are the cheapest ones
-    const unlocked = () => [...document.querySelectorAll('.wk-table tbody tr')].filter((r) => !r.closest('.wk-locked'))
-    const values = () => unlocked().map((r) => r.querySelector('.wk-table-money')!.textContent!)
+    // Overview: the rows Free can open are the cheapest ones; bigger ones are marked Pro
+    const rows = () => [...document.querySelectorAll<HTMLElement>('.wk-queue-row, .wk-grid-row')]
+    const unlocked = () => rows().filter((r) => !r.hasAttribute('data-locked'))
+    const lockedRows = () => rows().filter((r) => r.hasAttribute('data-locked'))
+    const amounts = (list: HTMLElement[]) => list.map((r) => Number(r.dataset.amount ?? r.querySelector('.wk-cell-money')!.textContent!.replace(/[$,]/g, '')))
     expect(unlocked().length).toBeLessThanOrEqual(3)
-    expect(screen.getAllByTestId('locked').length).toBeGreaterThan(0)
+    expect(lockedRows().length).toBeGreaterThan(0)
     const nav = screen.getByRole('navigation', { name: /workspace/i })
     fireEvent.click(within(nav).getByRole('button', { name: /^Findings/ }))
-    await screen.findByRole('heading', { name: 'All findings' })
+    await screen.findByRole('heading', { name: 'Findings', level: 1 })
     expect(unlocked()).toHaveLength(3)
-    const cheapest = values().map((v) => Number(v.replace(/[$,]/g, '')))
-    const lockedValues = [...document.querySelectorAll('.wk-locked .wk-table-money')].map((n) => Number(n.textContent!.replace(/[$,]/g, '')))
-    expect(Math.max(...cheapest)).toBeLessThanOrEqual(Math.min(...lockedValues))
+    expect(Math.max(...amounts(unlocked()))).toBeLessThanOrEqual(Math.min(...amounts(lockedRows())))
     fireEvent.click(within(nav).getByRole('button', { name: /^Audits/ }))
     expect(await screen.findByTestId('audit-usage')).toHaveTextContent('1 of 3 audits used this month on Free')
     expect(screen.getByTestId('audits-explainer')).toHaveTextContent('What an audit is')
@@ -291,8 +291,8 @@ describe('first-run tour and plans', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Dev: switch to Pro' }))
     await waitFor(() => expect(screen.getByTestId('plan-panel')).toHaveTextContent('Pro · $5 a month'))
     fireEvent.click(within(nav).getByRole('button', { name: /^Findings/ }))
-    await screen.findByRole('heading', { name: 'All findings' })
-    expect(screen.queryAllByTestId('locked')).toHaveLength(0)
+    await screen.findByRole('heading', { name: 'Findings', level: 1 })
+    expect(lockedRows()).toHaveLength(0)
     expect(unlocked().length).toBeGreaterThan(3)
   })
 

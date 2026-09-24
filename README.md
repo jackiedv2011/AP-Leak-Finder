@@ -12,14 +12,32 @@ Reclaim is a client-side FinTech prototype for growing businesses that review ac
 - Shows the records and rule behind every flag
 - Drafts a recovery request only for likely recoverable findings
 - Creates internal review notes for ambiguous, risk, and future-savings findings
+- Tracks customer approval, vendor replies, follow-ups, settlement proof, and accounting reconciliation on each recovery case
 
 The bundled ledger is fictional demo data. Its totals are potential impact, not customer money recovered by Reclaim.
+Open flagged value includes findings that require review or point to future savings; it is not a recovery forecast. Reclaim does not count a future-savings finding as a payment it protected.
 
 ## Product truth
 
 Reclaim's detection is an explainable, deterministic rules engine that runs in the browser: the same CSV produces the same findings, and every displayed amount traces back to a rule and transaction records. AI is used in exactly one place — drafting the wording of a recovery request, on the server, from the case data on the page, for the person to read and edit before they send it themselves. Reclaim never emails a vendor.
 
 Accounts, sessions and each account's audits live on the Reclaim server (`server/`, SQLite). The browser keeps a per-account cache in localStorage while that person is logged in and clears it on log-out.
+
+## Recovery MVP
+
+If the customer already knew about a finding, approval captures a short explanation in the case history. Changing that disclosure requires renewed approval before the request can be recorded as sent.
+
+Confirm a finding, review its evidence checklist and suggested refund or credit method, then approve the request before sending it from your own email. Approval requires an explicit answer about whether your team already knew of the issue, preserving recovery attribution for later billing decisions. Record when the request was sent, log vendor responses, and follow up on the suggested business-day date. Vendor promises and issued credits remain pending. Record returned value only after a refund settles or a credit is applied to a bill, with a reference to the supporting record. Partial returns keep the request open for more settlements or an explicit close of the remaining balance. A closed remainder can be reopened without deleting the valid partial return; correcting an erroneous return reverses its recorded amount. Then record the accounting reconciliation and root cause. The case shows a financial event ledger and a separate activity history.
+
+The dashboard and recovery queue show vendor-agreed and pending-return amounts separately from returned value. Those figures come from customer-recorded replies, decrease as settlements are logged, and are never summed together as recovered money. The case ledger also distinguishes acknowledgement, agreement, a reported refund, an issued but unapplied credit, and an actual recorded return.
+
+The dashboard groups open requests by time since recorded outreach and lists recent customer-recorded returns. An older request with no send date appears as undated instead of being assigned an invented age.
+
+Older cases marked recovered without an amount stay visible for correction. Reclaim does not infer the full finding value as returned, and reconciliation stays unavailable until the reviewer records a return amount.
+
+Risk and future-savings findings use an internal review path. The reviewer files a note, records the investigation outcome, and can reopen it. These findings stay in Findings and the dashboard's internal-review tasks; only recoverable findings enter the vendor Recoveries queue. Their flagged value never enters requested, returned, or reconciled recovery totals. Older saved internal outcomes remain readable without being counted as returned money.
+
+These are customer-recorded actions. The app does not yet connect to a vendor inbox, accounting platform, bank, or payment system; it does not independently verify a customer-entered settlement. Existing detection checks and CSV inputs are unchanged.
 
 ## Running it
 
@@ -101,6 +119,6 @@ The current Open Graph and X metadata uses the existing Reclaim logo asset as a 
 
 ## Roadmap
 
-The next product steps are a guided audit workflow, review-case statuses, accounting-platform imports, and carefully scoped AI-assisted categorization or finding explanations with human confirmation.
+The next product steps are accounting-platform imports, customer-approved email integration, automatic reply and settlement matching, and billing. Financial decisions remain customer-controlled.
 
 Reclaim is being developed as a prototype for the Atlanta Youth AI Hackathon & Pitch Summit 2026.
