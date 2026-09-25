@@ -72,7 +72,7 @@ describe('arbitrary-file resilience', () => {
     const result = parseCsv(csv)
     expect(result.records).toHaveLength(2)
     const findings = detectFindings(result.records)
-    expect(findings.findings.some((f) => f.type === 'exact_duplicate' && f.class === 'recoverable')).toBe(true)
+    expect(findings.findings.some((f) => f.type === 'exact_duplicate' && f.ruleClass === 'recoverable' && f.classification === 'review_needed')).toBe(true)
   })
 
   it('parses currency symbols and thousands separators', () => {

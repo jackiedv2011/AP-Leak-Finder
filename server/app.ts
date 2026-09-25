@@ -12,6 +12,7 @@ import { HttpError, RateLimiter, empty, json, redirect, serializeCookie, toReque
 import { newToken } from './crypto.ts'
 import { entitlementsFor, isPlan, monthStart, planOf, PLAN_LIMITS, type Plan } from './plans.ts'
 import { checkRepeat, repeatMessage, rowFingerprint } from './uploads.ts'
+import { authorizedDraftFacts } from './caseFacts.ts'
 
 const SESSION_COOKIE = 'reclaim_session'
 const OAUTH_STATE_COOKIE = 'reclaim_oauth_state'
@@ -377,15 +378,21 @@ export function createApp(deps: AppDependencies): App {
       limit(draftLimiter, `draft:${user.id}`)
       const parsed = DraftRequestSchema.safeParse(await req.json())
       if (!parsed.success) throw new HttpError(400, 'The case data is malformed.', 'validation')
+      const { projectId, findingId, ...clientFacts } = parsed.data
+      const stored = db.prepare('SELECT payload FROM projects WHERE user_id = ? AND id = ?').get(user.id, projectId) as { payload: string } | undefined
+      const facts = authorizedDraftFacts(stored ? JSON.parse(stored.payload) : null, findingId, clientFacts.amountRequested)
+      if (!facts.ok) throw new HttpError(403, facts.reason, 'recovery_not_authorized')
+      // Vendor, supported amount and ledger rows come from the stored case, never the browser.
+      const request = { ...clientFacts, vendor: facts.vendor, amountFlagged: facts.amountFlagged, rows: facts.rows }
       let draft
       try {
-        draft = await drafts.draft(parsed.data)
+        draft = await drafts.draft(request)
       } catch (err) {
         const code = err instanceof DraftError ? err.code : 'ai_failed'
         console.error('ai draft failed:', code)
         throw new HttpError(502, err instanceof DraftError ? err.message : 'AI drafting failed. The generated letter is still there.', code)
       }
-      if (unsupportedAmounts(draft, parsed.data).length > 0) {
+      if (unsupportedAmounts(draft, request).length > 0) {
         throw new HttpError(502, 'The AI draft mentioned an amount that is not in the records, so it was discarded. Use the generated letter or try again.', 'ai_unsupported_amount')
       }
       return json(200, draft)

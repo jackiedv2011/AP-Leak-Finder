@@ -1,6 +1,11 @@
 import type { APRecord, Finding, FindingClass, DetectionResult } from '@/types'
 import { normalizeVendor, normalizeAccountLast4, daysBetween, parseTerms, formatCurrency, formatDate, plural, toCents } from '@/lib/format'
 import { damerauLevenshteinDistance } from '@/lib/stringDistance'
+import { normalizeReference } from '@/lib/sourceIdentity'
+import { reviewMetadata } from '@/lib/findingMetadata'
+
+/** The review window for same-vendor, same-amount signals. It selects rows to review; it is not a recovery threshold. */
+export const DEFAULT_REVIEW_WINDOW_DAYS = 45
 
 const EPSILON = 0.01
 /** Max Damerau-Levenshtein distance between normalized invoice numbers to count as "near-identical" for Rule 2. */
@@ -99,6 +104,7 @@ function makeFinding(params: {
   title: string
   explanation: string
   relatedRecords: APRecord[]
+  ruleId?: string
 }): Finding {
   // Money is reported, requested and recorded in whole cents; float residue never leaves the engine.
   return { ...params, dollarImpact: centsToDollars(toCents(params.dollarImpact)) }
@@ -164,6 +170,7 @@ function detectExactDuplicates(records: APRecord[], refundPool: RefundPool): {
       findings.push({
         finding: makeFinding({
           id: `exact_duplicate-${cluster.map((r) => r.id).join('-')}`,
+          ruleId: 'exact_repeated_payment_v1',
           type: 'exact_duplicate',
           class: 'recoverable',
           severity: 'high',
@@ -172,7 +179,7 @@ function detectExactDuplicates(records: APRecord[], refundPool: RefundPool): {
           title: `Duplicate payment of invoice ${invoiceNumber}`,
           explanation: `Invoice ${invoiceNumber} from ${vendor} was paid ${cluster.length} times at ${formatCurrency(
             cluster[0].amountPaid
-          )}.${refundNote} ${formatCurrency(dollarImpact)} across ${duplicateRows.length} extra ${plural(duplicateRows.length, 'payment')} is likely recoverable.`,
+          )}.${refundNote} ${formatCurrency(dollarImpact)} across ${duplicateRows.length} extra ${plural(duplicateRows.length, 'payment')} is flagged for review. The ledger rows alone do not prove separate settled payments or money owed.`,
           relatedRecords: cluster,
         }),
         impactRecordIds: duplicateRows.map((r) => r.id),
@@ -191,6 +198,7 @@ function detectExactDuplicates(records: APRecord[], refundPool: RefundPool): {
       findings.push({
         finding: makeFinding({
           id: `repeated_invoice_review-${sorted.map((r) => r.id).join('-')}`,
+          ruleId: 'repeated_invoice_review_v1',
           type: 'exact_duplicate',
           class: 'review',
           severity: 'medium',
@@ -249,10 +257,29 @@ function recurringRecordIds(sortedByDate: APRecord[]): Set<string> {
   return recurring
 }
 
-// Rule 2 — Near-duplicate payment (recoverable, high)
+/** Two invoice references that match after the recorded normalization, or differ by at most a typo or two. */
+function referenceVariant(a: string, b: string): boolean {
+  const na = normalizeReference(a).value
+  if (na !== null && na === normalizeReference(b).value) return true
+  const ea = normalizeInvoiceNumber(a)
+  const eb = normalizeInvoiceNumber(b)
+  // Cheap bounds first: edit distance is at least the length difference, and
+  // no real invoice reference is long enough to need a quadratic comparison.
+  if (Math.abs(ea.length - eb.length) > MAX_NEAR_DUPLICATE_INVOICE_DISTANCE || eb.length > 64) return false
+  return damerauLevenshteinDistance(ea, eb) <= MAX_NEAR_DUPLICATE_INVOICE_DISTANCE
+}
+
+/** Rows that cannot be the same economic event: known, different companies or currencies. */
+function incompatible(a: APRecord, b: APRecord): boolean {
+  if (a.company && b.company && a.company.trim().toLowerCase() !== b.company.trim().toLowerCase()) return true
+  return Boolean(a.currency && b.currency && a.currency !== b.currency)
+}
+
+// Rule 2 — invoice_reference_variant_v1 and same_vendor_amount_near_duplicate_v1 (review signals only)
 function detectNearDuplicates(
   records: APRecord[],
-  excludeRecordIds: Set<string>
+  excludeRecordIds: Set<string>,
+  windowDays = DEFAULT_REVIEW_WINDOW_DAYS
 ): FindingWithImpactRows[] {
   const findings: FindingWithImpactRows[] = []
   const eligible = records.filter((r) => isPayment(r) && !excludeRecordIds.has(r.id))
@@ -266,58 +293,53 @@ function detectNearDuplicates(
     for (let i = 1; i < sorted.length; i++) {
       const later = sorted[i]
       if (usedAsLater.has(later.id)) continue
-      if (later.invoiceNumber === null) continue
 
-      let bestMatch: APRecord | null = null
-      let bestGap = Infinity
-      const laterInvoice = normalizeInvoiceNumber(later.invoiceNumber)
+      // A reference variant is the stronger signal; otherwise the nearest same-amount payment in the window.
+      let variant: APRecord | null = null
+      let nearest: APRecord | null = null
+      let variantGap = Infinity
+      let nearestGap = Infinity
 
       for (let j = 0; j < i; j++) {
         const earlier = sorted[j]
-        if (earlier.invoiceNumber === null) continue
         // Two payments that both keep to a recurring cadence are the series, not a duplicate of each other.
         if (recurring.has(earlier.id) && recurring.has(later.id)) continue
-        if (earlier.invoiceNumber === later.invoiceNumber) continue
-        if (toCents(earlier.amountPaid) !== toCents(later.amountPaid)) continue
-
-        const earlierInvoice = normalizeInvoiceNumber(earlier.invoiceNumber)
-        // Cheap bounds first: edit distance is at least the length difference, and
-        // no real invoice reference is long enough to need a quadratic comparison.
-        if (Math.abs(earlierInvoice.length - laterInvoice.length) > MAX_NEAR_DUPLICATE_INVOICE_DISTANCE) continue
-        if (laterInvoice.length > 64) continue
-        const invoiceDistance = damerauLevenshteinDistance(earlierInvoice, laterInvoice)
-        if (invoiceDistance > MAX_NEAR_DUPLICATE_INVOICE_DISTANCE) continue
-
+        if (toCents(earlier.amountPaid) !== toCents(later.amountPaid) || incompatible(earlier, later)) continue
+        if (earlier.invoiceNumber !== null && earlier.invoiceNumber === later.invoiceNumber) continue
         const gap = Math.abs(daysBetween(earlier.paymentDate, later.paymentDate))
-        if (gap > 45) continue
-
-        if (gap < bestGap) {
-          bestGap = gap
-          bestMatch = earlier
+        if (gap > windowDays) continue
+        const isVariant = earlier.invoiceNumber !== null && later.invoiceNumber !== null && referenceVariant(earlier.invoiceNumber, later.invoiceNumber)
+        if (isVariant && gap < variantGap) {
+          variantGap = gap
+          variant = earlier
+        } else if (!isVariant && gap < nearestGap) {
+          nearestGap = gap
+          nearest = earlier
         }
       }
 
-      if (bestMatch) {
-        usedAsLater.add(later.id)
-        findings.push({
-          finding: makeFinding({
-            id: `near_duplicate-${bestMatch.id}-${later.id}`,
-            type: 'near_duplicate',
-            class: 'review',
-            severity: 'medium',
-            vendor: later.vendor,
-            dollarImpact: later.amountPaid,
-            title: `Suspected duplicate payment to ${later.vendor}`,
-            explanation: `${later.vendor} was paid ${formatCurrency(later.amountPaid)} for invoice ${
-              bestMatch.invoiceNumber
-            } and again for invoice ${later.invoiceNumber}, ${bestGap} ${plural(bestGap, 'day')} apart. The identical amount and short gap suggest the second payment (${formatDate(
-              later.paymentDate
-            )}) may be an unintended duplicate.`,
-            relatedRecords: [bestMatch, later],
-          }),
-          impactRecordIds: [later.id],
-        })
-      }
+      const match = variant ?? nearest
+      if (!match) continue
+      const gap = variant ? variantGap : nearestGap
+      usedAsLater.add(later.id)
+      const refs = (r: APRecord) => r.invoiceNumber ?? 'no invoice reference'
+      findings.push({
+        finding: makeFinding({
+          id: `${variant ? 'near_duplicate' : 'same_amount'}-${match.id}-${later.id}`,
+          ruleId: variant ? 'invoice_reference_variant_v1' : 'same_vendor_amount_near_duplicate_v1',
+          type: 'near_duplicate',
+          class: 'review',
+          severity: variant ? 'medium' : 'low',
+          vendor: later.vendor,
+          dollarImpact: later.amountPaid,
+          title: variant ? `Invoice reference variant: ${later.vendor}` : `Same vendor and amount: ${later.vendor}`,
+          explanation: variant
+            ? `${later.vendor} was paid ${formatCurrency(later.amountPaid)} for invoice ${match.invoiceNumber} and again for invoice ${later.invoiceNumber}, ${gap} ${plural(gap, 'day')} apart. The references match after normalization or differ by a character or two. A similar reference is not proof of a duplicate payment.`
+            : `${later.vendor} was paid ${formatCurrency(later.amountPaid)} twice within ${windowDays} days (${refs(match)} and ${refs(later)}, ${formatDate(later.paymentDate)}), ${gap} ${plural(gap, 'day')} apart. The date window only selects these rows for review; it does not establish that anything is owed.`,
+          relatedRecords: [match, later],
+        }),
+        impactRecordIds: [later.id],
+      })
     }
   }
 
@@ -613,7 +635,11 @@ export function detectFindings(records: APRecord[]): DetectionResult {
     ...bankAccountChanges,
     ...amountOutliers,
     ...sharedInvoiceNumbers,
-  ].sort(
+  ]
+    // Every rule's output is a review signal, a security alert or a future saving.
+    // Only the evidence gate promotes one to a recovery candidate.
+    .map((f) => reviewMetadata(f))
+    .sort(
     (a, b) => {
       const severityDiff = SEVERITY_RANK[a.severity] - SEVERITY_RANK[b.severity]
       if (severityDiff !== 0) return severityDiff

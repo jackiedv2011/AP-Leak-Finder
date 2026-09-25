@@ -36,24 +36,25 @@ export function Reports({ env }: { env: LedgerEnvironment }) {
   return (
     <>
       <section className="wk-section">
-        <h2 className="wk-display wk-h2">This audit</h2>
+        <h2 className="wk-display wk-h2">This audit</h2><p className="wk-dim">Recovery totals include USD only. Flagged amounts show exposure in source units and may include unknown or mixed currencies; they are not money owed.</p>
         <Facts
           rows={[
             ['Payment records', String(s.recordCount)],
             ['Vendors', String(s.vendorCount)],
             ['Findings', String(l.openCount)],
-            ['Potential recovery', formatCurrency(l.potential)],
+            ['Open flagged value', formatCurrency(l.flagged)],
+            ['Potential recovery (USD)', formatCurrency(l.potential)],
             ['Payments to verify', formatCurrency(l.atRisk)],
-            ['Verified', formatCurrency(l.verified)],
             ['Recovered', formatCurrency(l.recovered)],
           ]}
         />
       </section>
 
+      <section className="wk-section"><Facts rows={Object.entries(l.recoveredByCurrency).map(([currency, amount]) => [`Verified returned · ${currency}`, amount.toFixed(2)])} /></section>
       <section className="wk-section">
         <div className="wk-section-head">
           <h2 className="wk-display wk-h2">By check</h2>
-          <p>Which checks caught the money, and how much.</p>
+          <p>Flagged exposure by review check; this is not money owed.</p>
         </div>
         {causes.length === 0 ? (
           <div className="wk-empty">

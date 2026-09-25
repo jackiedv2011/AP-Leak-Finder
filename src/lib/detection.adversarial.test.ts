@@ -30,8 +30,9 @@ function rec(overrides: Partial<APRecord> & { vendor: string; amountPaid: number
 const d = (y: number, m: number, day: number) => new Date(y, m - 1, day)
 const run = (records: APRecord[]) => detectFindings(records).findings
 const ofType = (findings: Finding[], type: FindingType) => findings.filter((f) => f.type === type)
+/** What the rules flag from ledger rows alone. It is never potential recovery without the evidence gate. */
 const recoverableSum = (findings: Finding[]) =>
-  findings.filter((f) => f.class === 'recoverable').reduce((s, f) => s + f.dollarImpact, 0)
+  findings.filter((f) => f.ruleClass === 'recoverable').reduce((s, f) => s + (f.flaggedAmount ?? f.dollarImpact), 0)
 const cents = (n: number) => Math.round(n * 100)
 
 describe('every finding is a sane money figure', () => {
@@ -88,7 +89,8 @@ describe('Rule 1 — exact duplicates: overlap and refunds', () => {
     ])
     const dup = ofType(findings, 'exact_duplicate')
     expect(dup).toHaveLength(1)
-    expect(dup[0].class).toBe('recoverable')
+    expect(dup[0].ruleClass).toBe('recoverable')
+    expect(dup[0].classification).toBe('review_needed')
     expect(dup[0].dollarImpact).toBe(500)
   })
 

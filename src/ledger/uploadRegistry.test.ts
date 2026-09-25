@@ -5,7 +5,7 @@ import { checkRepeatUpload, rememberUpload } from '@/ledger/uploadRegistry'
 import { setStorageScope } from '@/lib/storageScope'
 
 const rows = (csv: string) => parseCsv(csv).records
-const lines = sampleLedgerCsv.trim().split('\n')
+const lines = sampleLedgerCsv.trim().split(/\r?\n/)
 const header = lines[0]
 
 describe('repeat-upload check in the browser (the only check a guest has)', () => {

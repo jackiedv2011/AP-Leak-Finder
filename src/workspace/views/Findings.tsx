@@ -3,6 +3,8 @@ import { useEffect, useState } from 'react'
 import { ArrowRight, Download, Lock, Search, SlidersHorizontal } from 'lucide-react'
 import { formatCurrency, formatDate, plural } from '@/lib/format'
 import { DECISION_LABEL, type DecisionValue } from '@/ledger/caseState'
+import { evaluateEligibility } from '@/recovery/eligibility'
+import { nextActionLabel } from './findingText'
 import { recoveryStatusLabel } from '@/recovery/model'
 import type { LedgerEnvironment } from '@/ledger/store'
 import { useEntitlements } from '@/lib/auth/AuthContext'
@@ -17,16 +19,28 @@ interface FindingsProps {
   visible: Set<string>
   onOpenCase: (findingId: string) => void
 }
-type Category = 'all' | 'recoverable' | 'review' | 'opportunity'
+type Category = 'all' | 'recoverable' | 'review' | 'security' | 'opportunity'
 type Status = 'all' | 'unreviewed' | DecisionValue
 type Sort = 'priority' | 'amount-desc' | 'amount-asc' | 'vendor'
 const categories: Array<{ id: Category; label: string }> = [
   { id: 'all', label: 'All' },
-  { id: 'recoverable', label: 'Ready to claim' },
-  { id: 'review', label: 'Needs context' },
-  { id: 'opportunity', label: 'Prevention' },
+  { id: 'recoverable', label: 'Recovery candidates' },
+  { id: 'review', label: 'Flagged for review' },
+  { id: 'security', label: 'Security alerts' },
+  { id: 'opportunity', label: 'Future savings' },
 ]
-const categoryValues: Category[] = ['all', 'recoverable', 'review', 'opportunity']
+const categoryValues: Category[] = ['all', 'recoverable', 'review', 'security', 'opportunity']
+const CATEGORY_LABEL = Object.fromEntries(categories.map(({ id, label }) => [id, label])) as Record<Category, string>
+
+/** Tabs follow the finding's classification; `class` is a deprecated mirror of it. */
+function categoryOf(finding: Opportunity['finding']): Exclude<Category, 'all'> {
+  if (finding.classification === 'recovery_candidate') return 'recoverable'
+  if (finding.classification === 'preventive_security') return 'security'
+  if (finding.classification === 'future_savings') return 'opportunity'
+  return 'review'
+}
+
+
 const statusValues: Status[] = ['all', 'unreviewed', 'confirmed', 'needs_info', 'expected']
 const sortValues: Sort[] = ['priority', 'amount-desc', 'amount-asc', 'vendor']
 function initial<T extends string>(key: string, allowed: T[], fallback: T): T {
@@ -41,17 +55,18 @@ function csvCell(value: string | number): string {
 
 /** The rows this plan can see, as a spreadsheet a controller can file or forward. */
 function exportCsv(rows: Opportunity[]) {
-  const header = ['Vendor', 'Finding', 'Kind', 'Invoices', 'Payment dates', 'Evidence', 'Decision', 'Recovery', 'Amount']
+  const header = ['Vendor', 'Finding', 'Category', 'Rule', 'Invoices', 'Payment dates', 'Evidence', 'Decision', 'Recovery', 'Flagged amount']
   const lines = rows.map((o) => [
     o.finding.vendor,
     o.typeLabel,
-    o.finding.class === 'recoverable' ? 'Ready to claim' : o.finding.class === 'review' ? 'Needs context' : 'Prevention',
+    CATEGORY_LABEL[categoryOf(o.finding)],
+    `${o.finding.ruleId ?? o.finding.type} v${o.finding.ruleVersion ?? 1}`,
     [...new Set(o.finding.relatedRecords.map((r) => r.invoiceNumber).filter(Boolean))].join('; '),
     o.finding.relatedRecords.map((r) => formatDate(r.paymentDate)).join('; '),
-    EVIDENCE_LABEL[o.evidence],
+    (o.finding.evidenceState ?? EVIDENCE_LABEL[o.evidence]).replaceAll('_', ' '),
     o.state.decision ? DECISION_LABEL[o.state.decision] : 'Not reviewed',
     o.state.recoveryStage ? recoveryStatusLabel(o.state, o.finding.class !== 'recoverable') : '',
-    o.finding.dollarImpact.toFixed(2),
+    (o.finding.flaggedAmount ?? o.finding.dollarImpact).toFixed(2),
   ])
   const csv = [header, ...lines].map((line) => line.map(csvCell).join(',')).join('\n')
   const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }))
@@ -60,6 +75,16 @@ function exportCsv(rows: Opportunity[]) {
   link.download = 'reclaim-findings.csv'
   link.click()
   setTimeout(() => URL.revokeObjectURL(url), 1000)
+}
+
+function EvidenceCell({ finding, findings }: { finding: Opportunity['finding']; findings: Opportunity['finding'][] }) {
+  const gate = evaluateEligibility(finding, finding.evidence, findings)
+  const reason = finding.suppressionReason ?? gate.contradictoryEvidence[0]
+  return <span className="wk-cell-main">
+    <strong>{gate.evidenceState.replaceAll('_', ' ')}</strong>
+    <small>{gate.eligible ? 'Evidence gate passed' : `${gate.missingEvidence.length} evidence ${plural(gate.missingEvidence.length, 'item')} missing`}{reason ? ` Â· ${reason}` : ''}</small>
+    <small>{finding.ruleId ?? finding.type} v{finding.ruleVersion ?? 1} Â· {nextActionLabel(finding, gate.eligible)}</small>
+  </span>
 }
 
 function decisionChip(o: Opportunity) {
@@ -90,7 +115,7 @@ export function Findings({ env, visible, onOpenCase }: FindingsProps) {
   const l = ladder(env)
   const normalizedQuery = query.trim().toLowerCase()
   const matching = all.filter((o) => {
-    if (category !== 'all' && o.finding.class !== category) return false
+    if (category !== 'all' && categoryOf(o.finding) !== category) return false
     if (status === 'unreviewed' && o.state.decision !== null) return false
     if (status !== 'all' && status !== 'unreviewed' && o.state.decision !== status) return false
     if (normalizedQuery && !`${o.finding.vendor} ${o.finding.title} ${o.typeLabel} ${findingReference(o.finding)}`.toLowerCase().includes(normalizedQuery)) return false
@@ -109,7 +134,7 @@ export function Findings({ env, visible, onOpenCase }: FindingsProps) {
 
   return <>
     <div className="wk-toolbar">
-      <div className="wk-tabs" role="tablist" aria-label="Finding kind">{categories.map(({ id, label }) => <button type="button" role="tab" aria-selected={category === id} key={id} onClick={() => setCategory(id)}>{label}<span>{id === 'all' ? all.length : all.filter((o) => o.finding.class === id).length}</span></button>)}</div>
+      <div className="wk-tabs" role="tablist" aria-label="Finding kind">{categories.map(({ id, label }) => <button type="button" role="tab" aria-selected={category === id} key={id} onClick={() => setCategory(id)}>{label}<span>{id === 'all' ? all.length : all.filter((o) => categoryOf(o.finding) === id).length}</span></button>)}</div>
     </div>
     <div className="wk-toolbar">
       <label className="wk-search"><Search aria-hidden="true" /><input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search vendor, invoice or type…" aria-label="Search findings" /></label>
@@ -124,19 +149,19 @@ export function Findings({ env, visible, onOpenCase }: FindingsProps) {
       {ordered.map((o) => {
         // A locked row carries no vendor, invoice or amount: hiding them with CSS is not access control.
         const locked = !visible.has(o.finding.id)
-        return <button type="button" className="wk-grid-row wk-finding-row" key={o.finding.id} data-locked={locked || undefined} onClick={() => (locked ? setUpgradeOpen(true) : onOpenCase(o.finding.id))} aria-label={locked ? `${o.typeLabel}, part of Growth and Flat` : `${o.typeLabel}, ${o.finding.vendor}, ${formatCurrency(o.finding.dollarImpact)}`}>
+        return <button type="button" className="wk-grid-row wk-finding-row" key={o.finding.id} data-amount={locked ? undefined : o.finding.dollarImpact} data-locked={locked || undefined} onClick={() => (locked ? setUpgradeOpen(true) : onOpenCase(o.finding.id))} aria-label={locked ? `${o.typeLabel}, part of Growth and Flat` : `${o.typeLabel}, ${o.finding.vendor}, ${formatCurrency(o.finding.dollarImpact)}`}>
           <span className="wk-cell-main">{locked ? <><strong style={{ color: 'var(--text-muted)' }}>Shown on Growth and Flat</strong><small>Vendor and invoices hidden on Free</small></> : <><strong>{o.finding.vendor}</strong><small>{findingReference(o.finding)}</small></>}<span className="wk-mobile-meta" aria-hidden="true"><KindChip finding={o.finding} label={o.typeLabel} />{decisionChip(o)}</span></span>
           <span><KindChip finding={o.finding} label={o.typeLabel} /></span>
-          <span className="wk-finding-state"><Strength level={o.evidence} /></span>
+          <span className="wk-finding-state">{locked ? <Strength level={o.evidence} /> : <EvidenceCell finding={o.finding} findings={all.map((x) => x.finding)} />}</span>
           <span>{decisionChip(o)}</span>
-          <span className="wk-cell-money wk-finding-amount">{locked ? REDACTED_MONEY : formatCurrency(o.finding.dollarImpact)}</span>
+          <span className="wk-cell-money wk-finding-amount">{locked ? REDACTED_MONEY : <>{formatCurrency(o.finding.flaggedAmount ?? o.finding.dollarImpact)}<small>{o.finding.classification === 'recovery_candidate' && o.finding.potentialAmountMinor != null ? `Potential ${formatCurrency(o.finding.potentialAmountMinor / 100)}` : 'Flagged amount'}</small></>}</span>
           {locked ? <Lock aria-hidden="true" /> : <ArrowRight aria-hidden="true" />}
         </button>
       })}
       {ordered.length === 0 ? <div className="wk-grid-empty">No findings match. <button type="button" className="wk-link" onClick={() => { setCategory('all'); setQuery(''); setStatus('all') }}>Clear filters</button></div> : null}
       {lockedCount > 0 ? <div className="wk-upsell"><p><Lock aria-hidden="true" style={{ display: 'inline', verticalAlign: '-2px', marginRight: 8 }} /><strong>{lockedCount} of {ordered.length}</strong> are shown in full on Growth and Flat. Free shows the {entitlements.limits.findingsVisible} lowest-value findings.</p><button type="button" className="wk-btn" data-variant="primary" data-size="sm" onClick={() => setUpgradeOpen(true)}>See Pro</button></div> : null}
     </div>
-    <div className="wk-grid-foot"><span>{matching.length} of {all.length} {plural(all.length, 'finding')}</span><span>{decided} reviewed · {formatCurrency(l.awaitingDecision)} supported and waiting on you</span></div>
+    <div className="wk-grid-foot"><span>{matching.length} of {all.length} {plural(all.length, 'finding')}</span><span>{decided} reviewed · {formatCurrency(l.flagged)} flagged for review Â· {formatCurrency(l.awaitingDecision)} eligible and waiting on you</span></div>
     <UpgradeDialog open={upgradeOpen} onOpenChange={setUpgradeOpen} reason="Growth and Flat show every finding in full, with its vendor and invoices." />
   </>
 }

@@ -1,3 +1,4 @@
+import { attestDuplicate } from '@/recovery/testEvidence'
 /**
  * Data-consistency contract for every number the dashboard shows.
  *
@@ -17,11 +18,17 @@
 import { describe, expect, it } from 'vitest'
 import { parseCsv } from '@/lib/csv'
 import { mergeImport, setCaseState, type LedgerEnvironment } from '@/ledger/store'
-import { confirmCase, markExpected, markNeedsInfo, markRecoveryRequested, recordRecoveryOutcome, EMPTY_CASE_STATE } from '@/ledger/caseState'
+import { confirmCase, markExpected, markNeedsInfo, markRecoveryRequested as legacyRequest, recordRecoveryOutcome, EMPTY_CASE_STATE } from '@/ledger/caseState'
 import { verifyRecovery } from '@/recovery/model'
 import { internalReviews, ladder, opportunities, recentReturns, recoveries, recoveryAging, recordedRootCauses, rootCauses, timelineFor, vendorCommitments, vendors } from '@/workspace/selectors'
 import { approveRecovery, recordVendorUpdate, startRecoveryRequest } from '@/recovery/model'
 
+function markRecoveryRequested(state: Parameters<typeof legacyRequest>[0], amount = 1000) {
+  return legacyRequest({ ...state, approvedAt: 100 }, amount)
+}
+function verifiedOutcome(state: Parameters<typeof recordRecoveryOutcome>[0], amount: number) {
+  return { ...verifyRecovery(state, { amount, method: 'refund', source: 'bank', reference: 'Synthetic settlement', settledAt: 500 }), recoveryStage: 'recovered' as const }
+}
 const HEADER = 'vendor,invoice_number,invoice_date,payment_date,invoice_amount,amount_paid,terms,bank_account_last4'
 function envFrom(rows: string[]): LedgerEnvironment {
   return mergeImport(null, { sourceLabel: 'test.csv', mode: 'upload', parsed: parseCsv([HEADER, ...rows].join('\n')) })
@@ -29,7 +36,7 @@ function envFrom(rows: string[]): LedgerEnvironment {
 
 // Three recoverable duplicates ($1000, $500, $250), one review-class bank change ($720), one opportunity ($20).
 function baseline(): LedgerEnvironment {
-  return envFrom([
+  const env = envFrom([
     'Alpha,A-1,2025-01-01,2025-01-10,1000,1000,,1111',
     'Alpha,A-1,2025-01-01,2025-01-20,1000,1000,,1111',
     'Beta,B-1,2025-01-01,2025-01-10,500,500,,2222',
@@ -40,6 +47,8 @@ function baseline(): LedgerEnvironment {
     'Delta,D-2,2025-02-01,2025-02-10,720,720,,5555',
     'Epsilon,E-1,2025-03-01,2025-03-25,1000,1000,2/10 net 30,6666',
   ])
+  env.result.findings = env.result.findings.map(f => f.type === 'exact_duplicate' ? attestDuplicate(f) : f)
+  return env
 }
 
 const findingFor = (env: LedgerEnvironment, vendor: string) => env.result.findings.find((f) => f.vendor === vendor)!
@@ -110,11 +119,12 @@ describe('ladder — fresh audit', () => {
     expect(timelineFor(finding, EMPTY_CASE_STATE, importedAt)[0].when).toBe(new Date(importedAt!).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }))
     expect(timelineFor(finding, EMPTY_CASE_STATE)[0].when).toBe('—')
   })
-  it('counts only claims as potential recovery; payments at risk and missed discounts are reported apart, never added in', () => {
+  it('counts eligible duplicates as potential and keeps security and savings only in flagged exposure', () => {
     const l = ladder(baseline())
     expect(l.openCount).toBe(5)
+    expect(l.flaggedCount).toBe(5)
     expect(l.counts.potential).toBe(3)
-    expect(l.potential).toBe(1000 + 500 + 250)
+    expect(l.potential).toBe(1750)
     expect(l.atRisk).toBe(720)
     expect(l.counts.verified).toBe(3)
     expect(l.verified).toBe(1750)
@@ -158,9 +168,9 @@ describe('ladder — the recovery lifecycle moves money along, never duplicating
     expect(vendorCommitments(env)).toMatchObject({ confirmed: 0, pendingReturn: 0, confirmedCases: 0, pendingCases: 0 })
     const accepted = recordVendorUpdate(requested, { status: 'accepted', note: 'Accepted the full claim', at: 300 })
     env = setCaseState(env, alpha.id, accepted)
-    expect(vendorCommitments(env)).toMatchObject({ confirmed: 1000, pendingReturn: 0 })
+    expect(vendorCommitments(env)).toMatchObject({ confirmed: 1000, pendingReturn: 1000 })
     env = setCaseState(env, alpha.id, verifyRecovery(accepted, { amount: 300, method: 'refund', source: 'bank', reference: 'ACH-2', settledAt: 400 }))
-    expect(vendorCommitments(env)).toMatchObject({ confirmed: 700, pendingReturn: 0 })
+    expect(vendorCommitments(env)).toMatchObject({ confirmed: 700, pendingReturn: 700 })
   })
 
   it('splits a partial return between outstanding and recovered without double counting', () => {
@@ -171,7 +181,6 @@ describe('ladder — the recovery lifecycle moves money along, never duplicating
     const l = ladder(env)
     expect(l.inRecovery).toBe(600)
     expect(l.recovered).toBe(400)
-    // Claims only (the $720 bank alert and $20 missed discount are not money owed), net of the $400 returned.
     expect(l.potential).toBe(1750 - 400)
     expect(vendors(env).find((row) => row.vendor === 'Alpha')).toMatchObject({ potential: 600, recovered: 400 })
   })
@@ -212,7 +221,7 @@ describe('ladder — the recovery lifecycle moves money along, never duplicating
     expect(l.recovered).toBe(0)
     expect(l.potential).toBe(1750) // still in play
 
-    env = setCaseState(env, alpha.id, recordRecoveryOutcome(env.caseStates[alpha.id], 'recovered', 1000, null))
+    env = setCaseState(env, alpha.id, verifiedOutcome(env.caseStates[alpha.id], 1000))
     l = ladder(env)
     expect(l.verified).toBe(750)
     expect(l.inRecovery).toBe(0)
@@ -228,7 +237,7 @@ describe('ladder — the recovery lifecycle moves money along, never duplicating
     const beta = findingFor(env, 'Beta')
     env = setCaseState(env, alpha.id, markRecoveryRequested(confirmCase(null)))
     env = setCaseState(env, beta.id, markRecoveryRequested(confirmCase(null)))
-    env = setCaseState(env, alpha.id, recordRecoveryOutcome(env.caseStates[alpha.id], 'recovered', 400, 'vendor credited part'))
+    env = setCaseState(env, alpha.id, verifiedOutcome(env.caseStates[alpha.id], 400))
     env = setCaseState(env, beta.id, recordRecoveryOutcome(env.caseStates[beta.id], 'recovered', 0, 'nothing came'))
     const l = ladder(env)
     expect(l.recovered).toBe(400)
@@ -255,7 +264,7 @@ describe('ladder — the recovery lifecycle moves money along, never duplicating
     env = setCaseState(env, alpha.id, markExpected('split payment', 'intentional'))
     env = setCaseState(env, delta.id, markExpected('we asked them to change it', 'known_vendor_exception'))
     const l = ladder(env)
-    expect(l.potential).toBe(500 + 250)
+    expect(l.potential).toBe(750)
     expect(l.counts.potential).toBe(2)
     expect(l.atRisk).toBe(0)
     expect(l.verified).toBe(750)
@@ -289,7 +298,7 @@ describe('ladder — the recovery lifecycle moves money along, never duplicating
   it('potential recovery and actual recovered are never the same money', () => {
     let env = baseline()
     for (const f of env.result.findings.filter((f) => f.class === 'recoverable')) {
-      env = setCaseState(env, f.id, recordRecoveryOutcome(markRecoveryRequested(confirmCase(null)), 'recovered', f.dollarImpact, null))
+      env = setCaseState(env, f.id, verifiedOutcome(markRecoveryRequested(confirmCase(null), f.dollarImpact), f.dollarImpact))
     }
     const l = ladder(env)
     expect(l.recovered).toBe(1750)
@@ -298,6 +307,7 @@ describe('ladder — the recovery lifecycle moves money along, never duplicating
     expect(l.atRisk).toBe(720)
     // A missed discount is a future saving, not a prevented payment: protected stays zero.
     expect(l.protected).toBe(0)
+    expect(l.potential + l.recovered).toBe(1750)
   })
 
   it('reports and recoveries agree with the ladder on what is in recovery and what came back', () => {
@@ -305,7 +315,7 @@ describe('ladder — the recovery lifecycle moves money along, never duplicating
     const alpha = findingFor(env, 'Alpha')
     const beta = findingFor(env, 'Beta')
     env = setCaseState(env, alpha.id, markRecoveryRequested(confirmCase(null)))
-    env = setCaseState(env, beta.id, recordRecoveryOutcome(markRecoveryRequested(confirmCase(null)), 'recovered', 500, null))
+    env = setCaseState(env, beta.id, verifiedOutcome(markRecoveryRequested(confirmCase(null), 500), 500))
     const l = ladder(env)
     const rows = recoveries(env)
     const inRecovery = rows.filter((o) => o.state.recoveryStage === 'requested').reduce((s, o) => s + o.finding.dollarImpact, 0)
@@ -360,7 +370,7 @@ it('groups actual customer-recorded root causes by recovered value', () => {
   let env = baseline()
   const alpha = findingFor(env, 'Alpha')
   const beta = findingFor(env, 'Beta')
-  env = setCaseState(env, alpha.id, { ...recordRecoveryOutcome(markRecoveryRequested(confirmCase(null), 1000), 'recovered', 600, null), rootCause: 'Payment retry', reconciledAt: 100 })
-  env = setCaseState(env, beta.id, { ...recordRecoveryOutcome(markRecoveryRequested(confirmCase(null), 500), 'recovered', 400, null), rootCause: 'Payment retry', reconciledAt: 200 })
+  env = setCaseState(env, alpha.id, { ...verifiedOutcome(markRecoveryRequested(confirmCase(null), 1000), 600), rootCause: 'Payment retry', reconciledAt: 100 })
+  env = setCaseState(env, beta.id, { ...verifiedOutcome(markRecoveryRequested(confirmCase(null), 500), 400), rootCause: 'Payment retry', reconciledAt: 200 })
   expect(recordedRootCauses(env)).toEqual([{ label: 'Payment retry', count: 2, recovered: 1000 }])
 })

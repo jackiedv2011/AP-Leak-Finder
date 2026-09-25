@@ -61,16 +61,19 @@ describe('messy ledger — parsing', () => {
     expect(parsed.records.some((r) => r.vendor === 'Acme Stone')).toBe(true)
   })
 
-  it('keeps rows with no invoice number and flags nothing about them', () => {
+  it('keeps rows with no invoice number and only raises a same-amount review signal about them', () => {
     expect(parsed.records.filter((r) => r.vendor === 'Nameless Vendor Test')).toHaveLength(2)
-    expect(byVendor('Nameless')).toHaveLength(0)
+    const signals = byVendor('Nameless')
+    expect(signals.map((f) => f.ruleId)).toEqual(['same_vendor_amount_near_duplicate_v1'])
+    expect(signals[0]).toMatchObject({ classification: 'review_needed', potentialAmountMinor: null })
   })
 })
 
 describe('messy ledger — true positives', () => {
   it('TP1: a straight duplicate payment is recoverable for exactly one extra payment', () => {
     const f = only(ofType('exact_duplicate', 'Sierra'))
-    expect(f.class).toBe('recoverable')
+    expect(f.ruleClass).toBe('recoverable')
+    expect(f.classification).toBe('review_needed')
     expect(f.dollarImpact).toBe(6800)
     expect(f.relatedRecords).toHaveLength(2)
     expect(evidenceOf(f)).toBe('strong')
@@ -198,7 +201,7 @@ describe('messy ledger — false positives that must stay quiet', () => {
 })
 
 describe('messy ledger — totals, priority, evidence', () => {
-  it('produces exactly the twelve expected findings and nothing else', () => {
+  it('produces exactly the thirteen expected findings and nothing else', () => {
     const summary = findings.map((f) => `${f.type}:${f.vendor}:${f.dollarImpact.toFixed(2)}`).sort()
     expect(summary).toEqual(
       [
@@ -211,6 +214,7 @@ describe('messy ledger — totals, priority, evidence', () => {
         'exact_duplicate:Sierra Coffee Supply:6800.00',
         'missed_discount:Blue Bag Packaging:40.00',
         'near_duplicate:CloudPOS Software:3100.00',
+        'near_duplicate:Nameless Vendor Test:' + byVendor('Nameless')[0].dollarImpact.toFixed(2),
         'overpayment:Golden Bean Exports:800.00',
         'shared_invoice_number:Acme Steel, Acme Stone:2000.00',
         'unclaimed_discount:Blue Bag Packaging:100.00',
@@ -219,8 +223,12 @@ describe('messy ledger — totals, priority, evidence', () => {
   })
 
   it('class totals only ever add findings of their own class', () => {
-    expect(result.recoverableTotal).toBeCloseTo(6800 + 2500 + 900 + 800 + 100 + 760 + 800, 2)
-    expect(result.opportunityTotal).toBeCloseTo(40, 2)
+    // Without evidence nothing is a recovery candidate; the rules' own strong signals are still flagged.
+    expect(result.recoverableTotal).toBe(0)
+    const strong = findings.filter((f) => f.ruleClass === 'recoverable').reduce((s, f) => s + (f.flaggedAmount ?? 0), 0)
+    expect(strong).toBeCloseTo(6800 + 2500 + 900 + 800 + 100 + 760 + 800, 2)
+    // Both missed discounts are future savings, never money owed.
+    expect(result.opportunityTotal).toBeCloseTo(40 + 100, 2)
     const review = findings.filter((f) => f.class === 'review').reduce((s, f) => s + f.dollarImpact, 0)
     expect(result.reviewTotal).toBeCloseTo(review, 2)
   })

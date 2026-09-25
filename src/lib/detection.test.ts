@@ -35,9 +35,11 @@ describe('Rule 1 — exact duplicate payment', () => {
     const finding = result.findings.find((f) => f.type === 'exact_duplicate')
     expect(finding).toBeDefined()
     expect(finding!.dollarImpact).toBe(500)
-    expect(finding!.class).toBe('recoverable')
+    // Consistent rows are still only a review signal: flagged, never potential recovery.
+    expect(finding!.ruleClass).toBe('recoverable')
+    expect(finding!).toMatchObject({ ruleId: 'exact_repeated_payment_v1', classification: 'review_needed', flaggedAmount: 500, potentialAmountMinor: null })
     expect(finding!.severity).toBe('high')
-    expect(result.recoverableTotal).toBe(500)
+    expect(result.recoverableTotal).toBe(0)
   })
 
   it('computes impact correctly for 3 payments of the same invoice', () => {
@@ -71,8 +73,9 @@ describe('Rule 1 — exact duplicate payment', () => {
       makeRecord({ vendor: 'Acme Roasters', invoiceNumber: 'INV-202', amountPaid: 125, paymentDate: d(2025, 1, 9) }),
     ]
     const result = detectFindings(records)
-    const recoverable = result.findings.find((f) => f.type === 'exact_duplicate' && f.class === 'recoverable')
-    const review = result.findings.find((f) => f.type === 'exact_duplicate' && f.class === 'review')
+    const recoverable = result.findings.find((f) => f.type === 'exact_duplicate' && f.ruleClass === 'recoverable')
+    const review = result.findings.find((f) => f.type === 'exact_duplicate' && f.ruleClass === 'review')
+    expect(result.findings.every((f) => f.classification !== 'recovery_candidate')).toBe(true)
     expect(recoverable?.dollarImpact).toBe(500)
     expect(review?.dollarImpact).toBe(125)
   })
@@ -101,14 +104,15 @@ describe('Rule 2 — near-duplicate payment', () => {
     expect(finding).toBeUndefined()
   })
 
-  it('ignores pairs whose invoice numbers are not near-identical, even with matching amount and date gap', () => {
+  it('does not call unrelated invoice numbers a reference variant; the same vendor and amount stays a review signal', () => {
     const records = [
       makeRecord({ vendor: 'Blue Bag Packaging', invoiceNumber: 'INV-1001', amountPaid: 400, paymentDate: d(2025, 2, 1) }),
       makeRecord({ vendor: 'Blue Bag Packaging', invoiceNumber: 'PO-9284', amountPaid: 400, paymentDate: d(2025, 2, 15) }),
     ]
     const result = detectFindings(records)
-    const finding = result.findings.find((f) => f.type === 'near_duplicate')
-    expect(finding).toBeUndefined()
+    expect(result.findings.find((f) => f.ruleId === 'invoice_reference_variant_v1')).toBeUndefined()
+    const signal = result.findings.find((f) => f.ruleId === 'same_vendor_amount_near_duplicate_v1')
+    expect(signal).toMatchObject({ classification: 'review_needed', potentialAmountMinor: null, severity: 'low' })
   })
 
   it('uses Damerau-Levenshtein so an adjacent-digit transposition still counts as near-identical', () => {
@@ -176,7 +180,9 @@ describe('Rules 4 & 5 — early-payment discount', () => {
     const finding = result.findings.find((f) => f.type === 'unclaimed_discount')
     expect(finding).toBeDefined()
     expect(finding!.dollarImpact).toBe(40) // 2% of 2000
-    expect(finding!.class).toBe('recoverable')
+    // A discount not taken is a process fix for future bills, not money owed.
+    expect(finding!.classification).toBe('future_savings')
+    expect(finding!.class).toBe('opportunity')
   })
 
   it('Rule 5 fires when paid too late to claim the discount', () => {
@@ -336,7 +342,7 @@ describe('No double-counting across recoverable findings', () => {
       }),
     ]
     const result = detectFindings(records)
-    const recoverableFindings = result.findings.filter((f) => f.class === 'recoverable')
+    const recoverableFindings = result.findings.filter((f) => f.ruleClass === 'recoverable')
 
     // The second (duplicate) row must only drive ONE recoverable finding — the
     // higher-dollar exact-duplicate finding (500) wins over its own overpayment (100).
@@ -353,7 +359,9 @@ describe('No double-counting across recoverable findings', () => {
     )
     expect(findingsTouchingRow0).toHaveLength(1)
 
-    expect(result.recoverableTotal).toBe(600) // 500 (duplicate) + 100 (row0 overpayment)
+    // 500 (duplicate) + 100 (row0 overpayment) flagged, and nothing is potential recovery without evidence.
+    expect(recoverableFindings.reduce((sum, f) => sum + (f.flaggedAmount ?? 0), 0)).toBe(600)
+    expect(result.recoverableTotal).toBe(0)
   })
 })
 

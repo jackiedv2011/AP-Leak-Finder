@@ -4,9 +4,9 @@ import { AuditApp } from '@/AuditApp'
 import { getSampleLedger, sampleLedgerCsv } from '@/data/sampleLedger'
 import { detectFindings } from '@/lib/detection'
 import { formatCurrency } from '@/lib/format'
-import { isClaim } from '@/lib/claims'
 import { assessRecordReadiness } from '@/audit/dataReadiness'
-import { clearEnvironment, mergeImport, setCaseState } from '@/ledger/store'
+import { clearEnvironment, mergeImport, recordEvidence, setCaseState } from '@/ledger/store'
+import { attestDuplicate } from '@/recovery/testEvidence'
 import { confirmCase, markRecoveryRequested } from '@/ledger/caseState'
 import { createProject } from '@/ledger/projects'
 import type { RouteMode } from '@/audit/useAuditRoute'
@@ -30,17 +30,6 @@ function sumImpact(findings: Finding[]): number {
   return findings.reduce((total, finding) => total + finding.dollarImpact, 0)
 }
 
-/**
- * "Potential recovery" counts only money a vendor could owe back. Written out
- * here rather than imported, so the test states the rule independently: a
- * missed discount is a process fix, and a bank-account change or a shared
- * invoice number is a payment to verify — none of them is a claim.
- */
-const NOT_CLAIMS = ['missed_discount', 'bank_account_change', 'shared_invoice_number']
-function sumClaims(findings: Finding[]): number {
-  return sumImpact(findings.filter((f) => !NOT_CLAIMS.includes(f.type)))
-}
-
 /** A ledger already persisted by a previous session, written through the real store. */
 function seedPersistedLedger() {
   const environment = mergeImport(null, {
@@ -54,6 +43,39 @@ function seedPersistedLedger() {
     mode: 'upload',
     environment,
   })
+}
+
+/**
+ * A CSV row alone never proves money is owed, so every recovery-ladder test
+ * starts from the largest sample duplicate carrying explicit synthetic customer
+ * attestations, saved through the real store. That is the only way a signal
+ * becomes a recovery candidate.
+ */
+function attestedEnvironment(pick: (f: Finding) => boolean = () => true) {
+  const imported = mergeImport(null, { sourceLabel: 'ledger.csv', mode: 'upload', parsed: getSampleLedger() })
+  const target = imported.result.findings.filter((f) => ['exact_duplicate', 'near_duplicate'].includes(f.type) && pick(f)).sort((a, b) => b.dollarImpact - a.dollarImpact)[0]
+  const environment = recordEvidence(imported, target.id, attestDuplicate(target).evidence!)
+  const finding = environment.result.findings.find((f) => f.id === target.id)!
+  expect(finding.classification).toBe('recovery_candidate')
+  return { environment, finding, amount: finding.potentialAmountMinor! / 100 }
+}
+
+async function openCase(findingId: string) {
+  setLocation(`/audit?case=${encodeURIComponent(findingId)}`)
+  render(<AuditApp />)
+  await waitFor(() => expect(screen.getByRole('heading', { name: 'Evidence' })).toBeInTheDocument())
+}
+
+async function openAttestedCase() {
+  const seeded = attestedEnvironment()
+  createProject({ name: 'Ledger review', sourceLabel: 'ledger.csv', mode: 'upload', environment: seeded.environment })
+  await openCase(seeded.finding.id)
+  return { ...seeded, vendor: seeded.finding.vendor, value: formatCurrency(seeded.amount) }
+}
+
+/** Every open signal's involved amount that is not suppressed. It is never money owed. */
+function sumFlagged(findings: Finding[]): number {
+  return findings.filter((f) => !f.suppressionReason).reduce((total, f) => total + Math.round((f.flaggedAmount ?? f.dollarImpact) * 100), 0) / 100
 }
 
 function workspace() {
@@ -95,6 +117,10 @@ function potentialValue(): string {
   return formatCurrency(Number(overviewRoot().dataset.potential))
 }
 
+function flaggedValue(): string {
+  return formatCurrency(Number(overviewRoot().dataset.flagged))
+}
+
 function findingsFact(): { findings: string; audits: string } {
   const nav = screen.getByRole('navigation', { name: /workspace/i })
   const audits = within(nav).getByRole('button', { name: /^Audits/ }).querySelector('.wk-nav-count')?.textContent ?? ''
@@ -128,7 +154,9 @@ function lastTable(): HTMLElement {
 async function decide(option: 'This is real' | 'I need more detail' | 'Not an issue') {
   fireEvent.click(await screen.findByRole('button', { name: new RegExp(`^${option}`) }))
   const dialog = await screen.findByTestId('decision-dialog')
-  fireEvent.click(within(dialog).getByLabelText(new RegExp(`^${option}`)))
+  // Confirming prepares an authorization on a recovery candidate and opens an internal review on any other signal.
+  const label = option === 'This is real' ? /^(Prepare authorization|Open internal review)/ : new RegExp(`^${option}`)
+  fireEvent.click(within(dialog).getByLabelText(label))
   fireEvent.click(within(dialog).getByRole('button', { name: 'Save decision' }))
   await waitFor(() => expect(screen.queryByTestId('decision-dialog')).not.toBeInTheDocument())
 }
@@ -224,7 +252,10 @@ describe('AuditApp', () => {
     const findings = sampleFindings()
     expect(findings.length).toBeGreaterThan(0)
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Overview')
-    expect(potentialValue()).toBe(formatCurrency(sumImpact(findings.filter(isClaim))))
+    // Ledger rows alone are review signals: flagged, never potential recovery.
+    expect(findings.some((f) => f.classification === 'recovery_candidate')).toBe(false)
+    expect(potentialValue()).toBe(formatCurrency(0))
+    expect(flaggedValue()).toBe(formatCurrency(sumFlagged(findings)))
     expect(findingsFact().findings).toBe(String(findings.length))
     expect(findingsFact().audits).toBe('1')
   })
@@ -238,11 +269,10 @@ describe('AuditApp', () => {
   // reported side by side and adding them would double-count the same
   // dollars, so their sum must never appear on the screen as a figure.
   it('reports potential, verified, in-recovery and recovered separately and never as one summed total', async () => {
-    await runSampleFromLaunch()
-
-    const findings = sampleFindings()
-    const potential = sumClaims(findings)
-    const verified = sumImpact(findings.filter((finding) => finding.class === 'recoverable'))
+    const { amount } = await openAttestedCase()
+    goToMode('Overview')
+    const potential = amount
+    const verified = amount
     expect(verified).toBeGreaterThan(0)
 
     expect(potentialValue()).toBe(formatCurrency(potential))
@@ -298,15 +328,7 @@ describe('AuditApp', () => {
   })
 
   it('a decision on a case survives a remount and is picked up by Recoveries', async () => {
-    seedPersistedLedger()
-    setLocation('/audit')
-    render(<AuditApp />)
-    await waitFor(DASHBOARD_READY)
-
-    const [topRow] = dashboardRows()
-    const vendor = rowVendor(topRow)
-    fireEvent.click(topRow)
-    await waitFor(() => expect(screen.getByRole('heading', { name: 'Evidence' })).toBeInTheDocument())
+    const { vendor } = await openAttestedCase()
 
     await decide('This is real')
     await waitFor(() => expect(screen.getAllByText('Confirmed').length).toBeGreaterThan(0))
@@ -323,12 +345,7 @@ describe('AuditApp', () => {
   })
 
   it('walks a case through the whole recovery ladder and moves the money onto the Recovered rung', async () => {
-    await runSampleFromLaunch()
-
-    const [topRow] = dashboardRows()
-    const value = rowMoney(topRow)
-    fireEvent.click(topRow)
-    await waitFor(() => expect(screen.getByRole('heading', { name: 'Evidence' })).toBeInTheDocument())
+    const { value } = await openAttestedCase()
 
     await decide('This is real')
     await approveAndSend()
@@ -342,22 +359,20 @@ describe('AuditApp', () => {
   })
 
   it('a recovered case leaves open flagged value and Verified, so returned money is not still shown as open', async () => {
-    await runSampleFromLaunch()
+    const { value, amount, finding } = await openAttestedCase()
+    goToMode('Overview')
     const potentialBefore = potentialValue()
     const verifiedBefore = stageValue('Verified')
-
-    const [topRow] = dashboardRows()
-    const value = rowMoney(topRow)
-    const impact = sampleFindings().find((f) => formatCurrency(f.dollarImpact) === value)!.dollarImpact
-    fireEvent.click(topRow)
+    cleanup()
+    await openCase(finding.id)
     await decide('This is real')
     await approveAndSend()
     await recordSettled()
 
     goToMode('Overview')
-    expect(potentialBefore).toBe(formatCurrency(sumImpact(sampleFindings().filter(isClaim))))
-    expect(potentialValue()).toBe(formatCurrency(sumImpact(sampleFindings().filter(isClaim)) - impact))
-    expect(stageValue('Verified')).toBe(formatCurrency(sumImpact(sampleFindings().filter((f) => f.class === 'recoverable')) - impact))
+    expect(potentialBefore).toBe(formatCurrency(amount))
+    expect(potentialValue()).toBe(formatCurrency(0))
+    expect(stageValue('Verified')).toBe(formatCurrency(0))
     expect(verifiedBefore).not.toBe(stageValue('Verified'))
     expect(stageValue('Recovered')).toBe(value)
   })
@@ -372,7 +387,9 @@ describe('AuditApp', () => {
     await waitFor(() => expect(screen.getAllByText('Expected').length).toBeGreaterThan(0))
 
     goToMode('Overview')
-    expect(potentialValue()).toBe(formatCurrency(sumImpact(sampleFindings().filter(isClaim)) - impact))
+    const dismissed = sampleFindings().find((f) => formatCurrency(f.dollarImpact) === value)!
+    expect(potentialValue()).toBe(formatCurrency(0))
+    expect(flaggedValue()).toBe(formatCurrency(sumFlagged(sampleFindings()) - (dismissed.flaggedAmount ?? impact)))
     expect(findingsFact().findings).toBe(String(sampleFindings().length - 1))
     const causes = Array.from(document.querySelectorAll<HTMLElement>('.wk-bars-row[data-amount]')).map((n) => Number(n.dataset.amount))
     const dupTotal = sumImpact(sampleFindings().filter((f) => f.type === 'exact_duplicate')) - impact
@@ -380,10 +397,7 @@ describe('AuditApp', () => {
   })
 
   it('a decision can be changed until a request is sent, and an outcome can be reopened after', async () => {
-    await runSampleFromLaunch()
-    const [topRow] = dashboardRows()
-    const vendor = rowVendor(topRow)
-    fireEvent.click(topRow)
+    const { vendor } = await openAttestedCase()
 
     // wrong click: dismissed → change decision → confirm instead
     await decide('Not an issue')
@@ -409,11 +423,7 @@ describe('AuditApp', () => {
   })
 
   it('records a partial recovery: dashboard, reports, recoveries and the case summary all show what actually came back', async () => {
-    await runSampleFromLaunch()
-    const [topRow] = dashboardRows()
-    const value = rowMoney(topRow)
-    const impact = sampleFindings().find((f) => formatCurrency(f.dollarImpact) === value)!.dollarImpact
-    fireEvent.click(topRow)
+    const { value, amount: impact } = await openAttestedCase()
     await decide('This is real')
 
     // the request panel drafts a letter from the case and lets us pick the method
@@ -451,7 +461,7 @@ describe('AuditApp', () => {
     goToMode('Overview')
     expect(stageValue('Recovered')).toBe(formatCurrency(partial))
     expect(stageValue('In recovery')).toBe(formatCurrency(impact - partial))
-    expect(potentialValue()).toBe(formatCurrency(sumImpact(sampleFindings().filter(isClaim)) - partial))
+    expect(potentialValue()).toBe(formatCurrency(impact - partial))
     const returns = screen.getByRole('heading', { name: 'Latest money back' }).parentElement!
     expect(within(returns).getAllByRole('button')).toHaveLength(1)
     expect(returns).toHaveTextContent('part of the claim')
@@ -465,8 +475,7 @@ describe('AuditApp', () => {
   })
 
   it('rejects an invalid recovered amount and records nothing', async () => {
-    await runSampleFromLaunch()
-    fireEvent.click(dashboardRows()[0])
+    await openAttestedCase()
     await decide('This is real')
     const progress = await approveAndSend()
     fireEvent.click(within(progress).getByRole('tab', { name: 'Record money back' }))
@@ -485,11 +494,7 @@ describe('AuditApp', () => {
   })
 
   it('a partial recovery survives a full reload and re-login', async () => {
-    seedPersistedLedger()
-    setLocation('/audit')
-    render(<AuditApp />)
-    await waitFor(DASHBOARD_READY)
-    fireEvent.click(dashboardRows()[0])
+    await openAttestedCase()
     await decide('This is real')
     await approveAndSend()
     await recordSettled(12.34)
@@ -503,8 +508,7 @@ describe('AuditApp', () => {
   })
 
   it('requires an explicit prior-knowledge disclosure before approving vendor outreach', async () => {
-    await runSampleFromLaunch()
-    fireEvent.click(dashboardRows()[0])
+    await openAttestedCase()
     await decide('This is real')
     const panel = await screen.findByTestId('recovery-request')
     expect(within(panel).getByRole('button', { name: 'Approve recovery request' })).toBeDisabled()
@@ -521,8 +525,7 @@ describe('AuditApp', () => {
   })
 
   it('approves and sends in one step, and the history still shows the approval before the send', async () => {
-    await runSampleFromLaunch()
-    fireEvent.click(dashboardRows()[0])
+    await openAttestedCase()
     await decide('This is real')
     const panel = await screen.findByTestId('recovery-request')
     expect(within(panel).getByRole('button', { name: 'Approve and mark sent' })).toBeDisabled()
@@ -536,10 +539,7 @@ describe('AuditApp', () => {
   })
 
   it('reopens a closed remainder without removing its settled return from the dashboard', async () => {
-    await runSampleFromLaunch()
-    const [topRow] = dashboardRows()
-    const impact = Number(topRow.dataset.amount)
-    fireEvent.click(topRow)
+    const { amount: impact } = await openAttestedCase()
     await decide('This is real')
     await approveAndSend()
     await recordSettled(20)
@@ -555,22 +555,20 @@ describe('AuditApp', () => {
   })
 
   it('accepts a settlement on an older saved request that has no requested-amount field', async () => {
-    const environment = mergeImport(null, { sourceLabel: 'ledger.csv', mode: 'upload', parsed: getSampleLedger() })
-    const finding = environment.result.findings.find((row) => row.vendor === 'CloudPOS Software' && row.class === 'recoverable')!
+    const { environment, finding } = attestedEnvironment()
     const legacy = setCaseState(environment, finding.id, markRecoveryRequested(confirmCase(null)))
     createProject({ name: 'Legacy ledger', sourceLabel: 'ledger.csv', mode: 'upload', environment: legacy })
     setLocation('/audit')
     render(<AuditApp />)
     await waitFor(DASHBOARD_READY)
     goToMode('Recoveries')
-    fireEvent.click(screen.getAllByRole('button', { name: 'Open CloudPOS Software recovery case' })[0])
+    fireEvent.click(screen.getAllByRole('button', { name: `Open ${finding.vendor} recovery case` })[0])
     await recordSettled()
     expect(fact('Received')).toBe(formatCurrency(finding.dollarImpact))
   })
 
   it('copies and downloads the recovery request without sending anything', async () => {
-    await runSampleFromLaunch()
-    fireEvent.click(dashboardRows()[0])
+    await openAttestedCase()
     await decide('This is real')
     const panel = await screen.findByTestId('recovery-request')
     const writeText = vi.fn().mockResolvedValue(undefined)
@@ -595,26 +593,28 @@ describe('AuditApp', () => {
   })
 
   it('an edited letter is kept on the case, and "Draft with AI" degrades gracefully when the server has no key', async () => {
-    seedPersistedLedger()
-    setLocation('/audit')
-    render(<AuditApp />)
-    await waitFor(DASHBOARD_READY)
-    fireEvent.click(dashboardRows()[0])
+    await openAttestedCase()
     await decide('This is real')
     const panel = await screen.findByTestId('recovery-request')
     fireEvent.change(within(panel).getByLabelText('Message'), { target: { value: 'Hand-written request.' } })
+    // AI drafting needs the customer's authorization for this exact request first.
+    expect(within(panel).getByRole('button', { name: 'Draft with AI' })).toBeDisabled()
+    fireEvent.click(within(panel).getByLabelText('No, Reclaim surfaced it'))
+    fireEvent.click(within(panel).getByRole('button', { name: 'Approve recovery request' }))
+    await waitFor(() => expect(within(panel).getByRole('button', { name: 'Draft with AI' })).toBeEnabled())
     const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(null, { status: 503 }))
     fireEvent.click(within(panel).getByRole('button', { name: 'Draft with AI' }))
     await waitFor(() => expect(within(panel).getByRole('status')).toHaveTextContent('not configured'))
     expect(fetchMock).toHaveBeenCalledWith('/api/ai/draft', expect.objectContaining({ method: 'POST' }))
     const sent = JSON.parse((fetchMock.mock.calls[0][1] as RequestInit).body as string)
     expect(Object.keys(sent).sort()).toEqual(
-      ['amountFlagged', 'amountRequested', 'evidenceStrength', 'explanation', 'findingTitle', 'findingType', 'method', 'recoveryStage', 'rows', 'sender', 'userContext', 'vendor'].sort()
+      ['amountFlagged', 'amountRequested', 'evidenceStrength', 'explanation', 'findingId', 'findingTitle', 'findingType', 'method', 'projectId', 'recoveryStage', 'rows', 'sender', 'userContext', 'vendor'].sort()
     )
     expect(sent.rows.every((row: Record<string, unknown>) => !('bankAccountLast4' in row))).toBe(true)
     fetchMock.mockRestore()
     expect(within(panel).getByLabelText('Message')).toHaveValue('Hand-written request.')
-    await approveAndSend()
+    fireEvent.click(within(panel).getByRole('button', { name: 'Mark request sent' }))
+    await screen.findByTestId('recovery-progress')
     cleanup()
     render(<AuditApp />)
     await waitFor(() => expect(fact('Status')).toBe('Waiting on vendor'))
@@ -738,7 +738,8 @@ describe('AuditApp', () => {
     await waitFor(DASHBOARD_READY)
 
     const findings = sampleFindings()
-    expect(potentialValue()).toBe(formatCurrency(sumImpact(findings.filter(isClaim))))
+    expect(potentialValue()).toBe(formatCurrency(0))
+    expect(flaggedValue()).toBe(formatCurrency(sumFlagged(findings)))
     expect(findingsFact().findings).toBe(String(findings.length))
 
     // One import, not three: the record count is the sample's, not a multiple.

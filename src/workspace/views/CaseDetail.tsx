@@ -1,3 +1,5 @@
+import { evaluateEligibility, type RecoveryEvidence } from '@/recovery/eligibility'
+import { EvidencePanel } from './EvidencePanel'
 import { useState } from 'react'
 import { CalendarClock, CircleCheck, CircleHelp, CircleX, ListChecks, TriangleAlert } from 'lucide-react'
 import { formatCurrency, formatDate } from '@/lib/format'
@@ -17,10 +19,13 @@ import { InternalReviewPanel, METHOD_LABEL, RecoveryRequestPanel, type RequestPa
 import { RecoveryAccountingPanel, RecoveryProgressPanel } from './RecoveryJourney'
 import { KIND_LABEL, KindChip } from './KindChip'
 import { Strength } from './Strength'
-import { findingReference } from './findingText'
+import { findingReference, nextActionLabel } from './findingText'
 
 interface CaseDetailProps {
   finding: Finding
+  findings?: Finding[]
+  projectId?: string
+  onSaveEvidence?: (findingId: string, evidence: RecoveryEvidence) => void
   state: CaseState
   records: APRecord[]
   discoveredAt: number | null
@@ -176,7 +181,8 @@ function stepsDone(state: CaseState): boolean[] {
 
 /** §29 — what happened and the work in front of you, the decision and money alongside. */
 export function CaseDetail(props: CaseDetailProps) {
-  const { finding, state, records, discoveredAt, sender, onDecide, onMarkRequested, onRecordOutcome, onReopen, onReopenBalance, onApproveRecovery, onApproveAndSend, onContactHold, onVendorUpdate, onFollowUp, onVerifyRecovery, onCloseRecovery, onReconcileRecovery } = props
+  const { finding, findings = [], projectId, onSaveEvidence, state, records, discoveredAt, sender, onDecide, onMarkRequested, onRecordOutcome, onReopen, onReopenBalance, onApproveRecovery, onApproveAndSend, onContactHold, onVendorUpdate, onFollowUp, onVerifyRecovery, onCloseRecovery, onReconcileRecovery } = props
+  const gate = evaluateEligibility(finding, finding.evidence, findings)
   const entitlements = useEntitlements()
   const [deciding, setDeciding] = useState<DecisionValue | null>(null)
   const internal = finding.class !== 'recoverable'
@@ -237,10 +243,12 @@ export function CaseDetail(props: CaseDetailProps) {
     </ul>
   )
 
+  // Vendor outreach needs a passed evidence gate; internal reviews keep their note-to-team flow.
   const workPanel =
-    state.recoveryStage === 'confirmed' ? (
+    state.recoveryStage === 'confirmed' && (internal || (gate.eligible && !state.requiresRevalidation)) ? (
       <RecoveryRequestPanel
         key={finding.id}
+        projectId={projectId}
         finding={finding}
         state={state}
         sender={sender}
@@ -293,6 +301,10 @@ export function CaseDetail(props: CaseDetailProps) {
           </section>
 
           {workPanel ? <div className="wk-case-work" data-m="work">{workPanel}</div> : null}
+
+          {state.requiresRevalidation ? <p className="wk-field-hint" role="status">This existing recovery needs its evidence revalidated before any further outreach. Recorded returns stay preserved.</p> : null}
+
+          {onSaveEvidence ? <EvidencePanel key={`evidence-${finding.id}`} finding={finding} findings={findings} onSave={(evidence) => onSaveEvidence(finding.id, evidence)} /> : null}
 
           <Evidence finding={finding} />
 
@@ -362,7 +374,7 @@ export function CaseDetail(props: CaseDetailProps) {
             <div className="wk-panelcard-head">
               <div>
                 <h2 id="case-decision">{state.decision === null ? 'Your decision' : 'Decision'}</h2>
-                <p>{state.decision === null ? (internal ? 'This finding is reviewed inside your business.' : 'Nothing is sent to a vendor until you confirm.') : 'Recorded on this finding.'}</p>
+                <p>{state.decision === null ? <>Next: <strong>{nextActionLabel(finding, gate.eligible)}</strong>. {internal ? 'This signal is reviewed inside your business; it is not money owed until the evidence gate passes.' : 'Nothing is sent to a vendor until you authorize it.'}</> : 'Recorded on this finding.'}</p>
               </div>
             </div>
             <div className="wk-panelcard-body">

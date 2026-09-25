@@ -29,7 +29,7 @@ export const FINDING_TYPE_ORDER: FindingType[] = [
 ]
 
 export const CLASS_LABELS: Record<FindingClass, string> = {
-  recoverable: 'Likely recoverable',
-  review: 'Review',
-  opportunity: 'Opportunity',
+  recoverable: 'Recovery candidate',
+  review: 'Flagged for review',
+  opportunity: 'Future savings',
 }

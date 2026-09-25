@@ -10,6 +10,9 @@ import type { SenderProfile } from '@/lib/senderProfile'
  * over the ledger, no other vendors, no account data beyond the sign-off.
  */
 export interface DraftRequest {
+  /** Lookup ids: the server re-resolves and re-checks the case from its stored copy. */
+  projectId: string
+  findingId: string
   vendor: string
   findingType: string
   findingTitle: string
@@ -41,10 +44,12 @@ export interface DraftResponse {
 export function buildDraftRequest(
   finding: Finding,
   state: CaseState,
-  options: { amountRequested: number; method: RecoveryMethod; userContext: string; sender: SenderProfile }
+  options: { amountRequested: number; method: RecoveryMethod; userContext: string; sender: SenderProfile; projectId: string }
 ): DraftRequest {
   const iso = (d: Date | null) => (d ? d.toISOString().slice(0, 10) : null)
   return {
+    projectId: options.projectId,
+    findingId: finding.id,
     vendor: finding.vendor,
     findingType: FINDING_TYPE_LABELS[finding.type] ?? finding.type,
     findingTitle: finding.title,

@@ -26,7 +26,7 @@ export interface VendorStatusInfo {
 
 export const VENDOR_STATUS: Record<VendorUpdateStatus, VendorStatusInfo> = {
   acknowledged: { label: 'Acknowledged the request', caseStatus: null, progress: true, agreed: false, pending: false, clearsFollowUp: false, needsAction: false, amount: 'none' },
-  accepted: { label: 'Accepted the claim', caseStatus: 'Claim accepted', progress: true, agreed: true, pending: false, clearsFollowUp: false, needsAction: false, amount: 'optional' },
+  accepted: { label: 'Accepted the claim', caseStatus: 'Claim accepted', progress: true, agreed: true, pending: true, clearsFollowUp: false, needsAction: false, amount: 'optional' },
   partial_acceptance: { label: 'Accepted part of the claim', caseStatus: 'Partially accepted', progress: true, agreed: true, pending: false, clearsFollowUp: true, needsAction: true, amount: 'required' },
   promised: { label: 'Promised a refund or credit', caseStatus: 'Return promised', progress: true, agreed: true, pending: true, clearsFollowUp: false, needsAction: false, amount: 'optional' },
   credit_issued: { label: 'Issued a credit, not yet applied', caseStatus: 'Credit issued, unapplied', progress: true, agreed: true, pending: true, clearsFollowUp: false, needsAction: true, amount: 'optional' },

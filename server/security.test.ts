@@ -9,6 +9,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createApp, type App } from './app.ts'
+import { authorizedProject } from './testProject.ts'
 import { loadConfig, type ServerConfig } from './config.ts'
 import { openDatabase } from './db.ts'
 import { DevMailer } from './mailer.ts'
@@ -57,7 +58,7 @@ async function start(config: ServerConfig = baseConfig, extra: { staticDir?: str
   base = `http://127.0.0.1:${await app.listen(0)}`
 }
 
-async function account(input: typeof alice, plan: 'free' | 'growth' | 'flat' = 'free') {
+async function account(input: typeof alice, plan: 'free' | 'growth' | 'flat' = 'free', project?: { id: string }) {
   const c = new Client()
   await c.post('/api/auth/signup', input)
   // Tokens are stored hashed; the plaintext link is only in the (dev) mailbox.
@@ -65,6 +66,7 @@ async function account(input: typeof alice, plan: 'free' | 'growth' | 'flat' = '
   const verified = await c.post('/api/auth/verify-email', { token: new URL(mail.link).searchParams.get('token') })
   expect(verified.status).toBe(200)
   if (plan !== 'free') app.db.prepare('UPDATE users SET plan = ? WHERE email = ?').run(plan, input.email)
+  if (project) expect((await c.put(`/api/projects/${project.id}`, project)).status).toBe(200)
   return c
 }
 
@@ -296,7 +298,9 @@ describe('static files (production)', () => {
 })
 
 describe('AI drafting failures', () => {
+  const saved = authorizedProject('d1', { vendor: 'Acme', invoice: 'A-1', amount: 1200, requested: 1000 })
   const payload = {
+    projectId: 'd1', findingId: saved.findingId,
     vendor: 'Acme', findingType: 'Exact duplicate payment', findingTitle: 'Duplicate payment of invoice A-1', explanation: 'Paid twice.', evidenceStrength: 'strong',
     amountFlagged: 1200, amountRequested: 1000, method: 'refund', recoveryStage: 'confirmed',
     rows: [{ invoiceNumber: 'A-1', invoiceDate: '2025-01-01', paymentDate: '2025-01-05', invoiceAmount: 1200, amountPaid: 1200, terms: null }],
@@ -305,7 +309,7 @@ describe('AI drafting failures', () => {
 
   it('a model error becomes a clear, retryable 502 — never a 500 with details', async () => {
     await start(baseConfig, { drafts: { draft: vi.fn(async () => { throw new Error('upstream 529 overloaded: request_id=abc secret') }) } })
-    const c = await account(alice, 'growth')
+    const c = await account(alice, 'growth', saved.project)
     const res = await c.post('/api/ai/draft', payload)
     expect(res.status).toBe(502)
     expect(res.body.code).toBe('ai_failed')
@@ -314,7 +318,7 @@ describe('AI drafting failures', () => {
 
   it('a draft that states an amount the case data does not contain is refused', async () => {
     await start(baseConfig, { drafts: { draft: vi.fn(async () => ({ subject: 'Refund request', body: 'Please refund $12,000.00 for invoice A-1.' })) } })
-    const c = await account(alice, 'growth')
+    const c = await account(alice, 'growth', saved.project)
     const res = await c.post('/api/ai/draft', payload)
     expect(res.status).toBe(502)
     expect(res.body.code).toBe('ai_unsupported_amount')
@@ -323,7 +327,7 @@ describe('AI drafting failures', () => {
   it('a draft whose figures all come from the case is returned as-is', async () => {
     const body = 'We paid invoice A-1 ($1,200.00) twice. Please refund $1,000.00.'
     await start(baseConfig, { drafts: { draft: vi.fn(async () => ({ subject: 'Refund request — $1,000', body })) } })
-    const c = await account(alice, 'growth')
+    const c = await account(alice, 'growth', saved.project)
     const res = await c.post('/api/ai/draft', payload)
     expect(res.status).toBe(200)
     expect(res.body.body).toBe(body)
@@ -332,7 +336,7 @@ describe('AI drafting failures', () => {
   it('an amount requested above what was flagged is rejected before the model is called', async () => {
     const draft = vi.fn(async () => ({ subject: 's', body: 'b' }))
     await start(baseConfig, { drafts: { draft } })
-    const c = await account(alice, 'growth')
+    const c = await account(alice, 'growth', saved.project)
     const res = await c.post('/api/ai/draft', { ...payload, amountRequested: 5000 })
     expect(res.status).toBe(400)
     expect(draft).not.toHaveBeenCalled()

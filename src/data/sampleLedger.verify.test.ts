@@ -29,13 +29,16 @@ describe('sample ledger sanity check', () => {
     expect(records.length).toBeGreaterThanOrEqual(65)
     expect(records.length).toBeLessThanOrEqual(80)
     expect(vendors.size).toBe(12)
-    expect(result.recoverableTotal).toBe(11684)
+    // Ledger rows alone never make a recovery candidate; 11,684 is what the strongest rules flag for review.
+    expect(result.recoverableTotal).toBe(0)
+    expect(result.findings.filter((f) => f.ruleClass === 'recoverable').reduce((s, f) => s + (f.flaggedAmount ?? 0), 0)).toBe(11684)
     // Outlier excess is measured from the vendor's median payment (Cascade 996.50, Northwest Pastry 2,467.50).
-    expect(result.reviewTotal).toBe(10139)
-    expect(result.opportunityTotal).toBe(200)
-    expect(result.findings.filter((finding) => finding.class === 'recoverable')).toHaveLength(6)
-    expect(result.findings.filter((finding) => finding.class === 'review')).toHaveLength(7)
-    expect(result.findings.filter((finding) => finding.class === 'opportunity')).toHaveLength(3)
+    // Every ledger-only signal except missed discounts is a review signal, so the strong rules' 11,684 sits here too.
+    expect(result.reviewTotal).toBe(21639)
+    expect(result.opportunityTotal).toBe(384)
+    expect(result.findings.filter((finding) => finding.ruleClass === 'recoverable')).toHaveLength(6)
+    expect(result.findings.filter((finding) => finding.ruleClass === 'review')).toHaveLength(7)
+    expect(result.findings.filter((finding) => finding.ruleClass === 'opportunity')).toHaveLength(3)
     expect(result.findings.some((finding) => finding.type === 'exact_duplicate' && finding.dollarImpact === 6800)).toBe(true)
     expect(landingSamplePresentation.recordCount).toBe(records.length)
     expect(landingSamplePresentation.recoverableTotal).toBe(result.recoverableTotal)

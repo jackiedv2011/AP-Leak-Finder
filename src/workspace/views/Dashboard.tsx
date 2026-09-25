@@ -64,8 +64,8 @@ export function Dashboard({ env, visible, auditLabel, onOpenCase, onSeeAllFindin
   const inPlay = (o: Opportunity) => o.state.decision !== 'expected' && o.state.recoveryStage !== 'recovered' && o.state.recoveryStage !== 'not_recovered'
   // Undecided, or parked as "needs more detail": both are waiting on a person.
   const undecided = all.filter((o) => (o.state.decision === null || o.state.decision === 'needs_info') && inPlay(o))
-  const needsContext = all.filter((o) => o.finding.class === 'review' && inPlay(o) && o.state.recoveryStage === null)
-  const needsContextValue = needsContext.reduce((sum, o) => sum + o.finding.dollarImpact, 0)
+  const needsContext = all.filter((o) => o.finding.classification === 'review_needed' && inPlay(o) && o.state.recoveryStage === null)
+  const needsContextValue = needsContext.reduce((sum, o) => sum + (o.finding.flaggedAmount ?? o.finding.dollarImpact), 0)
   // The five worth the most attention, plus, on Free, the ones this plan can open,
   // so the list is honest about the big money and still gives you something to do.
   const top = undecided.slice(0, 5)
@@ -113,14 +113,14 @@ export function Dashboard({ env, visible, auditLabel, onOpenCase, onSeeAllFindin
     totals: () => (
       <section className="wk-totals" aria-label="Totals" key="totals">
         <button type="button" className="wk-total" data-total="ready" data-amount={l.verified} data-emphasis={l.verified > 0 || undefined} onClick={() => onSeeFindingsKind('recoverable')}>
-          <span className="wk-total-label"><span className="wk-label">Ready to claim</span><ArrowRight aria-hidden="true" /></span>
+          <span className="wk-total-label"><span className="wk-label">Recovery candidates</span><ArrowRight aria-hidden="true" /></span>
           <strong className="wk-total-value"><CountUp value={l.verified} format={money} /></strong>
-          <span className="wk-total-note">{l.counts.verified} {plural(l.counts.verified, 'finding')} the records support</span>
+          <span className="wk-total-note">{l.counts.verified} passed the evidence gate · USD only</span>
         </button>
         <button type="button" className="wk-total" data-total="review" data-amount={needsContextValue} onClick={() => onSeeFindingsKind('review')}>
-          <span className="wk-total-label"><span className="wk-label">Needs more context</span><ArrowRight aria-hidden="true" /></span>
+          <span className="wk-total-label"><span className="wk-label">Flagged for review</span><ArrowRight aria-hidden="true" /></span>
           <strong className="wk-total-value"><CountUp value={needsContextValue} format={money} /></strong>
-          <span className="wk-total-note">{needsContext.length} {plural(needsContext.length, 'finding')} to check against a PO or statement</span>
+          <span className="wk-total-note">{needsContext.length} {plural(needsContext.length, 'signal')} · flagged amount, not money owed</span>
         </button>
         <button type="button" className="wk-total" data-total="inRecovery" data-amount={l.inRecovery} data-empty={l.inRecovery === 0 || undefined} onClick={() => onNavigate('recoveries')}>
           <span className="wk-total-label"><span className="wk-label">In recovery</span><ArrowRight aria-hidden="true" /></span>
@@ -378,7 +378,7 @@ export function Dashboard({ env, visible, auditLabel, onOpenCase, onSeeAllFindin
   const totalsFirst = totalsShown && shown.indexOf('totals') <= Math.min(...[...mainIds, ...sideIds].map((id) => shown.indexOf(id)), Infinity)
 
   return (
-    <div className="wk-ov" data-potential={l.potential} data-open-findings={l.openCount}>
+    <div className="wk-ov" data-potential={l.potential} data-flagged={l.flagged} data-open-findings={l.openCount}>
       <header className="wk-head">
         <div className="wk-head-copy">
           <div className="wk-head-meta">
@@ -391,7 +391,7 @@ export function Dashboard({ env, visible, auditLabel, onOpenCase, onSeeAllFindin
           <p>
             {l.counts.potential === 0
               ? `Every check ran against ${auditLabel} and nothing is still open.`
-              : <>{l.counts.potential} recovery {plural(l.counts.potential, 'candidate')} worth {money(l.potential)} in {auditLabel}. {l.verified > 0 ? <>{money(l.verified)} of it is supported by the records and ready to claim.</> : null}</>}
+              : <>{l.counts.potential} recovery {plural(l.counts.potential, 'candidate')} worth {money(l.potential)} in {auditLabel}. {l.verified > 0 ? <>{money(l.verified)} of it passed the evidence gate and awaits your authorization.</> : null}</>}
           </p>
         </div>
         <div className="wk-head-actions">

@@ -1,7 +1,9 @@
+import { attestDuplicate } from '@/recovery/testEvidence'
+import { verifyRecovery } from '@/recovery/model'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { getSampleLedger } from '@/data/sampleLedger'
 import { mergeImport, serializeEnvironment, setCaseState } from '@/ledger/store'
-import { confirmCase, markRecoveryRequested, recordRecoveryOutcome } from '@/ledger/caseState'
+import { confirmCase, markRecoveryRequested } from '@/ledger/caseState'
 import { ladder } from '@/workspace/selectors'
 import {
   createProject,
@@ -14,7 +16,9 @@ import {
 } from '@/ledger/projects'
 
 function environment() {
-  return mergeImport(null, { sourceLabel: 'march-payments.csv', mode: 'upload', parsed: getSampleLedger() })
+  const env = mergeImport(null, { sourceLabel: 'march-payments.csv', mode: 'upload', parsed: getSampleLedger() })
+  env.result.findings = env.result.findings.map(f => f.type === 'exact_duplicate' ? attestDuplicate(f) : f)
+  return env
 }
 
 describe('local ledger projects', () => {
@@ -31,8 +35,8 @@ describe('local ledger projects', () => {
   it('every recovery field survives save → reload, and the dashboard figures come back identical', () => {
     let env = environment()
     const [first, second] = env.result.findings.filter((f) => f.class === 'recoverable')
-    env = setCaseState(env, first.id, recordRecoveryOutcome(markRecoveryRequested(confirmCase('yes')), 'recovered', 123.45, 'CM-9'))
-    env = setCaseState(env, second.id, markRecoveryRequested(confirmCase(null)))
+    env = setCaseState(env, first.id, { ...verifyRecovery(markRecoveryRequested({ ...confirmCase('yes'), approvedAt: 100 }, 123.45), { amount: 123.45, method: 'refund', source: 'bank', reference: 'CM-9', settledAt: 500 }), recoveryOutcomeNote: 'CM-9' })
+    env = setCaseState(env, second.id, markRecoveryRequested({ ...confirmCase(null), approvedAt: 100 }, second.dollarImpact))
     const project = createProject({ name: 'March', sourceLabel: 'march.csv', mode: 'upload', environment: env })
     const before = ladder(env)
 

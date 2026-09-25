@@ -139,7 +139,8 @@ describe('accounts, data isolation and persistence', () => {
     fireEvent.click(document.querySelectorAll('.wk-queue-row:not([data-locked])')[0])
     fireEvent.click(await screen.findByRole('button', { name: /^This is real/ }))
     const dialog = await screen.findByTestId('decision-dialog')
-    fireEvent.click(within(dialog).getByLabelText(/^This is real/))
+    // A ledger-only signal opens an internal review; only an evidenced candidate prepares an authorization.
+    fireEvent.click(within(dialog).getByLabelText(/^(Prepare authorization|Open internal review)/))
     fireEvent.click(within(dialog).getByRole('button', { name: 'Save decision' }))
     await waitFor(() => expect(screen.getAllByText('Confirmed').length).toBeGreaterThan(0))
     await waitFor(() => expect(projectSync.pending).toBe(0))

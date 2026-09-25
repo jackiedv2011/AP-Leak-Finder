@@ -24,6 +24,7 @@ import {
   mergeImport,
   setCaseState,
   getCaseState,
+  recordEvidence,
   acknowledgeNewFindings,
   type LedgerEnvironment,
   type MergeImportInput,
@@ -58,6 +59,7 @@ import {
   type VendorUpdate,
 } from '@/ledger/caseState'
 import { approveRecovery, closeWithoutRecovery, recordVendorUpdate, reconcileRecovery, reopenRemainingBalance, setContactHold, setNextFollowUp, startRecoveryRequest, verifyRecovery } from '@/recovery/model'
+import { assertRecoveryEligible, type RecoveryEvidence } from '@/recovery/eligibility'
 import { useEntitlements, useOptionalAuth } from '@/lib/auth/AuthContext'
 import { Locked } from '@/components/plan/Locked'
 import { OnboardingTour } from '@/components/tutorial/OnboardingTour'
@@ -322,8 +324,37 @@ export function AuditApp() {
     [persistCaseState]
   )
 
+  // Vendor-facing steps on a recovery candidate re-check the evidence gate here,
+  // so a stale screen can never approve or send an ineligible request.
+  const recoveryBlocked = useCallback((findingId: string, requestedAmount: number) => {
+    const findings = environmentRef.current?.result.findings ?? []
+    const finding = findings.find((row) => row.id === findingId)
+    if (!finding || finding.class !== 'recoverable') return false
+    try {
+      assertRecoveryEligible(finding, findings, requestedAmount)
+      return false
+    } catch {
+      return true
+    }
+  }, [])
+
+  const handleSaveEvidence = useCallback((findingId: string, evidence: RecoveryEvidence) => {
+    const env = environmentRef.current
+    if (!env) return
+    const next = recordEvidence(env, findingId, evidence)
+    const currentProject = projectRef.current
+    if (currentProject) {
+      const saved = saveProject({ ...currentProject, environment: next })
+      projectRef.current = saved
+      setProject(saved)
+      refreshProjects()
+    }
+    setEnvironment(next)
+  }, [refreshProjects])
+
   const handleMarkRequested = useCallback(
     (findingId: string, pkg: RequestPackage) => {
+      if (recoveryBlocked(findingId, pkg.requestedAmount)) return
       persistCaseState(findingId, (current) => {
         const finding = environmentRef.current?.result.findings.find((row) => row.id === findingId)
         if (finding?.class !== 'recoverable') return markRecoveryRequested(updateRecoveryPackage(current, { subject: pkg.subject, body: pkg.body, requestedResolution: pkg.method }), finding ? Math.min(pkg.requestedAmount, finding.dollarImpact) : pkg.requestedAmount)
@@ -331,21 +362,23 @@ export function AuditApp() {
         return startRecoveryRequest(current, pkg.requestedAmount, Date.now(), finding?.dollarImpact)
       })
     },
-    [persistCaseState]
+    [persistCaseState, recoveryBlocked]
   )
 
   const handleApproveRecovery = useCallback((findingId: string, pkg: RequestPackage, knownBeforeReclaim: boolean, knownBeforeNote: string | null) => {
+    if (recoveryBlocked(findingId, pkg.requestedAmount)) return
     persistCaseState(findingId, (current) => approveRecovery(updateRecoveryPackage(current, { subject: pkg.subject, body: pkg.body, recipientEmail: pkg.recipientEmail, requestedResolution: pkg.method, requestedAmount: pkg.requestedAmount }), { knownBeforeReclaim, knownBeforeNote }))
-  }, [persistCaseState])
+  }, [persistCaseState, recoveryBlocked])
 
   // For a team where the approver is also the sender: one step, one save, and
   // the history still shows the approval before the request.
   const handleApproveAndSend = useCallback((findingId: string, pkg: RequestPackage, knownBeforeReclaim: boolean, knownBeforeNote: string | null) => {
+    if (recoveryBlocked(findingId, pkg.requestedAmount)) return
     persistCaseState(findingId, (current) => {
       const approved = approveRecovery(updateRecoveryPackage(current, { subject: pkg.subject, body: pkg.body, recipientEmail: pkg.recipientEmail, requestedResolution: pkg.method, requestedAmount: pkg.requestedAmount }), { knownBeforeReclaim, knownBeforeNote })
       return startRecoveryRequest(approved, pkg.requestedAmount)
     })
-  }, [persistCaseState])
+  }, [persistCaseState, recoveryBlocked])
 
   const handleContactHold = useCallback((findingId: string, reason: string | null) => {
     persistCaseState(findingId, (current) => setContactHold(current, reason))
@@ -605,6 +638,9 @@ export function AuditApp() {
         ) : activeFinding && activeCase ? (
             <CaseDetail
               finding={activeFinding}
+              findings={environment.result.findings}
+              projectId={project?.id}
+              onSaveEvidence={handleSaveEvidence}
               state={activeCase.state}
               records={environment.records}
               discoveredAt={activeDiscoveredAt}

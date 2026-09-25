@@ -7,6 +7,9 @@ import { z } from 'zod'
  * in so a client cannot smuggle anything else through the endpoint.
  */
 export const DraftRequestSchema = z.object({
+  /** Which saved case this is. The server resolves the facts it trusts from the account's own copy. */
+  projectId: z.string().regex(/^[\w-]+$/).max(100),
+  findingId: z.string().min(1).max(300),
   vendor: z.string().min(1).max(200),
   findingType: z.string().min(1).max(100),
   findingTitle: z.string().min(1).max(300),
@@ -35,6 +38,8 @@ export const DraftRequestSchema = z.object({
   message: 'The amount requested cannot be more than the records support.',
 })
 export type DraftRequest = z.infer<typeof DraftRequestSchema>
+/** What the model is actually given: the request minus the lookup ids. */
+export type DraftFacts = Omit<DraftRequest, 'projectId' | 'findingId'>
 
 /** Why a draft could not be produced. The message is safe to show; upstream details never are. */
 export class DraftError extends Error {
@@ -56,7 +61,7 @@ function centsIn(text: string): number[] {
  * The model writes prose; it never gets to introduce a number a vendor will be
  * asked to pay. Returns the figures that are not supported.
  */
-export function unsupportedAmounts(draft: Draft, request: DraftRequest): number[] {
+export function unsupportedAmounts(draft: Draft, request: DraftFacts): number[] {
   const allowed = new Set<number>()
   const add = (n: number | null) => {
     if (n !== null) allowed.add(Math.round(Math.abs(n) * 100))
@@ -92,7 +97,7 @@ Rules you must follow:
 Return the subject line and the email body.`
 
 export interface DraftService {
-  draft(request: DraftRequest): Promise<Draft>
+  draft(request: DraftFacts): Promise<Draft>
 }
 
 export function createDraftService(apiKey: string, model: string): DraftService {

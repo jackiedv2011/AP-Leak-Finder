@@ -1,7 +1,8 @@
 import Papa from 'papaparse'
-import type { APRecord, ParseResult } from '@/types'
-import { parseCurrency, parseDate } from '@/lib/format'
+import type { APRecord, ParseResult, ImportRowResult } from '@/types'
+import { parseCurrency, parseDate, normalizeVendor } from '@/lib/format'
 import { resolveVendors } from '@/lib/vendorResolution'
+import { checksum, normalizeReference, vendorTransformations, recordIdentity } from './sourceIdentity'
 
 /** Header spellings seen in QuickBooks, Xero, Bill and hand-built AP exports, after normalizeHeader. */
 const COLUMN_ALIASES: Record<string, string> = {
@@ -45,6 +46,16 @@ const COLUMN_ALIASES: Record<string, string> = {
   account_last4: 'bank_account_last4',
   category: 'category',
   gl_category: 'category',
+  currency: 'currency',
+  currency_code: 'currency',
+  transaction_id: 'transaction_id',
+  payment_id: 'transaction_id',
+  external_transaction_id: 'transaction_id',
+  company: 'company',
+  company_id: 'company',
+  source_account: 'source_account',
+  source_system_account: 'source_account',
+  transaction_type: 'transaction_type',
 }
 
 const CANONICAL_COLUMNS = new Set(Object.values(COLUMN_ALIASES))
@@ -74,6 +85,7 @@ export function parseCsv(csvText: string): ParseResult {
   })
 
   const records: APRecord[] = []
+  const rowResults: ImportRowResult[] = []
   let skippedCount = 0
 
   parsed.data.forEach((row, index) => {
@@ -86,10 +98,24 @@ export function parseCsv(csvText: string): ParseResult {
 
     if (!vendor || !paymentDate || amountPaid === null) {
       skippedCount += 1
+      rowResults.push({ rowNumber: index + 2, status: 'rejected', reason: 'Vendor, valid payment date and payment amount are required.', raw: { ...row } })
       return
     }
-
+    const reference = normalizeReference(row.invoice_number ?? null)
+    const currency = cellOrNull(row.currency)?.toUpperCase() ?? null
     records.push({
+      source: {
+        schemaVersion: 2, rawAvailable: true, raw: { ...row },
+        parsed: { vendor, invoiceReference: cellOrNull(row.invoice_number), paymentDate: paymentDate.toISOString(), amountPaid, invoiceAmount: parseCurrency(cellOrNull(row.invoice_amount)), currency },
+        normalized: { vendor: normalizeVendor(vendor), invoiceReference: reference.value },
+        transformations: { vendor: vendorTransformations(row.vendor), invoiceReference: reference.transformations, amountPaid: amountPaidRaw !== String(amountPaid) ? ['parse_amount'] : [], paymentDate: ['parse_date'], currency: currency !== (row.currency ?? null) ? ['trim_and_uppercase'] : [] },
+        filename: null, rowNumber: index + 2, batchId: '',
+      },
+      currency,
+      externalTransactionId: cellOrNull(row.transaction_id),
+      company: cellOrNull(row.company),
+      sourceAccount: cellOrNull(row.source_account),
+      transactionType: cellOrNull(row.transaction_type),
       // Placeholder identity — the ledger store assigns the real global id
       // and importBatchId when this record is merged into the environment.
       id: `pending:${index}`,
@@ -111,12 +137,19 @@ export function parseCsv(csvText: string): ParseResult {
     records.map((r) => ({ vendor: r.vendor, bankAccountLast4: r.bankAccountLast4 }))
   )
   for (const record of records) {
-    record.vendor = vendorResolution.resolveVendorName(record.vendor)
+    // The display vendor is the resolved group name; the original spelling stays in source.raw.
+    const resolved = vendorResolution.resolveVendorName(record.vendor)
+    const canonical = normalizeVendor(resolved)
+    record.canonicalVendorId = `vendor_${checksum(canonical)}`
+    if (canonical !== record.source!.normalized.vendor) record.source!.transformations.vendor.push('suggested_fuzzy_vendor_group')
+    record.vendor = resolved
+    record.identityKey = recordIdentity(record)
+    record.rowFingerprint = checksum(record.identityKey)
   }
 
   const fields = parsed.meta.fields ?? []
   const detectedColumns = fields.filter((f) => CANONICAL_COLUMNS.has(f))
   const unrecognizedHeaders = fields.filter((f) => !CANONICAL_COLUMNS.has(f))
 
-  return { records, skippedCount, detectedColumns, unrecognizedHeaders }
+  return { records, skippedCount, detectedColumns, unrecognizedHeaders, schemaVersion: 2, fileChecksum: checksum(csvText), rowResults }
 }
