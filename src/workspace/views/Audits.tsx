@@ -2,6 +2,7 @@ import { Plus, Sparkles, Upload, Search, Banknote } from 'lucide-react'
 import { useEntitlements } from '@/lib/auth/AuthContext'
 import { formatCurrency, plural } from '@/lib/format'
 import { overviewSummary } from '@/ledger/views'
+import { ladder } from '../selectors'
 import { assessRecordReadiness } from '@/audit/dataReadiness'
 import type { LedgerEnvironment } from '@/ledger/store'
 import type { LedgerProjectSummary } from '@/ledger/projects'
@@ -35,8 +36,8 @@ export function Audits({
   onRunSample,
 }: AuditsProps) {
   const s = overviewSummary(env)
+  const l = ladder(env)
   const entitlements = useEntitlements()
-  const limit = entitlements.limits.auditsPerMonth
   const readiness = assessRecordReadiness(
     env.records,
     s.skippedCount,
@@ -88,9 +89,9 @@ export function Audits({
               Try the sample ledger
             </button>
             <span className="wk-dim" style={{ fontSize: 12.5, marginLeft: 'auto' }} data-testid="audit-usage">
-              {limit === null
-                ? 'Unlimited audits on Pro'
-                : `${entitlements.usage.auditsThisMonth} of ${limit} audits used this month on Free`}
+              {entitlements.limits.blocksRepeatUploads
+                ? `Unlimited uploads on Free · the ${entitlements.limits.findingsVisible} lowest-value findings of each · one audit per ledger`
+                : 'Unlimited uploads and re-audits · every finding'}
             </span>
           </div>
         </div>
@@ -116,7 +117,7 @@ export function Audits({
                   <th>Records</th>
                   <th>Open findings</th>
                   <th>Last updated</th>
-                  <th className="wk-right">Open flagged value</th>
+                  <th className="wk-right">Potential recovery</th>
                 </tr>
               </thead>
               <tbody>
@@ -132,9 +133,9 @@ export function Audits({
                       <div className="wk-table-sub">Demo data — not saved to your account</div>
                     </td>
                     <td className="wk-num">{s.recordCount}</td>
-                    <td className="wk-num">{s.readyToVerifyCount + s.needsContextCount + s.worthNotingCount}</td>
+                    <td className="wk-num">{l.openCount}</td>
                     <td className="wk-dim">Now</td>
-                    <td className="wk-right wk-table-money">{formatCurrency(s.worthInvestigatingTotal)}</td>
+                    <td className="wk-right wk-table-money">{formatCurrency(l.potential)}</td>
                   </tr>
                 ) : null}
                 {projects.map((p) => {

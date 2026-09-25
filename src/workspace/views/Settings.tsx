@@ -5,20 +5,38 @@ import { TERMS_VERSION } from '@/legal/terms'
 import { Facts } from './Reports'
 import { useState } from 'react'
 import { UpgradeDialog } from '@/components/plan/UpgradeDialog'
-import { PLAN_FEATURES, PLAN_LABEL, PLAN_PRICE_USD } from '@/lib/plans'
+import { PLANS, PLAN_LABEL, PLAN_PITCH, PLAN_SUCCESS_FEE, planOf, successFee } from '@/lib/plans'
+import { formatCurrency } from '@/lib/format'
+import { ladder } from '../selectors'
+import type { ResolvedTheme, ThemeChoice } from '@/workspace/theme'
 
 function when(ts: number | null): string {
   if (!ts) return '—'
   return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(new Date(ts))
 }
 
-/** Account, legal, and the one destructive action — deliberately small. */
-export function SettingsView({ env, onClear, onShowTour }: { env: LedgerEnvironment; onClear: () => void; onShowTour?: () => void }) {
+const THEME_OPTIONS: Array<{ value: ThemeChoice; label: string }> = [
+  { value: 'light', label: 'Light' },
+  { value: 'system', label: 'System' },
+  { value: 'dark', label: 'Dark' },
+]
+
+interface SettingsViewProps {
+  env: LedgerEnvironment
+  onClear: () => void
+  onShowTour?: () => void
+  theme: ThemeChoice
+  resolvedTheme: ResolvedTheme
+  onThemeChange: (choice: ThemeChoice) => void
+}
+
+/** Account, appearance, legal, and the one destructive action — deliberately small. */
+export function SettingsView({ env, onClear, onShowTour, theme, resolvedTheme, onThemeChange }: SettingsViewProps) {
   const s = overviewSummary(env)
   const auth = useOptionalAuth()
   const user = auth?.user ?? null
-  const entitlements = auth?.entitlements ?? null
-  const plan = user && !user.isGuest ? user.plan ?? 'free' : 'free'
+  const plan = user && !user.isGuest ? planOf(user.plan) : 'free'
+  const recovered = ladder(env).recovered
   const [upgradeOpen, setUpgradeOpen] = useState(false)
   const devPlanSwitch = auth?.providers?.devMailbox && user && !user.isGuest
 
@@ -57,18 +75,19 @@ export function SettingsView({ env, onClear, onShowTour }: { env: LedgerEnvironm
           <div style={{ display: 'flex', justifyContent: 'space-between', gap: 24, flexWrap: 'wrap', alignItems: 'flex-start' }}>
             <div style={{ maxWidth: 560 }}>
               <p style={{ fontSize: 15, fontWeight: 500 }}>
-                {PLAN_LABEL[plan]} · {PLAN_PRICE_USD[plan] === 0 ? '$0' : `$${PLAN_PRICE_USD[plan]}`} a month
+                {PLAN_LABEL[plan]} · {PLAN_PITCH[plan].price}
               </p>
-              <p className="wk-dim" style={{ marginTop: 4, fontSize: 13 }}>
-                {plan === 'pro'
-                  ? 'Unlimited audits, every finding, AI drafts, full letters, partial recoveries and the every-vendor report.'
-                  : entitlements
-                    ? `${entitlements.usage.auditsThisMonth} of ${entitlements.limits.auditsPerMonth} audits used this month. The ${entitlements.limits.findingsVisible} lowest-value findings per audit are shown in full.`
-                    : 'The core checks, recovery tracking and basic reports.'}
-              </p>
+              <p className="wk-dim" style={{ marginTop: 4, fontSize: 13 }}>{PLAN_PITCH[plan].summary}</p>
+              <p className="wk-table-sub" style={{ marginTop: 8 }}>{PLAN_PITCH[plan].note}</p>
+              {PLAN_SUCCESS_FEE[plan] > 0 ? (
+                <p style={{ marginTop: 10, fontSize: 13.5 }} data-testid="success-fee">
+                  Success fee on this audit so far: <span className="wk-num">{formatCurrency(successFee(plan, recovered))}</span>{' '}
+                  <span className="wk-dim">({PLAN_SUCCESS_FEE[plan] * 100}% of {formatCurrency(recovered)} recorded as returned)</span>
+                </p>
+              ) : null}
               {plan === 'free' ? (
                 <ul className="wk-plan-features" style={{ marginTop: 12 }}>
-                  {PLAN_FEATURES.pro.slice(1, 5).map((f) => (
+                  {PLAN_PITCH.growth.features.slice(0, 4).map((f) => (
                     <li key={f}>
                       <span aria-hidden="true" style={{ color: 'var(--accent-ink)' }}>
                         +
@@ -80,30 +99,46 @@ export function SettingsView({ env, onClear, onShowTour }: { env: LedgerEnvironm
               ) : null}
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'flex-start' }}>
-              {plan === 'free' ? (
-                <button type="button" className="wk-btn" data-variant="primary" onClick={() => setUpgradeOpen(true)}>
-                  See Pro
-                </button>
-              ) : null}
+              <button type="button" className="wk-btn" data-variant={plan === 'free' ? 'primary' : 'outline'} onClick={() => setUpgradeOpen(true)}>
+                {plan === 'free' ? 'See Growth and Flat' : 'Compare plans'}
+              </button>
               {devPlanSwitch ? (
                 <button
                   type="button"
                   className="wk-btn"
                   data-variant="ghost"
                   data-size="sm"
-                  onClick={() => void auth?.setDevPlan(plan === 'pro' ? 'free' : 'pro')}
+                  onClick={() => void auth?.setDevPlan(PLANS[(PLANS.indexOf(plan) + 1) % PLANS.length])}
                   title="Development only"
                 >
-                  Dev: switch to {plan === 'pro' ? 'Free' : 'Pro'}
+                  Dev: switch to {PLAN_LABEL[PLANS[(PLANS.indexOf(plan) + 1) % PLANS.length]]}
                 </button>
               ) : null}
             </div>
           </div>
           <p className="wk-dim" style={{ marginTop: 14, fontSize: 12.5 }}>
-            Payments aren&apos;t open yet — upgrading is coming soon, and nothing is charged today.
+            Payments aren&apos;t open yet — paid plans are coming soon, and nothing is charged today.
           </p>
         </div>
         <UpgradeDialog open={upgradeOpen} onOpenChange={setUpgradeOpen} />
+      </section>
+
+      <section className="wk-section">
+        <h2 className="wk-display wk-h2">Appearance</h2>
+        <div className="wk-card">
+          <div className="wk-seg" data-active={THEME_OPTIONS.findIndex((option) => option.value === theme)} role="radiogroup" aria-label="Appearance">
+            <span className="wk-seg-thumb" aria-hidden="true" />
+            {THEME_OPTIONS.map((option) => (
+              <label key={option.value} className="wk-seg-option">
+                <input type="radio" name="reclaim-appearance" value={option.value} checked={theme === option.value} onChange={() => onThemeChange(option.value)} />
+                <span>{option.label}</span>
+              </label>
+            ))}
+          </div>
+          <p className="wk-dim" style={{ marginTop: 14, fontSize: 13 }}>
+            {theme === 'system' ? `Following your device, which is set to ${resolvedTheme}.` : `Pinned to ${theme}, whatever your device is set to.`}
+          </p>
+        </div>
       </section>
 
       <section className="wk-section">

@@ -43,8 +43,20 @@ function reviveRecord(raw: Record<string, unknown>): APRecord {
   } as APRecord
 }
 
+/**
+ * Findings reference their rows by id only: the rows are already in
+ * `records`, and embedding full copies roughly doubled what a large ledger
+ * wrote to storage. deserializeEnvironment re-links them (and still accepts
+ * the older, embedded form).
+ */
 export function serializeEnvironment(env: LedgerEnvironment): string {
-  return JSON.stringify(env)
+  return JSON.stringify({
+    ...env,
+    result: {
+      ...env.result,
+      findings: env.result.findings.map((f) => ({ ...f, relatedRecords: f.relatedRecords.map((r) => ({ id: r.id })) })),
+    },
+  })
 }
 
 export function deserializeEnvironment(json: string): LedgerEnvironment {

@@ -22,6 +22,7 @@ const VerifyEmailPage = lazy(() =>
 )
 const PrivacyPage = lazy(() => import('@/pages/PrivacyPage').then((module) => ({ default: module.PrivacyPage })))
 const TermsPage = lazy(() => import('@/pages/TermsPage').then((module) => ({ default: module.TermsPage })))
+const CheckoutPage = lazy(() => import('@/pages/CheckoutPage').then((module) => ({ default: module.CheckoutPage })))
 
 function Redirect({ to }: { to: string }) {
   useEffect(() => {
@@ -88,6 +89,7 @@ const ROUTES: Record<string, () => ReactElement> = {
   '/reset-password': () => <ResetPasswordPage />,
   '/privacy': () => <PrivacyPage />,
   '/terms': () => <TermsPage />,
+  '/checkout': () => <CheckoutPage />,
 }
 
 function App() {

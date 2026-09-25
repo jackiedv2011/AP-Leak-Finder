@@ -20,7 +20,7 @@ export interface ServerConfig {
   /** AI drafting (Phase 2C). The key never leaves the server. */
   anthropicApiKey: string | null
   anthropicModel: string
-  /** Exposes /api/dev/mailbox. Never true in production. */
+  /** Exposes /api/dev/mailbox and /api/dev/plan. Never true in production; on by default only for a localhost origin. */
   devMailbox: boolean
 }
 
@@ -45,6 +45,19 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): ServerConfig {
     resend,
     anthropicApiKey: env.ANTHROPIC_API_KEY ?? null,
     anthropicModel: env.ANTHROPIC_MODEL ?? 'claude-opus-5',
-    devMailbox: !production && env.DEV_MAILBOX !== 'false',
+    // The dev mailbox serves every verification and password-reset link to
+    // anyone who asks, so it only switches itself on for a machine-local
+    // origin. A staging box started without NODE_ENV=production must not
+    // become an account-takeover endpoint; DEV_MAILBOX=true opts in explicitly.
+    devMailbox: !production && (env.DEV_MAILBOX === 'true' || (env.DEV_MAILBOX !== 'false' && isLocalOrigin(appOrigin))),
+  }
+}
+
+function isLocalOrigin(origin: string): boolean {
+  try {
+    const host = new URL(origin).hostname
+    return host === 'localhost' || host === '127.0.0.1' || host === '[::1]' || host.endsWith('.localhost')
+  } catch {
+    return false
   }
 }

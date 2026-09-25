@@ -81,7 +81,7 @@ export function landingSitePlugin(): Plugin {
         cpSync(join(LANDING_ROOT, entry.name), join(distRoot, entry.name), { recursive: true, force: true })
       }
 
-      for (const route of ['audit', 'scanner', 'login', 'signup', 'forgot-password', 'reset-password', 'privacy', 'terms']) {
+      for (const route of ['audit', 'scanner', 'login', 'signup', 'forgot-password', 'reset-password', 'privacy', 'terms', 'checkout', 'verify-email']) {
         const routeDir = join(distRoot, route)
         mkdirSync(routeDir, { recursive: true })
         writeFileSync(join(routeDir, 'index.html'), reactIndex)

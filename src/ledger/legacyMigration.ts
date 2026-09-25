@@ -27,13 +27,17 @@ export function legacyProjectsPresent(): LegacySummary | null {
 }
 
 /** Upload the legacy audits into the signed-in account (ids preserved; the server skips any it already has), then remove the bare copies. */
-export async function importLegacyProjects(): Promise<{ imported: number; skipped: number }> {
+export async function importLegacyProjects(): Promise<{ imported: number; skipped: number; blocked: number }> {
   const legacy = listLegacyProjects()
   const result = await projectSync.import(legacy.map(toStorable))
   const projects = await projectSync.pull()
   replaceLocalProjects(projects.map(fromStorable))
-  removeLegacyProjects()
-  return { imported: result.imported.length, skipped: result.skipped.length }
+  // Only drop the local copies the server now holds. Anything the plan's limit
+  // blocked stays in this browser so nothing is lost; it is offered again later.
+  const blocked = result.blocked ?? []
+  if (blocked.length === 0) removeLegacyProjects()
+  else removeLegacyProjects([...result.imported, ...result.skipped])
+  return { imported: result.imported.length, skipped: result.skipped.length, blocked: blocked.length }
 }
 
 /** Ask again next session; nothing is touched. */

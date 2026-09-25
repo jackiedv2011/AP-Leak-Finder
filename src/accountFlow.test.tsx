@@ -14,6 +14,8 @@ import { projectSync } from '@/ledger/projectSync'
 import { setStorageScope } from '@/lib/storageScope'
 import { startLiveServer, type LiveServer } from '@/test/liveServer'
 import type { AuthUser } from '@/lib/auth/types'
+import { detectFindings } from '@/lib/detection'
+import { formatCurrency } from '@/lib/format'
 
 let live: LiveServer
 
@@ -278,43 +280,58 @@ describe('first-run tour and plans', () => {
     fireEvent.click(within(nav).getByRole('button', { name: /^Findings/ }))
     await screen.findByRole('heading', { name: 'All findings' })
     expect(unlocked()).toHaveLength(3)
-    const cheapest = values().map((v) => Number(v.replace(/[$,]/g, '')))
-    const lockedValues = [...document.querySelectorAll('.wk-locked .wk-table-money')].map((n) => Number(n.textContent!.replace(/[$,]/g, '')))
-    expect(Math.max(...cheapest)).toBeLessThanOrEqual(Math.min(...lockedValues))
+    // The three shown are exactly the three cheapest findings the engine produced.
+    const all = detectFindings(getSampleLedger().records).findings.toSorted((a, b) => a.dollarImpact - b.dollarImpact)
+    const cheapest = values().map((v) => Number(v.replace(/[$,]/g, ''))).sort((a, b) => a - b)
+    expect(cheapest).toEqual(all.slice(0, 3).map((f) => f.dollarImpact))
+    // Locked findings are not in the page at all: no vendor, no amount, no invoice — a blur is not access control.
+    const lockedText = [...document.querySelectorAll('.wk-locked')].map((n) => n.textContent).join(' ')
+    for (const f of all.slice(3)) {
+      if (!all.slice(0, 3).some((v) => v.vendor === f.vendor)) expect(lockedText).not.toContain(f.vendor)
+      expect(lockedText).not.toContain(formatCurrency(f.dollarImpact))
+      for (const r of f.relatedRecords) if (r.invoiceNumber) expect(lockedText).not.toContain(r.invoiceNumber)
+    }
     fireEvent.click(within(nav).getByRole('button', { name: /^Audits/ }))
-    expect(await screen.findByTestId('audit-usage')).toHaveTextContent('1 of 3 audits used this month on Free')
+    expect(await screen.findByTestId('audit-usage')).toHaveTextContent('one audit per ledger')
     expect(screen.getByTestId('audits-explainer')).toHaveTextContent('What an audit is')
     // Settings shows the plan and the dev switch; flipping to Pro unlocks everything
     fireEvent.click(within(nav).getByRole('button', { name: /^Settings/ }))
     expect(await screen.findByTestId('plan-panel')).toHaveTextContent('Free')
-    expect(screen.getByTestId('plan-panel')).toHaveTextContent('1 of 3 audits used this month')
-    fireEvent.click(screen.getByRole('button', { name: 'Dev: switch to Pro' }))
-    await waitFor(() => expect(screen.getByTestId('plan-panel')).toHaveTextContent('Pro · $5 a month'))
+    expect(screen.getByTestId('plan-panel')).toHaveTextContent('three smallest findings')
+    fireEvent.click(screen.getByRole('button', { name: 'Dev: switch to Growth' }))
+    await waitFor(() => expect(screen.getByTestId('plan-panel')).toHaveTextContent('Growth · $19.99 / month + 15% of what’s recovered'))
     fireEvent.click(within(nav).getByRole('button', { name: /^Findings/ }))
     await screen.findByRole('heading', { name: 'All findings' })
-    expect(screen.queryAllByTestId('locked')).toHaveLength(0)
+    // The plan label and the entitlements that unlock findings arrive separately; wait for the unlock itself.
+    await waitFor(() => expect(screen.queryAllByTestId('locked')).toHaveLength(0))
     expect(unlocked().length).toBeGreaterThan(3)
   })
 
-  it('the Free audit limit is enforced by the server and explained by the client', async () => {
+  it('on Free, uploading a ledger again is flagged before it runs, and paid plans lead to checkout', async () => {
     mountWorkspace()
     await screen.findByText('ready:nobody')
     await logIn(alice)
     await uploadSampleLedger()
-    // two more via the API to reach the limit, then the client refuses to start a fourth
-    for (const id of ['x2', 'x3']) {
-      await live.api(`/api/projects/${id}`, { method: 'PUT', json: { id, name: id, sourceLabel: 's', mode: 'upload', createdAt: Date.now(), updatedAt: Date.now(), environment: JSON.parse(JSON.stringify(mergeImport(null, { sourceLabel: 's', mode: 'upload', parsed: getSampleLedger() }))) } })
-    }
-    await act(async () => {
-      await auth!.refreshEntitlements()
-    })
+    // the same file again, under a new name
     fireEvent.click(screen.getByRole('button', { name: /^Start an audit/ }))
+    const input = await screen.findByLabelText(/upload a csv ledger/i)
+    fireEvent.change(input, { target: { files: [new File([sampleLedgerCsv], 'ledger-final-v2.csv', { type: 'text/csv' })] } })
+    await screen.findByText('ledger-final-v2.csv')
+    fireEvent.click(screen.getByRole('button', { name: /run the audit/i }))
+    expect(await screen.findByTestId('import-flag')).toHaveTextContent('already uploaded')
+    expect((await live.api('/api/projects')).body.projects).toHaveLength(1)
+    // the plans say what they cost, and choosing one is "coming soon"
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }))
+    const nav = screen.getByRole('navigation', { name: /workspace/i })
+    fireEvent.click(within(nav).getByRole('button', { name: /^Settings/ }))
+    fireEvent.click(await screen.findByRole('button', { name: 'See Growth and Flat' }))
     const dialog = await screen.findByTestId('upgrade-dialog')
-    expect(dialog).toHaveTextContent("You've used 3 of 3 audits this month")
-    expect(screen.queryByRole('dialog', { name: 'Start an audit' })).not.toBeInTheDocument()
-    // and "coming soon" is what upgrade says
-    fireEvent.click(within(dialog).getByRole('button', { name: /Upgrade to Pro/ }))
-    await waitFor(() => expect(within(dialog).getByRole('status')).toHaveTextContent('coming soon'))
+    expect(within(dialog).getByTestId('plan-growth')).toHaveTextContent('$19.99 / month + 15% of what’s recovered')
+    expect(within(dialog).getByTestId('plan-flat')).toHaveTextContent('$100 / month, no success fee')
+    // Choosing a paid plan goes to checkout; nothing changes on the account until billing is live.
+    expect(within(dialog).getByRole('link', { name: 'Continue with Growth' })).toHaveAttribute('href', '/checkout?plan=growth')
+    expect(within(dialog).getByRole('link', { name: 'Continue with Flat' })).toHaveAttribute('href', '/checkout?plan=flat')
     expect((await live.api('/api/auth/me')).body.user.plan).toBe('free')
   })
+
 })

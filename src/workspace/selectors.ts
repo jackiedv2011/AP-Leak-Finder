@@ -12,6 +12,7 @@ import { getCaseState, type LedgerEnvironment } from '@/ledger/store'
 import type { CaseState } from '@/ledger/caseState'
 import { evidenceStrength, keyUncertainty } from '@/audit/ruleChecklist'
 import { formatCurrency, normalizeVendor } from '@/lib/format'
+import { claimValue, isAtRisk, isClaim, sumMoney } from '@/lib/claims'
 import { FINDING_TYPE_LABELS } from '@/lib/labels'
 import type { Finding, FindingType } from '@/types'
 
@@ -39,12 +40,18 @@ export type LadderStage = 'potential' | 'verified' | 'inRecovery' | 'recovered' 
 
 export interface Ladder {
   /**
-   * Money still in play: every finding that has not been dismissed and has
-   * not reached an outcome. Money that already came back (or was closed as
-   * not recoverable) leaves this figure — potential and recovered are never
-   * the same dollars.
+   * Money still in play that could come back: every claim (see lib/claims)
+   * that has not been dismissed and has not reached an outcome. Missed
+   * discounts are Protected and bank-account / shared-invoice alerts are At
+   * risk — neither is money a vendor owes, so neither is counted here. Money
+   * that already came back leaves this figure — potential and recovered are
+   * never the same dollars.
    */
   potential: number
+  /** Every finding still open (not dismissed, no outcome), claim or not. */
+  openCount: number
+  /** Open bank-account-change and shared-invoice alerts: payments to verify, reported apart from recovery. */
+  atRisk: number
   /**
    * The rules engine's verdict that the records support a recovery — not a
    * human's. Nothing here has been agreed to by a vendor, so this is the
@@ -214,14 +221,22 @@ export function awaitingDecision(env: LedgerEnvironment): Opportunity[] {
 export function ladder(env: LedgerEnvironment): Ladder {
   const empty = { potential: 0, verified: 0, inRecovery: 0, recovered: 0, protected: 0 }
   const counts: Record<LadderStage, number> = { ...empty }
-  const totals = { ...empty }
-  let awaitingDecision = 0
+  // Totals are kept in whole cents and converted once at the end.
+  const cents = { ...empty }
+  const add = (stage: LadderStage, amount: number) => {
+    cents[stage] += Math.round(amount * 100)
+    counts[stage] += 1
+  }
+  let awaitingCents = 0
+  let atRiskCents = 0
+  let openCount = 0
 
   for (const finding of env.result.findings) {
     const state = getCaseState(env, finding.id)
     const stage = state.recoveryStage
+    const claim = isClaim(finding)
     if (finding.class === 'recoverable' && state.decision === null) {
-      awaitingDecision += finding.dollarImpact
+      awaitingCents += Math.round(finding.dollarImpact * 100)
     }
 
     // Financial amounts occupy distinct buckets. A partial return can leave
@@ -229,28 +244,36 @@ export function ladder(env: LedgerEnvironment): Ladder {
     const dismissed = state.decision === 'expected'
     const resolved = stage === 'recovered' || stage === 'not_recovered'
     if (!dismissed && !resolved) {
-      totals.potential += Math.max(0, finding.dollarImpact - (state.recoveredAmount ?? 0))
-      counts.potential += 1
+      openCount += 1
+      // Net of anything already returned on a partly settled case.
+      if (claim) add('potential', Math.max(0, finding.dollarImpact - (state.recoveredAmount ?? 0)))
+      else if (isAtRisk(finding)) atRiskCents += Math.round(finding.dollarImpact * 100)
     }
 
-    // A future-savings signal is not a payment Reclaim actually prevented.
-    if (finding.class === 'recoverable' && !dismissed && stage !== 'requested' && !resolved) {
-      totals.verified += finding.dollarImpact
-      counts.verified += 1
+    // A future-savings signal is not a payment Reclaim actually prevented, so `protected` stays zero.
+    if (finding.class === 'recoverable' && !dismissed && stage !== 'requested' && !resolved) add('verified', finding.dollarImpact)
+    // Only a vendor claim is money in recovery: the outstanding part of what was asked for.
+    if (finding.class === 'recoverable' && stage === 'requested') {
+      add('inRecovery', Math.max(0, (state.requestedAmount ?? finding.dollarImpact) - (state.recoveredAmount ?? 0)))
     }
-    if (stage === 'requested' && finding.class === 'recoverable') {
-      totals.inRecovery += Math.max(0, (state.requestedAmount ?? finding.dollarImpact) - (state.recoveredAmount ?? 0))
-      counts.inRecovery += 1
-    }
+    // A promise isn't a recovery. Only amounts recorded as settled count, including partial returns on an open request.
     if (finding.class === 'recoverable' && (stage === 'recovered' || stage === 'requested') && (state.recoveredAmount ?? 0) > 0) {
-      // A promise isn't a recovery. Only the amount that actually settled counts,
-      // and only once it has been recorded as settled.
-      totals.recovered += state.recoveredAmount ?? 0
-      counts.recovered += 1
+      add('recovered', state.recoveredAmount ?? 0)
     }
   }
 
-  return { ...totals, counts, awaitingDecision }
+  const dollars = (value: number) => value / 100
+  return {
+    potential: dollars(cents.potential),
+    verified: dollars(cents.verified),
+    inRecovery: dollars(cents.inRecovery),
+    recovered: dollars(cents.recovered),
+    protected: dollars(cents.protected),
+    openCount,
+    atRisk: dollars(atRiskCents),
+    counts,
+    awaitingDecision: dollars(awaitingCents),
+  }
 }
 
 export interface VendorCommitments {
@@ -327,8 +350,8 @@ export function vendors(env: LedgerEnvironment): VendorRollup[] {
     const evidence = evidenceOf(finding)
     const row = rowFor(finding.vendor)
     row.caseCount += 1
-    if (isStillInPlay(state)) row.potential += Math.max(0, finding.dollarImpact - (state.recoveredAmount ?? 0))
-    if (finding.class === 'recoverable' && (state.recoveryStage === 'recovered' || state.recoveryStage === 'requested')) row.recovered += state.recoveredAmount ?? 0
+    if (isStillInPlay(state)) row.potential = sumMoney([row.potential, Math.max(0, claimValue(finding) - (isClaim(finding) ? state.recoveredAmount ?? 0 : 0))])
+    if (finding.class === 'recoverable' && (state.recoveryStage === 'recovered' || state.recoveryStage === 'requested')) row.recovered = sumMoney([row.recovered, state.recoveredAmount ?? 0])
     if (row.strongest === null || order.indexOf(evidence) > order.indexOf(row.strongest)) row.strongest = evidence
   }
 

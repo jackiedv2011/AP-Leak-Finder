@@ -24,13 +24,13 @@ function steps(entitlements: Entitlements): Step[] {
       icon: FolderOpen,
       title: 'Audits — where you start',
       body: 'An audit is one payment ledger (a CSV export from your accounting system) run through eight checks. Start a new audit for each file. Everything else in Reclaim describes the audit you have open.',
-      tip: entitlements.limits.auditsPerMonth === null ? 'Pro: unlimited audits.' : `Free includes ${entitlements.limits.auditsPerMonth} audits a month.`,
+      tip: entitlements.limits.blocksRepeatUploads ? 'Upload as many ledgers as you like. Each one can be audited once on Free.' : 'Unlimited uploads and re-audits.',
     },
     {
       icon: FileSearch,
       title: 'Findings — what the checks caught',
       body: 'Each finding is a specific vendor, amount and reason, with the exact ledger rows behind it. Nothing is inferred: if Reclaim says an invoice was paid twice, both payments are on the page.',
-      tip: visible === null ? 'Pro shows every finding.' : `Free shows the ${visible} lowest-value findings in full; the larger ones are blurred until you upgrade.`,
+      tip: visible === null ? 'You see every finding in every audit.' : `Free shows the ${visible} lowest-value findings in full; the larger ones are blurred until you upgrade.`,
     },
     {
       icon: LayoutDashboard,

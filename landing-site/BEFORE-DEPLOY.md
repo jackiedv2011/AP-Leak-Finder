@@ -85,7 +85,7 @@ linked on the page. The working notes are in `notes/research-sources.md`.
 
 - [ ] The modal is **front end only**. Submitting it shows the success state and sends nothing.
       Wire it to a real endpoint (and decide where the data goes) before launch.
-- [ ] The contact address in the footer is `hello@reclaim.example` — a placeholder domain.
+- [x] The contact address in the footer is `reclaimbusiness1@gmail.com`.
 
 ## 6. Navigation and naming
 

@@ -26,9 +26,12 @@ export function parseCurrency(raw: string | null | undefined): number | null {
   const trimmed = raw.trim()
   if (trimmed === '' || trimmed.toLowerCase() === 'na' || trimmed.toLowerCase() === 'n/a') return null
   const parenthesized = /^\((.*)\)$/.exec(trimmed)
-  const cleaned = (parenthesized ? `-${parenthesized[1]}` : trimmed).replace(/[$,\s]/g, '')
-  if (!/^-?(?:\d+(?:\.\d+)?|\.\d+)$/.test(cleaned)) return null
-  const value = Number(cleaned)
+  const unsigned = (parenthesized ? `-${parenthesized[1]}` : trimmed).replace(/[$\s]/g, '')
+  // Commas are only accepted as US thousands separators. "1.234,56" or "1,23"
+  // is some other convention, and reading it as 1.23456 or 123 would put a
+  // wrong amount in the ledger without anyone noticing — so the row is skipped.
+  if (!/^-?(?:(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?|\.\d+)$/.test(unsigned)) return null
+  const value = Number(unsigned.replace(/,/g, ''))
   return Number.isFinite(value) ? value : null
 }
 
@@ -46,9 +49,9 @@ function buildLocalDate(y: number, m: number, d: number): Date | null {
 /**
  * Parse a date cell as a local date (avoids UTC off-by-one). Accepts the
  * formats accounting exports actually use: ISO `YYYY-MM-DD` (with or without a
- * time suffix), `YYYY/MM/DD`, and US `MM/DD/YYYY` / `M/D/YYYY`. A slash date
- * with a four-digit year is always read month-first; anything else is null so
- * the row is reported as skipped rather than guessed at.
+ * time suffix), `YYYY/MM/DD`, and US `MM/DD/YYYY` / `M/D/YYYY` / `M/D/YY`. A
+ * slash date is always read month-first; anything else is null so the row is
+ * reported as skipped rather than guessed at.
  */
 export function parseDate(raw: string | null | undefined): Date | null {
   if (raw === null || raw === undefined) return null
@@ -58,8 +61,12 @@ export function parseDate(raw: string | null | undefined): Date | null {
   const iso = trimmed.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})(?:[T ]\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:?\d{2})?)?$/)
   if (iso) return buildLocalDate(Number(iso[1]), Number(iso[2]), Number(iso[3]))
 
-  const us = trimmed.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/)
-  if (us) return buildLocalDate(Number(us[3]), Number(us[1]), Number(us[2]))
+  const us = trimmed.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4}|\d{2})$/)
+  if (us) {
+    // Two-digit years are how Excel writes m/d/yy; 00–69 are 2000s, 70–99 are 1900s.
+    const year = us[3].length === 2 ? (Number(us[3]) < 70 ? 2000 : 1900) + Number(us[3]) : Number(us[3])
+    return buildLocalDate(year, Number(us[1]), Number(us[2]))
+  }
 
   return null
 }
@@ -93,17 +100,42 @@ export interface ParsedTerms {
   netDays: number
 }
 
-/** Parse terms like "2/10 net 30" into discount %, discount window, and net days. */
+/** Above this an "early-payment discount" is almost certainly a keying error, and claiming it would ask a vendor for most of an invoice back. */
+const MAX_DISCOUNT_PCT = 10
+
+/**
+ * Parse early-payment terms into discount %, discount window, and net days.
+ * Accepts the spellings exports actually use — "2/10 net 30", "2/10, n/30",
+ * "2% 10 net 30", "2/10 N30" — and rejects terms that cannot be real
+ * (0% or implausibly large discounts, a window no shorter than the net period).
+ */
 export function parseTerms(raw: string | null): ParsedTerms | null {
   if (!raw) return null
-  const match = raw.trim().match(/^(\d+(?:\.\d+)?)\s*\/\s*(\d+)\s+net\s+(\d+)$/i)
+  const match = raw
+    .trim()
+    .match(/^(\d+(?:\.\d+)?)\s*%?\s*(?:\/\s*|\s+)(\d+)\s*(?:days?)?\s*[,/]?\s*(?:net|n)\s*\/?\s*(\d+)$/i)
   if (!match) return null
   const [, pct, discountDays, netDays] = match
-  return {
+  const terms = {
     discountPct: parseFloat(pct),
     discountDays: parseInt(discountDays, 10),
     netDays: parseInt(netDays, 10),
   }
+  if (!(terms.discountPct > 0 && terms.discountPct <= MAX_DISCOUNT_PCT)) return null
+  if (!(terms.discountDays > 0 && terms.discountDays < terms.netDays)) return null
+  return terms
+}
+
+/**
+ * The last four digits of a bank account, however the export wrote them:
+ * "****1234", "x1234", "acct ending 1234", or "457" after a spreadsheet
+ * dropped the leading zero. Null when there are no digits at all.
+ */
+export function normalizeAccountLast4(raw: string | null): string | null {
+  if (!raw) return null
+  const digits = raw.replace(/\D/g, '')
+  if (!digits) return null
+  return digits.slice(-4).padStart(4, '0')
 }
 
 /**

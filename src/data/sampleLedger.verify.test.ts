@@ -30,7 +30,8 @@ describe('sample ledger sanity check', () => {
     expect(records.length).toBeLessThanOrEqual(80)
     expect(vendors.size).toBe(12)
     expect(result.recoverableTotal).toBe(11684)
-    expect(result.reviewTotal).toBeCloseTo(9794.4, 2)
+    // Outlier excess is measured from the vendor's median payment (Cascade 996.50, Northwest Pastry 2,467.50).
+    expect(result.reviewTotal).toBe(10139)
     expect(result.opportunityTotal).toBe(200)
     expect(result.findings.filter((finding) => finding.class === 'recoverable')).toHaveLength(6)
     expect(result.findings.filter((finding) => finding.class === 'review')).toHaveLength(7)

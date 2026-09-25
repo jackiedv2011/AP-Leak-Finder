@@ -6,11 +6,17 @@ import { loadStripe, type Stripe } from '@stripe/stripe-js'
  * designed to be public (they can only tokenize card data, never charge or move
  * money), so shipping this one is safe. It is NOT a real Reclaim account.
  *
- * Swap this for Reclaim's own `pk_test_…` / `pk_live_…` key from
- * https://dashboard.stripe.com/apikeys the moment there is a real account,
- * ideally via an environment variable rather than a literal here.
+ * Reclaim's own `pk_test_…` / `pk_live_…` key goes in .env as
+ * VITE_STRIPE_PUBLISHABLE_KEY (from https://dashboard.stripe.com/apikeys);
+ * until then the demo key keeps checkout working in test mode.
  */
-const STRIPE_PUBLISHABLE_KEY = 'pk_test_TYooMQauvdEDq54NiTphI7jx'
+const STRIPE_DEMO_KEY = 'pk_test_TYooMQauvdEDq54NiTphI7jx'
+const STRIPE_PUBLISHABLE_KEY: string = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || STRIPE_DEMO_KEY
+
+/** True until Reclaim's own publishable key is set (VITE_STRIPE_PUBLISHABLE_KEY in .env). */
+export const STRIPE_IS_DEMO = STRIPE_PUBLISHABLE_KEY === STRIPE_DEMO_KEY
+/** Test-mode keys never move money, whoever owns them. */
+export const STRIPE_IS_TEST_MODE = STRIPE_PUBLISHABLE_KEY.startsWith('pk_test_')
 
 let stripePromise: Promise<Stripe | null> | null = null
 

@@ -12,7 +12,15 @@ export interface Request {
 export interface Response {
   status: number
   headers: Record<string, string | string[]>
-  body: string | null
+  /** Buffer for static files: images and fonts must go out byte-for-byte, not through a UTF-8 round trip. */
+  body: string | Buffer | null
+}
+
+/** Sent on every response. No CSP yet: the marketing pages still rely on inline scripts and styles. */
+const HARDENING_HEADERS: Record<string, string> = {
+  'X-Content-Type-Options': 'nosniff',
+  'X-Frame-Options': 'DENY',
+  'Referrer-Policy': 'strict-origin-when-cross-origin',
 }
 
 export const json = (status: number, data: unknown, headers: Record<string, string | string[]> = {}): Response => ({
@@ -98,7 +106,11 @@ export async function toRequest(req: IncomingMessage): Promise<Request> {
   }
 }
 
-export function writeResponse(res: ServerResponse, response: Response): void {
+export function writeResponse(res: ServerResponse, response: Response, options: { noStore?: boolean; hsts?: boolean } = {}): void {
+  for (const [name, value] of Object.entries(HARDENING_HEADERS)) res.setHeader(name, value)
+  // Account and financial data must not sit in a shared or browser cache.
+  if (options.noStore) res.setHeader('Cache-Control', 'no-store')
+  if (options.hsts) res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains')
   for (const [name, value] of Object.entries(response.headers)) res.setHeader(name, value)
   res.statusCode = response.status
   res.end(response.body ?? undefined)

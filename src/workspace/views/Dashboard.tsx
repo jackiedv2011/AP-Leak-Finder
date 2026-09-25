@@ -4,7 +4,7 @@ import type { LedgerEnvironment } from '@/ledger/store'
 import { internalReviews, ladder, opportunities, recentReturns, recoveryAging, recordedRootCauses, rootCauses, vendorCommitments } from '../selectors'
 import { recoveries } from '../selectors'
 import { recoveryNextAction, recoveryStatusLabel, requiresCustomerAction } from '@/recovery/model'
-import { lockedSummary } from '../planGates'
+import { lockedSummary, REDACTED_MONEY, REDACTED_VENDOR } from '../planGates'
 import { Locked } from '@/components/plan/Locked'
 import { Strength } from './Strength'
 import { SCREEN_OBJECT } from '../objects'
@@ -20,7 +20,7 @@ interface DashboardProps {
   onStartAudit: () => void
 }
 
-function findingsTable(rows: ReturnType<typeof opportunities>, onOpenCase: ((id: string) => void) | undefined) {
+function findingsTable(rows: ReturnType<typeof opportunities>, onOpenCase: ((id: string) => void) | undefined, redact = false) {
   return (
     <div className="wk-table-wrap">
       <table className="wk-table">
@@ -36,7 +36,7 @@ function findingsTable(rows: ReturnType<typeof opportunities>, onOpenCase: ((id:
           {rows.map((o) => (
             <tr key={o.finding.id} onClick={onOpenCase ? () => onOpenCase(o.finding.id) : undefined}>
               <td>
-                {onOpenCase ? <button type="button" className="wk-table-action wk-table-vendor" onClick={(event) => { event.stopPropagation(); onOpenCase(o.finding.id) }} aria-label={`Open ${o.finding.vendor} finding`}>{o.finding.vendor}</button> : <div className="wk-table-vendor">{o.finding.vendor}</div>}
+                {onOpenCase ? <button type="button" className="wk-table-action wk-table-vendor" onClick={(event) => { event.stopPropagation(); onOpenCase(o.finding.id) }} aria-label={`Open ${o.finding.vendor} finding`}>{o.finding.vendor}</button> : <div className="wk-table-vendor">{redact ? REDACTED_VENDOR : o.finding.vendor}</div>}
                 <div className="wk-table-sub">
                   {o.finding.relatedRecords.length} {plural(o.finding.relatedRecords.length, 'record')}
                 </div>
@@ -45,7 +45,7 @@ function findingsTable(rows: ReturnType<typeof opportunities>, onOpenCase: ((id:
               <td>
                 <Strength level={o.evidence} />
               </td>
-              <td className="wk-right wk-table-money">{formatCurrency(o.finding.dollarImpact)}</td>
+              <td className="wk-right wk-table-money">{redact ? REDACTED_MONEY : formatCurrency(o.finding.dollarImpact)}</td>
             </tr>
           ))}
         </tbody>
@@ -79,7 +79,9 @@ function Stat({
     <div data-accent={accent || undefined}>
       <span className="wk-label">{label}</span>
       <div className="wk-ladder-figure">
-        <span className="wk-display wk-figure">{value}</span>
+        <span className="wk-display wk-figure" style={{ '--chars': Math.max(value.length, 6) } as React.CSSProperties}>
+          {value}
+        </span>
       </div>
       <p className="wk-ladder-note">{note}</p>
     </div>
@@ -150,8 +152,8 @@ export function Dashboard({ env, visible, onOpenCase, onSeeAllFindings, onSeeRec
                   <span className="wk-num">{formatCurrency(actionableFinding.finding.dollarImpact)}</span> {actionableFinding.state.decision === 'needs_info' ? 'still needs more information.' : 'is waiting on your review.'}
                 </>
               ) : l.awaitingDecision > 0 ? (
-                <>The remaining recovery candidates are in the findings queue. Open it to see which need Pro access.</>
-              ) : l.counts.potential > 0 ? (
+                <>The remaining recovery candidates are in the findings queue. Open it to see which need Growth or Flat.</>
+              ) : l.openCount > 0 ? (
                 <>Every finding has a decision. Start a new audit to keep going.</>
               ) : (
                 <>This ledger came back clean. Start another audit to check more records.</>
@@ -272,10 +274,10 @@ export function Dashboard({ env, visible, onOpenCase, onSeeAllFindings, onSeeRec
         {lockedPriorityFindings.length > 0 ? (
           <div style={{ marginTop: priorityFindings.length > 0 ? 14 : 0 }}>
             <Locked
-              title={`${locked.count} larger ${locked.count === 1 ? 'finding' : 'findings'} worth ${formatCurrency(locked.value)} are part of Pro`}
+              title={`${locked.count} larger ${locked.count === 1 ? 'finding' : 'findings'} worth ${formatCurrency(locked.value)} are part of Growth and Flat`}
               note="Free shows the lowest-value findings in full."
             >
-              {findingsTable(lockedPriorityFindings, undefined)}
+              {findingsTable(lockedPriorityFindings, undefined, true)}
             </Locked>
           </div>
         ) : null}

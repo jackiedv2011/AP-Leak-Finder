@@ -438,11 +438,14 @@ describe('regressions — false positives found in the messy-ledger audit', () =
     expect(finding.dollarImpact).toBe(0.02)
   })
 
-  it('a vendor needs at least nine payments before the outlier rule can fire at all (2.5σ is unreachable below that)', () => {
-    const eight = [...Array(7)].map((_, i) => makeRecord({ vendor: 'Metro', invoiceNumber: `U-${i}`, amountPaid: 400 + i, paymentDate: d(2025, 1 + i, 1) }))
-    eight.push(makeRecord({ vendor: 'Metro', invoiceNumber: 'U-big', amountPaid: 9500, paymentDate: d(2025, 9, 1) }))
-    expect(detectFindings(eight).findings.filter((f) => f.type === 'amount_outlier')).toHaveLength(0)
-    const nine = [...eight, makeRecord({ vendor: 'Metro', invoiceNumber: 'U-8', amountPaid: 410, paymentDate: d(2025, 10, 1) })]
-    expect(detectFindings(nine).findings.filter((f) => f.type === 'amount_outlier')).toHaveLength(1)
+  it('the outlier rule works from five payments up (mean + 2.5σ could not fire below nine, because the outlier inflated its own σ)', () => {
+    const outliers = (records: APRecord[]) => detectFindings(records).findings.filter((f) => f.type === 'amount_outlier')
+    const normal = [...Array(4)].map((_, i) => makeRecord({ vendor: 'Metro', invoiceNumber: `U-${i}`, amountPaid: 400 + i, paymentDate: d(2025, 1 + i, 1) }))
+    const big = makeRecord({ vendor: 'Metro', invoiceNumber: 'U-big', amountPaid: 9500, paymentDate: d(2025, 9, 1) })
+    expect(outliers([...normal.slice(0, 3), big])).toHaveLength(0)
+    const five = outliers([...normal, big])
+    expect(five).toHaveLength(1)
+    expect(five[0].relatedRecords[0].invoiceNumber).toBe('U-big')
+    expect(five[0].dollarImpact).toBe(9500 - 402)
   })
 })

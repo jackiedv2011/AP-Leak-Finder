@@ -1,11 +1,11 @@
 import { storageKey } from '@/lib/storageScope'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
-/** The six workspace destinations. */
-export type RouteMode = 'dashboard' | 'audits' | 'findings' | 'recoveries' | 'reports' | 'settings'
+/** The workspace destinations. */
+export type RouteMode = 'dashboard' | 'audits' | 'findings' | 'recoveries' | 'reports' | 'plans' | 'settings'
 export type EntryRoute = 'sample' | 'upload'
 
-const ROUTE_MODES: RouteMode[] = ['dashboard', 'audits', 'findings', 'recoveries', 'reports', 'settings']
+const ROUTE_MODES: RouteMode[] = ['dashboard', 'audits', 'findings', 'recoveries', 'reports', 'plans', 'settings']
 
 /** Older bookmarks carry the previous section names; send them somewhere sensible. */
 const RETIRED_MODES: Record<string, RouteMode> = {

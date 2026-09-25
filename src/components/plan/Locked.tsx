@@ -5,7 +5,7 @@ import { UpgradeDialog } from './UpgradeDialog'
 /**
  * Wraps content the current plan doesn't include. The content is rendered
  * blurred and inert behind a small notice with an Upgrade button, so the
- * person can see the shape of what Pro adds without reading it.
+ * person can see the shape of what a paid plan adds without reading it.
  */
 export function Locked({ children, title, note, reason }: { children: ReactNode; title: string; note?: string; reason?: string }) {
   const [open, setOpen] = useState(false)
@@ -22,7 +22,7 @@ export function Locked({ children, title, note, reason }: { children: ReactNode;
             {note ? <div className="wk-dim" style={{ fontSize: 13, marginTop: 2 }}>{note}</div> : null}
           </div>
           <button type="button" className="wk-btn" data-variant="primary" data-size="sm" onClick={() => setOpen(true)}>
-            See Pro
+            See plans
           </button>
         </div>
       </div>

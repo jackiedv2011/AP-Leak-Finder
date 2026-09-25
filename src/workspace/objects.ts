@@ -40,6 +40,7 @@ export const SCREEN_OBJECT: Record<WorkspaceMode, ObjectName> = {
   findings: 'cluster',
   recoveries: 'fan',
   reports: 'hex',
+  plans: 'stack',
   settings: 'ring',
 }
 

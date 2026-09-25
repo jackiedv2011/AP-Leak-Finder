@@ -33,9 +33,11 @@ export function canRecordRequest(state: CaseState): boolean {
   return state.recoveryStage === 'confirmed' && Boolean(state.approvedAt) && !state.contactHold
 }
 
-export function startRecoveryRequest(state: CaseState, amount: number, at = Date.now()): CaseState {
+export function startRecoveryRequest(state: CaseState, amount: number, at = Date.now(), supportedAmount?: number): CaseState {
   if (!canRecordRequest(state)) throw new Error('Customer approval is required before recording the first request.')
   if (!Number.isFinite(amount) || amount <= 0) throw new Error('The requested amount must be greater than zero.')
+  // The form checks this too; the rule lives here so no other caller can ask a vendor for more than the records support.
+  if (supportedAmount !== undefined && Math.round(amount * 100) > Math.round(supportedAmount * 100)) throw new Error('The requested amount cannot be more than the records support.')
   if (Math.abs(amount * 100 - Math.round(amount * 100)) > 0.000001) throw new Error('The requested amount must be recorded in whole cents.')
   return {
     ...markRecoveryRequested(state, amount),

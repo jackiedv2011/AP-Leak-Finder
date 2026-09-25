@@ -3,6 +3,7 @@ import { overviewSummary } from '@/ledger/views'
 import type { LedgerEnvironment } from '@/ledger/store'
 import { EVIDENCE_LABEL, ladder, rootCauses, vendors } from '../selectors'
 import { Locked } from '@/components/plan/Locked'
+import { REDACTED_MONEY, REDACTED_VENDOR } from '../planGates'
 import { useEntitlements } from '@/lib/auth/AuthContext'
 
 export function Facts({ rows }: { rows: Array<[string, string]> }) {
@@ -10,10 +11,11 @@ export function Facts({ rows }: { rows: Array<[string, string]> }) {
     <div className="wk-card-flat">
       <dl style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 22 }}>
         {rows.map(([label, value]) => (
-          <div key={label}>
+          <div key={label} style={{ minWidth: 0 }}>
             <dt className="wk-label">{label}</dt>
-            <dd className="wk-num" style={{ margin: '7px 0 0', fontSize: 18, fontWeight: 600, letterSpacing: '-0.01em' }}>
-              {value}
+            {/* Long unbroken values (an email address) wrap inside their own column instead of running into the next. */}
+            <dd className="wk-num" style={{ margin: '7px 0 0', fontSize: 18, fontWeight: 600, letterSpacing: '-0.01em', overflowWrap: 'anywhere' }}>
+              {value.includes('@') ? value.replace('@', '@\u200B') : value}
             </dd>
           </div>
         ))}
@@ -39,8 +41,9 @@ export function Reports({ env }: { env: LedgerEnvironment }) {
           rows={[
             ['Payment records', String(s.recordCount)],
             ['Vendors', String(s.vendorCount)],
-            ['Findings', String(l.counts.potential)],
-            ['Open flagged value', formatCurrency(l.potential)],
+            ['Findings', String(l.openCount)],
+            ['Potential recovery', formatCurrency(l.potential)],
+            ['Payments to verify', formatCurrency(l.atRisk)],
             ['Verified', formatCurrency(l.verified)],
             ['Recovered', formatCurrency(l.recovered)],
           ]}
@@ -93,15 +96,15 @@ export function Reports({ env }: { env: LedgerEnvironment }) {
           </p>
         </div>
         {rows.length > 0 && !entitlements.limits.advancedReports ? (
-          <Locked title="The every-vendor report is part of Pro" note="Findings, strongest evidence, potential and recovered — per vendor.">
+          <Locked title="The every-vendor report is part of Growth and Flat" note="Findings, strongest evidence, potential and recovered — per vendor.">
             <div className="wk-table-wrap">
               <table className="wk-table">
                 <tbody>
-                  {rows.slice(0, 6).map((v) => (
-                    <tr key={v.vendor} style={{ cursor: 'default' }}>
-                      <td className="wk-table-vendor">{v.vendor}</td>
+                  {rows.slice(0, 6).map((v, i) => (
+                    <tr key={i} style={{ cursor: 'default' }}>
+                      <td className="wk-table-vendor">{REDACTED_VENDOR}</td>
                       <td>{v.caseCount}</td>
-                      <td className="wk-right wk-table-money">{formatCurrency(v.potential)}</td>
+                      <td className="wk-right wk-table-money">{REDACTED_MONEY}</td>
                     </tr>
                   ))}
                 </tbody>

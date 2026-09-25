@@ -295,7 +295,11 @@ html[data-theme='light'] .wk {
 @media (max-width: 620px) {
   .wk-ladder > * + * { border-left: 0; border-top: 1px solid var(--line); }
 }
-.wk-ladder-figure { display: flex; align-items: baseline; gap: 8px; overflow: hidden; }
+/* A money figure is never clipped: it scales down to the width of its tile
+   (cqi = 1% of the tile), so $24,742.25 or $1,234,567.89 always shows every digit. */
+.wk-ladder > * { container-type: inline-size; }
+.wk-ladder .wk-figure { font-size: min(40px, calc(190cqi / var(--chars, 10))); white-space: nowrap; }
+.wk-ladder-figure { display: flex; align-items: baseline; gap: 8px; }
 .wk-ladder-note { font-size: 12.5px; color: var(--text-muted); }
 .wk-ladder [data-terminal='true'] .wk-figure,
 .wk-ladder [data-accent='true'] .wk-figure { color: var(--accent-ink); }
@@ -540,6 +544,8 @@ html[data-theme='light'] .wk {
 .wk-panel-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
 .wk-panel-head p { margin-top: 6px; font-size: 13.5px; max-width: 520px; }
 .wk-panel-foot { display: flex; align-items: center; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
+/* A tall dialog scrolls; its actions stay on screen. */
+.wk-panel > .wk-panel-foot { position: sticky; bottom: 0; z-index: 1; background: var(--surface); padding-top: 12px; padding-bottom: 12px; border-top: 1px solid var(--line-soft); }
 .wk-panel-close {
   display: inline-flex;
   align-items: center;
@@ -781,7 +787,7 @@ html[data-theme='light'] .wk {
 /* ---------- onboarding tour ---------- */
 .wk-tour-icon { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; flex: none; border-radius: 12px; background: var(--accent-soft); color: var(--accent-ink); }
 .wk-tour-icon svg { width: 20px; height: 20px; }
-.wk-tour-tip { margin-top: 12px; font-size: 13px; padding: 10px 12px; border-radius: var(--radius-sm); background: var(--bg); border: 1px solid var(--line); }
+.wk-tour-tip { margin-top: 12px; font-size: 13px; padding: 10px 12px; border-radius: var(--radius-sm); background: var(--bg-deep); border: 1px solid var(--line-soft); color: var(--text-dim); }
 .wk-tour-dots { display: flex; gap: 6px; justify-content: center; padding: 4px 24px 0; }
 .wk-tour-dots i { width: 7px; height: 7px; border-radius: 999px; background: var(--line); }
 .wk-tour-dots i[data-active] { background: var(--accent-ink); }
@@ -1077,3 +1083,66 @@ html[data-theme-transition] .wk-panel {
 @media (max-width: 800px) { .wk-recovery-insights { grid-template-columns: minmax(0, 1fr); } }
 @media (max-width: 620px) { .wk-flow-fields { grid-template-columns: minmax(0, 1fr); } .wk-flow-wide { grid-column: auto; } }
 @media (max-width: 620px) { .wk-recovery-metrics { grid-template-columns: minmax(0, 1fr); } .wk-task-list button { grid-template-columns: minmax(0, 1fr) 16px; } .wk-task-list button span:nth-child(2) { grid-column: 1; grid-row: 2; } .wk-task-list svg { grid-column: 2; grid-row: 1 / span 2; } }
+
+/* ---------- plans ---------- */
+.wk-plans-hero { display: flex; flex-direction: column; gap: 10px; max-width: 640px; }
+.wk-plans-hero .wk-h1 { font-size: clamp(30px, 4vw, 44px); }
+.wk-plans-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(215px, 1fr)); gap: 16px; align-items: stretch; }
+.wk-plans-card { display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: var(--radius); padding: 22px; background: var(--surface); min-width: 0; }
+.wk-plans-card[data-highlight] { border-color: var(--accent-ink); box-shadow: 0 0 0 3px var(--accent-ring); }
+.wk-plans-card-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.wk-plans-tagline { font-size: clamp(20px, 2.2vw, 26px); margin-top: 12px; }
+.wk-plans-price { font-family: var(--f-mono); font-size: 14px; font-weight: 600; margin-top: 6px; }
+.wk-plans-summary { font-size: 13.5px; margin-top: 10px; }
+.wk-plans-note { margin-top: 14px; }
+.wk-plans-cta { margin-top: auto; width: 100%; justify-content: center; }
+.wk-plans-card .wk-plan-features { margin-bottom: 18px; }
+.wk-plans-card .wk-plans-note { margin-bottom: 18px; }
+.wk-plans-compare td:not(:first-child), .wk-plans-compare th:not(:first-child) { text-align: center; }
+.wk-plans-yes { width: 16px; height: 16px; color: var(--accent-ink); }
+.wk-plans-no { width: 16px; height: 16px; color: var(--text-muted); opacity: .6; }
+.wk-plans-badge { width: 28px; height: 28px; color: var(--accent-ink); margin-bottom: 10px; }
+
+/* ---------- checkout ---------- */
+.wk.wk-checkout { display: block; }
+.wk-checkout { min-height: 100dvh; background: var(--bg); color: var(--text); font-family: var(--f-text); padding-bottom: 64px; }
+.wk-checkout-bar { display: flex; align-items: center; gap: 16px; padding: 16px var(--gutter); border-bottom: 1px solid var(--line); }
+.wk-checkout-brand { display: inline-flex; align-items: center; }
+.wk-checkout-brand svg { height: 28px; width: auto; }
+.wk-checkout-lock { display: inline-flex; align-items: center; gap: 6px; font-family: var(--f-mono); font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--text-muted); margin-right: auto; }
+.wk-checkout-lock svg { width: 14px; height: 14px; }
+.wk-checkout-test { margin: 18px auto 0; max-width: 1080px; width: calc(100% - 2 * var(--gutter)); padding: 10px 14px; border-radius: var(--radius-sm); background: var(--warn-soft); color: var(--text); font-size: 13px; }
+.wk-checkout-grid { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(300px, .85fr); gap: 36px; max-width: 1080px; margin: 28px auto 0; padding: 0 var(--gutter); align-items: start; }
+.wk-checkout-main { display: flex; flex-direction: column; gap: 22px; min-width: 0; }
+.wk-checkout-form { display: flex; flex-direction: column; gap: 22px; }
+.wk-checkout-form fieldset { border: 0; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 14px; }
+.wk-checkout-form legend { margin-bottom: 10px; }
+.wk-checkout-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.wk-checkout-card { display: flex; align-items: center; }
+.wk-checkout-card > * { flex: 1; }
+.wk-checkout-card[data-invalid] { border-color: var(--danger); }
+.wk-checkout-consent { display: flex; gap: 10px; align-items: flex-start; font-size: 13px; color: var(--text-dim); line-height: 1.5; }
+.wk-checkout-consent input { margin-top: 3px; accent-color: var(--accent); }
+.wk-checkout-consent a { text-decoration: underline; }
+.wk-checkout-pay { width: 100%; height: 48px; justify-content: center; font-size: 15px; }
+.wk-checkout-secure { display: flex; gap: 8px; align-items: flex-start; font-size: 12.5px; color: var(--text-muted); }
+.wk-checkout-secure svg { width: 15px; height: 15px; flex: none; margin-top: 1px; }
+.wk-checkout-summary { position: sticky; top: 24px; display: flex; flex-direction: column; gap: 16px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); padding: 22px; }
+.wk-checkout-plan { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.wk-checkout-lines { display: flex; flex-direction: column; gap: 10px; border-top: 1px solid var(--line); padding-top: 14px; }
+.wk-checkout-lines > div { display: flex; justify-content: space-between; gap: 12px; font-size: 13.5px; }
+.wk-checkout-lines dt { color: var(--text-dim); }
+.wk-checkout-lines dd { margin: 0; font-family: var(--f-mono); text-align: right; }
+.wk-checkout-total { border-top: 1px solid var(--line); padding-top: 10px; font-weight: 600; }
+.wk-checkout-total dt, .wk-checkout-total dd { color: var(--text); font-size: 15px; }
+.wk-checkout-done { display: flex; flex-direction: column; align-items: flex-start; }
+@media (max-width: 860px) {
+  .wk-checkout-grid { grid-template-columns: minmax(0, 1fr); }
+  .wk-checkout-summary { position: static; order: -1; }
+  .wk-checkout-lock { display: none; }
+  .wk-checkout-row { grid-template-columns: 1fr; }
+}
+
+/* A button that reads as an inline link. */
+.wk-linklike { appearance: none; background: none; border: 0; padding: 0; font: inherit; font-size: 13px; color: var(--accent-ink); text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
+.wk-linklike:hover { color: var(--text); }

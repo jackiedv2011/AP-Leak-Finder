@@ -16,7 +16,7 @@ export interface AuthUser {
   emailVerified?: boolean
   methods?: Array<'password' | 'google'>
   /** Server accounts only. Guests and legacy sessions are treated as Free. */
-  plan?: 'free' | 'pro'
+  plan?: import('../plans').Plan
   onboardingSeenAt?: number | null
 }
 

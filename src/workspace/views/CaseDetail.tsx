@@ -234,7 +234,7 @@ export function CaseDetail({ finding, state, records, discoveredAt, sender, onDe
 
       <Section title="History">
         {state.history && state.history.length > 0 && !entitlements.limits.fullRecoveryWorkflow ? (
-          <Locked title="The full case history is part of Pro" note="Who did what, when, with the amounts and methods — for every case.">
+          <Locked title="The full case history is part of Growth and Flat" note="Who did what, when, with the amounts and methods — for every case.">
             <ul className="wk-timeline">
               {state.history.map((event, i) => (
                 <li key={i} data-done="true">

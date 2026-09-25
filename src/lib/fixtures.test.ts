@@ -94,7 +94,7 @@ describe('arbitrary-file resilience', () => {
   })
 
   it('reports a fatal file with unsupported headers instead of throwing, and names what is missing', () => {
-    const csv = ['Supplier,Total', 'Acme,100'].join('\n')
+    const csv = ['Company,Total', 'Acme,100'].join('\n')
     const result = parseCsv(csv)
     expect(result.records).toHaveLength(0)
     const guidance = assessFatalFile(result)

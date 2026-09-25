@@ -50,7 +50,7 @@ class ProjectSync {
   }
 
   /** Legacy import: the server keeps ids and reports which it already had. */
-  async import(projects: Record<string, unknown>[]): Promise<{ imported: string[]; skipped: string[] }> {
+  async import(projects: Record<string, unknown>[]): Promise<{ imported: string[]; skipped: string[]; blocked?: string[] }> {
     const res = await this.fetchImpl('/api/projects/import', {
       method: 'POST',
       credentials: 'same-origin',
@@ -58,7 +58,7 @@ class ProjectSync {
       body: JSON.stringify({ projects }),
     })
     if (!res.ok) throw new Error(`Import failed (${res.status}).`)
-    return (await res.json()) as { imported: string[]; skipped: string[] }
+    return (await res.json()) as { imported: string[]; skipped: string[]; blocked?: string[] }
   }
 
   /** Drains the queue. Awaiting it means "everything queued so far has reached the server (or was refused)". */
@@ -83,6 +83,13 @@ class ProjectSync {
         if (res.status === 401) {
           // Session gone — keep the queue; the next log-in flushes it.
           break
+        }
+        // A refusal that retrying cannot fix (plan limit, malformed, too large)
+        // must not sit at the head of the queue blocking every later save.
+        if (res.status === 400 || res.status === 402 || res.status === 403 || res.status === 409 || res.status === 413) {
+          console.warn(`Reclaim: the server refused to save this audit (${res.status}); it stays in this browser only.`)
+          this.queue.shift()
+          continue
         }
         if (!res.ok && res.status !== 404) throw new Error(`sync ${op.kind} failed (${res.status})`)
         this.queue.shift()

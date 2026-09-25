@@ -28,7 +28,7 @@ export function Launch({ onRunSample, onUseOwn, running = false, note }: LaunchP
             Upload a payment ledger. Reclaim finds the money that should still be yours.
           </h1>
           <p className="wk-dim" style={{ marginTop: 12, maxWidth: 520, fontSize: 14.5 }}>
-            Seven checks run against your payment records for duplicate payments, overpayments, unused credits and other
+            Seven checks run against your payment records for duplicate payments, overpayments, missed discounts, bank-account changes and other
             clear mistakes. Every finding opens to the exact rows behind it, and nothing is sent to a vendor unless you send it.
           </p>
         </div>

@@ -222,6 +222,6 @@ export function useOptionalAuth(): AuthContextValue | null {
  */
 export function useEntitlements(): Entitlements {
   const ctx = useContext(AuthContext)
-  if (!ctx) return entitlementsFor('pro', 0)
+  if (!ctx) return entitlementsFor('growth', 0)
   return ctx.entitlements ?? entitlementsFor('free', 0)
 }

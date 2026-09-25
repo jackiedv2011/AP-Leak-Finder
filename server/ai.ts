@@ -31,8 +31,45 @@ export const DraftRequestSchema = z.object({
     .max(50),
   userContext: z.string().max(1000),
   sender: z.object({ businessName: z.string().max(200), senderName: z.string().max(200), senderEmail: z.string().max(200) }).strict(),
-}).strict()
+}).strict().refine((r) => Math.round(r.amountRequested * 100) <= Math.round(r.amountFlagged * 100), {
+  message: 'The amount requested cannot be more than the records support.',
+})
 export type DraftRequest = z.infer<typeof DraftRequestSchema>
+
+/** Why a draft could not be produced. The message is safe to show; upstream details never are. */
+export class DraftError extends Error {
+  readonly code: 'ai_failed' | 'ai_busy' | 'ai_unsupported_amount'
+  constructor(code: DraftError['code'], message: string) {
+    super(message)
+    this.code = code
+  }
+}
+
+const MONEY_RE = /\$\s?(\d{1,3}(?:,\d{3})+|\d+)(?:\.(\d{1,2}))?/g
+
+function centsIn(text: string): number[] {
+  return [...text.matchAll(MONEY_RE)].map((m) => Number(m[1].replace(/,/g, '')) * 100 + Number((m[2] ?? '0').padEnd(2, '0')))
+}
+
+/**
+ * Every dollar figure in the draft must be one the case data already contains.
+ * The model writes prose; it never gets to introduce a number a vendor will be
+ * asked to pay. Returns the figures that are not supported.
+ */
+export function unsupportedAmounts(draft: Draft, request: DraftRequest): number[] {
+  const allowed = new Set<number>()
+  const add = (n: number | null) => {
+    if (n !== null) allowed.add(Math.round(Math.abs(n) * 100))
+  }
+  add(request.amountFlagged)
+  add(request.amountRequested)
+  for (const row of request.rows) {
+    add(row.invoiceAmount)
+    add(row.amountPaid)
+  }
+  for (const text of [request.explanation, request.findingTitle]) centsIn(text).forEach((c) => allowed.add(c))
+  return centsIn(`${draft.subject}\n${draft.body}`).filter((c) => !allowed.has(c))
+}
 
 const DraftSchema = z.object({
   subject: z.string(),
@@ -59,12 +96,15 @@ export interface DraftService {
 }
 
 export function createDraftService(apiKey: string, model: string): DraftService {
-  const client = new Anthropic({ apiKey })
+  // A person is waiting on this click: fail within a minute rather than the SDK's ten-minute default.
+  const client = new Anthropic({ apiKey, timeout: 60_000, maxRetries: 2 })
   // `effort` exists on the Opus/Sonnet 4.6+ families only; Haiku 4.5 rejects it.
   const supportsEffort = !model.startsWith('claude-haiku')
   return {
     async draft(request) {
-      const response = await client.messages.parse({
+      let response
+      try {
+        response = await client.messages.parse({
         model,
         max_tokens: 4096,
         system: [{ type: 'text', text: SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }],
@@ -76,9 +116,15 @@ export function createDraftService(apiKey: string, model: string): DraftService 
           },
         ],
       })
-      if (response.stop_reason === 'refusal') throw new Error('The model declined to draft this email.')
+      } catch (err) {
+        if (err instanceof Anthropic.RateLimitError || (err instanceof Anthropic.APIError && (err.status ?? 0) >= 500)) {
+          throw new DraftError('ai_busy', 'AI drafting is busy right now. Try again in a minute — the generated letter is still there.')
+        }
+        throw new DraftError('ai_failed', 'AI drafting failed. The generated letter is still there.')
+      }
+      if (response.stop_reason === 'refusal') throw new DraftError('ai_failed', 'The model declined to draft this email.')
       const parsed = response.parsed_output
-      if (!parsed) throw new Error('The draft came back in an unexpected shape.')
+      if (!parsed) throw new DraftError('ai_failed', 'The draft came back in an unexpected shape.')
       return parsed
     },
   }

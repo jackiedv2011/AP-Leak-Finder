@@ -10,6 +10,8 @@ import {
 } from '@/ledger/projectIndex'
 import { getStorageScope, storageKey } from '@/lib/storageScope'
 import { projectSync } from '@/ledger/projectSync'
+import { ladder } from '@/workspace/selectors'
+import { sumMoney } from '@/lib/claims'
 
 export type { LedgerProjectSummary } from '@/ledger/projectIndex'
 
@@ -40,14 +42,12 @@ function projectId() {
   return `project_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
 }
 
+/** The same figures the Dashboard shows for this audit — one definition of "potential recovery" everywhere. */
 function summaryFor(project: LedgerProject): LedgerProjectSummary {
-  const openFindings = project.environment.result.findings.filter((finding) => {
-    const state = project.environment.caseStates[finding.id]
-    return state?.decision === null || state?.decision === undefined || state.decision === 'needs_info' || state.recoveryStage === 'confirmed' || state.recoveryStage === 'requested'
-  })
-  const recoveryValue = openFindings.reduce((total, finding) => total + finding.dollarImpact, 0)
-  const activeRecovery = project.environment.result.findings.filter((finding) => {
-    const stage = project.environment.caseStates[finding.id]?.recoveryStage
+  const env = project.environment
+  const l = ladder(env)
+  const activeRecovery = env.result.findings.filter((finding) => {
+    const stage = env.caseStates[finding.id]?.recoveryStage
     return finding.class === 'recoverable' && (stage === 'confirmed' || stage === 'requested')
   })
 
@@ -58,11 +58,11 @@ function summaryFor(project: LedgerProject): LedgerProjectSummary {
     mode: project.mode,
     createdAt: project.createdAt,
     updatedAt: project.updatedAt,
-    recordCount: project.environment.records.length,
-    openCaseCount: openFindings.length,
-    recoveryValue,
+    recordCount: env.records.length,
+    openCaseCount: l.openCount,
+    recoveryValue: l.potential,
     recoveryActiveCount: activeRecovery.length,
-    recoveryActiveValue: activeRecovery.reduce((total, finding) => total + finding.dollarImpact, 0),
+    recoveryActiveValue: sumMoney(activeRecovery.map((f) => env.caseStates[f.id]?.requestedAmount ?? f.dollarImpact)),
   }
 }
 
@@ -70,8 +70,23 @@ function projectKey(id: string) {
   return storageKey(`${PROJECT_KEY_PREFIX}${id}`)
 }
 
+/**
+ * Audits too large for this browser's storage quota (roughly 5 MB, which a
+ * ledger of ~10,000 rows reaches) are kept here for the life of the tab. A
+ * signed-in account still has the server copy; the page says so rather than
+ * failing the whole import.
+ */
+const memoryOnly = new Map<string, LedgerProject>()
+
+/** Whether any audit in this tab could not be written to browser storage. */
+export function hasMemoryOnlyProjects(): boolean {
+  return memoryOnly.size > 0
+}
+
 function readProjectPayload(id: string): LedgerProject | null {
   if (typeof window === 'undefined') return null
+  const inMemory = memoryOnly.get(projectKey(id))
+  if (inMemory) return inMemory
   try {
     const raw = window.localStorage.getItem(projectKey(id))
     if (!raw) return null
@@ -83,7 +98,15 @@ function readProjectPayload(id: string): LedgerProject | null {
 
 function writeProjectPayload(project: LedgerProject) {
   if (typeof window === 'undefined') return
-  window.localStorage.setItem(projectKey(project.id), JSON.stringify(toStorable(project)))
+  const key = projectKey(project.id)
+  try {
+    window.localStorage.setItem(key, JSON.stringify(toStorable(project)))
+    memoryOnly.delete(key)
+  } catch {
+    // Quota exceeded: drop any stale stored copy so a reload never shows an older version as current.
+    window.localStorage.removeItem(key)
+    memoryOnly.set(key, project)
+  }
 }
 
 /**
@@ -92,14 +115,16 @@ function writeProjectPayload(project: LedgerProject) {
  */
 export function replaceLocalProjects(projects: LedgerProject[]): void {
   if (typeof window === 'undefined') return
-  for (const existing of readProjectIndex()) window.localStorage.removeItem(projectKey(existing.id))
+  for (const existing of readProjectIndex()) {
+    window.localStorage.removeItem(projectKey(existing.id))
+    memoryOnly.delete(projectKey(existing.id))
+  }
   projects.forEach(writeProjectPayload)
   writeProjectIndex(projects.map(summaryFor))
   const active = window.localStorage.getItem(ACTIVE_PROJECT_KEY())
   if (!active || !projects.some((p) => p.id === active)) {
     const newest = [...projects].sort((a, b) => b.updatedAt - a.updatedAt)[0]
-    if (newest) window.localStorage.setItem(ACTIVE_PROJECT_KEY(), newest.id)
-    else window.localStorage.removeItem(ACTIVE_PROJECT_KEY())
+    setActiveProject(newest?.id ?? null)
   }
 }
 
@@ -120,8 +145,15 @@ export function listLegacyProjects(): LedgerProject[] {
 }
 
 /** Remove the unscoped legacy copies (after they were imported into an account, or on request). */
-export function removeLegacyProjects(): void {
+export function removeLegacyProjects(onlyIds?: string[]): void {
   if (typeof window === 'undefined') return
+  if (onlyIds) {
+    const drop = new Set(onlyIds)
+    for (const id of drop) window.localStorage.removeItem(`${PROJECT_KEY_PREFIX}${id}`)
+    const index = JSON.parse(window.localStorage.getItem(PROJECT_INDEX_BASE) ?? '[]') as LedgerProjectSummary[]
+    window.localStorage.setItem(PROJECT_INDEX_BASE, JSON.stringify(index.filter((p) => !drop.has(p.id))))
+    return
+  }
   for (const project of listLegacyProjects()) window.localStorage.removeItem(`${PROJECT_KEY_PREFIX}${project.id}`)
   window.localStorage.removeItem(PROJECT_INDEX_BASE)
   window.localStorage.removeItem('reclaim.projects.active.v1')
@@ -192,15 +224,22 @@ export function loadProject(id: string): LedgerProject | null {
 
 export function getActiveProjectId(): string | null {
   if (typeof window === 'undefined') return null
-  const activeId = window.localStorage.getItem(ACTIVE_PROJECT_KEY())
+  const activeId = memoryActiveProject !== undefined ? memoryActiveProject : window.localStorage.getItem(ACTIVE_PROJECT_KEY())
   if (activeId && loadProject(activeId)) return activeId
   return listProjects()[0]?.id ?? null
 }
 
+let memoryActiveProject: string | null | undefined
+
 export function setActiveProject(id: string | null) {
   if (typeof window === 'undefined') return
-  if (id) window.localStorage.setItem(ACTIVE_PROJECT_KEY(), id)
-  else window.localStorage.removeItem(ACTIVE_PROJECT_KEY())
+  try {
+    if (id) window.localStorage.setItem(ACTIVE_PROJECT_KEY(), id)
+    else window.localStorage.removeItem(ACTIVE_PROJECT_KEY())
+    memoryActiveProject = undefined
+  } catch {
+    memoryActiveProject = id
+  }
 }
 
 export function createProject(input: Omit<LedgerProject, 'id' | 'createdAt' | 'updatedAt'>): LedgerProject {
@@ -229,6 +268,7 @@ export function deleteProject(id: string) {
   const wasActive = typeof window !== 'undefined' && window.localStorage.getItem(ACTIVE_PROJECT_KEY()) === id
   const projects = readProjectIndex().filter((project) => project.id !== id)
   if (typeof window !== 'undefined') window.localStorage.removeItem(projectKey(id))
+  memoryOnly.delete(projectKey(id))
   writeProjectIndex(projects)
   if (wasActive) setActiveProject(projects[0]?.id ?? null)
   if (syncing()) projectSync.remove(id)

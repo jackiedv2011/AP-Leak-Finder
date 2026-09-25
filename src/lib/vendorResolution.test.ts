@@ -140,3 +140,17 @@ describe('resolveVendors', () => {
     expect(result.resolveVendorName('ACME CORP')).toBe('Acme Corp.')
   })
 })
+
+describe('numbered vendor names', () => {
+  it('different store / unit / location numbers are different vendors, even when every other word matches', () => {
+    for (const [a, b] of [['Vendor 123 Supply LLC', 'Vendor 124 Supply Inc'], ['Shell Station 1042', 'Shell Station 1043'], ['Sysco #214', 'Sysco #215'], ['Unit 101 Cafe', 'Unit 102 Cafe']]) {
+      const r = resolveVendors([{ vendor: a, bankAccountLast4: '1111' }, { vendor: b, bankAccountLast4: '2222' }])
+      expect(r.resolveVendorName(a), `${a} / ${b}`).not.toBe(r.resolveVendorName(b))
+    }
+  })
+
+  it('the same numbered vendor with a spelling slip elsewhere still merges', () => {
+    const r = resolveVendors([{ vendor: 'Sysco Foods #214' }, { vendor: 'Sysco Fodos #214' }])
+    expect(r.resolveVendorName('Sysco Fodos #214')).toBe(r.resolveVendorName('Sysco Foods #214'))
+  })
+})

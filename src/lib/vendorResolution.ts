@@ -1,4 +1,5 @@
 import { damerauLevenshteinDistance } from '@/lib/stringDistance'
+import { normalizeAccountLast4 } from '@/lib/format'
 
 export type ConfidenceTier = 'auto_merge' | 'needs_review' | 'no_match'
 
@@ -70,17 +71,30 @@ function wordEditThreshold(word: string): number {
   return word.length <= 4 ? 1 : 2
 }
 
+/**
+ * Longer than any real word in a vendor name. Past this a token is only ever
+ * compared exactly: edit distance is quadratic in length, and a memo pasted
+ * into the vendor column must not freeze the import.
+ */
+const MAX_FUZZY_TOKEN_LENGTH = 64
+
+function tokensNearlyEqual(tokenA: string, tokenB: string): boolean {
+  if (tokenA === tokenB) return true
+  // Numbers identify: store 1042 and store 1043 are different vendors, not a typo.
+  if (/\d/.test(tokenA) || /\d/.test(tokenB)) return false
+  if (tokenA.length > MAX_FUZZY_TOKEN_LENGTH || tokenB.length > MAX_FUZZY_TOKEN_LENGTH) return false
+  const maxDistance = Math.min(wordEditThreshold(tokenA), wordEditThreshold(tokenB))
+  if (Math.abs(tokenA.length - tokenB.length) > maxDistance) return false
+  return damerauLevenshteinDistance(tokenA, tokenB) <= maxDistance
+}
+
 /** Greedy bipartite match of tokens allowing near-equal words (Damerau-Levenshtein within threshold). */
 function fuzzyWordOverlap(a: string[], b: string[]): number {
   if (a.length === 0 && b.length === 0) return 1
   const remaining = [...b]
   let matched = 0
   for (const tokenA of a) {
-    const idx = remaining.findIndex((tokenB) => {
-      if (tokenA === tokenB) return true
-      const maxDistance = Math.min(wordEditThreshold(tokenA), wordEditThreshold(tokenB))
-      return damerauLevenshteinDistance(tokenA, tokenB) <= maxDistance
-    })
+    const idx = remaining.findIndex((tokenB) => tokensNearlyEqual(tokenA, tokenB))
     if (idx !== -1) {
       matched++
       remaining.splice(idx, 1)
@@ -194,7 +208,8 @@ export function resolveVendors(records: VendorRecordInput[]): VendorResolutionRe
       firstSeenOrder.push(order)
     }
     frequencyByName[index]++
-    if (record.bankAccountLast4) bankAccountsByName[index].add(record.bankAccountLast4)
+    const account = normalizeAccountLast4(record.bankAccountLast4 ?? null)
+    if (account) bankAccountsByName[index].add(account)
   })
 
   const normalizedNames = uniqueNames.map(normalizeVendorName)

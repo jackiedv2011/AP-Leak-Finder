@@ -22,8 +22,16 @@ export const LEGACY_LEDGER_KEY = 'reclaim.ledger.v1'
 export const PROJECT_INDEX_KEY = () => storageKey(PROJECT_INDEX_BASE)
 export const ACTIVE_PROJECT_KEY = () => storageKey(ACTIVE_PROJECT_BASE)
 
+/**
+ * The last index written in this tab, by key. When browser storage is full the
+ * write fails, and the list must still show the audit that was just created.
+ */
+const memoryIndex = new Map<string, LedgerProjectSummary[]>()
+
 export function readProjectIndex(): LedgerProjectSummary[] {
   if (typeof window === 'undefined') return []
+  const inMemory = memoryIndex.get(PROJECT_INDEX_KEY())
+  if (inMemory) return inMemory.toSorted((a, b) => b.updatedAt - a.updatedAt)
   try {
     const raw = window.localStorage.getItem(PROJECT_INDEX_KEY())
     if (!raw) return []
@@ -35,7 +43,12 @@ export function readProjectIndex(): LedgerProjectSummary[] {
 
 export function writeProjectIndex(projects: LedgerProjectSummary[]): void {
   if (typeof window === 'undefined') return
-  window.localStorage.setItem(PROJECT_INDEX_KEY(), JSON.stringify(projects))
+  try {
+    window.localStorage.setItem(PROJECT_INDEX_KEY(), JSON.stringify(projects))
+    memoryIndex.delete(PROJECT_INDEX_KEY())
+  } catch {
+    memoryIndex.set(PROJECT_INDEX_KEY(), projects)
+  }
 }
 
 export function hasSavedLocalWork(): boolean {

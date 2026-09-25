@@ -78,7 +78,12 @@ export async function requestAiDraft(request: DraftRequest, fetchImpl: typeof fe
     body: JSON.stringify(request),
   })
   if (response.status === 503) throw new DraftUnavailableError('AI drafting is not configured on this server.')
-  if (!response.ok) throw new Error(`Drafting failed (${response.status}).`)
+  if (!response.ok) {
+    // 402/429/502 carry a message written for the reviewer; anything else stays generic.
+    const detail = (await response.json().catch(() => null)) as { message?: unknown } | null
+    if ([402, 429, 502].includes(response.status) && typeof detail?.message === 'string') throw new DraftUnavailableError(detail.message)
+    throw new Error(`Drafting failed (${response.status}).`)
+  }
   const data = (await response.json()) as Partial<DraftResponse>
   if (typeof data.subject !== 'string' || typeof data.body !== 'string') throw new Error('The draft came back malformed.')
   return { subject: data.subject, body: data.body }

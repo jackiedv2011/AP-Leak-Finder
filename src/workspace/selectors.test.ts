@@ -2,9 +2,12 @@
  * Data-consistency contract for every number the dashboard shows.
  *
  * The rules, stated once so the tests below can be read against them:
- *   potential   — money still in play: every finding not dismissed and not yet
- *                 resolved (recovered / not recovered). Never includes money
- *                 that already came back.
+ *   potential   — money still in play that could come back: every claim (not a
+ *                 missed discount, bank-account change or shared invoice number)
+ *                 not dismissed and not yet resolved. Never includes money that
+ *                 already came back, protected money, or payments at risk.
+ *   atRisk      — open bank-account / shared-invoice alerts, reported apart.
+ *   protected   — missed discounts: a process fix, never recovery.
  *   verified    — recoverable-class findings the rules support that have not
  *                 been dismissed and have not moved on to a request/outcome.
  *   inRecovery  — outstanding balance on requests that are still open.
@@ -107,10 +110,12 @@ describe('ladder — fresh audit', () => {
     expect(timelineFor(finding, EMPTY_CASE_STATE, importedAt)[0].when).toBe(new Date(importedAt!).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }).toUpperCase())
     expect(timelineFor(finding, EMPTY_CASE_STATE)[0].when).toBe('—')
   })
-  it('counts every finding as potential, only recoverable ones as verified, nothing in recovery', () => {
+  it('counts only claims as potential recovery; payments at risk and missed discounts are reported apart, never added in', () => {
     const l = ladder(baseline())
-    expect(l.counts.potential).toBe(5)
-    expect(l.potential).toBe(1000 + 500 + 250 + 720 + 20)
+    expect(l.openCount).toBe(5)
+    expect(l.counts.potential).toBe(3)
+    expect(l.potential).toBe(1000 + 500 + 250)
+    expect(l.atRisk).toBe(720)
     expect(l.counts.verified).toBe(3)
     expect(l.verified).toBe(1750)
     expect(l.awaitingDecision).toBe(1750)
@@ -161,7 +166,8 @@ describe('ladder — the recovery lifecycle moves money along, never duplicating
     const l = ladder(env)
     expect(l.inRecovery).toBe(600)
     expect(l.recovered).toBe(400)
-    expect(l.potential).toBe(2490 - 400)
+    // Claims only (the $720 bank alert and $20 missed discount are not money owed), net of the $400 returned.
+    expect(l.potential).toBe(1750 - 400)
     expect(vendors(env).find((row) => row.vendor === 'Alpha')).toMatchObject({ potential: 600, recovered: 400 })
   })
 
@@ -199,7 +205,7 @@ describe('ladder — the recovery lifecycle moves money along, never duplicating
     expect(l.inRecovery).toBe(1000)
     expect(l.counts.inRecovery).toBe(1)
     expect(l.recovered).toBe(0)
-    expect(l.potential).toBe(2490) // still in play
+    expect(l.potential).toBe(1750) // still in play
 
     env = setCaseState(env, alpha.id, recordRecoveryOutcome(env.caseStates[alpha.id], 'recovered', 1000, null))
     l = ladder(env)
@@ -207,8 +213,8 @@ describe('ladder — the recovery lifecycle moves money along, never duplicating
     expect(l.inRecovery).toBe(0)
     expect(l.recovered).toBe(1000)
     expect(l.counts.recovered).toBe(1)
-    expect(l.potential).toBe(1490) // recovered money is no longer "potential"
-    expect(l.counts.potential).toBe(4)
+    expect(l.potential).toBe(750) // recovered money is no longer "potential"
+    expect(l.counts.potential).toBe(2)
   })
 
   it('partial recovery counts only what came back, and zero recovery counts nothing', () => {
@@ -230,7 +236,7 @@ describe('ladder — the recovery lifecycle moves money along, never duplicating
     const alpha = findingFor(env, 'Alpha')
     env = setCaseState(env, alpha.id, recordRecoveryOutcome(markRecoveryRequested(confirmCase(null)), 'not_recovered', null, null))
     const l = ladder(env)
-    expect(l.potential).toBe(1490)
+    expect(l.potential).toBe(750)
     expect(l.verified).toBe(750)
     expect(l.inRecovery).toBe(0)
     expect(l.recovered).toBe(0)
@@ -244,8 +250,9 @@ describe('ladder — the recovery lifecycle moves money along, never duplicating
     env = setCaseState(env, alpha.id, markExpected('split payment', 'intentional'))
     env = setCaseState(env, delta.id, markExpected('we asked them to change it', 'known_vendor_exception'))
     const l = ladder(env)
-    expect(l.potential).toBe(500 + 250 + 20)
-    expect(l.counts.potential).toBe(3)
+    expect(l.potential).toBe(500 + 250)
+    expect(l.counts.potential).toBe(2)
+    expect(l.atRisk).toBe(0)
     expect(l.verified).toBe(750)
     expect(l.awaitingDecision).toBe(750)
     expect(rootCauses(env).find((c) => c.type === 'bank_account_change')).toBeUndefined()
@@ -259,7 +266,7 @@ describe('ladder — the recovery lifecycle moves money along, never duplicating
     const alpha = findingFor(env, 'Alpha')
     env = setCaseState(env, alpha.id, markNeedsInfo('which PO?'))
     const l = ladder(env)
-    expect(l.potential).toBe(2490)
+    expect(l.potential).toBe(1750)
     expect(l.verified).toBe(1750)
     expect(l.awaitingDecision).toBe(750)
   })
@@ -281,9 +288,11 @@ describe('ladder — the recovery lifecycle moves money along, never duplicating
     }
     const l = ladder(env)
     expect(l.recovered).toBe(1750)
-    expect(l.potential).toBe(740)
+    expect(l.potential).toBe(0)
     expect(l.verified).toBe(0)
-    expect(l.potential + l.recovered).toBe(2490)
+    expect(l.atRisk).toBe(720)
+    // A missed discount is a future saving, not a prevented payment: protected stays zero.
+    expect(l.protected).toBe(0)
   })
 
   it('reports and recoveries agree with the ladder on what is in recovery and what came back', () => {
@@ -314,6 +323,31 @@ describe('opportunities ordering', () => {
     const rows = opportunities(baseline())
     expect(rows[0].finding.vendor).toBe('Alpha')
     expect(rows.at(-1)!.finding.vendor).toBe('Epsilon')
+  })
+
+  it('a payment to verify or a missed discount can never be counted as money in recovery or recovered', () => {
+    let env = baseline()
+    const delta = findingFor(env, 'Delta')
+    const epsilon = findingFor(env, 'Epsilon')
+    // Even if a stored state claims money came back on them (older data, or a bypassed UI)…
+    env = setCaseState(env, delta.id, markRecoveryRequested(confirmCase(null), 720))
+    let l = ladder(env)
+    expect(l.inRecovery).toBe(0)
+    env = setCaseState(env, delta.id, recordRecoveryOutcome(env.caseStates[delta.id], 'recovered', 720, null))
+    env = setCaseState(env, epsilon.id, recordRecoveryOutcome(markRecoveryRequested(confirmCase(null), 20), 'recovered', 20, null))
+    l = ladder(env)
+    // …the ladder never reports it as recovered money.
+    expect(l.recovered).toBe(0)
+    expect(vendors(env).reduce((s, v) => s + v.recovered, 0)).toBe(0)
+  })
+
+  it('in recovery is what was actually asked for, not the full finding, when a partial request goes out', () => {
+    let env = baseline()
+    const alpha = findingFor(env, 'Alpha')
+    env = setCaseState(env, alpha.id, markRecoveryRequested(confirmCase(null), 600))
+    const l = ladder(env)
+    expect(l.inRecovery).toBe(600)
+    expect(l.potential).toBe(1750)
   })
 })
 

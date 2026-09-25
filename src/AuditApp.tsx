@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { formatCurrency } from '@/lib/format'
+import { isClaim } from '@/lib/claims'
+import { checkRepeatUpload, rememberUpload } from '@/ledger/uploadRegistry'
+import { repeatMessage } from '../server/uploads.ts'
+import { useTheme } from '@/workspace/theme'
 import { ArrowLeft, Plus } from 'lucide-react'
 import { ImportDialog, type ImportIntent } from '@/components/audit/ImportDialog'
 import { ClearLedgerDialog } from '@/components/audit/ClearLedgerDialog'
@@ -12,6 +15,7 @@ import { Audits } from '@/workspace/views/Audits'
 import { Findings } from '@/workspace/views/Findings'
 import { Recoveries } from '@/workspace/views/Recoveries'
 import { Reports } from '@/workspace/views/Reports'
+import { Plans } from '@/workspace/views/Plans'
 import { SettingsView } from '@/workspace/views/Settings'
 import { CaseDetail } from '@/workspace/views/CaseDetail'
 import { useAuditRoute, loadPersistedContext, type RouteMode } from '@/audit/useAuditRoute'
@@ -28,6 +32,7 @@ import {
   createProject,
   deleteProject,
   getActiveProjectId,
+  hasMemoryOnlyProjects,
   listProjects,
   loadProject,
   migrateLegacyLedger,
@@ -71,6 +76,7 @@ const TITLES: Record<RouteMode, string> = {
   findings: 'Findings',
   recoveries: 'Recoveries',
   reports: 'Reports',
+  plans: 'Plans',
   settings: 'Settings',
 }
 
@@ -82,6 +88,8 @@ export function AuditApp() {
   const { route, navigate, goBack } = useAuditRoute()
   const auth = useOptionalAuth()
   const entitlements = useEntitlements()
+  // Lives here, not in Settings, so a `system` choice follows the OS on every screen.
+  const { choice: themeChoice, resolved: resolvedTheme, choose: chooseTheme } = useTheme()
   const [limitDialog, setLimitDialog] = useState(false)
   const [tourRequested, setTourRequested] = useState(false)
   const account = auth?.user && !auth.user.isGuest ? auth.user : null
@@ -163,6 +171,7 @@ export function AuditApp() {
               })
           projectRef.current = saved
           setProject(saved)
+          if (input.mode === 'upload') rememberUpload(input.parsed.records, saved.id)
           refreshProjects()
           // A new audit counts against the plan once the server has it.
           if (!current || options.replaceEnvironment) void projectSync.flush().then(() => auth?.refreshEntitlements())
@@ -317,9 +326,9 @@ export function AuditApp() {
     (findingId: string, pkg: RequestPackage) => {
       persistCaseState(findingId, (current) => {
         const finding = environmentRef.current?.result.findings.find((row) => row.id === findingId)
-        if (finding?.class !== 'recoverable') return markRecoveryRequested(updateRecoveryPackage(current, { subject: pkg.subject, body: pkg.body, requestedResolution: pkg.method }), pkg.requestedAmount)
+        if (finding?.class !== 'recoverable') return markRecoveryRequested(updateRecoveryPackage(current, { subject: pkg.subject, body: pkg.body, requestedResolution: pkg.method }), finding ? Math.min(pkg.requestedAmount, finding.dollarImpact) : pkg.requestedAmount)
         if (current.recoverySubject !== pkg.subject || current.recoveryDraft !== pkg.body || current.requestedAmount !== pkg.requestedAmount || current.requestedResolution !== pkg.method || (current.recoveryRecipientEmail ?? '') !== pkg.recipientEmail) return current
-        return startRecoveryRequest(current, pkg.requestedAmount)
+        return startRecoveryRequest(current, pkg.requestedAmount, Date.now(), finding?.dollarImpact)
       })
     },
     [persistCaseState]
@@ -355,7 +364,12 @@ export function AuditApp() {
 
   const handleRecordOutcome = useCallback(
     (findingId: string, outcome: 'recovered' | 'not_recovered', amount: number | null, note: string | null, method: RecoveryMethod | null) => {
-      persistCaseState(findingId, (current) => recordRecoveryOutcome(current, outcome, amount, note, method))
+      const finding = environmentRef.current?.result.findings.find((f) => f.id === findingId)
+      // Money can only come back on a claim; anything else closes without an amount.
+      const claim = finding ? isClaim(finding) : false
+      persistCaseState(findingId, (current) =>
+        claim ? recordRecoveryOutcome(current, outcome, amount, note, method) : recordRecoveryOutcome(current, 'not_recovered', null, note, null)
+      )
     },
     [persistCaseState]
   )
@@ -376,12 +390,21 @@ export function AuditApp() {
   }, [persistCaseState])
 
   const handleImport = useCallback(
-    (input: ImportInput) =>
-      runImport(
-        { sourceLabel: input.sourceLabel, mode: input.mode, parsed: input.parsed },
-        { replaceEnvironment: importIntent === 'new' || route.entry === 'upload' }
-      ),
-    [importIntent, route.entry, runImport]
+    (input: ImportInput) => {
+      const replaceEnvironment = importIntent === 'new' || route.entry === 'upload'
+      // Free: each ledger is audited once. A repeat — the same file, a renamed
+      // copy, or a trimmed piece of it — is flagged here, before anything runs.
+      if (entitlements.limits.blocksRepeatUploads) {
+        const check = checkRepeatUpload(input.parsed.records, replaceEnvironment ? null : projectRef.current?.id ?? null)
+        if (check.repeat) {
+          setEntryError(repeatMessage(check))
+          return
+        }
+      }
+      setEntryError(null)
+      return runImport({ sourceLabel: input.sourceLabel, mode: input.mode, parsed: input.parsed }, { replaceEnvironment })
+    },
+    [importIntent, route.entry, runImport, entitlements.limits.blocksRepeatUploads]
   )
 
   const handleOpenProject = useCallback(
@@ -454,6 +477,32 @@ export function AuditApp() {
     />
   )
 
+  // Plans is reachable before a first audit too: it's where someone decides how to use Reclaim.
+  if (!running && route.entry === null && !environment && route.mode === 'plans') {
+    return (
+      <>
+        <WorkspaceShell
+          mode="plans"
+          onModeChange={(mode) => navigate({ mode, caseId: null, draft: false })}
+          auditCount={projects.length}
+          findingCount={0}
+          recoveryCount={0}
+          title={TITLES.plans}
+          subtitle="Reclaim"
+          actions={
+            <button type="button" className="wk-btn" data-variant="outline" data-size="sm" onClick={() => openImport('new')}>
+              <Plus aria-hidden="true" />
+              Start an audit
+            </button>
+          }
+        >
+          <Plans onStartAudit={() => openImport('new')} />
+        </WorkspaceShell>
+        <ImportDialog open={importDialogOpen} onOpenChange={setImportDialogOpen} onImport={handleImport} error={entryError} intent="new" />
+      </>
+    )
+  }
+
   if (running || route.entry !== null || !environment) {
     return (
       <>
@@ -487,7 +536,7 @@ export function AuditApp() {
         // recoveries still moving (ready to send or out with a vendor).
         findingCount={environment.result.findings.filter((f) => getCaseState(environment, f.id).decision === null).length}
         recoveryCount={overview.recoveryActiveCount}
-        title={activeFinding ? activeFinding.vendor : TITLES[route.mode]}
+        title={activeFinding ? (activeLocked ? 'Locked finding' : activeFinding.vendor) : TITLES[route.mode]}
         subtitle={activeFinding ? activeCase?.state.recoveryStage ? activeFinding.class === 'recoverable' ? 'Recovery case' : 'Internal review' : 'Finding' : sampleSession ? 'Sample ledger' : project?.name}
         actions={
           activeFinding ? (
@@ -503,30 +552,27 @@ export function AuditApp() {
           )
         }
       >
+        {hasMemoryOnlyProjects() ? (
+          <div className="wk-alert" role="status" data-testid="storage-notice" style={{ marginBottom: 20 }}>
+            <p>
+              {account
+                ? 'This audit is too large to keep in this browser’s storage. It is saved to your account and will load from there next time.'
+                : 'This audit is too large to keep in this browser’s storage. It works in this tab, but it will be gone when the tab closes — create an account to keep it.'}
+            </p>
+          </div>
+        ) : null}
         {activeFinding && activeCase && activeLocked ? (
           <Locked
-            title="This finding is part of Pro"
-            note={`The Free plan shows the ${entitlements.limits.findingsVisible} lowest-value findings in full. Pro shows every finding, including this ${formatCurrency(activeFinding.dollarImpact)} one.`}
+            title="This finding is part of Growth and Flat"
+            note={`The Free plan shows the ${entitlements.limits.findingsVisible} lowest-value findings in full. Growth and Flat show every finding, with its evidence.`}
           >
-            <CaseDetail
-              finding={activeFinding}
-              state={activeCase.state}
-              records={environment.records}
-              discoveredAt={activeDiscoveredAt}
-              sender={sender}
-              onDecide={() => {}}
-              onMarkRequested={() => {}}
-              onRecordOutcome={() => {}}
-              onReopen={() => {}}
-              onReopenBalance={() => {}}
-              onApproveRecovery={() => {}}
-              onContactHold={() => {}}
-              onVendorUpdate={() => {}}
-              onFollowUp={() => {}}
-              onVerifyRecovery={() => {}}
-              onCloseRecovery={() => {}}
-              onReconcileRecovery={() => {}}
-            />
+            {/* A placeholder, not the real case: nothing about a locked finding is put in the page. */}
+            <section className="wk-section" aria-hidden="true">
+              <div className="wk-card" style={{ minHeight: 220 }}>
+                <span className="wk-label">Locked finding</span>
+                <p className="wk-dim" style={{ marginTop: 8 }}>Vendor, amount, evidence and recovery steps are part of Growth and Flat.</p>
+              </div>
+            </section>
           </Locked>
         ) : activeFinding && activeCase ? (
             <CaseDetail
@@ -574,8 +620,17 @@ export function AuditApp() {
           <Recoveries env={environment} onOpenCase={handleOpenCase} />
         ) : route.mode === 'reports' ? (
           <Reports env={environment} />
+        ) : route.mode === 'plans' ? (
+          <Plans onStartAudit={() => openImport('new')} />
         ) : (
-          <SettingsView env={environment} onClear={() => setClearDialogOpen(true)} onShowTour={() => setTourRequested(true)} />
+          <SettingsView
+            env={environment}
+            onClear={() => setClearDialogOpen(true)}
+            onShowTour={() => setTourRequested(true)}
+            theme={themeChoice}
+            resolvedTheme={resolvedTheme}
+            onThemeChange={chooseTheme}
+          />
         )}
       </WorkspaceShell>
 

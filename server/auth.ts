@@ -3,7 +3,7 @@ import { hashPassword, hashToken, newId, newToken, verifyPassword } from './cryp
 import type { UserRow } from './db.ts'
 import { HttpError } from './http.ts'
 import type { Mailer } from './mailer.ts'
-import { isPlan, type Plan } from './plans.ts'
+import { planOf, type Plan } from './plans.ts'
 
 export interface PublicUser {
   id: string
@@ -68,7 +68,7 @@ export class AuthService {
       termsAcceptedAt: row.terms_accepted_at,
       termsVersion: row.terms_version,
       methods,
-      plan: isPlan(row.plan) ? row.plan : 'free',
+      plan: planOf(row.plan),
       onboardingSeenAt: row.onboarding_seen_at,
     }
   }

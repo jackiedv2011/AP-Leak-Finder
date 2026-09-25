@@ -5,4 +5,4 @@
  */
 export const TERMS_VERSION = '2026-09-20-draft'
 export const TERMS_EFFECTIVE_DATE = 'September 20, 2026'
-export const LEGAL_CONTACT_EMAIL = 'hello@reclaim.example'
+export const LEGAL_CONTACT_EMAIL = 'reclaimbusiness1@gmail.com'

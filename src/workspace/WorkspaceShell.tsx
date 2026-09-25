@@ -1,9 +1,10 @@
+import { PLAN_LABEL, planOf } from '@/lib/plans'
 import type { ReactNode } from 'react'
-import { LayoutGrid, FolderSearch, Search, Banknote, FileBarChart, Settings as SettingsIcon, LogOut } from 'lucide-react'
+import { LayoutGrid, FolderSearch, Search, Banknote, FileBarChart, Gem, Settings as SettingsIcon, LogOut } from 'lucide-react'
 import { useOptionalAuth } from '@/lib/auth/AuthContext'
 import './workspace.css'
 
-export type WorkspaceMode = 'dashboard' | 'audits' | 'findings' | 'recoveries' | 'reports' | 'settings'
+export type WorkspaceMode = 'dashboard' | 'audits' | 'findings' | 'recoveries' | 'reports' | 'plans' | 'settings'
 
 interface NavEntry {
   mode: WorkspaceMode
@@ -64,7 +65,10 @@ export function WorkspaceShell({
     { mode: 'recoveries', label: 'Recoveries', icon: Banknote, count: recoveryCount },
     { mode: 'reports', label: 'Reports', icon: FileBarChart },
   ]
-  const secondary: NavEntry[] = [{ mode: 'settings', label: 'Settings', icon: SettingsIcon }]
+  const secondary: NavEntry[] = [
+    { mode: 'plans', label: 'Plans', icon: Gem },
+    { mode: 'settings', label: 'Settings', icon: SettingsIcon },
+  ]
 
   const renderItem = ({ mode: entryMode, label, icon: Icon, count }: NavEntry) => (
     <li key={entryMode}>
@@ -112,7 +116,7 @@ export function WorkspaceShell({
                 <div style={{ minWidth: 0 }}>
                   <div className="wk-account-name">{user.isGuest ? 'Guest session' : user.name}</div>
                   <div className="wk-account-sub">
-                    {user.isGuest ? 'Nothing is saved to an account' : `${user.plan === 'pro' ? 'Pro' : 'Free'} plan · ${user.company || user.email}`}
+                    {user.isGuest ? 'Nothing is saved to an account' : `${PLAN_LABEL[planOf(user.plan)]} plan · ${user.company || user.email}`}
                   </div>
                 </div>
               </div>

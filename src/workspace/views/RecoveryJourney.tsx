@@ -115,7 +115,7 @@ export function RecoveryProgressPanel({ finding, state, onVendorUpdate, onFollow
 
       <div className="wk-card-flat">
         <h3 className="wk-display wk-h2">Verify returned value</h3>
-        <p className="wk-dim wk-flow-intro">A promise or issued credit is pending. Record a refund only when it settles, or a credit only after it is applied to a real bill. {formatCurrency(remaining)} remains on this request.</p>
+        <p className="wk-dim wk-flow-intro">A promise or an issued credit is not money back yet. Record a refund only when it settles, or a credit only after it is applied to a real bill. {formatCurrency(remaining)} remains on this request.</p>
         {state.recoverySettlements?.length ? <ol className="wk-contact-log">{state.recoverySettlements.map((settlement, index) => <li key={`${settlement.reference}-${index}`}><strong>{formatCurrency(settlement.amount)} returned</strong><span>{new Date(settlement.settledAt).toLocaleDateString()}</span><p>{SETTLEMENT_METHOD_LABEL[settlement.method]} · {settlement.reference}{settlement.appliedToBill ? ` · ${settlement.appliedToBill}` : ''}</p></li>)}</ol> : null}
         <div className="wk-flow-fields">
           <div className="wk-field"><label htmlFor="settled-amount">Amount settled</label><input id="settled-amount" className="wk-input" inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} /></div>

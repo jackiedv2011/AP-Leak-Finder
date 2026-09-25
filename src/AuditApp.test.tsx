@@ -29,6 +29,17 @@ function sumImpact(findings: Finding[]): number {
   return findings.reduce((total, finding) => total + finding.dollarImpact, 0)
 }
 
+/**
+ * "Potential recovery" counts only money a vendor could owe back. Written out
+ * here rather than imported, so the test states the rule independently: a
+ * missed discount is a process fix, and a bank-account change or a shared
+ * invoice number is a payment to verify — none of them is a claim.
+ */
+const NOT_CLAIMS = ['missed_discount', 'bank_account_change', 'shared_invoice_number']
+function sumClaims(findings: Finding[]): number {
+  return sumImpact(findings.filter((f) => !NOT_CLAIMS.includes(f.type)))
+}
+
 /** A ledger already persisted by a previous session, written through the real store. */
 function seedPersistedLedger() {
   const environment = mergeImport(null, {
@@ -187,9 +198,9 @@ describe('AuditApp', () => {
     expect(screen.getAllByRole('button', { name: /Open .* finding/ }).length).toBeGreaterThan(0)
   })
 
-  it('offers exactly the six sections, in order', async () => {
+  it('offers exactly the seven sections, in order', async () => {
     await runSampleFromLaunch()
-    expect(navLabels()).toEqual(['Dashboard', 'Audits', 'Findings', 'Recoveries', 'Reports', 'Settings'])
+    expect(navLabels()).toEqual(['Dashboard', 'Audits', 'Findings', 'Recoveries', 'Reports', 'Plans', 'Settings'])
   })
 
   // Found money and returned money are different numbers. The stages are
@@ -199,7 +210,7 @@ describe('AuditApp', () => {
     await runSampleFromLaunch()
 
     const findings = sampleFindings()
-    const potential = sumImpact(findings)
+    const potential = sumClaims(findings)
     const verified = sumImpact(findings.filter((finding) => finding.class === 'recoverable'))
     expect(verified).toBeGreaterThan(0)
 
@@ -673,5 +684,35 @@ describe('AuditApp', () => {
     expect(screen.getByText(`${readiness.availableCheckCount} of 7 checks`)).toBeInTheDocument()
     expect(fact('Payment records')).toBe(String(parsed.records.length))
     expect(fact('Vendors')).toBe(String(new Set(parsed.records.map((record) => record.vendor)).size))
+  })
+})
+
+describe('appearance', () => {
+  it('Settings offers Light / System / Dark, applies the choice to the page, and remembers it', async () => {
+    await runSampleFromLaunch()
+    goToMode('Settings')
+    const group = await screen.findByRole('radiogroup', { name: 'Appearance' })
+    fireEvent.click(within(group).getByLabelText('Light'))
+    await waitFor(() => expect(document.documentElement.dataset.theme).toBe('light'))
+    expect(window.localStorage.getItem('reclaim.theme.v1')).toBe('light')
+    fireEvent.click(within(group).getByLabelText('Dark'))
+    await waitFor(() => expect(document.documentElement.dataset.theme).toBe('dark'))
+    expect(window.localStorage.getItem('reclaim.theme.v1')).toBe('dark')
+  })
+})
+
+describe('non-claim findings in the recovery flow', () => {
+  it('a bank-account change can be confirmed and closed, but never recorded as money coming back', async () => {
+    await runSampleFromLaunch()
+    goToMode('Findings')
+    const row = [...document.querySelectorAll('.wk-table tbody tr')].find((r) => r.textContent?.includes('Vendor bank-account change'))!
+    fireEvent.click(row)
+    await decide('This is real')
+    fireEvent.click(await screen.findByRole('button', { name: 'Mark as filed' }))
+    expect(await screen.findByRole('button', { name: 'Close internal review' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Money came back' })).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Close internal review' }))
+    goToMode('Dashboard')
+    expect(statValue('Recovered')).toBe(formatCurrency(0))
   })
 })

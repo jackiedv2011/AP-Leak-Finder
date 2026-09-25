@@ -157,7 +157,7 @@ export async function requestUpgrade(): Promise<{ ok: boolean; message: string }
   return { ok: status === 200, message: body?.message ?? 'Upgrading is coming soon.' }
 }
 
-/** Development only: switch the signed-in account's plan to exercise the Pro surface. */
+/** Development only: switch the signed-in account's plan to exercise the paid-plan surface. */
 export async function setDevPlan(plan: Plan): Promise<AuthUser | null> {
   const { status, body } = await call<{ user: ServerUser }>('/api/dev/plan', { method: 'POST', json: { plan } })
   return status === 200 ? toAuthUser(body.user) : null

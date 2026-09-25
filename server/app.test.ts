@@ -303,7 +303,7 @@ describe('account data isolation', () => {
     await signUpAndVerify(a, alice)
     await a.put('/api/projects/p1', project('p1', 'Already there'))
     const res = await a.post('/api/projects/import', { projects: [project('p1', 'Legacy copy'), project('p9', 'Legacy new')] })
-    expect(res.body).toEqual({ imported: ['p9'], skipped: ['p1'] })
+    expect(res.body).toEqual({ imported: ['p9'], skipped: ['p1'], blocked: [] })
     expect((await a.get('/api/projects')).body.projects.map((p: any) => p.name).sort()).toEqual(['Already there', 'Legacy new'])
   })
 })
@@ -318,26 +318,20 @@ describe('plans and entitlements', () => {
     expect(user.onboardingSeenAt).toBeNull()
     const ent = await c.get('/api/account/entitlements')
     expect(ent.status).toBe(200)
-    expect(ent.body).toMatchObject({ plan: 'free', limits: { auditsPerMonth: 3, findingsVisible: 3, aiDrafts: false, fullLetters: false, fullRecoveryWorkflow: false, advancedReports: false }, usage: { auditsThisMonth: 0 }, canStartAudit: true })
+    expect(ent.body).toMatchObject({ plan: 'free', limits: { auditsPerMonth: null, findingsVisible: 3, blocksRepeatUploads: true, aiDrafts: false, fullLetters: false, fullRecoveryWorkflow: false, advancedReports: false }, usage: { auditsThisMonth: 0 }, canStartAudit: true })
     expect((await new Client().get('/api/account/entitlements')).status).toBe(401)
   })
 
-  it('Free accounts get three new audits a month; the fourth is refused with a plan_limit, and updates to existing audits still work', async () => {
+  it('Free has unlimited uploads of different ledgers, and existing audits can always be updated', async () => {
     const c = new Client()
     await signUpAndVerify(c, alice)
-    for (const id of ['a1', 'a2', 'a3']) expect((await c.put(`/api/projects/${id}`, project(id))).status).toBe(200)
-    expect((await c.get('/api/account/entitlements')).body).toMatchObject({ usage: { auditsThisMonth: 3 }, canStartAudit: false })
-    const fourth = await c.put('/api/projects/a4', project('a4'))
-    expect(fourth.status).toBe(402)
-    expect(fourth.body).toMatchObject({ code: 'plan_limit', fields: { feature: 'audits' } })
+    for (const id of ['a1', 'a2', 'a3', 'a4', 'a5']) expect((await c.put(`/api/projects/${id}`, project(id))).status).toBe(200)
+    expect((await c.get('/api/account/entitlements')).body).toMatchObject({ usage: { auditsThisMonth: 5 }, canStartAudit: true })
     expect((await c.put('/api/projects/a1', { ...project('a1'), name: 'renamed' })).status).toBe(200)
-    expect((await c.get('/api/projects')).body.projects).toHaveLength(3)
-    // last month's audits do not count
-    app.db.prepare("UPDATE projects SET created_at = ? WHERE id = 'a1'").run(Date.UTC(2000, 0, 1))
-    expect((await c.put('/api/projects/a4', project('a4'))).status).toBe(200)
+    expect((await c.get('/api/projects')).body.projects).toHaveLength(5)
   })
 
-  it('Pro removes the audit limit and unlocks AI drafts; Free is told AI is a Pro feature before anything is sent to the model', async () => {
+  it('Growth unlocks every finding and AI drafts; Free is told AI is a paid feature before anything is sent to the model', async () => {
     const c = new Client()
     await signUpAndVerify(c, alice)
     const draftPayload = {
@@ -351,11 +345,11 @@ describe('plans and entitlements', () => {
     expect(refused.body.fields).toEqual({ feature: 'ai' })
     expect(drafts.draft).not.toHaveBeenCalled()
 
-    const upgraded = await c.post('/api/dev/plan', { plan: 'pro' })
-    expect(upgraded.body.user.plan).toBe('pro')
-    expect((await c.get('/api/auth/me')).body.user.plan).toBe('pro')
+    const upgraded = await c.post('/api/dev/plan', { plan: 'growth' })
+    expect(upgraded.body.user.plan).toBe('growth')
+    expect((await c.get('/api/auth/me')).body.user.plan).toBe('growth')
     for (const id of ['p1', 'p2', 'p3', 'p4', 'p5']) expect((await c.put(`/api/projects/${id}`, project(id))).status).toBe(200)
-    expect((await c.get('/api/account/entitlements')).body).toMatchObject({ plan: 'pro', limits: { auditsPerMonth: null, findingsVisible: null, aiDrafts: true }, canStartAudit: true })
+    expect((await c.get('/api/account/entitlements')).body).toMatchObject({ plan: 'growth', limits: { auditsPerMonth: null, findingsVisible: null, blocksRepeatUploads: false, aiDrafts: true }, canStartAudit: true })
     expect((await c.post('/api/ai/draft', draftPayload)).status).toBe(200)
     // a plan is per account: Bob is still Free
     const b = new Client()
@@ -383,7 +377,7 @@ describe('plans and entitlements', () => {
     const prodConfig = { ...config, devMailbox: false }
     const prod = createApp({ config: prodConfig, db: openDatabase(':memory:'), mailer: new DevMailer(openDatabase(':memory:')), google: null, drafts: null })
     const port = await prod.listen(0)
-    const res = await fetch(`http://127.0.0.1:${port}/api/dev/plan`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{"plan":"pro"}' })
+    const res = await fetch(`http://127.0.0.1:${port}/api/dev/plan`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{"plan":"growth"}' })
     expect(res.status).toBe(404)
     await prod.close()
   })
@@ -400,7 +394,7 @@ describe('ai drafting', () => {
     expect((await new Client().post('/api/ai/draft', payload)).status).toBe(401)
     const c = new Client()
     await signUpAndVerify(c, alice)
-    await c.post('/api/dev/plan', { plan: 'pro' })
+    await c.post('/api/dev/plan', { plan: 'growth' })
     expect((await c.post('/api/ai/draft', { ...payload, extra: 'smuggled' })).status).toBe(400)
     expect((await c.post('/api/ai/draft', { ...payload, rows: [{ ...payload.rows[0], bankAccountLast4: '1234' }] })).status).toBe(400)
     const ok = await c.post('/api/ai/draft', payload)

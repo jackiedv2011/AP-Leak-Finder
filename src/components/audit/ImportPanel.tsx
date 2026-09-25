@@ -37,6 +37,9 @@ const REQUIRED_COLUMNS: { name: string; description: string }[] = [
   { name: 'category', description: 'GL category, optional' },
 ]
 
+/** Well above any real SMB AP export (50k rows is ~6 MB); guards the tab against reading something enormous. */
+const MAX_UPLOAD_BYTES = 50 * 1024 * 1024
+
 interface PendingUpload {
   file: File
   parsed: ParseResult
@@ -67,8 +70,21 @@ export function ImportPanel({ allowSample, animateEntry = false, autoFocusUpload
 
   async function handleFile(file: File) {
     setParseError(null)
+    if (/\.(xlsx|xlsm|xls|numbers|ods)$/i.test(file.name)) {
+      setParseError('Spreadsheet files can’t be read directly yet. In Excel or Sheets, use File → Save As / Download → CSV, then upload that file.')
+      return
+    }
+    if (file.size > MAX_UPLOAD_BYTES) {
+      setParseError(`That file is ${formatFileSize(file.size)}. Reclaim reads files up to ${formatFileSize(MAX_UPLOAD_BYTES)} — split the export by date range and add each part to the same audit.`)
+      return
+    }
     try {
       const text = await file.text()
+      // A ZIP header (every .xlsx) or NUL bytes mean this is not a text CSV, whatever it is named.
+      if (text.startsWith('PK\u0003\u0004') || text.slice(0, 4096).includes('\u0000')) {
+        setParseError('That file isn’t a CSV. Export the ledger as CSV (comma-separated values) and upload that.')
+        return
+      }
       const parsed = parseCsv(text)
       if (parsed.records.length === 0) {
         const guidance = assessFatalFile(parsed)
@@ -157,6 +173,12 @@ export function ImportPanel({ allowSample, animateEntry = false, autoFocusUpload
             </ul>
           </div>
         )}
+
+        {error ? (
+          <div className="wk-alert" role="alert" data-testid="import-flag">
+            <p>{error}</p>
+          </div>
+        ) : null}
 
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
           <button type="button" className="wk-btn" data-variant="outline" onClick={() => setPending(null)}>

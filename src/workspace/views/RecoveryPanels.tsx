@@ -70,8 +70,8 @@ export function RecoveryRequestPanel({
   const [amountInput, setAmountInput] = useState(() => (state.requestedAmount ?? finding.dollarImpact).toFixed(2))
   const generated = useMemo(() => {
     const amount = parseMoney(amountInput)
-    const scoped = Number.isFinite(amount) && amount > 0 ? { ...finding, dollarImpact: amount } : finding
-    return generateLetter(scoped, sender, method)
+    // A partial request lowers the ask; the facts the letter states still come from the finding.
+    return generateLetter(finding, sender, method, Number.isFinite(amount) && amount > 0 ? amount : finding.dollarImpact)
   }, [finding, sender, method, amountInput])
   const [subject, setSubject] = useState(state.recoverySubject ?? generated.subject)
   const [body, setBody] = useState(state.recoveryDraft ?? generated.body)
@@ -214,9 +214,9 @@ export function RecoveryRequestPanel({
 
       {!canEdit ? (
         <p className="wk-dim" style={{ marginTop: 8, fontSize: 12.5 }}>
-          Editing, downloading and AI drafting are part of Pro.{' '}
-          <button type="button" className="wk-linklike" onClick={() => setUpgrade('Editable letters are part of Pro.')}>
-            See what Pro adds
+          Editing, downloading and AI drafting are part of Growth and Flat.{' '}
+          <button type="button" className="wk-linklike" onClick={() => setUpgrade('Editable letters are part of Growth and Flat.')}>
+            See what paid plans add
           </button>
         </p>
       ) : null}
@@ -241,20 +241,20 @@ export function RecoveryRequestPanel({
             className="wk-btn"
             data-variant="outline"
             data-size="sm"
-            onClick={limits.aiDrafts ? draftWithAi : () => setUpgrade('AI recovery drafts are part of Pro.')}
+            onClick={limits.aiDrafts ? draftWithAi : () => setUpgrade('AI recovery drafts are part of Growth and Flat.')}
             disabled={drafting || Boolean(amountError)}
           >
             <Sparkles aria-hidden="true" />
-            {drafting ? 'Drafting…' : limits.aiDrafts ? 'Draft with AI' : 'Draft with AI (Pro)'}
+            {drafting ? 'Drafting…' : limits.aiDrafts ? 'Draft with AI' : 'Draft with AI (paid plans)'}
           </button>
         ) : null}
         <button type="button" className="wk-btn" data-variant="outline" data-size="sm" onClick={copy}>
           <Copy aria-hidden="true" />
           Copy
         </button>
-        <button type="button" className="wk-btn" data-variant="outline" data-size="sm" onClick={canEdit ? download : () => setUpgrade('Downloading letters is part of Pro.')}>
+        <button type="button" className="wk-btn" data-variant="outline" data-size="sm" onClick={canEdit ? download : () => setUpgrade('Downloading letters is part of Growth and Flat.')}>
           <Download aria-hidden="true" />
-          {canEdit ? 'Download' : 'Download (Pro)'}
+          {canEdit ? 'Download' : 'Download (paid plans)'}
         </button>
         <UpgradeDialog open={upgrade !== null} onOpenChange={(open) => !open && setUpgrade(null)} reason={upgrade ?? undefined} />
         {edited ? (

@@ -2,7 +2,7 @@ import { formatCurrency, plural } from '@/lib/format'
 import { DECISION_LABEL } from '@/ledger/caseState'
 import type { LedgerEnvironment } from '@/ledger/store'
 import { ladder, opportunities, type Opportunity } from '../selectors'
-import { lockedSummary } from '../planGates'
+import { lockedSummary, REDACTED_MONEY, REDACTED_VENDOR } from '../planGates'
 import { Locked } from '@/components/plan/Locked'
 import { Strength } from './Strength'
 import { recoveryStatusLabel } from '@/recovery/model'
@@ -36,7 +36,10 @@ export function Findings({ env, visible, onOpenCase }: FindingsProps) {
 
   const decided = rows.filter((o) => o.state.decision !== null).length
 
-  const table = (list: Opportunity[], interactive: boolean) => (
+  // Locked rows carry only what the teaser needs (type, evidence, record count).
+  // Vendor, invoice and amount are never put in the page for a finding the plan
+  // does not include — a CSS blur is not access control.
+  const table = (list: Opportunity[], interactive: boolean, redact = false) => (
     <div className="wk-table-wrap">
       <table className="wk-table">
         <thead>
@@ -52,14 +55,14 @@ export function Findings({ env, visible, onOpenCase }: FindingsProps) {
           {list.map((o) => (
             <tr key={o.finding.id} onClick={interactive ? () => onOpenCase(o.finding.id) : undefined}>
               <td>
-                {interactive ? <button type="button" className="wk-table-action wk-table-vendor" onClick={(event) => { event.stopPropagation(); onOpenCase(o.finding.id) }} aria-label={`Open ${o.finding.vendor} finding`}>{o.finding.vendor}</button> : <div className="wk-table-vendor">{o.finding.vendor}</div>}
+                {interactive && !redact ? <button type="button" className="wk-table-action wk-table-vendor" onClick={(event) => { event.stopPropagation(); onOpenCase(o.finding.id) }} aria-label={`Open ${o.finding.vendor} finding`}>{o.finding.vendor}</button> : <div className="wk-table-vendor">{redact ? REDACTED_VENDOR : o.finding.vendor}</div>}
                 <div className="wk-table-sub">
                   {o.finding.relatedRecords.length} {plural(o.finding.relatedRecords.length, 'record')}
                 </div>
               </td>
               <td>
                 <div>{o.typeLabel}</div>
-                <div className="wk-table-sub">{o.finding.title}</div>
+                <div className="wk-table-sub">{redact ? 'Details are part of Growth and Flat' : o.finding.title}</div>
               </td>
               <td>
                 <Strength level={o.evidence} />
@@ -75,7 +78,7 @@ export function Findings({ env, visible, onOpenCase }: FindingsProps) {
                   </span>
                 )}
               </td>
-              <td className="wk-right wk-table-money">{formatCurrency(o.finding.dollarImpact)}</td>
+              <td className="wk-right wk-table-money">{redact ? REDACTED_MONEY : formatCurrency(o.finding.dollarImpact)}</td>
             </tr>
           ))}
         </tbody>
@@ -88,10 +91,10 @@ export function Findings({ env, visible, onOpenCase }: FindingsProps) {
       <section className="wk-section">
         <div className="wk-pipeline">
           <div>
-            <span className="wk-label">Open flagged value</span>
+            <span className="wk-label">Potential recovery</span>
             <span className="wk-pipeline-figure wk-accent">{formatCurrency(l.potential)}</span>
             <span className="wk-ladder-note">
-              {l.counts.potential} open {plural(l.counts.potential, 'finding')}
+              {l.counts.potential} of {l.openCount} open {plural(l.openCount, 'finding')} could be claimed
             </span>
           </div>
           <div>
@@ -126,10 +129,10 @@ export function Findings({ env, visible, onOpenCase }: FindingsProps) {
             <p>The Free plan shows the lowest-value findings in full. These are the larger ones.</p>
           </div>
           <Locked
-            title={`${locked.count} ${plural(locked.count, 'finding')} worth ${formatCurrency(locked.value)} are part of Pro`}
+            title={`${locked.count} ${plural(locked.count, 'finding')} worth ${formatCurrency(locked.value)} are part of Growth and Flat`}
             note="Every finding, with its evidence, in every audit."
           >
-            {table(lockedRows, false)}
+            {table(lockedRows, false, true)}
           </Locked>
         </section>
       ) : null}

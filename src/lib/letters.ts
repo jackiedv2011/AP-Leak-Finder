@@ -1,5 +1,5 @@
 import type { Finding } from '@/types'
-import { formatCurrency, formatDate } from '@/lib/format'
+import { formatCurrency, formatDate, normalizeAccountLast4 } from '@/lib/format'
 import type { SenderProfile } from '@/lib/senderProfile'
 import type { RecoveryMethod } from '@/ledger/caseState'
 
@@ -90,11 +90,19 @@ function internalNote(f: Finding, subject: string, bodyLines: string[], sender?:
   return { subject, body }
 }
 
+/**
+ * `requestedAmount` is what the letter asks for. It can be less than the
+ * finding supports (a partial request), but the facts the letter states — how
+ * much was paid twice, how much over the invoice — always come from the
+ * finding itself, so lowering the ask never rewrites what the records show.
+ */
 export function generateLetter(
   finding: Finding,
   sender?: SenderProfile,
-  method: RecoveryMethod = 'refund'
+  method: RecoveryMethod = 'refund',
+  requestedAmount: number = finding.dollarImpact
 ): { subject: string; body: string } {
+  const ask = Math.min(requestedAmount, finding.dollarImpact)
   const letter = (subject: string, bodyLines: string[]) => vendorLetter(subject, bodyLines, sender)
   const note = (subject: string, bodyLines: string[]) => internalNote(finding, subject, bodyLines, sender)
 
@@ -113,7 +121,7 @@ export function generateLetter(
           finding.dollarImpact
         )}.`,
         `${finding.explanation}`,
-        `We request ${resolutionAsk(method, finding.dollarImpact)} for the duplicate payment.`,
+        `We request ${resolutionAsk(method, ask)} for the duplicate payment.`,
       ])
     }
 
@@ -129,7 +137,7 @@ export function generateLetter(
       const invoices = invoiceList(finding)
       return letter(`Request for ${resolutionNoun(method)} — overpayment on ${invoices}`, [
         `${finding.explanation}`,
-        `We request ${resolutionAsk(method, finding.dollarImpact)} for the overpaid difference on ${invoices}.`,
+        `We request ${resolutionAsk(method, ask)} for the overpaid difference on ${invoices}.`,
       ])
     }
 
@@ -137,7 +145,7 @@ export function generateLetter(
       const invoices = invoiceList(finding)
       return letter(`Request for early-payment discount ${resolutionNoun(method)} — ${invoices}`, [
         `${finding.explanation}`,
-        `We request ${resolutionAsk(method, finding.dollarImpact)}, reflecting the early-payment discount we were entitled to under the agreed terms on ${invoices}.`,
+        `We request ${resolutionAsk(method, ask)}, reflecting the early-payment discount we were entitled to under the agreed terms on ${invoices}.`,
       ])
     }
 
@@ -149,7 +157,7 @@ export function generateLetter(
         `Action required: call ${finding.vendor} using a phone number on file from before ${formatDate(
           changeRecord.paymentDate
         )} (not a number from the invoice or email that requested the change) and verbally confirm the new account ending ${
-          changeRecord.bankAccountLast4 ?? 'unknown'
+          normalizeAccountLast4(changeRecord.bankAccountLast4) ?? 'unknown'
         } before releasing any further payments. This is a common business-email-compromise pattern — do not rely on email confirmation alone.`,
       ])
     }
