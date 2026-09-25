@@ -134,7 +134,7 @@ export function Dashboard({ env, visible, onOpenCase, onSeeAllFindings, onSeeRec
             }
             accent={l.recovered > 0}
           />
-          <Stat label="In recovery" value={formatCurrency(l.inRecovery)} note={`${l.counts.inRecovery} ${plural(l.counts.inRecovery, 'request')} recorded as sent.`} />
+          <Stat label="In recovery" value={formatCurrency(l.inRecovery)} note={`${l.counts.inRecovery} authorized cases · USD only.`} />
           <Stat label="Ready to review" value={formatCurrency(l.awaitingDecision)} note={`${unreviewedRecoverableCount} recovery ${plural(unreviewedRecoverableCount, 'candidate')} awaiting a decision; plan access may vary.`} />
           <Stat label="Action needed" value={String(recoveryTasks.length + reviewRows.length + actionableFindings.length)} note="Cases and findings you can act on in this workspace." />
         </div>
@@ -151,7 +151,7 @@ export function Dashboard({ env, visible, onOpenCase, onSeeAllFindings, onSeeRec
                 </>
               ) : l.awaitingDecision > 0 ? (
                 <>The remaining recovery candidates are in the findings queue. Open it to see which need Pro access.</>
-              ) : l.counts.potential > 0 ? (
+              ) : l.flaggedCount > 0 ? (
                 <>Every finding has a decision. Start a new audit to keep going.</>
               ) : (
                 <>This ledger came back clean. Start another audit to check more records.</>
@@ -206,7 +206,7 @@ export function Dashboard({ env, visible, onOpenCase, onSeeAllFindings, onSeeRec
             <span className="wk-pipeline-figure">{formatCurrency(l.verified)}</span>
             <Meter value={l.verified} scale={scale} />
             <span className="wk-ladder-note">
-              {l.counts.verified} {plural(l.counts.verified, 'candidate')} to review before outreach
+              {l.counts.verified} {plural(l.counts.verified, 'candidate')} with completed evidence checks · USD only
             </span>
           </div>
           <div>

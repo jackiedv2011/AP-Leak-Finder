@@ -70,6 +70,8 @@ export interface CaseEvent {
 }
 
 export interface CaseState {
+  /** Existing open cases must pass the evidence gate again before outreach. */
+  requiresRevalidation?: boolean
   decision: DecisionValue | null
   reason: string | null
   decidedAt: number | null

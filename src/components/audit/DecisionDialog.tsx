@@ -1,3 +1,4 @@
+import { evaluateEligibility } from '@/recovery/eligibility'
 import { useState } from 'react'
 import * as DialogPrimitive from '@radix-ui/react-dialog'
 import { X } from 'lucide-react'
@@ -20,7 +21,7 @@ interface DecisionDialogProps {
 }
 
 const OPTIONS: Array<{ value: DecisionValue; title: string; body: string }> = [
-  { value: 'confirmed', title: 'This is real', body: 'The records show money the business should get back. Reclaim will prepare the recovery request next.' },
+  { value: 'confirmed', title: 'Prepare authorization', body: 'The evidence gate passed. Review the requested amount and separately authorize vendor contact next.' },
   { value: 'needs_info', title: 'I need more detail', body: 'Keep it open. Note what you still have to check — a PO, a statement, a word with the vendor.' },
   { value: 'expected', title: 'Not an issue', body: 'This was expected — a split payment, a known arrangement, or a detection mistake. It leaves the open findings.' },
 ]
@@ -30,7 +31,7 @@ const OPTIONS: Array<{ value: DecisionValue; title: string; body: string }> = [
  * with room to say why. Nothing is saved until "Save decision".
  */
 export function DecisionDialog({ finding, open, onOpenChange, onSave }: DecisionDialogProps) {
-  const [decision, setDecision] = useState<DecisionValue>('confirmed')
+  const [decision, setDecision] = useState<DecisionValue>('needs_info')
   const [reason, setReason] = useState('')
   const [tag, setTag] = useState<DismissalTag>('intentional')
 
@@ -52,7 +53,7 @@ export function DecisionDialog({ finding, open, onOpenChange, onSave }: Decision
           </header>
 
           <div style={{ padding: '0 24px', display: 'flex', flexDirection: 'column', gap: 10 }} role="radiogroup" aria-label="Decision">
-            {OPTIONS.map((option) => (
+            {OPTIONS.filter(option => option.value !== 'confirmed' || evaluateEligibility(finding).eligible).map((option) => (
               <label key={option.value} className="wk-choice" data-selected={decision === option.value || undefined}>
                 <input type="radio" name="decision" value={option.value} checked={decision === option.value} onChange={() => setDecision(option.value)} />
                 <span>

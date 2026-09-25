@@ -66,7 +66,7 @@ describe('SiteLanding', () => {
           updatedAt: 2,
           recordCount: 80,
           openCaseCount: 2,
-          recoveryValue: 6800,
+          flaggedValue: 6800,
           recoveryActiveCount: 1,
           recoveryActiveValue: 6800,
         },

@@ -2,6 +2,7 @@ import type { Finding } from '@/types'
 import { formatCurrency, formatDate } from '@/lib/format'
 import type { SenderProfile } from '@/lib/senderProfile'
 import type { RecoveryMethod } from '@/ledger/caseState'
+import { evaluateEligibility } from '@/recovery/eligibility'
 
 const TODAY = () =>
   new Intl.DateTimeFormat('en-US', { year: 'numeric', month: 'long', day: 'numeric' }).format(new Date())
@@ -97,6 +98,17 @@ export function generateLetter(
 ): { subject: string; body: string } {
   const letter = (subject: string, bodyLines: string[]) => vendorLetter(subject, bodyLines, sender)
   const note = (subject: string, bodyLines: string[]) => internalNote(finding, subject, bodyLines, sender)
+
+  const gate = evaluateEligibility(finding)
+  if (['exact_duplicate','near_duplicate','overpayment','unclaimed_discount'].includes(finding.type)) {
+    if (!gate.eligible || finding.classification !== 'recovery_candidate') return note(`Review evidence for ${finding.vendor}`, [finding.explanation, '', 'This signal does not establish money owed. Complete the recorded evidence checks before requesting a refund or credit.'])
+    const amount = Math.min(finding.dollarImpact, gate.potentialAmountMinor! / 100)
+    const invoices=invoiceList(finding)
+    return letter(`Request for ${resolutionNoun(method)} — duplicate payment on ${invoices}`, [
+      `Our reviewed payment traces show separate settled payments relating to ${invoices}. The supported excess is ${formatCurrency(gate.potentialAmountMinor! / 100)}.`,
+      `We request ${resolutionAsk(method, amount)} for the duplicate payment.`,
+    ])
+  }
 
   switch (finding.type) {
     case 'exact_duplicate': {

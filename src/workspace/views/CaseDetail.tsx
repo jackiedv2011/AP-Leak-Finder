@@ -1,3 +1,5 @@
+import { evaluateEligibility, type RecoveryEvidence } from '@/recovery/eligibility'
+import { EvidencePanel } from './EvidencePanel'
 import { useState } from 'react'
 import { formatCurrency, formatDate } from '@/lib/format'
 import { DECISION_LABEL, type DecisionValue, type DismissalTag, type RecoveryMethod, type RecoveryVerification, type VendorUpdate } from '@/ledger/caseState'
@@ -18,6 +20,9 @@ import { Strength } from './Strength'
 
 interface CaseDetailProps {
   finding: Finding
+  findings?: Finding[]
+  projectId?: string
+  onSaveEvidence?: (findingId: string, evidence: RecoveryEvidence) => void
   state: CaseState
   records: APRecord[]
   discoveredAt: number | null
@@ -80,7 +85,8 @@ function RecoverySummary({ finding, state }: { finding: Finding; state: CaseStat
 }
 
 /** §29 — summary, evidence, recovery, accounting, with the timeline alongside. */
-export function CaseDetail({ finding, state, records, discoveredAt, sender, onDecide, onMarkRequested, onRecordOutcome, onReopen, onReopenBalance, onApproveRecovery, onContactHold, onVendorUpdate, onFollowUp, onVerifyRecovery, onCloseRecovery, onReconcileRecovery }: CaseDetailProps) {
+export function CaseDetail({ finding, findings = [], projectId, onSaveEvidence, state, records, discoveredAt, sender, onDecide, onMarkRequested, onRecordOutcome, onReopen, onReopenBalance, onApproveRecovery, onContactHold, onVendorUpdate, onFollowUp, onVerifyRecovery, onCloseRecovery, onReconcileRecovery }: CaseDetailProps) {
+  const gate = evaluateEligibility(finding, finding.evidence, findings)
   const entitlements = useEntitlements()
   const [deciding, setDeciding] = useState(false)
   const canChangeDecision = state.decision !== null && (state.recoveryStage === null || state.recoveryStage === 'confirmed')
@@ -127,10 +133,10 @@ export function CaseDetail({ finding, state, records, discoveredAt, sender, onDe
 
           <hr className="wk-rule" style={{ margin: '18px 0' }} />
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-            {state.decision === null ? (
+            {state.decision === null || (gate.eligible && !state.recoveryStage) ? (
               <>
                 <button type="button" className="wk-btn" data-variant="primary" onClick={() => setDeciding(true)}>
-                  Review this finding
+                  {gate.eligible ? 'Authorize recovery' : finding.classification === 'preventive_security' ? 'Resolve security alert' : finding.classification === 'future_savings' ? 'View savings opportunity' : 'Review evidence'}
                 </button>
                 <span className="wk-dim" style={{ fontSize: 12.5, alignSelf: 'center' }}>
                   Say whether it&apos;s real, needs a closer look, or was expected.
@@ -170,7 +176,8 @@ export function CaseDetail({ finding, state, records, discoveredAt, sender, onDe
         </div>
       </section>
 
-      <Section title="Evidence">
+      {onSaveEvidence && <EvidencePanel key={finding.id} finding={finding} findings={findings} onSave={evidence => onSaveEvidence(finding.id, evidence)} />}
+      <Section title="Ledger support">
         <div className="wk-table-wrap"><table className="wk-table">
           <thead>
             <tr>
@@ -196,20 +203,22 @@ export function CaseDetail({ finding, state, records, discoveredAt, sender, onDe
           </tbody>
         </table></div>
         <p className="wk-table-sub">
-          Every row above came from the ledger you loaded. Nothing here is inferred.
+          Ledger rows support the signal; they do not prove settlement or money owed.
         </p>
         {finding.class === 'recoverable' ? <div className="wk-evidence-checklist"><span className="wk-label">Before asking the vendor · {playbook.title}</span><ul>{playbook.checks.map((check) => <li key={check}>{check}</li>)}</ul><p>{playbook.nextStep}</p></div> : null}
       </Section>
 
+      {state.requiresRevalidation && <p role="status">This existing recovery requires evidence revalidation before further outreach. Recorded returns remain preserved.</p>}
       <Section title={finding.class === 'recoverable' ? 'Recovery' : 'Internal review'}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <RecoverySummary finding={finding} state={state} />
           {finding.class === 'recoverable' && state.recoveryStage ? <div className="wk-journey" aria-label="Recovery steps">
             {['Review evidence', 'Approve request', 'Contact vendor', 'Verify return', 'Reconcile'].map((step, index) => <div key={step} data-done={index === 0 || (index === 1 && Boolean(state.approvedAt)) || (index === 2 && ['requested', 'recovered', 'not_recovered'].includes(state.recoveryStage ?? '')) || (index === 3 && state.recoveryStage === 'recovered') || (index === 4 && Boolean(state.reconciledAt)) || undefined}><span>{String(index + 1).padStart(2, '0')}</span>{step}</div>)}
           </div> : null}
-          {state.recoveryStage === 'confirmed' ? (
+          {state.recoveryStage === 'confirmed' && gate.eligible && !state.requiresRevalidation ? (
             <RecoveryRequestPanel
               key={finding.id}
+              projectId={projectId}
               finding={finding}
               state={state}
               sender={sender}

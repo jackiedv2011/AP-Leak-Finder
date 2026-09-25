@@ -65,7 +65,7 @@ describe('LandingPage', () => {
     window.localStorage.setItem('reclaim.projects.active.v1', 'project_1')
     window.localStorage.setItem('reclaim.projects.index.v1', JSON.stringify([{
       id: 'project_1', name: 'March review', sourceLabel: 'march.csv', mode: 'upload', createdAt: 1, updatedAt: 2,
-      recordCount: 80, openCaseCount: 2, recoveryValue: 6800, recoveryActiveCount: 1, recoveryActiveValue: 6800,
+      recordCount: 80, openCaseCount: 2, flaggedValue: 6800, recoveryActiveCount: 1, recoveryActiveValue: 6800,
     }]))
 
     render(<LandingPage />)

@@ -273,7 +273,7 @@ function HeroAudit() {
         </div>
         <aside className="hero-audit-finding">
           <strong>Exact duplicate payment</strong><p>2 source payments share the same vendor, invoice, and amount.</p>
-          <div className="hero-audit-readiness"><span>Potential recovery</span><b>{currency.format(canonicalRecords[0].amountPaid)}</b></div><small>Review evidence before making a decision.</small>
+          <div className="hero-audit-readiness"><span>Flagged amount</span><b>{currency.format(canonicalRecords[0].amountPaid)}</b></div><small>Review evidence before making a decision.</small>
         </aside>
       </div>
     </article>
@@ -457,7 +457,7 @@ function RecoveryValue() {
       <div className="ref-evidence-head" role="row"><span role="columnheader">Field</span><span role="columnheader">Payment A</span><span role="columnheader">Payment B</span><span role="columnheader">Why it matters</span></div>
       {comparisonRows.map(([field, first, second, result]) => <div className="ref-evidence-row" role="row" key={field}><strong role="cell">{field}</strong><span role="cell">{first}</span><span role="cell">{second}</span><b role="cell">{result}</b></div>)}
     </div>
-    <aside className="ref-evidence-review"><span>Ready to verify</span><strong>Exact duplicate payment</strong><dl><div><dt>Vendor</dt><dd>Sierra Coffee Supply</dd></div><div><dt>Invoice</dt><dd>INV-3305</dd></div><div><dt>Potential recovery</dt><dd>{currency.format(canonicalRecords[0].amountPaid)}</dd></div></dl><p>Review the source rows and make the decision yourself.</p></aside>
+    <aside className="ref-evidence-review"><span>Ready to verify</span><strong>Exact duplicate payment</strong><dl><div><dt>Vendor</dt><dd>Sierra Coffee Supply</dd></div><div><dt>Invoice</dt><dd>INV-3305</dd></div><div><dt>Flagged amount</dt><dd>{currency.format(canonicalRecords[0].amountPaid)}</dd></div></dl><p>Review the source rows and make the decision yourself.</p></aside>
   </section>
 }
 
@@ -484,7 +484,7 @@ function PortfolioProof() {
         <p>Every amount remains tied to the source rows that explain it.</p>
       </div>
       <div className="portfolio-proof-result">
-        <span>Likely recoverable in this sample</span>
+        <span>Potential recovery after evidence review</span>
         <strong><AnimatedNumber awake={awake} value={landingSamplePresentation.recoverableTotal} format={(number) => currency.format(number)} /></strong>
         <h2 id="portfolio-proof-title">potentially recoverable</h2>
       </div>
@@ -493,8 +493,8 @@ function PortfolioProof() {
         <strong><AnimatedNumber awake={awake} value={landingSamplePresentation.recordCount} /></strong>
         <small>Complete sample export</small>
       </div>
-      <div className="ref-results-slips" aria-label="Amounts included in the sample recovery total"><article><span>Likely recoverable</span><strong>$5,260</strong><small>Summit Supply Co. · Inv. 1839</small></article><article><span>Likely recoverable</span><strong>$6,424</strong><small>Northbridge Services · Inv. 2041</small></article></div>
-      <div className="ref-results-table" role="table" aria-label="Sample overview rows connected to the recovery total"><div role="row"><span role="columnheader">Vendor</span><span role="columnheader">Invoice</span><span role="columnheader">Signal</span><span role="columnheader">Amount</span></div><div role="row"><strong role="cell">Summit Supply Co.</strong><span role="cell">Inv. 1839</span><b role="cell">Likely recoverable</b><strong role="cell">$5,260</strong></div><div role="row"><strong role="cell">Northbridge Services</strong><span role="cell">Inv. 2041</span><b role="cell">Likely recoverable</b><strong role="cell">$6,424</strong></div><div role="row"><span role="cell">Bluefield Design</span><span role="cell">Inv. 1782</span><span role="cell">Worth noting</span><span role="cell">$1,250</span></div></div>
+      <div className="ref-results-slips" aria-label="Illustrative flagged amounts, excluded from recovery totals"><article><span>Flagged for review</span><strong>$5,260</strong><small>Summit Supply Co. · Inv. 1839</small></article><article><span>Flagged for review</span><strong>$6,424</strong><small>Northbridge Services · Inv. 2041</small></article></div>
+      <div className="ref-results-table" role="table" aria-label="Illustrative review signals, not recovery candidates"><div role="row"><span role="columnheader">Vendor</span><span role="columnheader">Invoice</span><span role="columnheader">Signal</span><span role="columnheader">Amount</span></div><div role="row"><strong role="cell">Summit Supply Co.</strong><span role="cell">Inv. 1839</span><b role="cell">Flagged for review</b><strong role="cell">$5,260</strong></div><div role="row"><strong role="cell">Northbridge Services</strong><span role="cell">Inv. 2041</span><b role="cell">Flagged for review</b><strong role="cell">$6,424</strong></div><div role="row"><span role="cell">Bluefield Design</span><span role="cell">Inv. 1782</span><span role="cell">Worth noting</span><span role="cell">$1,250</span></div></div>
       <small className="portfolio-proof-note">Illustrative sample results, not a customer recovery claim.</small>
     </section>
   )

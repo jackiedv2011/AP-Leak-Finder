@@ -135,7 +135,7 @@ function LedgerUI() {
       <div className="fresh-ledger__row"><span>Sierra Coffee</span><span>INV-3303</span><span>Feb 14</span><b>$4,850</b></div>
       <div className="fresh-ledger__row is-highlighted"><span>Sierra Coffee</span><span>INV-3305</span><span>Feb 28</span><b>$6,800</b></div>
       <div className="fresh-ledger__row"><span>Golden Bean</span><span>INV-9016</span><span>Mar 25</span><b>$8,200</b></div>
-      <div className="fresh-ledger__finding"><span><i>Likely recoverable</i><strong>Exact duplicate payment</strong></span><b>$6,800</b></div>
+      <div className="fresh-ledger__finding"><span><i>Flagged for review</i><strong>Exact duplicate payment</strong></span><b>$6,800</b></div>
     </article>
   )
 }

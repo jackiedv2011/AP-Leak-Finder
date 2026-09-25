@@ -155,7 +155,7 @@ export function Audits({
                       <td className="wk-num">{p.recordCount}</td>
                       <td className="wk-num">{p.openCaseCount}</td>
                       <td className="wk-dim">{when(p.updatedAt)}</td>
-                      <td className="wk-right wk-table-money">{formatCurrency(p.recoveryValue)}</td>
+                      <td className="wk-right wk-table-money">{formatCurrency(p.flaggedValue)}</td>
                     </tr>
                   )
                 })}

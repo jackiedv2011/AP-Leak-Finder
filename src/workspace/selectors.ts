@@ -8,6 +8,7 @@
  * strength label rather than a fake confidence percentage (§12), and a
  * priority that ranks money by how gettable it is rather than by size (§13).
  */
+import { authorizedOutstanding, eligiblePotential, validSettlements, verifiedReturned } from '@/recovery/financials'
 import { getCaseState, type LedgerEnvironment } from '@/ledger/store'
 import type { CaseState } from '@/ledger/caseState'
 import { evidenceStrength, keyUncertainty } from '@/audit/ruleChecklist'
@@ -38,6 +39,10 @@ export const EVIDENCE_LABEL: Record<EvidenceLevel, string> = {
 export type LadderStage = 'potential' | 'verified' | 'inRecovery' | 'recovered' | 'protected'
 
 export interface Ladder {
+  flagged: number
+  flaggedCount: number
+  currency: 'USD'
+  recoveredByCurrency: Record<string, number>
   /**
    * Money still in play: every finding that has not been dismissed and has
    * not reached an outcome. Money that already came back (or was closed as
@@ -146,13 +151,13 @@ export function opportunities(env: LedgerEnvironment): Opportunity[] {
 /** Vendor recovery cases; internal investigations stay in Findings. */
 export function recoveries(env: LedgerEnvironment): Opportunity[] {
   return opportunities(env).filter(
-    (o) => o.finding.class === 'recoverable' && o.state.recoveryStage !== null && o.state.recoveryStage !== undefined
+    (o) => (eligiblePotential(o.finding, env.result.findings) !== null || verifiedReturned(o.state) > 0 || Boolean(o.state.approvedAt)) && o.state.recoveryStage !== null && o.state.recoveryStage !== undefined
   )
 }
 
 /** Nonrecoverable findings with an internal investigation still in progress. */
 export function internalReviews(env: LedgerEnvironment): Opportunity[] {
-  return opportunities(env).filter((o) => o.finding.class !== 'recoverable' && (o.state.recoveryStage === 'confirmed' || o.state.recoveryStage === 'requested'))
+  return opportunities(env).filter((o) => eligiblePotential(o.finding, env.result.findings) === null && !o.state.approvedAt && verifiedReturned(o.state) === 0 && (o.state.recoveryStage === 'confirmed' || o.state.recoveryStage === 'requested'))
 }
 
 export type RecoveryAgeLabel = '0–14 days' | '15–30 days' | '31+ days' | 'Date unknown'
@@ -168,10 +173,10 @@ export function recoveryAging(env: LedgerEnvironment, asOf = Date.now()): Recove
   ]
   const localDay = (time: number) => { const date = new Date(time); return Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()) }
   for (const finding of env.result.findings) {
-    if (finding.class !== 'recoverable') continue
+    if (eligiblePotential(finding, env.result.findings) === null) continue
     const state = getCaseState(env, finding.id)
     if (state.recoveryStage !== 'requested') continue
-    const outstandingCents = Math.max(0, Math.round((state.requestedAmount ?? finding.dollarImpact) * 100) - Math.round((state.recoveredAmount ?? 0) * 100))
+    const outstandingCents = Math.round(authorizedOutstanding(state) * 100)
     const start = state.recoveryRequestedAt
     const age = start != null && Number.isFinite(start) && start > 0 ? Math.max(0, Math.floor((localDay(asOf) - localDay(start)) / 86_400_000)) : null
     const bucket = buckets[age === null ? 3 : age <= 14 ? 0 : age <= 30 ? 1 : 2]
@@ -181,76 +186,59 @@ export function recoveryAging(env: LedgerEnvironment, asOf = Date.now()): Recove
   return buckets.map((bucket) => ({ ...bucket, outstanding: Math.round(bucket.outstanding * 100) / 100 }))
 }
 
-export interface RecentReturn { id: string; findingId: string; vendor: string; amount: number; settledAt: number; partial: boolean; reference: string | null }
+export interface RecentReturn { id: string; findingId: string; vendor: string; amount: number; settledAt: number; currency: string | null; partial: boolean; reference: string | null }
 
 /** One row per current recorded return, ordered by its own settlement date. */
 export function recentReturns(env: LedgerEnvironment): RecentReturn[] {
   const rows: RecentReturn[] = []
   for (const finding of env.result.findings) {
-    if (finding.class !== 'recoverable') continue
     const state = getCaseState(env, finding.id)
-    if (state.recoveryStage !== 'requested' && state.recoveryStage !== 'recovered') continue
-    const settlements = state.recoverySettlements ?? (state.recoveryVerification ? [state.recoveryVerification] : [])
+    const settlements = validSettlements(state)
     if (settlements.length) {
       settlements.forEach((entry, index) => {
         if (!Number.isFinite(entry.amount) || entry.amount <= 0 || !Number.isFinite(entry.settledAt) || entry.settledAt <= 0) return
-        rows.push({ id: `${finding.id}:${index}`, findingId: finding.id, vendor: finding.vendor, amount: entry.amount, settledAt: entry.settledAt, partial: state.recoveryStage === 'requested', reference: entry.reference })
+        rows.push({ id: `${finding.id}:${index}`, findingId: finding.id, vendor: finding.vendor, amount: entry.amount, currency: finding.currency ?? null, settledAt: entry.settledAt, partial: state.recoveryStage === 'requested', reference: entry.reference })
       })
       continue
     }
-    const amount = state.recoveredAmount ?? 0
-    const settledAt = state.recoveryResolvedAt
-    if (amount <= 0 || settledAt == null || !Number.isFinite(settledAt) || settledAt <= 0) continue
-    rows.push({ id: `${finding.id}:legacy`, findingId: finding.id, vendor: finding.vendor, amount, settledAt, partial: state.recoveryStage === 'requested', reference: null })
+
   }
   return rows.sort((a, b) => b.settledAt - a.settledAt || b.amount - a.amount)
 }
 
 /** Verified, undecided, and waiting on a human — §28's "what should I do". */
 export function awaitingDecision(env: LedgerEnvironment): Opportunity[] {
-  return opportunities(env).filter((o) => o.state.decision === null && o.finding.class === 'recoverable')
+  return opportunities(env).filter((o) => o.state.decision === null && eligiblePotential(o.finding, env.result.findings) !== null)
 }
 
 export function ladder(env: LedgerEnvironment): Ladder {
   const empty = { potential: 0, verified: 0, inRecovery: 0, recovered: 0, protected: 0 }
   const counts: Record<LadderStage, number> = { ...empty }
   const totals = { ...empty }
-  let awaitingDecision = 0
-
+  let awaitingDecision = 0, flagged = 0, flaggedCount = 0
+  const recoveredByCurrency: Record<string, number> = {}
   for (const finding of env.result.findings) {
     const state = getCaseState(env, finding.id)
-    const stage = state.recoveryStage
-    if (finding.class === 'recoverable' && state.decision === null) {
-      awaitingDecision += finding.dollarImpact
+    const returned = verifiedReturned(state)
+    // Historical verified returns survive revalidation of the original signal.
+    if (returned > 0) recoveredByCurrency[finding.currency ?? 'Unknown currency'] = (recoveredByCurrency[finding.currency ?? 'Unknown currency'] ?? 0) + returned
+    if (finding.currency === 'USD' && returned > 0) {
+      totals.recovered += returned; counts.recovered += 1
     }
-
-    // Financial amounts occupy distinct buckets. A partial return can leave
-    // one case with a returned portion and an outstanding portion.
-    const dismissed = state.decision === 'expected'
-    const resolved = stage === 'recovered' || stage === 'not_recovered'
-    if (!dismissed && !resolved) {
-      totals.potential += Math.max(0, finding.dollarImpact - (state.recoveredAmount ?? 0))
-      counts.potential += 1
-    }
-
-    // A future-savings signal is not a payment Reclaim actually prevented.
-    if (finding.class === 'recoverable' && !dismissed && stage !== 'requested' && !resolved) {
-      totals.verified += finding.dollarImpact
-      counts.verified += 1
-    }
-    if (stage === 'requested' && finding.class === 'recoverable') {
-      totals.inRecovery += Math.max(0, (state.requestedAmount ?? finding.dollarImpact) - (state.recoveredAmount ?? 0))
-      counts.inRecovery += 1
-    }
-    if (finding.class === 'recoverable' && (stage === 'recovered' || stage === 'requested') && (state.recoveredAmount ?? 0) > 0) {
-      // A promise isn't a recovery. Only the amount that actually settled counts,
-      // and only once it has been recorded as settled.
-      totals.recovered += state.recoveredAmount ?? 0
-      counts.recovered += 1
+    if (!isStillInPlay(state)) continue
+    flagged += finding.flaggedAmount ?? finding.dollarImpact; flaggedCount += 1
+    const potential = eligiblePotential(finding, env.result.findings)
+    if (potential === null) continue
+    const remaining = Math.max(0, potential - returned)
+    totals.potential += remaining; counts.potential += 1
+    if (state.decision === null) awaitingDecision += remaining
+    if (state.approvedAt && (state.recoveryStage === 'confirmed' || state.recoveryStage === 'requested')) {
+      totals.inRecovery += authorizedOutstanding(state); counts.inRecovery += 1
+    } else {
+      totals.verified += remaining; counts.verified += 1
     }
   }
-
-  return { ...totals, counts, awaitingDecision }
+  return { ...totals, counts, awaitingDecision, flagged, flaggedCount, currency: 'USD', recoveredByCurrency }
 }
 
 export interface VendorCommitments {
@@ -264,15 +252,15 @@ export interface VendorCommitments {
 export function vendorCommitments(env: LedgerEnvironment): VendorCommitments {
   const totals: VendorCommitments = { confirmed: 0, pendingReturn: 0, confirmedCases: 0, pendingCases: 0 }
   const agreedStatuses = new Set(['accepted', 'partial_acceptance', 'promised', 'credit_issued', 'already_refunded'])
-  const pendingStatuses = new Set(['promised', 'credit_issued', 'already_refunded'])
+  const pendingStatuses = agreedStatuses
   for (const finding of env.result.findings) {
-    if (finding.class !== 'recoverable') continue
+    if (eligiblePotential(finding, env.result.findings) === null) continue
     const state = getCaseState(env, finding.id)
     if (state.recoveryStage !== 'requested') continue
     const update = [...(state.vendorUpdates ?? [])].reverse().find((entry) => entry.status !== 'followed_up' && entry.status !== 'no_response')
     if (!update || !agreedStatuses.has(update.status)) continue
-    const remaining = Math.max(0, (state.requestedAmount ?? finding.dollarImpact) - (state.recoveredAmount ?? 0))
-    const returnedSinceUpdate = (state.recoverySettlements ?? []).filter((entry) => entry.settledAt >= update.at).reduce((sum, entry) => sum + entry.amount, 0)
+    const remaining = authorizedOutstanding(state)
+    const returnedSinceUpdate = validSettlements(state).filter((entry) => entry.settledAt >= update.at).reduce((sum, entry) => sum + entry.amount, 0)
     // Only "accepted the claim" states that the whole request was accepted.
     // A partial acceptance, promise, or issued credit without a stated amount
     // cannot safely be valued at the full remaining balance.
@@ -327,8 +315,8 @@ export function vendors(env: LedgerEnvironment): VendorRollup[] {
     const evidence = evidenceOf(finding)
     const row = rowFor(finding.vendor)
     row.caseCount += 1
-    if (isStillInPlay(state)) row.potential += Math.max(0, finding.dollarImpact - (state.recoveredAmount ?? 0))
-    if (finding.class === 'recoverable' && (state.recoveryStage === 'recovered' || state.recoveryStage === 'requested')) row.recovered += state.recoveredAmount ?? 0
+    if (isStillInPlay(state)) row.potential += Math.max(0, (eligiblePotential(finding, env.result.findings) ?? 0) - verifiedReturned(state))
+    if (finding.currency === 'USD') row.recovered += verifiedReturned(state)
     if (row.strongest === null || order.indexOf(evidence) > order.indexOf(row.strongest)) row.strongest = evidence
   }
 
@@ -371,10 +359,10 @@ export function recordedRootCauses(env: LedgerEnvironment): RecordedRootCause[] 
   const causes = new Map<string, RecordedRootCause>()
   for (const finding of env.result.findings) {
     const state = getCaseState(env, finding.id)
-    if (finding.class !== 'recoverable' || state.recoveryStage !== 'recovered' || (state.recoveredAmount ?? 0) <= 0 || !state.reconciledAt || !state.rootCause) continue
+    if (finding.currency !== 'USD' || state.recoveryStage !== 'recovered' || verifiedReturned(state) <= 0 || !state.reconciledAt || !state.rootCause) continue
     const cause = causes.get(state.rootCause) ?? { label: state.rootCause, count: 0, recovered: 0 }
     cause.count += 1
-    cause.recovered += state.recoveredAmount ?? 0
+    cause.recovered += verifiedReturned(state)
     causes.set(state.rootCause, cause)
   }
   return [...causes.values()].sort((a, b) => b.recovered - a.recovered)

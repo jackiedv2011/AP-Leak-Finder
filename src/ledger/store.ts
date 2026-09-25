@@ -1,8 +1,15 @@
-import type { APRecord, DetectionResult, ParseResult } from '@/types'
+import type { APRecord, DetectionResult, ParseResult, Finding, ImportRowResult } from '@/types'
 import { detectFindings } from '@/lib/detection'
 import { EMPTY_CASE_STATE, normalizeCaseState, type CaseState } from '@/ledger/caseState'
+import { checksum, recordIdentity, sourceSignature, normalizeReference } from '@/lib/sourceIdentity'
+import { normalizeVendor } from '@/lib/format'
+import { reviewMetadata } from '@/lib/findingMetadata'
+import { evaluateEligibility, type RecoveryEvidence } from '@/recovery/eligibility'
 
 export interface ImportBatch {
+  schemaVersion?: 2
+  fileChecksum?: string
+  rowResults?: ImportRowResult[]
   id: string
   sourceLabel: string
   mode: 'sample' | 'upload'
@@ -21,6 +28,9 @@ export interface ImportBatch {
  * single source of truth every lens (Overview / Findings / Recovery) reads.
  */
 export interface LedgerEnvironment {
+  schemaVersion?: 2
+  historicalFindings?: Finding[]
+  migration?: { fromVersion: number; at: number; limitations: string[] }
   records: APRecord[]
   imports: ImportBatch[]
   result: DetectionResult
@@ -40,6 +50,12 @@ function reviveRecord(raw: Record<string, unknown>): APRecord {
     ...raw,
     paymentDate: new Date(raw.paymentDate as string),
     invoiceDate: raw.invoiceDate ? new Date(raw.invoiceDate as string) : null,
+    source: raw.source ?? {
+      schemaVersion: 2, rawAvailable: false, raw: null,
+      parsed: { vendor: raw.vendor, invoiceReference: raw.invoiceNumber, amountPaid: raw.amountPaid, paymentDate: raw.paymentDate },
+      normalized: { vendor: normalizeVendor(String(raw.vendor ?? '')), invoiceReference: normalizeReference(raw.invoiceNumber as string | null).value },
+      transformations: {}, filename: null, rowNumber: Number(raw.rowIndex ?? 0) + 2, batchId: raw.importBatchId,
+    },
   } as APRecord
 }
 
@@ -51,9 +67,10 @@ export function deserializeEnvironment(json: string): LedgerEnvironment {
   const parsed = JSON.parse(json)
   const records = (parsed.records as Record<string, unknown>[]).map(reviveRecord)
   const recordsById = new Map(records.map((r) => [r.id, r]))
-  return {
+  const env = {
     ...parsed,
     records,
+    historicalFindings: (parsed.historicalFindings ?? []).map((f: Finding) => ({ ...f, relatedRecords: f.relatedRecords.map(r=>reviveRecord(r as unknown as Record<string,unknown>)) })),
     caseStates: Object.fromEntries(
       Object.entries(parsed.caseStates ?? {}).map(([id, state]) => [id, normalizeCaseState(state as CaseState)])
     ),
@@ -66,7 +83,21 @@ export function deserializeEnvironment(json: string): LedgerEnvironment {
         relatedRecords: (f.relatedRecords as Array<{ id: string }>).map((r) => recordsById.get(r.id) ?? reviveRecord(r as Record<string, unknown>)),
       })),
     },
+  } as LedgerEnvironment
+  if (parsed.schemaVersion !== 2) {
+    env.schemaVersion = 2
+    env.historicalFindings = [...(env.historicalFindings ?? []), ...env.result.findings]
+    env.migration = { fromVersion: Number(parsed.schemaVersion ?? 1), at: Date.now(), limitations: ['Raw CSV values, transaction identity, currency and settlement evidence were not recorded by earlier versions. No missing facts have been inferred.'] }
+    env.result.findings = env.result.findings.map(f => {
+      const state = env.caseStates[f.id]
+      if (state && ['confirmed','requested'].includes(state.recoveryStage ?? '')) env.caseStates[f.id] = { ...state, requiresRevalidation: true }
+      return reviewMetadata(f, env.createdAt)
+    })
+    env.result.recoverableTotal = 0
+    env.result.reviewTotal = env.result.findings.filter(f=>f.class==='review').reduce((s,f)=>s+f.dollarImpact,0)
+    env.result.opportunityTotal = env.result.findings.filter(f=>f.class==='opportunity').reduce((s,f)=>s+f.dollarImpact,0)
   }
+  return env
 }
 
 export function loadEnvironment(): LedgerEnvironment | null {
@@ -101,6 +132,8 @@ export function clearEnvironment(): void {
 export function createEmptyEnvironment(): LedgerEnvironment {
   const now = Date.now()
   return {
+    schemaVersion: 2,
+    historicalFindings: [],
     records: [],
     imports: [],
     result: { findings: [], recoverableTotal: 0, reviewTotal: 0, opportunityTotal: 0 },
@@ -118,6 +151,25 @@ export interface MergeImportInput {
   parsed: ParseResult
 }
 
+export function inspectImport(env: LedgerEnvironment | null, input: MergeImportInput) {
+  const fileChecksum = input.parsed.fileChecksum ?? checksum(input.parsed.records.map(sourceSignature).join('\n'))
+  const duplicateFile = Boolean(env?.imports.some(batch=>batch.fileChecksum === fileChecksum))
+  const known = new Map((env?.records ?? []).map(r=>[r.identityKey ?? recordIdentity(r),r]))
+  const accepted: APRecord[] = []
+  const rowResults: ImportRowResult[] = [...(input.parsed.rowResults ?? [])]
+  for(const record of input.parsed.records) {
+    const key = record.identityKey ?? recordIdentity(record)
+    const previous = known.get(key)
+    const raw = record.source?.raw ?? null
+    const fingerprint = record.rowFingerprint ?? checksum(key)
+    const missing = !record.externalTransactionId && !record.invoiceNumber
+    const status = previous ? record.externalTransactionId && sourceSignature(previous)===sourceSignature(record) ? 'exact_duplicate' : 'possible_overlap' : missing ? 'missing_identification_fields' : 'newly_imported'
+    rowResults.push({ rowNumber: record.source?.rowNumber ?? record.rowIndex+2, status, reason: previous ? status==='exact_duplicate' ? 'This external transaction was already imported.' : 'Possible overlap or conflicting source identity. Row retained in this receipt; obtain distinct transaction IDs before importing it as another payment.' : missing ? 'No external transaction ID or invoice reference; payment identity needs confirmation.' : 'New source record.', raw, fingerprint, ...(previous ? {existingRecordId:previous.id} : {}) })
+    if(!previous) { const identified:APRecord={...record,identityKey:key,rowFingerprint:fingerprint,importStatus:status}; accepted.push(identified); known.set(key,identified) }
+  }
+  return { fileChecksum, duplicateFile, accepted, rowResults: rowResults.sort((a,b)=>a.rowNumber-b.rowNumber) }
+}
+
 /**
  * Merge newly parsed records into the environment, creating it if this is
  * the first import. Assigns stable global ids, re-runs detection over the
@@ -127,22 +179,48 @@ export interface MergeImportInput {
  */
 export function mergeImport(env: LedgerEnvironment | null, input: MergeImportInput): LedgerEnvironment {
   const base = env ?? createEmptyEnvironment()
-  const batchId = `batch_${base.imports.length + 1}_${Date.now()}`
+  const inspection = inspectImport(base,input)
+  if(inspection.duplicateFile) return base
+  const batchId = `batch_${inspection.fileChecksum}`
   let seq = base.nextRecordSeq
 
-  const newRecords: APRecord[] = input.parsed.records.map((r) => ({
+  const newRecords: APRecord[] = inspection.accepted.map((r) => ({
     ...r,
     id: `rec_${seq++}`,
     importBatchId: batchId,
+    ...(r.source ? {source:{...r.source,filename:input.sourceLabel,batchId}} : {}),
   }))
 
   const allRecords = [...base.records, ...newRecords]
   const result = detectFindings(allRecords)
+  const oldById = new Map(base.result.findings.map(f=>[f.id,f]))
+  const revised: Finding[] = []
+  const caseStates = { ...base.caseStates }
+  result.findings = result.findings.map(f=> {
+    const previous = oldById.get(f.id)
+    if (!previous) return f
+    const changed = previous.relatedRecords.map(r=>r.id).sort().join('|') !== f.relatedRecords.map(r=>r.id).sort().join('|')
+    if(changed) {
+      revised.push(previous)
+      const state=caseStates[f.id]
+      if(state) caseStates[f.id]={...state,requiresRevalidation:true,approvedAt:null}
+    }
+    const current={ ...f, createdAt: previous.createdAt, evidence: previous.evidence, customerDecision: previous.customerDecision }
+    const gate=evaluateEligibility(current,current.evidence,base.result.findings)
+    return gate.eligible ? {...current,...gate,classification:'recovery_candidate',class:'recoverable'} : {...current,...gate,requiresRevalidation:changed||previous.requiresRevalidation}
+  })
+  // Keep findings with decisions/recovery history visible even when new rows supersede the rule result.
+  const currentIds=new Set(result.findings.map(f=>f.id))
+  const superseded=base.result.findings.filter(f=>!currentIds.has(f.id))
+  for(const old of superseded) if(base.caseStates[old.id]) result.findings.push({ ...old, requiresRevalidation:true, potentialAmountMinor:null, classification:'review_needed', class:'review', suppressionReason:'Source records changed after this finding. Revalidate the evidence against the current ledger.' })
 
   const previousFindingIds = new Set(base.result.findings.map((f) => f.id))
   const newFindingIds = result.findings.filter((f) => !previousFindingIds.has(f.id)).map((f) => f.id)
 
   const batch: ImportBatch = {
+    schemaVersion: 2,
+    fileChecksum: inspection.fileChecksum,
+    rowResults: inspection.rowResults,
     id: batchId,
     sourceLabel: input.sourceLabel,
     mode: input.mode,
@@ -154,12 +232,15 @@ export function mergeImport(env: LedgerEnvironment | null, input: MergeImportInp
   }
 
   return {
+    ...base,
+    schemaVersion: 2,
+    historicalFindings: [...(base.historicalFindings ?? []), ...superseded, ...revised],
     records: allRecords,
     imports: [...base.imports, batch],
     result,
     // Finding ids are stable across a merge as long as the same records
     // produced them, so existing case decisions stay attached to the right case.
-    caseStates: base.caseStates,
+    caseStates,
     newFindingIds,
     createdAt: base.createdAt,
     updatedAt: Date.now(),
@@ -167,19 +248,24 @@ export function mergeImport(env: LedgerEnvironment | null, input: MergeImportInp
   }
 }
 
+export function recordEvidence(env: LedgerEnvironment, findingId: string, evidence: RecoveryEvidence): LedgerEnvironment {
+  const original = env.result.findings.find(f=>f.id===findingId)
+  if (!original) throw new Error('Finding no longer exists.')
+  const finding = { ...original, evidence, contradictoryEvidence: [] }
+  const gate = evaluateEligibility(finding,evidence,env.result.findings)
+  const classification = gate.eligible ? 'recovery_candidate' : original.type==='bank_account_change' ? 'preventive_security' : ['unclaimed_discount','missed_discount'].includes(original.type) ? 'future_savings' : 'review_needed'
+  const updated: Finding = { ...finding, ...gate, classification, class: gate.eligible ? 'recoverable' : classification==='future_savings' ? 'opportunity' : 'review', requiresRevalidation:!gate.eligible }
+  const state=env.caseStates[findingId]
+  return { ...env, updatedAt:Date.now(), result:{...env.result,findings:env.result.findings.map(f=>f.id===findingId ? updated : f)}, historicalFindings:[...(env.historicalFindings??[]),original], caseStates:state ? {...env.caseStates,[findingId]:{...state,requiresRevalidation:!gate.eligible,approvedAt:null}} : env.caseStates }
+}
+
 export function getCaseState(env: LedgerEnvironment, findingId: string): CaseState {
-  const state = env.caseStates[findingId] ?? EMPTY_CASE_STATE
-  // Older saved requests had no explicit amount. Their UI used the finding's
-  // value; give transitions the same value so a valid settlement can close.
-  if (state.recoveryStage && state.recoveryStage !== 'confirmed' && state.requestedAmount == null) {
-    const finding = env.result.findings.find((row) => row.id === findingId)
-    if (finding) return { ...state, requestedAmount: finding.dollarImpact }
-  }
-  return state
+  // A legacy request without an amount needs revalidation, not a guessed request value.
+  return env.caseStates[findingId] ?? EMPTY_CASE_STATE
 }
 
 export function setCaseState(env: LedgerEnvironment, findingId: string, state: CaseState): LedgerEnvironment {
-  return { ...env, caseStates: { ...env.caseStates, [findingId]: state }, updatedAt: Date.now() }
+  return { ...env, result:{...env.result,findings:env.result.findings.map(f=>f.id===findingId?{...f,customerDecision:state.decision}:f)}, caseStates: { ...env.caseStates, [findingId]: state }, updatedAt: Date.now() }
 }
 
 /** Viewing the Findings queue counts as having seen what's new. */

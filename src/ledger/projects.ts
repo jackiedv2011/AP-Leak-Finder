@@ -1,3 +1,4 @@
+import { ladder } from '@/workspace/selectors'
 import { deserializeEnvironment, serializeEnvironment, type LedgerEnvironment } from '@/ledger/store'
 import {
   ACTIVE_PROJECT_KEY,
@@ -45,13 +46,10 @@ function summaryFor(project: LedgerProject): LedgerProjectSummary {
     const state = project.environment.caseStates[finding.id]
     return state?.decision === null || state?.decision === undefined || state.decision === 'needs_info' || state.recoveryStage === 'confirmed' || state.recoveryStage === 'requested'
   })
-  const recoveryValue = openFindings.reduce((total, finding) => total + finding.dollarImpact, 0)
-  const activeRecovery = project.environment.result.findings.filter((finding) => {
-    const stage = project.environment.caseStates[finding.id]?.recoveryStage
-    return finding.class === 'recoverable' && (stage === 'confirmed' || stage === 'requested')
-  })
+  const totals = ladder(project.environment)
 
   return {
+    summaryVersion: 2,
     id: project.id,
     name: project.name,
     sourceLabel: project.sourceLabel,
@@ -60,9 +58,10 @@ function summaryFor(project: LedgerProject): LedgerProjectSummary {
     updatedAt: project.updatedAt,
     recordCount: project.environment.records.length,
     openCaseCount: openFindings.length,
-    recoveryValue,
-    recoveryActiveCount: activeRecovery.length,
-    recoveryActiveValue: activeRecovery.reduce((total, finding) => total + finding.dollarImpact, 0),
+    flaggedValue: totals.flagged,
+    potentialRecoveryValue: totals.potential,
+    recoveryActiveCount: totals.counts.inRecovery,
+    recoveryActiveValue: totals.inRecovery,
   }
 }
 
@@ -182,7 +181,7 @@ export function migrateLegacyLedger(loadLegacy: () => LedgerEnvironment | null):
 
 export function listProjects(): LedgerProjectSummary[] {
   migrateCombinedProjects()
-  return readProjectIndex()
+  return readProjectIndex().map((summary) => { const project = readProjectPayload(summary.id); return project ? summaryFor(project) : summary })
 }
 
 export function loadProject(id: string): LedgerProject | null {

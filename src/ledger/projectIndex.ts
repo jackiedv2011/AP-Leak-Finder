@@ -7,7 +7,9 @@ export interface LedgerProjectSummary {
   updatedAt: number
   recordCount: number
   openCaseCount: number
-  recoveryValue: number
+  summaryVersion?: 2
+  flaggedValue: number
+  potentialRecoveryValue?: number
   recoveryActiveCount: number
   recoveryActiveValue: number
 }
@@ -27,7 +29,7 @@ export function readProjectIndex(): LedgerProjectSummary[] {
   try {
     const raw = window.localStorage.getItem(PROJECT_INDEX_KEY())
     if (!raw) return []
-    return (JSON.parse(raw) as LedgerProjectSummary[]).toSorted((a, b) => b.updatedAt - a.updatedAt)
+    return (JSON.parse(raw) as LedgerProjectSummary[]).map((item) => item.summaryVersion === 2 ? item : ({ ...item, flaggedValue: item.flaggedValue ?? (item as unknown as { recoveryValue?: number }).recoveryValue ?? 0, potentialRecoveryValue: 0, recoveryActiveCount: 0, recoveryActiveValue: 0 })).toSorted((a, b) => b.updatedAt - a.updatedAt)
   } catch {
     return []
   }

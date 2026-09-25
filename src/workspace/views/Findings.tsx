@@ -1,10 +1,10 @@
+import { evaluateEligibility } from '@/recovery/eligibility'
 import { formatCurrency, plural } from '@/lib/format'
 import { DECISION_LABEL } from '@/ledger/caseState'
 import type { LedgerEnvironment } from '@/ledger/store'
 import { ladder, opportunities, type Opportunity } from '../selectors'
 import { lockedSummary } from '../planGates'
 import { Locked } from '@/components/plan/Locked'
-import { Strength } from './Strength'
 import { recoveryStatusLabel } from '@/recovery/model'
 
 interface FindingsProps {
@@ -60,9 +60,12 @@ export function Findings({ env, visible, onOpenCase }: FindingsProps) {
               <td>
                 <div>{o.typeLabel}</div>
                 <div className="wk-table-sub">{o.finding.title}</div>
+                <div className="wk-table-sub">{o.finding.classification?.replaceAll('_', ' ') ?? 'review needed'} · {o.finding.ruleId ?? o.finding.type} v{o.finding.ruleVersion ?? 1}</div>
+                <div className="wk-table-sub">{o.finding.suppressionReason ?? o.finding.contradictoryEvidence?.join('; ')}</div>
+                <div className="wk-table-sub">{evaluateEligibility(o.finding, o.finding.evidence, env.result.findings).eligible ? 'Authorize recovery' : o.finding.classification === 'preventive_security' ? 'Resolve security alert' : o.finding.classification === 'future_savings' ? 'View savings opportunity' : 'Review evidence'}</div>
               </td>
               <td>
-                <Strength level={o.evidence} />
+                <span>{evaluateEligibility(o.finding, o.finding.evidence, env.result.findings).evidenceState.replaceAll('_', ' ')}</span><div className="wk-table-sub">{evaluateEligibility(o.finding, o.finding.evidence, env.result.findings).missingEvidence.length} evidence items missing</div>
               </td>
               <td>
                 {o.state.decision ? (
@@ -75,7 +78,7 @@ export function Findings({ env, visible, onOpenCase }: FindingsProps) {
                   </span>
                 )}
               </td>
-              <td className="wk-right wk-table-money">{formatCurrency(o.finding.dollarImpact)}</td>
+              <td className="wk-right wk-table-money">{formatCurrency(o.finding.flaggedAmount ?? o.finding.dollarImpact)}<div className="wk-table-sub">Flagged amount</div>{o.finding.potentialAmountMinor != null && evaluateEligibility(o.finding, o.finding.evidence, env.result.findings).eligible ? <div className="wk-table-sub">Potential recovery: {o.finding.currency} {(o.finding.potentialAmountMinor / 100).toFixed(2)}</div> : null}</td>
             </tr>
           ))}
         </tbody>
@@ -89,9 +92,9 @@ export function Findings({ env, visible, onOpenCase }: FindingsProps) {
         <div className="wk-pipeline">
           <div>
             <span className="wk-label">Open flagged value</span>
-            <span className="wk-pipeline-figure wk-accent">{formatCurrency(l.potential)}</span>
+            <span className="wk-pipeline-figure wk-accent">{formatCurrency(l.flagged)}</span>
             <span className="wk-ladder-note">
-              {l.counts.potential} open {plural(l.counts.potential, 'finding')}
+              {l.flaggedCount} open {plural(l.flaggedCount, 'finding')}
             </span>
           </div>
           <div>
@@ -104,7 +107,7 @@ export function Findings({ env, visible, onOpenCase }: FindingsProps) {
           <div>
             <span className="wk-label">Waiting on you</span>
             <span className="wk-pipeline-figure">{formatCurrency(l.awaitingDecision)}</span>
-            <span className="wk-ladder-note">Verified and still undecided</span>
+            <span className="wk-ladder-note">Eligible candidates · USD only</span>
           </div>
         </div>
       </section>
