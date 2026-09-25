@@ -326,6 +326,31 @@ export function withHistory(previous: CaseState, next: CaseState, actor: string 
     note: eventNote,
     actor,
   }
+  // One change can carry more than one customer-recorded fact (approving
+  // while putting contact on hold, logging a reply alongside a settlement).
+  // The chain above picks the headline; each other fact still gets its own
+  // entry so nothing the customer did is silently dropped from the record.
+  const stamp = { from: { decision: previous.decision, recoveryStage: previous.recoveryStage }, to: { decision: next.decision, recoveryStage: next.recoveryStage }, actor }
+  const alongside: CaseEvent[] = []
+  if (approvalChanged && next.approvedAt && action !== 'recovery:approved') {
+    alongside.push({ ...stamp, at: next.approvedAt, action: 'recovery:approved', summary: 'Customer approved recovery outreach', amount: next.requestedAmount ?? null, method: next.requestedResolution ?? null, note: next.knownBeforeReclaim ? `Known before Reclaim: ${next.knownBeforeNote ?? 'No explanation recorded'}` : 'Newly identified by Reclaim' })
+  }
+  if (holdChanged && !action.startsWith('recovery:contact_')) {
+    alongside.push({ ...stamp, at: eventAt, action: next.contactHold ? 'recovery:contact_held' : 'recovery:contact_released', summary: next.contactHold ? 'Vendor contact put on hold' : 'Vendor contact hold removed', amount: null, method: null, note: next.contactHold ?? null })
+  }
+  if (attributionChanged && action !== 'recovery:approved' && next.knownBeforeReclaim != null) {
+    alongside.push({ ...stamp, at: eventAt, action: 'recovery:attribution_changed', summary: 'Prior-knowledge answer changed', amount: null, method: null, note: next.knownBeforeReclaim ? `Known before Reclaim: ${next.knownBeforeNote ?? 'No explanation recorded'}` : 'Newly identified by Reclaim' })
+  }
+  if (vendorChanged && !action.startsWith('vendor:') && lastVendorUpdate) {
+    alongside.push({ ...stamp, at: lastVendorUpdate.at, action: `vendor:${lastVendorUpdate.status}`, summary: `Vendor update: ${lastVendorUpdate.status.replace(/_/g, ' ')}`, amount: lastVendorUpdate.amount ?? null, method: lastVendorUpdate.method ?? null, note: lastVendorUpdate.note })
+  }
+  if (settlementAdded && action !== 'recovery:settlement_recorded' && lastSettlement) {
+    alongside.push({ ...stamp, at: lastSettlement.settledAt, action: 'recovery:settlement_recorded', summary: 'Money received recorded', amount: lastSettlement.amount, method: lastSettlement.method, note: lastSettlement.reference })
+  }
+  if ((reconciliationChanged || reconciliationDetailsChanged) && next.reconciledAt && !action.startsWith('accounting:')) {
+    alongside.push({ ...stamp, at: next.reconciledAt, action: previous.reconciledAt ? 'accounting:corrected' : 'accounting:reconciled', summary: previous.reconciledAt ? 'Accounting reconciliation updated' : 'Accounting reconciliation recorded', amount: next.recoveredAmount ?? null, method: null, note: next.reconciliationNote ?? null })
+  }
+
   const history = previous.history ?? []
   const backfilled: CaseEvent[] = []
   if (action === 'outcome:reopened' && (previous.recoveredAmount ?? 0) > 0) {
@@ -401,7 +426,9 @@ export function withHistory(previous: CaseState, next: CaseState, actor: string 
       actor,
     })
   }
-  return { ...next, history: [...history, ...backfilled, event] }
+  // Same-moment facts keep their causal order: an approval reads before the send it allowed.
+  const fresh = [event, ...alongside].sort((a, b) => a.at - b.at || Number(b.action === 'recovery:approved') - Number(a.action === 'recovery:approved'))
+  return { ...next, history: [...history, ...backfilled, ...fresh] }
 }
 
 /**

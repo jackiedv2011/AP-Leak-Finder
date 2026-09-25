@@ -87,7 +87,7 @@ function randomStep(state: CaseState, r: () => number, now: number, supported: n
     case 2: return markExpected('intentional', 'intentional')
     case 3: return reopenDecision(state)
     case 4: return reopenOutcome(state)
-    case 5: return setContactHold(state, r() < 0.5 ? 'waiting on AP manager' : null, now)
+    case 5: return setContactHold(state, r() < 0.5 ? 'waiting on AP manager' : null)
     case 6: return approveRecovery(state, { at: now, knownBeforeReclaim: r() < 0.3, knownBeforeNote: r() < 0.5 ? 'we saw it in March' : '' })
     case 7: return startRecoveryRequest(state, money(state.requestedAmount ?? supported), now, supported)
     case 8: return recordVendorUpdate(state, { at: now, status: pick(STATUSES), note: r() < 0.9 ? 'vendor replied' : ' ', amount: r() < 0.5 ? undefined : money(outstanding), expectedAt: r() < 0.3 ? now + 86_400_000 : undefined })

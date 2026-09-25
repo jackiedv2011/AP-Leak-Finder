@@ -17,6 +17,7 @@ import {
   startRecoveryRequest,
   verifyRecovery,
 } from './model'
+import { VENDOR_STATUS } from './vendorStatus'
 
 const monday = Date.UTC(2026, 8, 21, 12)
 const caseFinding: Finding = {
@@ -53,10 +54,10 @@ describe('recovery lifecycle', () => {
   })
 
   it('blocks outreach while a customer has put the vendor on hold', () => {
-    const held = setContactHold(confirmCase(null), 'Strategic relationship', monday)
+    const held = setContactHold(confirmCase(null), 'Strategic relationship')
     expect(() => approveRecovery(held, { at: monday, knownBeforeReclaim: false })).toThrow(/hold/i)
     expect(canRecordRequest(held)).toBe(false)
-    expect(setContactHold(held, null, monday).contactHold).toBeNull()
+    expect(setContactHold(held, null).contactHold).toBeNull()
   })
 
   it('schedules a follow-up five business days after outreach', () => {
@@ -70,13 +71,13 @@ describe('recovery lifecycle', () => {
   it('reschedules the next follow-up after a customer records a follow-up sent', () => {
     const requested = startRecoveryRequest(approveRecovery(confirmCase(null), { at: monday, knownBeforeReclaim: false }), 1000, monday)
     const sentAt = addBusinessDays(monday, 5)
-    const followed = recordVendorUpdate(requested, { status: 'followed_up', note: 'Sent a polite reminder', at: sentAt })
+    const followed = recordVendorUpdate(requested, { status: 'followed_up', note: 'Sent a polite reminder', at: sentAt }, sentAt)
     expect(followed.nextFollowUpAt).toBe(addBusinessDays(sentAt, 5))
   })
 
   it('keeps vendor acknowledgement and an issued credit out of recovered money', () => {
     let state = startRecoveryRequest(approveRecovery(confirmCase(null), { at: monday, knownBeforeReclaim: false }), 1000, monday)
-    state = recordVendorUpdate(state, { status: 'credit_issued', note: 'CM-14 issued, not applied', at: monday + 86400000, amount: 1000 })
+    state = recordVendorUpdate(state, { status: 'credit_issued', note: 'CM-14 issued, not applied', at: monday + 86400000, amount: 1000 }, monday + 86400000)
     expect(state.recoveryStage).toBe('requested')
     expect(state.recoveredAmount).toBeNull()
     expect(recoveryNextAction(state, monday + 86400000).label).toMatch(/credit/i)
@@ -90,7 +91,9 @@ describe('recovery lifecycle', () => {
     ['no_action_required', 'Review vendor response'],
   ] as const)('keeps a %s vendor reply pending until the customer acts', (status, expectedAction) => {
     const requested = startRecoveryRequest(approveRecovery(confirmCase(null), { at: monday, knownBeforeReclaim: false }), 1000, monday)
-    const replied = recordVendorUpdate(requested, { status, note: 'Supplier replied', amount: 400, at: monday + 1000 })
+    // Only replies that can carry a figure get one; "cannot find the payment" has no amount.
+    const amount = VENDOR_STATUS[status].amount === 'none' ? undefined : 400
+    const replied = recordVendorUpdate(requested, { status, note: 'Supplier replied', amount, at: monday + 1000 }, monday + 1000)
     expect(replied.recoveryStage).toBe('requested')
     expect(replied.recoveredAmount).toBeNull()
     expect(replied.nextFollowUpAt).toBeNull()
@@ -248,4 +251,55 @@ describe('recovery method recommendation', () => {
     const recommendation = recommendRecoveryMethod(caseFinding, [record('2025-01-01', 'a'), record('2025-02-01', 'b'), record('2025-03-01', 'c')], monday)
     expect(recommendation.method).toBe('refund')
   })
+
+  it('measures "recent" from the ledger, not from today, so an older export still sees active vendors', () => {
+    // Every payment is months before today; measured from today, nothing is recent.
+    const records = [record('2025-05-01', 'a'), record('2025-06-01', 'b'), record('2025-07-01', 'c')]
+    expect(recommendRecoveryMethod(caseFinding, records).method).toBe('credit')
+    expect(recommendRecoveryMethod(caseFinding, records, Date.UTC(2026, 8, 24)).method).toBe('refund')
+  })
+})
+
+describe('vendor replies are checked before they are recorded', () => {
+  const requested = () => startRecoveryRequest(approveRecovery(confirmCase(null), { at: monday, knownBeforeReclaim: false }), 1000, monday)
+
+  it('rejects a reply dated in the future', () => {
+    expect(() => recordVendorUpdate(requested(), { status: 'acknowledged', note: 'Typo in the year', at: monday + 400 * 86_400_000 }, monday)).toThrow(/future/i)
+  })
+
+  it('rejects a promised date that is before the reply itself', () => {
+    expect(() => recordVendorUpdate(requested(), { status: 'promised', note: 'Refund soon', at: monday, expectedAt: monday - 3 * 86_400_000 }, monday)).toThrow(/before the reply/i)
+  })
+
+  it('needs an amount for a partial acceptance, and one below the remaining claim', () => {
+    expect(() => recordVendorUpdate(requested(), { status: 'partial_acceptance', note: 'Will return some', at: monday }, monday)).toThrow(/amount/i)
+    expect(() => recordVendorUpdate(requested(), { status: 'partial_acceptance', note: 'Will return all of it', amount: 1000, at: monday }, monday)).toThrow(/full acceptance/i)
+    expect(recordVendorUpdate(requested(), { status: 'partial_acceptance', note: 'Will return 600', amount: 600, at: monday }, monday).vendorUpdates?.at(-1)?.amount).toBe(600)
+  })
+
+  it('does not let a reply with no money in it carry an amount', () => {
+    expect(() => recordVendorUpdate(requested(), { status: 'disputed', note: 'Disputes it', amount: 500, at: monday }, monday)).toThrow(/does not carry an amount/i)
+  })
+})
+
+describe('case history keeps every fact from one change', () => {
+  it('records both the approval and a contact hold made in the same step', () => {
+    const prepared = confirmCase(null)
+    const next = { ...approveRecovery(prepared, { at: monday, knownBeforeReclaim: false }), contactHold: 'Legal review first' }
+    const actions = withHistory(prepared, next, 'controller@example.com').history?.map((event) => event.action)
+    expect(actions).toEqual(['recovery:approved', 'recovery:contact_held'])
+  })
+
+  it('records a vendor reply logged together with a settlement', () => {
+    const open = requested()
+    const replied = recordVendorUpdate(open, { status: 'promised', note: 'Refund on the way', amount: 1000, at: monday + 1000 }, monday + 1000)
+    const settled = verifyRecovery(replied, { amount: 1000, method: 'refund', source: 'bank', reference: 'ACH-9', settledAt: monday + 2000 })
+    const actions = withHistory(open, settled, null).history?.map((event) => event.action)
+    expect(actions).toContain('recovery:settlement_recorded')
+    expect(actions).toContain('vendor:promised')
+  })
+
+  function requested() {
+    return startRecoveryRequest(approveRecovery(confirmCase(null), { at: monday, knownBeforeReclaim: false }), 1000, monday)
+  }
 })

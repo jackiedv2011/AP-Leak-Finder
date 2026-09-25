@@ -107,7 +107,7 @@ describe('ladder — fresh audit', () => {
     const finding = findingFor(env, 'Alpha')
     const importedAt = env.imports.find((batch) => batch.findingIds?.includes(finding.id))?.importedAt
     expect(importedAt).toBeTypeOf('number')
-    expect(timelineFor(finding, EMPTY_CASE_STATE, importedAt)[0].when).toBe(new Date(importedAt!).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }).toUpperCase())
+    expect(timelineFor(finding, EMPTY_CASE_STATE, importedAt)[0].when).toBe(new Date(importedAt!).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }))
     expect(timelineFor(finding, EMPTY_CASE_STATE)[0].when).toBe('—')
   })
   it('counts only claims as potential recovery; payments at risk and missed discounts are reported apart, never added in', () => {
@@ -147,10 +147,15 @@ describe('ladder — the recovery lifecycle moves money along, never duplicating
     let env = baseline()
     const alpha = findingFor(env, 'Alpha')
     const requested = startRecoveryRequest(approveRecovery(confirmCase(null), { at: 100, knownBeforeReclaim: false }), 1000, 200)
-    for (const status of ['partial_acceptance', 'promised', 'credit_issued'] as const) {
+    for (const status of ['promised', 'credit_issued'] as const) {
       env = setCaseState(env, alpha.id, recordVendorUpdate(requested, { status, note: 'No amount given', at: 300 }))
       expect(vendorCommitments(env)).toMatchObject({ confirmed: 0, pendingReturn: 0, confirmedCases: 0, pendingCases: 0 })
     }
+    // A partial acceptance now needs its figure, but replies saved before that
+    // rule may lack one, and those must still not be valued at the full claim.
+    expect(() => recordVendorUpdate(requested, { status: 'partial_acceptance', note: 'No amount given', at: 300 })).toThrow(/amount/i)
+    env = setCaseState(env, alpha.id, { ...requested, vendorUpdates: [{ status: 'partial_acceptance', note: 'Saved before the rule', at: 300 }] })
+    expect(vendorCommitments(env)).toMatchObject({ confirmed: 0, pendingReturn: 0, confirmedCases: 0, pendingCases: 0 })
     const accepted = recordVendorUpdate(requested, { status: 'accepted', note: 'Accepted the full claim', at: 300 })
     env = setCaseState(env, alpha.id, accepted)
     expect(vendorCommitments(env)).toMatchObject({ confirmed: 1000, pendingReturn: 0 })

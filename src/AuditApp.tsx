@@ -71,7 +71,7 @@ import { getSampleLedger } from '@/data/sampleLedger'
 import type { ImportInput } from '@/components/audit/ImportPanel'
 
 const TITLES: Record<RouteMode, string> = {
-  dashboard: 'Dashboard',
+  dashboard: 'Overview',
   audits: 'Audits',
   findings: 'Findings',
   recoveries: 'Recoveries',
@@ -338,6 +338,15 @@ export function AuditApp() {
     persistCaseState(findingId, (current) => approveRecovery(updateRecoveryPackage(current, { subject: pkg.subject, body: pkg.body, recipientEmail: pkg.recipientEmail, requestedResolution: pkg.method, requestedAmount: pkg.requestedAmount }), { knownBeforeReclaim, knownBeforeNote }))
   }, [persistCaseState])
 
+  // For a team where the approver is also the sender: one step, one save, and
+  // the history still shows the approval before the request.
+  const handleApproveAndSend = useCallback((findingId: string, pkg: RequestPackage, knownBeforeReclaim: boolean, knownBeforeNote: string | null) => {
+    persistCaseState(findingId, (current) => {
+      const approved = approveRecovery(updateRecoveryPackage(current, { subject: pkg.subject, body: pkg.body, recipientEmail: pkg.recipientEmail, requestedResolution: pkg.method, requestedAmount: pkg.requestedAmount }), { knownBeforeReclaim, knownBeforeNote })
+      return startRecoveryRequest(approved, pkg.requestedAmount)
+    })
+  }, [persistCaseState])
+
   const handleContactHold = useCallback((findingId: string, reason: string | null) => {
     persistCaseState(findingId, (current) => setContactHold(current, reason))
   }, [persistCaseState])
@@ -488,7 +497,10 @@ export function AuditApp() {
           findingCount={0}
           recoveryCount={0}
           title={TITLES.plans}
-          subtitle="Reclaim"
+          workspaceLabel={project?.name ?? 'No audit yet'}
+          workspaceId={project?.id ?? null}
+          availableWorkspaces={projects.map((item) => ({ id: item.id, name: item.name }))}
+          onOpenWorkspace={handleOpenProject}
           actions={
             <button type="button" className="wk-btn" data-variant="outline" data-size="sm" onClick={() => openImport('new')}>
               <Plus aria-hidden="true" />
@@ -519,25 +531,41 @@ export function AuditApp() {
     )
   }
 
+  // Findings reads its filters from the query string when it mounts, so they
+  // are written right after navigating there.
+  const openFindings = (params: Record<string, string>) => {
+    navigate({ mode: 'findings', caseId: null, draft: false })
+    const target = new URL(window.location.href)
+    for (const key of ['kind', 'q', 'decision', 'sort']) target.searchParams.delete(key)
+    for (const [key, value] of Object.entries(params)) target.searchParams.set(key, value)
+    window.history.replaceState(window.history.state, '', target.pathname + target.search)
+  }
   const overview = overviewSummary(environment)
   const activeFinding = activeCase?.finding ?? null
   const activeDiscoveredAt = activeFinding ? environment.imports.find((batch) => batch.findingIds?.includes(activeFinding.id))?.importedAt ?? null : null
   const visible = visibleFindingIds(environment, entitlements)
   const activeLocked = activeFinding !== null && !visible.has(activeFinding.id)
   const auditCount = projects.length + (sampleSession ? 1 : 0)
+  const auditLabel = sampleSession ? 'the sample ledger' : project?.name ?? 'this audit'
 
   return (
     <>
       <WorkspaceShell
-        mode={route.mode}
+        mode={activeFinding ? 'findings' : route.mode}
         onModeChange={(mode) => navigate({ mode, caseId: null, draft: false })}
         auditCount={auditCount}
         // The badges are workloads: findings still waiting on a decision, and
         // recoveries still moving (ready to send or out with a vendor).
         findingCount={environment.result.findings.filter((f) => getCaseState(environment, f.id).decision === null).length}
         recoveryCount={overview.recoveryActiveCount}
-        title={activeFinding ? (activeLocked ? 'Locked finding' : activeFinding.vendor) : TITLES[route.mode]}
-        subtitle={activeFinding ? activeCase?.state.recoveryStage ? activeFinding.class === 'recoverable' ? 'Recovery case' : 'Internal review' : 'Finding' : sampleSession ? 'Sample ledger' : project?.name}
+        workspaceLabel={sampleSession ? 'Sample payment ledger' : project?.name ?? 'Current audit'}
+        workspaceId={sampleSession ? null : project?.id ?? null}
+        availableWorkspaces={projects.map((item) => ({ id: item.id, name: item.name }))}
+        onOpenWorkspace={handleOpenProject}
+        searchableFindings={environment.result.findings.filter((finding) => visible.has(finding.id)).map((finding) => ({ id: finding.id, title: finding.title, vendor: finding.vendor }))}
+        onOpenFinding={handleOpenCase}
+        title={TITLES[route.mode]}
+        finding={activeFinding ? (activeLocked ? 'Locked finding' : activeFinding.vendor) : null}
         actions={
           activeFinding ? (
             <button type="button" className="wk-btn" data-variant="ghost" data-size="sm" onClick={goBack}>
@@ -545,9 +573,9 @@ export function AuditApp() {
               Back
             </button>
           ) : (
-            <button type="button" className="wk-btn" data-variant="outline" data-size="sm" onClick={() => openImport('new')}>
+            <button type="button" className="wk-btn" data-variant="dark" data-size="sm" onClick={() => openImport('new')} aria-label="Start an audit">
               <Plus aria-hidden="true" />
-              Start an audit
+              <span>Start an audit</span>
             </button>
           )
         }
@@ -587,6 +615,7 @@ export function AuditApp() {
               onReopen={handleReopen}
               onReopenBalance={handleReopenBalance}
               onApproveRecovery={handleApproveRecovery}
+              onApproveAndSend={handleApproveAndSend}
               onContactHold={handleContactHold}
               onVendorUpdate={handleVendorUpdate}
               onFollowUp={handleFollowUp}
@@ -598,10 +627,12 @@ export function AuditApp() {
           <Dashboard
             env={environment}
             visible={visible}
+            auditLabel={auditLabel}
             onOpenCase={handleOpenCase}
-            onSeeAllFindings={() => navigate({ mode: 'findings', caseId: null, draft: false })}
-            onSeeRecoveries={() => navigate({ mode: 'recoveries', caseId: null, draft: false })}
-            onStartAudit={() => openImport('new')}
+            onSeeAllFindings={() => openFindings({})}
+            onSeeFindingsKind={(kind) => openFindings({ kind })}
+            onSearchFindings={(q) => openFindings({ q })}
+            onNavigate={(mode) => navigate({ mode, caseId: null, draft: false })}
           />
         ) : route.mode === 'audits' ? (
           <Audits
@@ -617,7 +648,7 @@ export function AuditApp() {
         ) : route.mode === 'findings' ? (
           <Findings env={environment} visible={visible} onOpenCase={handleOpenCase} />
         ) : route.mode === 'recoveries' ? (
-          <Recoveries env={environment} onOpenCase={handleOpenCase} />
+          <Recoveries env={environment} onOpenCase={handleOpenCase} onOpenFindings={() => openFindings({})} />
         ) : route.mode === 'reports' ? (
           <Reports env={environment} />
         ) : route.mode === 'plans' ? (

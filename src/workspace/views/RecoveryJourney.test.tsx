@@ -34,7 +34,9 @@ it('keeps an issued credit pending and requires application proof before recordi
   state = recordVendorUpdate(state, { status: 'credit_issued', note: 'CM-14 issued', at: Date.now() })
   const onVerify = vi.fn()
   render(<RecoveryProgressPanel finding={finding} state={state} onVendorUpdate={vi.fn()} onFollowUp={vi.fn()} onVerify={onVerify} onClose={vi.fn()} />)
-  expect(screen.getByText(/credit memo is pending/i)).toBeInTheDocument()
+  // An issued credit opens the panel on recording money back, and says it is not money back yet.
+  expect(screen.getByRole('tab', { name: 'Record money back' })).toHaveAttribute('aria-selected', 'true')
+  expect(screen.getByText(/issued credit is not money back/i)).toBeInTheDocument()
   fireEvent.change(screen.getByLabelText('Came back as'), { target: { value: 'credit' } })
   fireEvent.change(screen.getByLabelText('Settlement reference'), { target: { value: 'CM-14' } })
   fireEvent.click(screen.getByRole('button', { name: 'Record settled value' }))
@@ -59,8 +61,11 @@ it('explains duplicate settlement references before saving', () => {
 it('tells the customer when a partial return is still awaiting final closeout', () => {
   const requested = startRecoveryRequest(approveRecovery(confirmCase(null), { knownBeforeReclaim: false }), 1000)
   const partial = verifyRecovery(requested, { amount: 600, method: 'refund', source: 'bank', reference: 'ACH-1', settledAt: Date.now() })
-  render(<RecoveryAccountingPanel finding={finding} state={partial} onReconcile={vi.fn()} />)
-  expect(screen.getByText(/\$600\.00 has been recorded as returned/)).toHaveTextContent('$400.00 remains open')
+  // Accounting closeout waits for the case to finish; the open request says what is back and what is not.
+  const { container } = render(<RecoveryAccountingPanel finding={finding} state={partial} onReconcile={vi.fn()} />)
+  expect(container).toBeEmptyDOMElement()
+  render(<RecoveryProgressPanel finding={finding} state={partial} onVendorUpdate={vi.fn()} onFollowUp={vi.fn()} onVerify={vi.fn()} onClose={vi.fn()} />)
+  expect(screen.getByText(/\$600\.00 back so far/)).toHaveTextContent('$400.00 outstanding')
 })
 
 it('shows method-specific accounting checks after cash and applied-credit returns', () => {

@@ -79,7 +79,7 @@ async function uploadSampleLedger() {
   fireEvent.change(input, { target: { files: [new File([sampleLedgerCsv], 'ledger.csv', { type: 'text/csv' })] } })
   await screen.findByText('ledger.csv')
   fireEvent.click(screen.getByRole('button', { name: /run the audit/i }))
-  await screen.findByRole('heading', { name: 'Priority findings' })
+  await screen.findByRole('heading', { name: 'Up next' })
   await waitFor(() => expect(projectSync.pending).toBe(0))
 }
 
@@ -122,12 +122,12 @@ describe('accounts, data isolation and persistence', () => {
     await logIn(bob)
     expect((await live.api('/api/projects')).body.projects).toHaveLength(0)
     expect(await screen.findByRole('button', { name: /upload a ledger/i })).toBeInTheDocument()
-    expect(screen.queryByRole('heading', { name: 'Priority findings' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Up next' })).not.toBeInTheDocument()
     await logOut()
 
     // Alice again: her audit comes back from the server with its findings and is shown
     await logIn(alice)
-    expect(await screen.findByRole('heading', { name: 'Priority findings' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Up next' })).toBeInTheDocument()
     expect((await live.api('/api/projects')).body.projects[0].environment.result.findings.length).toBeGreaterThan(0)
   })
 
@@ -136,8 +136,8 @@ describe('accounts, data isolation and persistence', () => {
     await screen.findByText('ready:nobody')
     await logIn(alice)
     await uploadSampleLedger()
-    fireEvent.click(document.querySelectorAll('.wk-table tbody tr')[0])
-    fireEvent.click(await screen.findByRole('button', { name: 'Review this finding' }))
+    fireEvent.click(document.querySelectorAll('.wk-queue-row:not([data-locked])')[0])
+    fireEvent.click(await screen.findByRole('button', { name: /^This is real/ }))
     const dialog = await screen.findByTestId('decision-dialog')
     fireEvent.click(within(dialog).getByLabelText(/^This is real/))
     fireEvent.click(within(dialog).getByRole('button', { name: 'Save decision' }))
@@ -173,7 +173,7 @@ describe('legacy (pre-account) audits', () => {
     const { body } = await live.api('/api/projects')
     expect(body.projects.map((p: { id: string }) => p.id)).toEqual([legacy.id])
     expect(listLegacyProjects()).toHaveLength(0)
-    expect(await screen.findByRole('heading', { name: 'Priority findings' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Up next' })).toBeInTheDocument()
 
     await logOut()
     await logIn(bob)
@@ -228,7 +228,7 @@ describe('session bootstrap', () => {
     })
     mountWorkspace()
     await screen.findByText(`ready:${alice.email}`)
-    expect(await screen.findByRole('heading', { name: 'Priority findings' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Up next' })).toBeInTheDocument()
     const user = auth!.user as AuthUser
     expect(user.isGuest).toBe(false)
   })
@@ -271,21 +271,22 @@ describe('first-run tour and plans', () => {
     await screen.findByText('ready:nobody')
     await logIn(alice)
     await uploadSampleLedger()
-    // dashboard: unlocked rows are the cheapest ones
-    const unlocked = () => [...document.querySelectorAll('.wk-table tbody tr')].filter((r) => !r.closest('.wk-locked'))
-    const values = () => unlocked().map((r) => r.querySelector('.wk-table-money')!.textContent!)
+    // Overview: the rows Free can open are the cheapest ones; bigger ones are marked Pro
+    const rows = () => [...document.querySelectorAll<HTMLElement>('.wk-queue-row, .wk-grid-row')]
+    const unlocked = () => rows().filter((r) => !r.hasAttribute('data-locked'))
+    const lockedRows = () => rows().filter((r) => r.hasAttribute('data-locked'))
+    const amounts = (list: HTMLElement[]) => list.map((r) => Number(r.dataset.amount ?? r.querySelector('.wk-cell-money')!.textContent!.replace(/[$,]/g, '')))
     expect(unlocked().length).toBeLessThanOrEqual(3)
-    expect(screen.getAllByTestId('locked').length).toBeGreaterThan(0)
+    expect(lockedRows().length).toBeGreaterThan(0)
     const nav = screen.getByRole('navigation', { name: /workspace/i })
     fireEvent.click(within(nav).getByRole('button', { name: /^Findings/ }))
-    await screen.findByRole('heading', { name: 'All findings' })
+    await screen.findByRole('heading', { name: 'Findings', level: 1 })
     expect(unlocked()).toHaveLength(3)
     // The three shown are exactly the three cheapest findings the engine produced.
     const all = detectFindings(getSampleLedger().records).findings.toSorted((a, b) => a.dollarImpact - b.dollarImpact)
-    const cheapest = values().map((v) => Number(v.replace(/[$,]/g, ''))).sort((a, b) => a - b)
-    expect(cheapest).toEqual(all.slice(0, 3).map((f) => f.dollarImpact))
-    // Locked findings are not in the page at all: no vendor, no amount, no invoice — a blur is not access control.
-    const lockedText = [...document.querySelectorAll('.wk-locked')].map((n) => n.textContent).join(' ')
+    expect(amounts(unlocked()).sort((a, b) => a - b)).toEqual(all.slice(0, 3).map((f) => f.dollarImpact))
+    // Locked rows are not in the page at all: no vendor, no amount, no invoice — hiding them with CSS is not access control.
+    const lockedText = lockedRows().map((n) => `${n.textContent} ${n.getAttribute('aria-label')} ${n.dataset.amount ?? ''}`).join(' ')
     for (const f of all.slice(3)) {
       if (!all.slice(0, 3).some((v) => v.vendor === f.vendor)) expect(lockedText).not.toContain(f.vendor)
       expect(lockedText).not.toContain(formatCurrency(f.dollarImpact))
@@ -301,9 +302,9 @@ describe('first-run tour and plans', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Dev: switch to Growth' }))
     await waitFor(() => expect(screen.getByTestId('plan-panel')).toHaveTextContent('Growth · $19.99 / month + 15% of what’s recovered'))
     fireEvent.click(within(nav).getByRole('button', { name: /^Findings/ }))
-    await screen.findByRole('heading', { name: 'All findings' })
+    await screen.findByRole('heading', { name: 'Findings', level: 1 })
     // The plan label and the entitlements that unlock findings arrive separately; wait for the unlock itself.
-    await waitFor(() => expect(screen.queryAllByTestId('locked')).toHaveLength(0))
+    await waitFor(() => expect(lockedRows()).toHaveLength(0))
     expect(unlocked().length).toBeGreaterThan(3)
   })
 

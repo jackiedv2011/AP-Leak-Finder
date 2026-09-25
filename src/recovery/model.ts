@@ -1,6 +1,7 @@
 import { markRecoveryRequested, recordRecoveryOutcome, type CaseState, type RecoveryMethod, type RecoveryVerification, type VendorUpdate } from '@/ledger/caseState'
 import { normalizeVendor } from '@/lib/format'
 import type { APRecord, Finding } from '@/types'
+import { latestVendorPosition, VENDOR_STATUS } from './vendorStatus'
 
 const DAY = 86_400_000
 
@@ -16,7 +17,7 @@ export function addBusinessDays(start: number, days: number): number {
   return date.getTime()
 }
 
-export function setContactHold(state: CaseState, reason: string | null, _at = Date.now()): CaseState {
+export function setContactHold(state: CaseState, reason: string | null): CaseState {
   if (state.recoveryStage !== 'confirmed') throw new Error('Contact can be held only before outreach.')
   return { ...state, contactHold: reason?.trim() || null, approvedAt: reason ? null : state.approvedAt }
 }
@@ -53,20 +54,36 @@ export function setNextFollowUp(state: CaseState, at: number | null): CaseState 
   return { ...state, nextFollowUpAt: at }
 }
 
-export function recordVendorUpdate(state: CaseState, update: VendorUpdate): CaseState {
+/** A minute of slack for clocks that disagree; anything later is a typo, not a reply. */
+const CLOCK_SLACK = 60_000
+
+export function recordVendorUpdate(state: CaseState, update: VendorUpdate, now = Date.now()): CaseState {
   if (state.recoveryStage !== 'requested') throw new Error('Send the request before recording a vendor response.')
   if (!update.note.trim()) throw new Error('Add a note describing the vendor response.')
+  if (!Number.isFinite(update.at) || update.at > now + CLOCK_SLACK) throw new Error('A vendor reply cannot be dated in the future.')
+  if (update.expectedAt !== undefined && (!Number.isFinite(update.expectedAt) || startOfDay(update.expectedAt) < startOfDay(update.at))) {
+    throw new Error('The promised date cannot be before the reply.')
+  }
+  const info = VENDOR_STATUS[update.status]
+  const remainingCents = Math.max(0, Math.round((state.requestedAmount ?? 0) * 100) - Math.round((state.recoveredAmount ?? 0) * 100))
+  if (info.amount === 'none' && update.amount !== undefined) throw new Error('This kind of reply does not carry an amount.')
+  if (info.amount === 'required' && update.amount === undefined) throw new Error('Enter the amount the vendor accepted.')
   if (update.amount !== undefined && (!Number.isFinite(update.amount) || update.amount < 0 || update.amount > (state.requestedAmount ?? Infinity))) {
     throw new Error('The vendor amount must be within the requested amount.')
   }
   if (update.amount !== undefined && Math.abs(update.amount * 100 - Math.round(update.amount * 100)) > 0.000001) throw new Error('The vendor amount must be recorded in whole cents.')
+  if (update.status === 'partial_acceptance' && update.amount !== undefined && (update.amount <= 0 || Math.round(update.amount * 100) >= remainingCents)) {
+    throw new Error('A partial acceptance must be more than zero and less than the remaining claim. Record a full acceptance instead.')
+  }
   const amountInferred = update.status === 'accepted' && update.amount === undefined && state.requestedAmount != null
-  const acceptedAmount = amountInferred
-    ? Math.max(0, Math.round((state.requestedAmount ?? 0) * 100) - Math.round((state.recoveredAmount ?? 0) * 100)) / 100
-    : update.amount
-  const needsReview = ['disputed', 'needs_documents', 'wrong_contact', 'already_refunded', 'payment_not_found', 'partial_acceptance', 'no_action_required'].includes(update.status)
-  const nextFollowUpAt = update.expectedAt ?? (update.status === 'followed_up' ? addBusinessDays(update.at, 5) : needsReview ? null : state.nextFollowUpAt)
+  const acceptedAmount = amountInferred ? remainingCents / 100 : update.amount
+  const nextFollowUpAt = update.expectedAt ?? (update.status === 'followed_up' ? addBusinessDays(update.at, 5) : info.clearsFollowUp ? null : state.nextFollowUpAt)
   return { ...state, vendorUpdates: [...(state.vendorUpdates ?? []), { ...update, amount: acceptedAmount, amountInferred, note: update.note.trim() }], nextFollowUpAt }
+}
+
+function startOfDay(time: number): number {
+  const date = new Date(time)
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime()
 }
 
 /** A promise and a credit memo are evidence of progress, never settled value. */
@@ -140,16 +157,22 @@ export function reconcileRecovery(state: CaseState, input: { note: string; rootC
 
 export interface RecoveryRecommendation { method: RecoveryMethod; reason: string }
 
-/** Suggest a method from observed vendor activity; the customer makes the final choice. */
-export function recommendRecoveryMethod(finding: Finding, records: APRecord[], asOf = Date.now()): RecoveryRecommendation {
+/**
+ * Suggest a method from observed vendor activity; the customer makes the final choice.
+ * "Recent" is measured back from the ledger's last payment, not from today: a ledger
+ * is an export of past months, and measuring from today would call every vendor
+ * inactive and always suggest a refund.
+ */
+export function recommendRecoveryMethod(finding: Finding, records: APRecord[], asOf?: number): RecoveryRecommendation {
   const vendor = normalizeVendor(finding.vendor)
   const payments = records.filter((record) => normalizeVendor(record.vendor) === vendor)
+  if (asOf === undefined) asOf = Math.max(0, ...records.map((record) => record.paymentDate.getTime()))
   const latest = Math.max(0, ...payments.map((record) => record.paymentDate.getTime()))
   const recentInvoices = new Set(payments.filter((record) => asOf - record.paymentDate.getTime() >= 0 && asOf - record.paymentDate.getTime() <= 90 * DAY).map((record) => record.invoiceNumber ?? record.id))
   if (latest <= asOf && recentInvoices.size >= 2) {
-    return { method: 'credit', reason: `${recentInvoices.size} distinct payments to this vendor appear in the last 90 days. An applied credit may be practical; confirm a future bill exists.` }
+    return { method: 'credit', reason: `${recentInvoices.size} distinct payments to this vendor appear in the ledger's last 90 days. An applied credit may be practical; confirm a future bill exists.` }
   }
-  return { method: 'refund', reason: 'The ledger does not show steady recent payments to this vendor. A cash refund avoids leaving an unused credit.' }
+  return { method: 'refund', reason: 'The ledger does not show steady payments to this vendor in its last 90 days. A cash refund avoids leaving an unused credit.' }
 }
 
 export interface RecoveryAction { label: string; detail: string; dueAt?: number | null }
@@ -165,10 +188,10 @@ export function recoveryNextAction(state: CaseState, now = Date.now(), internal 
   if (state.recoveryStage === 'requested') {
     if (internal) return { label: 'Record investigation outcome', detail: 'Finish the internal review and record the result.' }
     if ((state.recoveredAmount ?? 0) > 0) return { label: 'Pursue remaining balance', detail: 'Record the next settled return, follow up with the vendor, or close the outstanding balance.', dueAt: state.nextFollowUpAt }
-    const last = [...(state.vendorUpdates ?? [])].reverse().find((update) => update.status !== 'followed_up' && update.status !== 'no_response')
+    const last = latestVendorPosition(state)
     if (last?.status === 'credit_issued') return { label: 'Verify credit application', detail: 'A credit memo is pending until it offsets a valid bill.' }
     if (last?.status === 'already_refunded') return { label: 'Verify refund settlement', detail: 'The vendor says a refund was sent. Match it to an actual bank or accounting record before counting recovery.' }
-    if (last && ['needs_documents', 'disputed', 'wrong_contact', 'payment_not_found', 'partial_acceptance', 'no_action_required'].includes(last.status)) return { label: 'Review vendor response', detail: last.note }
+    if (last && VENDOR_STATUS[last.status].needsAction) return { label: 'Review vendor response', detail: last.note }
     if (last?.status === 'accepted') return last.expectedAt ? { label: 'Verify promised return', detail: 'The vendor accepted the claim. Confirm the return settles before recording it.', dueAt: last.expectedAt } : { label: 'Confirm return timing', detail: 'Ask the vendor when and how the accepted amount will be returned.' }
     if (last?.status === 'promised') return { label: 'Verify promised return', detail: 'Record a settled refund or applied credit only after it arrives.', dueAt: last.expectedAt ?? null }
     if (state.nextFollowUpAt && state.nextFollowUpAt <= now) return { label: 'Follow up with vendor', detail: 'The scheduled follow-up is due.', dueAt: state.nextFollowUpAt }
@@ -189,8 +212,8 @@ export function requiresCustomerAction(state: CaseState, now = Date.now(), inter
   if (state.recoveryStage !== 'requested') return false
   if (internal) return true
   if ((state.recoveredAmount ?? 0) > 0) return true
-  const last = [...(state.vendorUpdates ?? [])].reverse().find((update) => update.status !== 'followed_up' && update.status !== 'no_response')
-  return Boolean(last && (['credit_issued', 'already_refunded', 'needs_documents', 'disputed', 'wrong_contact', 'payment_not_found', 'partial_acceptance', 'no_action_required'].includes(last.status) || (last.status === 'accepted' && !last.expectedAt))) || Boolean(state.nextFollowUpAt && state.nextFollowUpAt <= now)
+  const last = latestVendorPosition(state)
+  return Boolean(last && (VENDOR_STATUS[last.status].needsAction || (last.status === 'accepted' && !last.expectedAt))) || Boolean(state.nextFollowUpAt && state.nextFollowUpAt <= now)
 }
 
 export function recoveryStatusLabel(state: CaseState, internal = false): string {
@@ -200,17 +223,8 @@ export function recoveryStatusLabel(state: CaseState, internal = false): string 
   if (state.recoveryStage === 'confirmed') return state.contactHold ? 'Contact on hold' : state.approvedAt ? 'Ready to send' : 'Awaiting approval'
   if (state.recoveryStage === 'requested') {
     if ((state.recoveredAmount ?? 0) > 0) return 'Partially returned'
-    const status = [...(state.vendorUpdates ?? [])].reverse().find((update) => update.status !== 'followed_up' && update.status !== 'no_response')?.status
-    if (status === 'credit_issued') return 'Credit issued, unapplied'
-    if (status === 'already_refunded') return 'Refund reported, verify'
-    if (status === 'payment_not_found') return 'Payment not found'
-    if (status === 'partial_acceptance') return 'Partially accepted'
-    if (status === 'no_action_required') return 'Vendor says resolved'
-    if (status === 'needs_documents') return 'Documents requested'
-    if (status === 'wrong_contact') return 'Wrong contact'
-    if (status === 'accepted') return 'Claim accepted'
-    if (status === 'promised') return 'Return promised'
-    if (status === 'disputed') return 'Vendor disputed'
+    const status = latestVendorPosition(state)?.status
+    if (status && VENDOR_STATUS[status].caseStatus) return VENDOR_STATUS[status].caseStatus!
     return 'Waiting on vendor'
   }
   if (state.recoveryStage === 'recovered') return (state.recoveredAmount ?? 0) <= 0 ? 'Return amount missing' : state.reconciledAt ? 'Reconciled' : 'Returned, reconcile'

@@ -1,0 +1,124 @@
+/* The launch screen's look (the first screen before any audit exists). The
+   workspace itself is styled by reclaim.css. */
+/* The September Vercel-style dashboard shell, fitted around the V2 engine. */
+.wk-vercel {
+  --bg: #000;
+  --bg-deep: #111;
+  --surface: #0a0a0a;
+  --surface-hi: #1f1f1f;
+  --line: #262626;
+  --line-soft: #202020;
+  --line-strong: #444;
+  --text: #ededed;
+  --text-dim: #c6c6c6;
+  --text-muted: #8f8f8f;
+  --accent: #ededed;
+  --accent-hover: #fff;
+  --accent-ink: #ededed;
+  --accent-soft: #222;
+  --accent-ring: rgb(255 255 255 / .22);
+  --on-accent: #080808;
+  --warn: #eab66a;
+  --info: #78a9ff;
+  --sidebar-w: 256px;
+  --gutter: 32px;
+  /* One corner scale: xs for chips and keys, sm for controls, md for cards and
+     menus, lg for floating panels. Nested corners step down, never up. */
+  --r-xs: 4px;
+  --r-sm: 6px;
+  --r-md: 10px;
+  --r-lg: 12px;
+  --radius: var(--r-md);
+  --radius-sm: var(--r-sm);
+  --f-display: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --f-text: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --f-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 14px;
+  line-height: 1.55;
+}
+html[data-theme='light'] .wk-vercel {
+  --bg: #fff;
+  --bg-deep: #f7f7f7;
+  --surface: #fff;
+  --surface-hi: #f2f2f2;
+  --line: #e6e6e6;
+  --line-soft: #eee;
+  --line-strong: #c8c8c8;
+  --text: #171717;
+  --text-dim: #484848;
+  --text-muted: #737373;
+  --accent: #171717;
+  --accent-hover: #333;
+  --accent-ink: #171717;
+  --accent-soft: #eee;
+  --accent-ring: rgb(0 0 0 / .15);
+  --on-accent: #fff;
+  --warn: #a65c12;
+  --info: #2360bb;
+  color-scheme: light;
+}
+.wk-vercel .wk-display { font-family: var(--f-text); font-weight: 600; line-height: 1.3; letter-spacing: -.025em; text-transform: none; }
+.wk-vercel .wk-h1 { font-size: 24px; }
+.wk-vercel .wk-h2 { font-size: 14px; letter-spacing: -.01em; }
+.wk-vercel .wk-figure { font: 600 25px/1.15 var(--f-text); letter-spacing: -.04em; }
+.wk-vercel .wk-figure-sm { font: 600 22px/1.2 var(--f-text); letter-spacing: -.035em; }
+.wk-vercel .wk-label { font: 500 11px/1.35 var(--f-text); letter-spacing: 0; text-transform: none; }
+.wk-vercel .wk-num { font-family: var(--f-text); font-variant-numeric: tabular-nums; }
+.wk-vercel :focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
+.wk-vercel .wk-side { gap: 0; padding: 0 8px 12px; background: var(--bg); border-right: 1px solid var(--line); }
+.wk-vercel .wk-nav { gap: 2px; }
+.wk-vercel .wk-nav-item { min-height: 38px; padding: 7px 10px; border-radius: var(--r-sm); color: var(--text-dim); font-size: 14px; font-weight: 450; }
+.wk-vercel .wk-nav-item:hover { background: var(--bg-deep); color: var(--text); }
+.wk-vercel .wk-nav-item[aria-current='page'] { background: var(--surface-hi); box-shadow: none; color: var(--text); font-weight: 550; }
+.wk-vercel .wk-nav-item[aria-current='page'] .wk-nav-count { color: var(--text-muted); }
+.wk-vercel .wk-nav-item svg { stroke-width: 1.6; }
+.wk-vercel .wk-side-foot { margin-top: auto; padding: 12px 4px 0; border-color: var(--line); gap: 6px; }
+.wk-vercel .wk-account { grid-template-columns: 24px minmax(0, 1fr); gap: 8px; padding: 4px; }
+.wk-vercel .wk-avatar { width: 24px; height: 24px; font-size: 10px; }
+.wk-vercel .wk-account-name { font-size: 12px; }
+.wk-vercel .wk-account-sub { font-size: 10px; }
+.wk-vercel .wk-topbar { min-height: 60px; padding: 0 var(--gutter); background: var(--bg); backdrop-filter: none; }
+.wk-vercel .wk-topbar-actions { margin-left: auto; }
+.wk-vercel .wk-body { max-width: 1320px; width: 100%; margin-inline: auto; gap: 32px; padding: 32px var(--gutter) 72px; }
+.wk-vercel .wk-section { gap: 16px; }
+.wk-vercel .wk-section-head { align-items: center; }
+.wk-vercel .wk-section-head p { font-size: 13px; }
+.wk-vercel .wk-card, .wk-vercel .wk-card-flat, .wk-vercel .wk-table-wrap, .wk-vercel .wk-pipeline, .wk-vercel .wk-ladder { border-radius: var(--r-md); background: var(--surface); }
+.wk-vercel .wk-card, .wk-vercel .wk-card-flat { padding: 20px; }
+.wk-vercel .wk-table th { padding: 12px 16px; font: 500 12px var(--f-text); letter-spacing: 0; text-transform: none; }
+.wk-vercel .wk-table td { padding: 14px 16px; font-size: 13.5px; }
+.wk-vercel .wk-table tbody tr:hover { background: var(--bg-deep); }
+.wk-vercel .wk-table tbody tr:hover td:not(.wk-table-money) { color: var(--text); }
+.wk-vercel .wk-table-vendor { font-weight: 550; }
+.wk-vercel .wk-table-sub { font-size: 12px; }
+.wk-vercel .wk-table-money { font: 500 13.5px var(--f-text); font-variant-numeric: tabular-nums; }
+.wk-vercel .wk-btn { height: 36px; padding: 0 14px; border-radius: var(--r-sm); font-size: 13px; font-weight: 550; }
+.wk-vercel .wk-btn[data-size='sm'] { height: 32px; padding: 0 12px; font-size: 13px; }
+.wk-vercel .wk-btn[data-variant='outline'] { background: var(--surface); }
+.wk-vercel .wk-btn[data-variant='outline']:hover, .wk-vercel .wk-btn[data-variant='ghost']:hover { border-color: var(--line-strong); background: var(--surface-hi); color: var(--text); }
+.wk-vercel .wk-mark, .wk-vercel .wk-pill { font: 500 12px var(--f-text); letter-spacing: 0; text-transform: none; }
+.wk-vercel .wk-mark::before, .wk-vercel .wk-pill::before { width: 7px; height: 7px; border-radius: 50%; }
+.wk-vercel .wk-mark[data-tone='strong'], .wk-vercel .wk-pill[data-tone='strong'] { color: #77d7bd; }
+.wk-vercel .wk-strength span { font: 500 12px var(--f-text); letter-spacing: 0; text-transform: none; }
+.wk-vercel .wk-strength[data-level='strong'] i:nth-child(-n + 3) { background: #77d7bd; }
+.wk-vercel .wk-bar, .wk-vercel .wk-rung-track { height: 4px; border-radius: 999px; }
+.wk-vercel .wk-bar i, .wk-vercel .wk-rung-track i { border-radius: inherit; background: var(--text-dim); }
+.wk-vercel .wk-empty { border-style: solid; background: var(--surface); }
+.wk-vercel .wk-screen-head { padding: 0; border: 0; }
+.wk-vercel .wk-screen-head .wk-object, .wk-vercel .wk-dash-pipeline .wk-object { display: none; }
+.wk-vercel .wk-screen-head p { max-width: none; color: var(--text-muted); font-size: 13px; }
+.wk-vercel .wk-pipeline > * { padding: 20px; gap: 6px; }
+.wk-vercel .wk-pipeline-figure { font: 600 20px/1.25 var(--f-text); letter-spacing: -.035em; }
+.wk-vercel .wk-ladder > * { padding: 20px; gap: 6px; }
+.wk-vercel .wk-ladder-note { font-size: 12px; }
+.wk-vercel .wk-dash-pipeline { display: block; }
+.wk-vercel.wk-launch { display: grid; min-height: 100dvh; place-items: center; padding: 48px 20px; }
+.wk-vercel .wk-launch-card { width: min(760px, 100%); gap: 24px; padding: 28px; border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--surface); }
+.wk-vercel .wk-launch-card .wk-brand { height: auto; color: var(--text); }
+.wk-vercel .wk-launch-card .wk-brand svg { width: 22px; height: 22px; }
+.wk-vercel .wk-launch-card .wk-brand b { font-size: 18px; }
+.wk-vercel .wk-launch-card .wk-display { max-width: 22ch; font-size: clamp(23px, 3vw, 32px) !important; line-height: 1.18; letter-spacing: -.04em !important; }
+.wk-vercel .wk-launch-steps { gap: 8px; }
+.wk-vercel .wk-launch-steps > * { padding: 13px; border-radius: var(--r-sm); background: var(--bg); }
+.wk-vercel .wk-btn[data-size='lg'] { height: 40px; padding: 0 16px; font-size: 14px; }
+.wk-sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; clip-path: inset(50%); }

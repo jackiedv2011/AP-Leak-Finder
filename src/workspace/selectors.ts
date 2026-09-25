@@ -15,6 +15,7 @@ import { formatCurrency, normalizeVendor } from '@/lib/format'
 import { claimValue, isAtRisk, isClaim, sumMoney } from '@/lib/claims'
 import { FINDING_TYPE_LABELS } from '@/lib/labels'
 import type { Finding, FindingType } from '@/types'
+import { latestVendorPosition, VENDOR_STATUS } from '@/recovery/vendorStatus'
 
 /**
  * §12 — three levels, not a percentage. "94% confident" means nothing to a
@@ -286,14 +287,12 @@ export interface VendorCommitments {
 /** Customer-recorded vendor statements; neither bucket is settled money. */
 export function vendorCommitments(env: LedgerEnvironment): VendorCommitments {
   const totals: VendorCommitments = { confirmed: 0, pendingReturn: 0, confirmedCases: 0, pendingCases: 0 }
-  const agreedStatuses = new Set(['accepted', 'partial_acceptance', 'promised', 'credit_issued', 'already_refunded'])
-  const pendingStatuses = new Set(['promised', 'credit_issued', 'already_refunded'])
   for (const finding of env.result.findings) {
     if (finding.class !== 'recoverable') continue
     const state = getCaseState(env, finding.id)
     if (state.recoveryStage !== 'requested') continue
-    const update = [...(state.vendorUpdates ?? [])].reverse().find((entry) => entry.status !== 'followed_up' && entry.status !== 'no_response')
-    if (!update || !agreedStatuses.has(update.status)) continue
+    const update = latestVendorPosition(state)
+    if (!update || !VENDOR_STATUS[update.status].agreed) continue
     const remaining = Math.max(0, (state.requestedAmount ?? finding.dollarImpact) - (state.recoveredAmount ?? 0))
     const returnedSinceUpdate = (state.recoverySettlements ?? []).filter((entry) => entry.settledAt >= update.at).reduce((sum, entry) => sum + entry.amount, 0)
     // Only "accepted the claim" states that the whole request was accepted.
@@ -305,7 +304,7 @@ export function vendorCommitments(env: LedgerEnvironment): VendorCommitments {
     if (amount <= 0) continue
     totals.confirmed += amount
     totals.confirmedCases += 1
-    if (pendingStatuses.has(update.status)) {
+    if (VENDOR_STATUS[update.status].pending) {
       totals.pendingReturn += amount
       totals.pendingCases += 1
     }
@@ -413,7 +412,7 @@ export interface TimelineStep {
 
 export function timelineFor(finding: Finding, state: CaseState, discoveredAt: number | null = null): TimelineStep[] {
   const at = (ts: number | null | undefined) =>
-    ts ? new Date(ts).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }).toUpperCase() : '—'
+    ts ? new Date(ts).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—'
 
   if (finding.class !== 'recoverable') return [
     { when: at(discoveredAt), what: 'Finding detected', done: true },
