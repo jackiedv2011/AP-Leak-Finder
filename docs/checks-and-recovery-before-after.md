@@ -1,6 +1,6 @@
 # Checks and recovery: before and after
 
-**Status: IMPLEMENTED; AUTOMATED CHECKS PASS; BROWSER CHECK PENDING.** The before-state below was inspected at commit `2a113e4` on September 25, 2026. The after-state is implemented on branch `recovery-eligibility-gate`. The verification record at the end lists what has actually been checked.
+**Status: IMPLEMENTED; AUTOMATED CHECKS PASS; BROWSER CHECK PARTIAL (guest session).** The before-state below was inspected at commit `2a113e4` on September 25, 2026. The after-state is implemented on branch `recovery-eligibility-gate`. The verification record at the end lists what has actually been checked.
 
 ## Current website flow
 
@@ -133,4 +133,11 @@ The next phase should validate these assumptions with an accountant and a small,
 - Totals: flagged, potential, in recovery, pending return and recovered reconcile across a 200-session random walk with reload, and the vendor rollup counts legacy returns the same way as the dashboard. A vendor's “accepted the claim” reply now counts as pending return.
 - An approval saved before the gate no longer makes an ineligible signal a vendor recovery case; it stays an internal review with its history.
 
-**Unsupported or deferred:** only exact and reference-variant duplicates in USD can pass the gate; overpayments, outliers and shared references stay review-only. Evidence is customer-recorded, with no bank feed. Browser verification of the demonstrations listed above is still pending.
+**Unsupported or deferred:** only exact and reference-variant duplicates in USD can pass the gate; overpayments, outliers and shared references stay review-only. Evidence is customer-recorded, with no bank feed.
+
+**After (September 25, 2026, browser, guest session):** a synthetic nine-row CSV was uploaded at `/audit`. It held an exact repeat, a one-character reference variant, a same-amount pair with no reference, a missed 2/10 discount and a bank-account change. Results:
+
+- Overview: Recovery candidates $0 (0 passed the evidence gate); Flagged for review $1,940 (3 signals: $1,000 + $640 + $300); In recovery $0; Recovered $0. The $720 bank change and the $40 discount sit outside the flagged total.
+- The reference variant shows `invoice_reference_variant_v1 · review_needed`, potential recovery unavailable, and the next step "Review evidence". No finding offered "Start recovery".
+- The missed discount is `future_savings` with the next step "View savings opportunity". Found and fixed during this check: the duplicate-evidence form was rendering on every finding, including savings and security ones. It now appears only on duplicate rules, the only rules that can pass the gate.
+- Not reachable as a guest, so these stay covered only by the automated tests: the exact duplicate and the bank change (locked on the free plan), evidence promotion, authorization, gated AI drafting, and append re-import idempotency (the guest UI offers new audits only).

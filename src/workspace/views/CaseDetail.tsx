@@ -304,7 +304,8 @@ export function CaseDetail(props: CaseDetailProps) {
 
           {state.requiresRevalidation ? <p className="wk-field-hint" role="status">This existing recovery needs its evidence revalidated before any further outreach. Recorded returns stay preserved.</p> : null}
 
-          {onSaveEvidence ? <EvidencePanel key={`evidence-${finding.id}`} finding={finding} findings={findings} onSave={(evidence) => onSaveEvidence(finding.id, evidence)} /> : null}
+          {/* Only duplicate rules have a recovery gate; savings and security findings never collect recovery evidence. */}
+          {onSaveEvidence && (finding.type === 'exact_duplicate' || finding.type === 'near_duplicate') ? <EvidencePanel key={`evidence-${finding.id}`} finding={finding} findings={findings} onSave={(evidence) => onSaveEvidence(finding.id, evidence)} /> : null}
 
           <Evidence finding={finding} />
 
