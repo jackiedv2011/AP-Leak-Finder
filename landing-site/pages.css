@@ -951,3 +951,20 @@ pre.code .hl { background: var(--cl-reclaim); color: var(--cl-black); }
   .stage:last-child::before { -webkit-mask-image: linear-gradient(180deg, #000 45%, transparent); mask-image: linear-gradient(180deg, #000 45%, transparent); }
   .stage::after { top: 0; left: 0; }
 }
+
+/* About: the hero is centred; everything under it reads from the left edge of the grid. */
+[data-template="about"] .hero-about .content { grid-column: 1 / -1; text-align: center; }
+[data-template="about"] .hero-about .line-wrap { margin-inline: auto; }
+[data-template="about"] .article-content .the-col,
+[data-template="about"] .article-quote .the-col { grid-column: 1 / span 8; }
+[data-template="about"] .article-horizontal-rows .rows { grid-column: 1 / -1; }
+@media (max-width: 991px) { [data-template="about"] .article-content .the-col, [data-template="about"] .article-quote .the-col { grid-column: 1 / -1; } }
+@media (min-width: 992px) { [data-template="about"] .article-columns .items { grid-column: 1 / 8; } }
+
+/* Security: the body copy read small; one step up throughout the page (not the nav or footer). */
+[data-template="security"] main .desc.type-body-large { font-size: 2.2rem; }
+[data-template="security"] main .article-columns .item .heading { font-size: 1.8rem; }
+[data-template="security"] main .article-columns-item-card1 .desc { font-size: 2rem; }
+[data-template="security"] main .item .desc.type-body-xs { font-size: 1.6rem; }
+[data-template="security"] main .richtext p { font-size: 1.8rem; }
+[data-template="security"] main .item .label.type-h6 { font-size: 2rem; }

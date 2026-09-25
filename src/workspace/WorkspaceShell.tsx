@@ -8,6 +8,7 @@ import {
   CornerDownLeft,
   FileBarChart,
   FolderSearch,
+  Globe,
   Gem,
   LayoutGrid,
   LogOut,
@@ -182,6 +183,7 @@ function Shell({ mode, onModeChange, auditCount, findingCount, recoveryCount, wo
         <ul className="wk-nav">{secondary.map(renderItem)}</ul>
       </nav>
       <div className="wk-side-foot">
+        <a className="wk-side-btn" href="/" title="Back to the landing page"><Globe aria-hidden="true" /><span>Back to landing page</span></a>
         <button type="button" className="wk-side-btn" onClick={() => { setCustomizeOpen(true); setMobileNavOpen(false) }} title="Customize"><SlidersHorizontal aria-hidden="true" /><span>Customize</span></button>
         <button type="button" className="wk-side-btn wk-collapse-btn" onClick={() => update({ sidebarCollapsed: !prefs.sidebarCollapsed })} title={prefs.sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}>
           {prefs.sidebarCollapsed ? <PanelLeftOpen aria-hidden="true" /> : <PanelLeftClose aria-hidden="true" />}<span>Collapse sidebar</span>

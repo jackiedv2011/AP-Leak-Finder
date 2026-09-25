@@ -10,7 +10,7 @@ import type { Entitlements, Plan } from '@/lib/plans'
 export interface Providers {
   google: boolean
   ai: boolean
-  emailDelivery: 'dev' | 'resend'
+  emailDelivery: 'dev' | 'resend' | 'gmail'
   requireEmailVerification: boolean
   devMailbox: boolean
 }

@@ -196,6 +196,7 @@ html[data-surface='workspace'] .wk-app[data-collapsed] { --sidebar-w: 68px; }
 
 .wk-app .wk-side-foot { margin-top: auto; padding: 14px 0 0; border-top: 1px solid var(--line); gap: 4px; }
 .wk-side-btn { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 36px; padding: 0 10px; border: 0; border-radius: var(--r-sm); background: none; color: var(--text-dim); font: 500 13px var(--f-text); cursor: pointer; text-align: left; }
+a.wk-side-btn { text-decoration: none; }
 .wk-side-btn:hover { background: var(--bg-deep); color: var(--text); }
 .wk-side-btn svg { width: 16px; height: 16px; flex: none; stroke-width: 1.7; }
 .wk-app .wk-account { grid-template-columns: 30px minmax(0, 1fr) auto; gap: 10px; margin-top: 8px; padding: 6px; border-radius: var(--r-sm); }

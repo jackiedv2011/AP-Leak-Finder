@@ -403,3 +403,21 @@ describe('ai drafting', () => {
     expect(drafts.draft).toHaveBeenLastCalledWith(expect.not.objectContaining({ extra: expect.anything() }))
   })
 })
+
+describe('landing-site contact form', () => {
+  it('emails the team with the visitor as reply-to, and refuses an incomplete form', async () => {
+    const client = new Client()
+    const bad = await client.post('/api/contact', { name: '', email: 'nope' })
+    expect(bad.status).toBe(400)
+    expect(Object.keys(bad.body.fields)).toEqual(['name', 'email', 'role'])
+
+    const ok = await client.post('/api/contact', { kind: 'talk', name: 'Dana\r\nBcc: x@evil.test', email: 'dana@acme.test', role: 'Controller', systems: ['Xero', 42], message: 'Duplicate invoices last quarter.' })
+    expect(ok.status).toBe(200)
+    const [mail] = await inbox(config.contactEmail)
+    expect(config.contactEmail).toBe('reclaimbusiness1@gmail.com')
+    expect(mail.subject).not.toMatch(/[\r\n]/)
+    expect(mail.body).toContain('Email: dana@acme.test')
+    expect(mail.body).toContain('Systems: Xero')
+    expect(mail.body).toContain('Duplicate invoices last quarter.')
+  })
+})

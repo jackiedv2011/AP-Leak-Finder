@@ -4,7 +4,7 @@ import { extname, join, normalize, resolve, sep } from 'node:path'
 import type { DatabaseSync } from 'node:sqlite'
 import { openDatabase } from './db.ts'
 import { AuthService, normalizeEmail } from './auth.ts'
-import { DevMailer, ResendMailer, type Mailer } from './mailer.ts'
+import { DevMailer, GmailMailer, ResendMailer, type Mailer } from './mailer.ts'
 import { createGoogleClient, type GoogleClient } from './google.ts'
 import { createDraftService, DraftError, DraftRequestSchema, unsupportedAmounts, type DraftService } from './ai.ts'
 import type { ServerConfig } from './config.ts'
@@ -61,7 +61,7 @@ const MIME: Record<string, string> = {
 export function createApp(deps: AppDependencies): App {
   const { config } = deps
   const db = deps.db ?? openDatabase(config.databasePath)
-  const mailer = deps.mailer ?? (config.resend ? new ResendMailer(config.resend.apiKey, config.resend.from) : new DevMailer(db))
+  const mailer = deps.mailer ?? (config.resend ? new ResendMailer(config.resend.apiKey, config.resend.from) : config.gmail ? new GmailMailer(config.gmail.user, config.gmail.appPassword) : new DevMailer(db))
   const google = deps.google !== undefined ? deps.google : config.google ? createGoogleClient(config.google.clientId, config.google.clientSecret) : null
   const drafts = deps.drafts !== undefined ? deps.drafts : config.anthropicApiKey ? createDraftService(config.anthropicApiKey, config.anthropicModel) : null
   const auth = new AuthService(db, mailer, {
@@ -72,6 +72,7 @@ export function createApp(deps: AppDependencies): App {
   })
   const credentialLimiter = new RateLimiter(20, 60 * 1000)
   const draftLimiter = new RateLimiter(30, 60 * 60 * 1000)
+  const contactLimiter = new RateLimiter(5, 60 * 60 * 1000)
 
   const sessionCookie = (token: string, maxAge: number) => serializeCookie(SESSION_COOKIE, token, { maxAge, secure: config.production })
   const clearSessionCookie = () => serializeCookie(SESSION_COOKIE, '', { maxAge: 0, secure: config.production })
@@ -126,6 +127,34 @@ export function createApp(deps: AppDependencies): App {
     // ---------- discovery ----------
     if (path === '/api/auth/providers' && method === 'GET') {
       return json(200, { google: google !== null, ai: drafts !== null, emailDelivery: mailer.kind, requireEmailVerification: config.requireEmailVerification, devMailbox: config.devMailbox })
+    }
+
+    // ---------- landing-site contact form ----------
+    if (path === '/api/contact' && method === 'POST') {
+      requireJson(req)
+      limit(contactLimiter, `contact:${req.ip}`)
+      const body = await req.json<Record<string, unknown>>()
+      const text = (key: string, max: number) => (typeof body[key] === 'string' ? (body[key] as string).trim().slice(0, max) : '')
+      const name = text('name', 120)
+      const email = text('email', 254)
+      const role = text('role', 80)
+      const message = text('message', 4000)
+      const systems = Array.isArray(body.systems) ? body.systems.filter((s): s is string => typeof s === 'string').slice(0, 12).map((s) => s.slice(0, 60)) : []
+      const kind = body.kind === 'audit' ? 'Get started' : 'Talk to us'
+      const fields: Record<string, string> = {}
+      if (!name) fields.name = 'Please enter your name.'
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) fields.email = 'Please enter a valid work email.'
+      if (!role) fields.role = 'Please select your role.'
+      if (Object.keys(fields).length) return json(400, { message: 'Check the highlighted fields.', code: 'validation', fields })
+      // Header-safe: no line breaks in the subject.
+      const subject = `${kind}: ${name} (${role})`.replace(/[\r\n]+/g, ' ')
+      await mailer.send({
+        to: config.contactEmail,
+        replyTo: email,
+        subject,
+        body: [`${kind} form on the Reclaim website`, '', `Name: ${name}`, `Email: ${email}`, `Role: ${role}`, `Systems: ${systems.join(', ') || '—'}`, '', message ? `Message:\n${message}` : 'No message.'].join('\n'),
+      })
+      return json(200, { ok: true })
     }
 
     // ---------- email/password ----------

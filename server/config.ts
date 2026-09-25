@@ -17,9 +17,13 @@ export interface ServerConfig {
   google: { clientId: string; clientSecret: string } | null
   /** Email delivery. Without a provider the server uses the dev mailbox. */
   resend: { apiKey: string; from: string } | null
+  /** Or Gmail SMTP with an app password: sends from that Gmail address. Used when Resend is not set. */
+  gmail: { user: string; appPassword: string } | null
   /** AI drafting (Phase 2C). The key never leaves the server. */
   anthropicApiKey: string | null
   anthropicModel: string
+  /** Where the landing site's contact form is delivered. */
+  contactEmail: string
   /** Exposes /api/dev/mailbox and /api/dev/plan. Never true in production; on by default only for a localhost origin. */
   devMailbox: boolean
 }
@@ -29,6 +33,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): ServerConfig {
   const port = Number(env.PORT ?? 8787)
   const appOrigin = (env.APP_ORIGIN ?? `http://localhost:${port}`).replace(/\/$/, '')
   const google = env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET ? { clientId: env.GOOGLE_CLIENT_ID, clientSecret: env.GOOGLE_CLIENT_SECRET } : null
+  const gmail = env.GMAIL_USER && env.GMAIL_APP_PASSWORD ? { user: env.GMAIL_USER, appPassword: env.GMAIL_APP_PASSWORD } : null
   const resend = env.RESEND_API_KEY && env.EMAIL_FROM ? { apiKey: env.RESEND_API_KEY, from: env.EMAIL_FROM } : null
   if (production && !env.SESSION_COOKIE_SECURE_OK && !appOrigin.startsWith('https://')) {
     throw new Error('In production APP_ORIGIN must be https:// (session cookies are marked Secure).')
@@ -43,8 +48,10 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): ServerConfig {
     rememberMeDays: Number(env.REMEMBER_ME_DAYS ?? 30),
     google,
     resend,
+    gmail,
     anthropicApiKey: env.ANTHROPIC_API_KEY ?? null,
     anthropicModel: env.ANTHROPIC_MODEL ?? 'claude-opus-5',
+    contactEmail: env.CONTACT_EMAIL ?? 'reclaimbusiness1@gmail.com',
     // The dev mailbox serves every verification and password-reset link to
     // anyone who asks, so it only switches itself on for a machine-local
     // origin. A staging box started without NODE_ENV=production must not

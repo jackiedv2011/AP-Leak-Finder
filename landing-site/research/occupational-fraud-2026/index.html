@@ -13,6 +13,8 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11.2.6/swiper-bundle.min.css">
 <link rel="stylesheet" href="/styles.css">
 <link rel="stylesheet" href="/pages.css">
+<link rel="stylesheet" href="/customize.css">
+<script src="/customize.js"></script>
 <script>try{if(sessionStorage.getItem('rc-visited'))document.documentElement.classList.add('is-return')}catch(e){}</script>
 </head>
 <body data-folder="research" data-template="article">
@@ -87,6 +89,7 @@
         </ul>
       </nav>
       <div class="right">
+        <button type="button" class="nav-customize" data-customize aria-label="Customize how the site looks" title="Customize"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 5H3M12 19H3M14 3v4M16 17v4M21 12h-9M21 19h-5M21 5h-7M8 10v4M8 12H3"/></svg></button>
         <a href="/login" class="nav-login type-body-xs">Log in</a>
         <a href="/audit?entry=sample" class="cta cta-button" size="small" theme="black"><span class="hover-loop"><span class="inner">Get Started</span></span></a>
         <button type="button" class="menu-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="mobile-menu"><span class="bar"></span><span class="bar"></span></button>
@@ -398,7 +401,7 @@
 
 </main>
 
-<!-- start-an-audit / talk-to-us popup (front end only: nothing is sent yet) -->
+<!-- start-an-audit / talk-to-us popup: posts to /api/contact, which emails the team -->
 <div class="modal" id="modal" hidden>
   <div class="wrap">
     <button type="button" class="underlay" tabindex="-1" aria-label="Close"></button>
@@ -460,6 +463,9 @@
                     </div></div>
                     <ul class="formkit-messages" aria-live="polite"></ul>
                   </div>
+                </div>
+                <div class="formkit-outer" data-field="message">
+                  <div class="formkit-wrapper"><label class="formkit-label" for="m-message">Message <span class="formkit-optional">(optional)</span></label><div class="formkit-inner"><textarea class="formkit-input formkit-textarea" id="m-message" name="message" rows="3" maxlength="4000" placeholder="What should we know?"></textarea></div></div>
                 </div>
                 <div class="error-message" hidden><ul class="formkit-messages" role="alert"><li class="formkit-message">Please check the highlighted fields.</li></ul></div>
                 <div class="footer">

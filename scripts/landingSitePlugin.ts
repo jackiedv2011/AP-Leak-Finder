@@ -38,7 +38,7 @@ const MIME: Record<string, string> = {
 const EXACT_ROUTES = new Set(['/', '/about', '/pricing', '/research', '/security', '/guides', '/how-it-works', '/what-it-checks'])
 const PREFIX_ROUTES = ['/research/', '/guides/']
 const ASSET_PREFIXES = ['/assets/', '/media/']
-const ASSET_FILES = new Set(['/styles.css', '/pages.css', '/main.js', '/reels.js'])
+const ASSET_FILES = new Set(['/styles.css', '/pages.css', '/customize.css', '/main.js', '/reels.js', '/customize.js'])
 
 function isLandingSiteRoute(pathname: string): boolean {
   const trimmed = pathname.length > 1 && pathname.endsWith('/') ? pathname.slice(0, -1) : pathname

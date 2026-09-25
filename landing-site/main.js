@@ -299,6 +299,7 @@
         setError('email', /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email) ? '' : 'Please enter a valid work email.'),
         setError('role', dropdowns[0].values().length ? '' : 'Please select your role.'),
       ].every(Boolean);
+      $('.formkit-message', errorBox).textContent = 'Please check the highlighted fields.';
       errorBox.hidden = ok;
       return ok;
     };
@@ -371,13 +372,27 @@
       if (submitWrap.classList.contains('loading')) return;
       if (!validate()) { $('[data-invalid] input, [data-invalid] .dropdown-button', form)?.focus(); return; }
       submitWrap.classList.add('loading');
-      // no backend yet: show the confirmation the finished flow will show
-      submitTimer = setTimeout(() => {
+      const payload = {
+        kind: modal.dataset.mode === 'audit' ? 'audit' : 'talk',
+        name: form.elements.name.value.trim(),
+        email: form.elements.email.value.trim(),
+        role: dropdowns[0].values()[0] || '',
+        systems: dropdowns[1] ? dropdowns[1].values() : [],
+        message: form.elements.message.value.trim(),
+      };
+      fetch('/api/contact', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+        .then(async r => { if (!r.ok) throw new Error((await r.json().catch(() => ({}))).message || 'Could not send.'); })
+        .then(() => {
         submitWrap.classList.remove('loading');
         gsap.timeline()
           .to(card, { opacity: 0, scale: .96, duration: calm ? 0 : .2, ease: 'power1.in', onComplete: () => { card.hidden = true; success.hidden = false; } })
           .fromTo(success, { opacity: 0, scale: .96 }, { opacity: 1, scale: 1, duration: calm ? 0 : .4, ease: 'power1.out', onStart: () => $('.close', success).focus({ preventScroll: true }) });
-      }, calm ? 0 : 900);
+        })
+        .catch(err => {
+          submitWrap.classList.remove('loading');
+          $('.formkit-message', errorBox).textContent = err.message === 'Failed to fetch' ? 'Could not reach us. Email reclaimbusiness1@gmail.com instead.' : err.message;
+          errorBox.hidden = false;
+        });
     });
   }
 
