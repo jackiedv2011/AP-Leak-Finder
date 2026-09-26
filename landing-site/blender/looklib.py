@@ -449,3 +449,74 @@ def render(sc, out_dir, prefix, frames, bg_hex=None):
         print(f'FRAME {fr} {time.time() - t:.1f}s -> {p}')
         if bg_hex:
             composite_preview(p, bg_hex)
+
+
+# ---------------------------------------------------------------- v3: quiet money cues
+def reeded(name, base, freq=300.0, depth=.3, attr=None):
+    """A copy of material `base` with a milled edge: fine vertical grooves around the
+    object's (or the column's) axis, on side walls only, like the rim of a coin.
+    attr=None uses object coordinates (a disc centred on its own origin); attr='cpos'
+    reads a per-vertex column-space position so a ring of separate pieces lines up."""
+    m = base.copy()
+    m.name = name
+    nt = m.node_tree
+    b = nt.nodes['Principled BSDF']
+    prev = b.inputs['Normal'].links[0].from_socket if b.inputs['Normal'].links else None
+    if attr:
+        src = _n(nt, 'ShaderNodeAttribute')
+        src.attribute_name = attr
+        vec = src.outputs['Vector']
+    else:
+        vec = _n(nt, 'ShaderNodeTexCoord').outputs['Object']
+    sep = _n(nt, 'ShaderNodeSeparateXYZ')
+    _l(nt, vec, sep.inputs[0])
+    ang = _math(nt, 'ARCTAN2', sep.outputs['Y'], sep.outputs['X'])
+    ridge = _math(nt, 'ABSOLUTE', _math(nt, 'SINE', _math(nt, 'MULTIPLY', ang, freq)))
+    geo = _n(nt, 'ShaderNodeNewGeometry')
+    gz = _n(nt, 'ShaderNodeSeparateXYZ')
+    _l(nt, geo.outputs['Normal'], gz.inputs[0])
+    side = _math(nt, 'LESS_THAN', _math(nt, 'ABSOLUTE', gz.outputs['Z']), .5)
+    bp = _n(nt, 'ShaderNodeBump')
+    bp.inputs['Strength'].default_value = depth
+    bp.inputs['Distance'].default_value = .002
+    _l(nt, _math(nt, 'MULTIPLY', ridge, side), bp.inputs['Height'])
+    if prev is not None:
+        _l(nt, prev, bp.inputs['Normal'])
+    _l(nt, bp.outputs['Normal'], b.inputs['Normal'])
+    return m
+
+
+def ring(name, r_out, r_in, h, mat, n=128, bevel=.006, sides=None):
+    """An annulus (a coin's raised rim, a washer). Polygonal with `sides` (6 = hex ring)."""
+    k = sides or n
+    rot = math.pi / 6 if sides == 6 else 0.0
+    ang = [rot + 2 * math.pi * i / k for i in range(k)]
+    O = [(r_out * math.cos(a), r_out * math.sin(a)) for a in ang]
+    I = [(r_in * math.cos(a), r_in * math.sin(a)) for a in ang]
+    v = [(x, y, -h / 2) for x, y in O] + [(x, y, h / 2) for x, y in O] + \
+        [(x, y, -h / 2) for x, y in I] + [(x, y, h / 2) for x, y in I]
+    ob_, ot, ib, it = 0, k, 2 * k, 3 * k
+    f = []
+    for i in range(k):
+        j = (i + 1) % k
+        f.append((ob_ + i, ob_ + j, ot + j, ot + i))      # outer wall
+        f.append((ib + j, ib + i, it + i, it + j))        # inner wall
+        f.append((ot + i, ot + j, it + j, it + i))        # top
+        f.append((ob_ + j, ob_ + i, ib + i, ib + j))      # bottom
+    me = bpy.data.meshes.new(name)
+    me.from_pydata(v, [], f)
+    me.update()
+    if not sides:
+        for p in me.polygons:
+            if abs(p.normal.z) < .5:
+                p.use_smooth = True
+    me.materials.append(mat)
+    ob = bpy.data.objects.new(name, me)
+    bpy.context.scene.collection.objects.link(ob)
+    if bevel:
+        bv = ob.modifiers.new('bevel', 'BEVEL')
+        bv.width = bevel
+        bv.segments = 1
+        bv.limit_method = 'ANGLE'
+        bv.angle_limit = math.radians(30)
+    return ob

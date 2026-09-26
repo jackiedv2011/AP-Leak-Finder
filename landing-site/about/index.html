@@ -4,12 +4,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Company — Reclaim</title>
+<title>About — Reclaim</title>
 <meta name="description" content="Why Reclaim exists, what we believe about accounts payable, and the published research behind it. Every figure on this page links to the organization that published it.">
 <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Anton&family=Barlow+Condensed:wght@700&family=Bebas+Neue&family=Inter:ital,opsz,wght@0,14..32,300..800;1,14..32,300..800&family=JetBrains+Mono:wght@400;500&display=block" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Barlow+Condensed:wght@700&family=Bebas+Neue&family=Geist:wght@400..700&family=Inter:ital,opsz,wght@0,14..32,300..800;1,14..32,300..800&family=JetBrains+Mono:wght@400;500&display=block" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11.2.6/swiper-bundle.min.css">
 <link rel="stylesheet" href="/styles.css">
 <link rel="stylesheet" href="/pages.css">
@@ -64,6 +64,25 @@
   <symbol id="hx-wheel" viewBox="-13 -11.5 26 23">
     <path d="M-2.056,-4.6 L-5.751,-11 L5.751,-11 L2.056,-4.6 Z"/><path d="M2.956,-4.081 L6.651,-10.481 L12.402,-0.520 L5.012,-0.520 Z"/><path d="M5.012,0.520 L12.402,0.520 L6.651,10.481 L2.956,4.081 Z"/><path d="M2.056,4.6 L5.751,11 L-5.751,11 L-2.056,4.6 Z"/><path d="M-2.956,4.081 L-6.651,10.481 L-12.402,0.520 L-5.012,0.520 Z"/><path d="M-5.012,-0.520 L-12.402,-0.520 L-6.651,-10.481 L-2.956,-4.081 Z"/>
   </symbol>
+  <!-- dashboard mock-ups: the lucide icons the workspace uses (src/workspace/WorkspaceShell.tsx) -->
+  <symbol id="d-grid" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></g></symbol>
+  <symbol id="d-search" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></g></symbol>
+  <symbol id="d-banknote" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></g></symbol>
+  <symbol id="d-report" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4M8 18v-2M12 18v-4M16 18v-6"/></g></symbol>
+  <symbol id="d-folder" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M10.7 20H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H20a2 2 0 0 1 2 2v4.1"/><circle cx="17" cy="17" r="3"/><path d="m21 21-1.9-1.9"/></g></symbol>
+  <symbol id="d-settings" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></g></symbol>
+  <symbol id="d-sliders" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 4h-7M10 4H3M21 12h-9M8 12H3M21 20h-5M12 20H3M14 2v4M8 10v4M16 18v4"/></g></symbol>
+  <symbol id="d-panel" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18M16 15l-3-3 3-3"/></g></symbol>
+  <symbol id="d-moon" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></g></symbol>
+  <symbol id="d-chev-r" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="d-chev-d" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="d-arrow-r" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="d-plus" viewBox="0 0 24 24"><path d="M5 12h14M12 5v14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="d-clock" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></g></symbol>
+  <symbol id="d-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="d-send" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z"/><path d="m21.854 2.147-10.94 10.939"/></g></symbol>
+  <symbol id="d-upload" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5M12 3v12"/></g></symbol>
+  <symbol id="d-mail" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></g></symbol>
 </svg>
 
 <!-- intro (first page of a visit only) -->
@@ -133,7 +152,7 @@
               <div class="the-grid">
                 <div class="the-col"><div class="richtext">
                   <h2>We build one thing<br>and build it properly.</h2>
-                  <p>Reclaim reads the exports your accounting system already produces — bills, payments, vendors, credits — and shows where the same invoice went out twice, where an amount doesn't match what was agreed, and where a credit was issued and never used.</p>
+                  <p>Reclaim reads the records your accounting system already holds — bills, payments, vendors, credits — and shows where the same invoice went out twice, where a payment came to more than the bill, and where a credit was issued and never used. Then, with your approval, it asks the vendor for the money back and follows the case until it has actually arrived.</p>
                 </div></div>
               </div>
             </div>
@@ -173,22 +192,22 @@
                     <li class="row">
                       <div class="row__index"><span class="row__accent" aria-hidden="true"></span><span class="row__num">02</span></div>
                       <h3 class="row__heading type-h5">The evidence is already sitting in your own records.</h3>
-                      <p class="row__desc type-body-base">Nothing has to be reconstructed. The bill, the payment and the credit are already in exports your system produces today.</p>
+                      <p class="row__desc type-body-base">Nothing has to be reconstructed. The bill, the payment and the credit are already in the books your system keeps today.</p>
                     </li>
                     <li class="row">
                       <div class="row__index"><span class="row__accent" aria-hidden="true"></span><span class="row__num">03</span></div>
                       <h3 class="row__heading type-h5">A number without the row behind it is only a guess.</h3>
-                      <p class="row__desc type-body-base">Every result names the file, the row and the fields that matched. If we can't point at it, we don't claim it.</p>
+                      <p class="row__desc type-body-base">Every result names the records behind it and the fields that matched. If we can't point at it, we don't claim it, and a promised refund isn't money back until it arrives.</p>
                     </li>
                     <li class="row">
                       <div class="row__index"><span class="row__accent" aria-hidden="true"></span><span class="row__num">04</span></div>
-                      <h3 class="row__heading type-h5">Access should be the last thing anyone asks for.</h3>
-                      <p class="row__desc type-body-base">Reclaim works from files you choose to upload. No login to your accounting system, no bank connection, nothing that moves money.</p>
+                      <h3 class="row__heading type-h5">Access should be the least anyone asks for.</h3>
+                      <p class="row__desc type-body-base">Reclaim reads your books through a read-only connection you can revoke, or from files you upload. It can't change your books or move money, and AI only ever sees what one task needs.</p>
                     </li>
                     <li class="row">
                       <div class="row__index"><span class="row__accent" aria-hidden="true"></span><span class="row__num">05</span></div>
                       <h3 class="row__heading type-h5">The decision always stays with you, start to finish.</h3>
-                      <p class="row__desc type-body-base">We find and we show. What to raise, what to write off and what to leave alone is your call throughout.</p>
+                      <p class="row__desc type-body-base">Nothing goes to a vendor until you approve it, and disputes come back to you. What to raise, what to write off and what to leave alone is your call throughout.</p>
                     </li>
                   </ul>
                 </div>
@@ -200,7 +219,7 @@
                 <div class="the-col"><div class="richtext">
                   <p><span class="type-body-headline">Accounts payable is where a company's money actually leaves, and it is also where the work is most repetitive. Nearly one invoice in five needs a person to step in.</span></p>
                   <p>Ardent Partners puts the average invoice exception rate at 18.4% and the average cost of processing a single invoice at $9.84. APQC's benchmark of 1,686 organizations puts duplicate or erroneous payments at 1.5% of all disbursements at the median. Those are rates, not accidents.</p>
-                  <p>They repeat every year, and the records that would show them are already exported every month. What has been missing is a plain way to read those files and point at the rows.</p>
+                  <p>They repeat every year, and the records that would show them are already sitting in the books. What has been missing is a plain way to read those records, point at the rows, and see the money through to the point where it is actually back.</p>
                   <p>That is what we build.</p>
                 </div></div>
               </div>
@@ -282,9 +301,9 @@
               <div class="the-grid">
                 <div class="the-col"><div class="richtext">
                   <h4>What we're building</h4>
-                  <p>Reclaim looks for five things: the same bill entered twice, the same bill paid twice, an amount that doesn't match what was agreed, a payment that doesn't match its bill, and a credit issued and never used.</p>
-                  <p>Next is making that check easy to repeat, so a month of records can be run the way you run a reconciliation.</p>
-                  <p>What won't change is the part we care about most: every result keeps pointing at the row it came from.</p>
+                  <p>Reclaim starts with four kinds of money: the same payment made twice, the same bill paid twice, a payment larger than its bill, and a vendor credit issued and never used. For each one it finds the case, proves it from your records, runs the recovery once you approve it, and checks that the money actually came back.</p>
+                  <p>Next, Reclaim takes on more of the routine work: reading vendor replies, gathering evidence, and suggesting the next step. After that, it reads more than your ledger: supplier statements, your AP inbox and your bank, so it can find credits your books never recorded and keep watching for new mistakes.</p>
+                  <p>What won't change is the part we care about most: every result keeps pointing at the records it came from.</p>
                 </div></div>
               </div>
             </div>
@@ -370,7 +389,7 @@
             <div class="button"><span class="hover-loop up-right" data-duration=".9"><span class="inner"><svg class="arrow"><use href="#i-arrow-ur"/></svg></span></span></div>
           </div>
         </div>
-        <p class="desc type-body-small">Upload your records and see what Reclaim finds, with the evidence behind every result.</p>
+        <p class="desc type-body-small">Connect your books or upload your records, and see what Reclaim finds, with the evidence behind every result.</p>
       </a></li>
       <li><a href="#contact" class="entry-item1" idx="1" data-modal="talk">
         <div class="bg"></div>
@@ -380,7 +399,7 @@
             <div class="button"><span class="hover-loop up-right" data-duration=".9"><span class="inner"><svg class="arrow"><use href="#i-arrow-ur"/></svg></span></span></div>
           </div>
         </div>
-        <p class="desc type-body-small">Not sure which records to upload? We'll help you pick the right ones.</p>
+        <p class="desc type-body-small">Not sure whether to connect or upload? We'll help you pick the right records.</p>
       </a></li>
     </ul>
   </section>
@@ -414,6 +433,7 @@
           <a href="#" class="cta-scroll"><span class="wrap"><span class="hover-loop"><span class="inner"><svg class="icon"><use href="#i-arrow"/></svg></span></span></span><span class="label">Back to top</span></a>
           <div class="legal">Reclaim © 2026</div>
         </div>
+        <div class="promise"><span>Read-only access to your books</span><span>Nothing sent without your approval</span><span>Refunds go straight to you</span></div>
       </div>
     </div>
   </footer>
@@ -500,7 +520,7 @@
             <button type="button" class="hover-loop cta-button-square close" theme="outline" size="medium" aria-label="Close"><span class="inner"><svg class="icon"><use href="#i-close"/></svg></span></button>
             <svg class="icon-check" aria-hidden="true"><use href="#i-check-circle"/></svg>
             <h2 class="heading" id="modal-success-heading">Thanks,<br>we have it</h2>
-            <p class="desc">We'll email you about next steps, including which records to export.</p>
+            <p class="desc">We'll email you about next steps, including how to connect your books or which records to export.</p>
             <button type="button" class="hover-loop cta-button submit done" theme="black" size="large"><span class="inner">Back to the site</span></button>
           </div>
         </div>

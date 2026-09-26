@@ -15,6 +15,9 @@ sc = K.setup_render(int(A.get('res', 960)), int(A.get('spp', 64)), LOOP, A)
 K.lights(sc, sun_from=tuple(float(x) for x in A.get('sun', '.42,-.6,.7').split(',')),
          strength=float(A.get('sunE', 5.0)), angle=float(A.get('sunA', 2.0)), fill=float(A.get('fill', .12)))
 M = K.library()
+# two rings carry a milled edge, like the rim of a coin (quiet: only visible up close or edge-on)
+M['terr_r'] = K.reeded('TerrReeded', M['terr'], attr='cpos')
+M['yel_r'] = K.reeded('YelReeded', M['yel'], attr='cpos', depth=.36)
 
 R, RIN, GAP, VGAP = 1.0, .40, .016, .014
 C30 = math.cos(math.pi / 6)
@@ -55,11 +58,11 @@ LAYERS = [
     (.48, 'terr', 'terr', 6, {}, None),
     (.50, 'oak', 'oak', 3, {}, 'pink'),
     (.40, 'dark', 'dark', 6, {}, None),
-    (.52, 'terr', 'terr', 6, {}, 'blue'),
+    (.52, 'terr_r', 'terr', 6, {}, 'blue'),
     (.46, 'oak', 'oak', 6, {}, None),
     (.36, 'dark', 'dark', 3, {}, 'pink'),
     (.54, 'terr', 'terr', 3, {1: 'green'}, None),
-    (.42, 'yel', 'yel', 6, {4: 'green'}, 'pink'),
+    (.42, 'yel_r', 'yel', 6, {4: 'green'}, 'pink'),
     (.54, 'terr', 'terr', 6, {2: 'pink'}, None),
     (.36, 'dark', 'dark', 3, {}, 'blue'),
     (.50, 'oak', 'oak', 6, {}, None),
@@ -88,6 +91,11 @@ for li, (h, side, top, n, acc, inner) in enumerate(LAYERS):
         mat = acc.get(pi, side)
         pts = chevron(s, s + span)
         ob, c = K.prism(f'L{li}P{pi}', pts, h, M, mat, top if mat == side else mat, bevel=.024)
+        if side.endswith('_r'):
+            # column-space position per vertex, so the grooves line up around the ring
+            me = ob.data
+            at = me.attributes.new('cpos', 'FLOAT_VECTOR', 'POINT')
+            at.data.foreach_set('vector', [v for p in me.vertices for v in (p.co.x + c.x, p.co.y + c.y, p.co.z)])
         if inner:
             paint_inner(ob, c, M[inner])
         ob.parent = rig
@@ -120,10 +128,10 @@ LABELS = [
     (11, 4, 'top', [('INV-1834', 'mono', .056), ('HALDEN SUPPLY CO.', 'mono', .032)], 'd'),
     (10, 1, 0, [('QuickBooks', 'sans', .058), ('BILL 4471 · EXPORT', 'mono', .031)], 'd'),
     (9, 0, 1, [('CR MEMO 0217', 'mono', .05), ('850.00  UNAPPLIED', 'mono', .034)], 'l'),
-    (8, 4, 1, [('stripe', 'sans', .066), ('PMT 05/04  4,280.00', 'mono', .031)], 'd'),
+    (8, 4, 1, [('PAYMENT', 'sans', .052), ('PMT 05/04  4,280.00', 'mono', .031)], 'd'),
     (7, 3, 0, [('TXN 8F3A-21C', 'mono', .04)], 'd'),
     (6, 1, 1, [('XERO', 'sans', .07), ('BILL #1834-A  ·  05/09', 'mono', .032)], 'd'),
-    (10, 5, 1, [('ramp', 'sans', .062), ('CARD 4411  1,200.00', 'mono', .031)], 'd'),
+    (10, 5, 1, [('EXPENSE', 'sans', .052), ('CARD 4411  1,200.00', 'mono', .031)], 'd'),
     (5, 2, 1, [('BILL', 'sans', .06), ('DUE 05/31 · NET 30', 'mono', .032)], 'l'),
 ]
 for li, pi, seg, lines, ink in LABELS:
@@ -154,6 +162,27 @@ for li, pi, seg, lines, ink in LABELS:
         t.parent = p['ob']
         t.matrix_basis = Matrix.Translation(origin + Y * y) @ rot
         y += size * 1.3
+
+# ---- the core: a slim stack of coins in the column's hollow. Closed, you only see the top
+# coin at the bottom of the well; when the column opens it stands there, still, while the
+# pieces move round it. Stone and yellow coins with milled edges, one green near the top.
+coins = []
+if A.get('core', '1') == '1':
+    M['terr_c'] = K.reeded('TerrCoin', M['terr'], freq=float(A.get('cfreq', 120)), depth=.4)
+    M['yel_c'] = K.reeded('YelCoin', M['yel'], freq=float(A.get('cfreq', 120)), depth=.4)
+    CR = RIN * C30 - float(A.get('cgap', .07))
+    CT, CG = float(A.get('ct', .085)), .014
+    cpts = [Vector((CR * math.cos(2 * math.pi * k / 96), CR * math.sin(2 * math.pi * k / 96))) for k in range(96)]
+    zc, i = .04, 0
+    top_at = TOP - float(A.get('cdrop', .16))
+    n_coins = int((top_at - zc) / (CT + CG))
+    for i in range(n_coins):
+        mat = 'green' if i == n_coins - 3 else ('yel_c' if i % 5 == 2 else 'terr_c')
+        ob, _ = K.prism(f'Coin{i}', cpts, CT, M, mat, top={'terr_c': 'terr', 'yel_c': 'yel'}.get(mat, mat), bevel=.01, smooth=True)
+        ob.parent = rig
+        ob.location = (0, 0, zc + CT / 2)
+        coins.append((ob, zc + CT / 2, i))
+        zc += CT + CG
 
 # ---- animation, keyed every frame (linear) so motion blur sees true sub-frame motion
 IDENT = Quaternion()

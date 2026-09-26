@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import * as DialogPrimitive from '@radix-ui/react-dialog'
-import { X } from 'lucide-react'
+import { AlertCircle, FolderOpen, X } from 'lucide-react'
 import type { LegacySummary } from '@/ledger/legacyMigration'
 import '@/workspace/workspace.css'
+import '@/workspace/reclaim.css'
 
 interface LegacyImportDialogProps {
   summary: LegacySummary | null
@@ -26,7 +27,7 @@ export function LegacyImportDialog({ summary, onImport, onDefer, onDiscard }: Le
     <DialogPrimitive.Root open onOpenChange={(open) => !open && !busy && onDefer()}>
       <DialogPrimitive.Portal>
         <DialogPrimitive.Overlay className="wk wk-overlay" />
-        <DialogPrimitive.Content className="wk wk-panel" style={{ width: 'min(520px, calc(100vw - 32px))' }} data-testid="legacy-import">
+        <DialogPrimitive.Content className="wk wk-panel wk-flow-panel" data-size="narrow" data-testid="legacy-import">
           <header className="wk-panel-head">
             <div>
               <DialogPrimitive.Title className="wk-display wk-h2">
@@ -43,24 +44,26 @@ export function LegacyImportDialog({ summary, onImport, onDefer, onDiscard }: Le
             </DialogPrimitive.Close>
           </header>
 
-          <ul className="wk-list" style={{ margin: '0 24px' }}>
+          <ul className="wk-flow-list">
             {summary.names.map((name, i) => (
               <li key={`${name}-${i}`}>
-                <div style={{ fontWeight: 500 }}>{name}</div>
+                <FolderOpen aria-hidden="true" />
+                <span>{name}</span>
               </li>
             ))}
           </ul>
 
           {error ? (
-            <div className="wk-alert" role="alert" style={{ margin: '16px 24px 0' }}>
+            <div className="wk-callout" data-tone="danger" role="alert">
+              <AlertCircle aria-hidden="true" />
               <p>{error}</p>
             </div>
           ) : null}
 
-          <div className="wk-panel-foot" style={{ flexWrap: 'wrap' }}>
+          <div className="wk-panel-foot" data-confirm={confirmDiscard || undefined}>
             {confirmDiscard ? (
               <>
-                <span className="wk-dim" style={{ fontSize: 13, marginRight: 'auto' }}>
+                <span className="wk-panel-foot-note">
                   Delete {summary.count === 1 ? 'it' : 'them'} from this browser? This cannot be undone.
                 </span>
                 <button type="button" className="wk-btn" data-variant="ghost" onClick={() => setConfirmDiscard(false)}>
@@ -72,7 +75,7 @@ export function LegacyImportDialog({ summary, onImport, onDefer, onDiscard }: Le
               </>
             ) : (
               <>
-                <button type="button" className="wk-btn" data-variant="ghost" onClick={() => setConfirmDiscard(true)} disabled={busy} style={{ marginRight: 'auto' }}>
+                <button type="button" className="wk-btn wk-panel-foot-start" data-variant="ghost" onClick={() => setConfirmDiscard(true)} disabled={busy}>
                   Delete
                 </button>
                 <button type="button" className="wk-btn" data-variant="ghost" onClick={onDefer} disabled={busy}>

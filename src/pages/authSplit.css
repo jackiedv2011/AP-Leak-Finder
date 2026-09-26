@@ -1,0 +1,291 @@
+/* The log-in and sign-up pages, set in the marketing site's system (landing-site/styles.css):
+   the hero's 3D loop on white, and the black rounded section that follows the
+   hero turned on its side. `--r` is the landing's rem (10px at 1440 wide), so
+   every size below reads like the landing's own `Nrem` values. */
+
+.rc-login {
+  --r: clamp(5.33333px, 0.694444vw, 17.7778px);
+  --radius: calc(var(--r) * 6.4);
+  --side: calc(var(--r) * 8);
+  --black: #000;
+  --white: #fff;
+  --grey-100: #f3f3f3;
+  --grey-200: #e5e5e5;
+  --grey-500: #979797;
+  --grey-600: #444;
+  --grey-800: #2f2f2f;
+  --grey-900: #1a1a1a;
+  --reclaim: #00fd74;
+  --orange: #ff6838;
+  --ease-page: cubic-bezier(0.445, 0.05, 0.55, 0.95);
+  --ease-roll: cubic-bezier(0.455, 0.03, 0.515, 0.955);
+  --ease-out: cubic-bezier(0.215, 0.61, 0.355, 1);
+  --f-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --f-cond: 'Barlow Condensed', 'Anton', 'Bebas Neue', ui-sans-serif, system-ui, sans-serif;
+
+  display: grid;
+  grid-template-columns: 60fr 40fr;
+  min-height: 100dvh;
+  background: var(--white);
+  color: var(--black);
+  font-family: var(--f-sans);
+  font-size: calc(var(--r) * 1.6);
+  line-height: 1.25;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  /* the landing's page fade: the site fades out, this fades in */
+  animation: rc-page-in 0.5s var(--ease-page) 0.1s both;
+}
+.rc-login[data-leaving='true'] { animation: rc-page-out 0.2s var(--ease-page) both; }
+@keyframes rc-page-in { from { opacity: 0; } }
+@keyframes rc-page-out { from { opacity: 1; } to { opacity: 0; } }
+
+.rc-login a { color: inherit; text-decoration: none; }
+.rc-login :focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+
+/* ---------- left: the hero's 3D ---------- */
+.rc-login-stage {
+  position: sticky;
+  top: 0;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding-inline: var(--side);
+  overflow: clip;
+}
+.rc-login-top { position: relative; z-index: 1; display: flex; align-items: center; height: calc(var(--r) * 8); }
+.rc-login-reel {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  -webkit-mask-image: linear-gradient(#000 80%, transparent 96%);
+  mask-image: linear-gradient(#000 80%, transparent 96%);
+}
+.rc-login-reel video {
+  width: min(58vw, 108dvh);
+  aspect-ratio: 1 / 1;
+  object-fit: contain;
+  transform: translateY(2%);
+  animation: rc-reel-in 1s var(--ease-out) 0.2s both;
+}
+@keyframes rc-reel-in { from { opacity: 0; transform: translateY(12%); } }
+.rc-login-legal {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  gap: calc(var(--r) * 2.4);
+  padding-bottom: calc(var(--r) * 4);
+  font-size: calc(var(--r) * 1.4);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  color: var(--grey-500);
+}
+.rc-login-legal a { transition: color 0.3s ease-in-out; }
+.rc-login-legal a:hover { color: var(--black); }
+
+/* logo, as .hx-logo: the hexagon fills with green on hover */
+.rc-logo { --h: calc(var(--r) * 2.4); display: flex; align-items: center; gap: calc(var(--h) * 0.28); height: var(--h); }
+.rc-logo svg { height: 100%; width: auto; overflow: visible; }
+.rc-logo .fill { fill: var(--reclaim); clip-path: inset(100% 0 0 0); transition: clip-path 0.6s var(--ease-roll); }
+.rc-logo:hover .fill { clip-path: inset(-10% 0 0 0); transition-duration: 1s; }
+.rc-logo span { font-size: calc(var(--h) * 1.02); font-weight: 650; letter-spacing: -0.045em; line-height: 1; }
+
+/* ---------- right: the black section ---------- */
+.rc-login-panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  padding: 0 calc(var(--r) * 6.4) calc(var(--r) * 6.4);
+  background: var(--black);
+  color: var(--white);
+  border-radius: var(--radius) 0 0 var(--radius);
+}
+.rc-login-alt {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.35em;
+  height: calc(var(--r) * 8);
+  font-size: calc(var(--r) * 1.4);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  color: var(--grey-500);
+}
+.rc-login-alt a, .rc-login .rc-link { color: var(--white); text-decoration: underline; text-decoration-color: transparent; text-underline-offset: 0.2em; transition: text-decoration-color 0.3s ease-in-out; }
+.rc-login-alt a:hover, .rc-login .rc-link:hover { text-decoration-color: currentColor; }
+
+.rc-login-head { margin-top: calc(var(--r) * 4); }
+.rc-login-title {
+  font-family: var(--f-cond);
+  font-size: calc(var(--r) * 13);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 0.9;
+  text-transform: uppercase;
+}
+.rc-login-title[data-size='long'] { font-size: calc(var(--r) * 9.6); }
+/* heading lines rise in, like the landing hero's */
+.rc-line-wrap { display: block; width: fit-content; overflow: hidden; padding-right: 0.12em; }
+.rc-line { display: block; white-space: nowrap; animation: rc-line-in 0.5s var(--ease-roll) 0.25s both; }
+@keyframes rc-line-in { from { transform: translate(-50px, 100%); } }
+.rc-login-lede {
+  max-width: 30ch;
+  margin-top: calc(var(--r) * 2.4);
+  font-size: calc(var(--r) * 2);
+  line-height: 1.2;
+  color: var(--grey-500);
+  animation: rc-rise 0.5s var(--ease-roll) 0.6s both;
+}
+@keyframes rc-rise { from { opacity: 0; transform: translateY(50px); } }
+
+.rc-login-body {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--r) * 1.6);
+  margin-top: auto;
+  padding-top: calc(var(--r) * 6.4);
+  animation: rc-rise 0.5s var(--ease-roll) 0.75s both;
+}
+.rc-login-form { display: flex; flex-direction: column; gap: calc(var(--r) * 1.6); }
+
+.rc-field { display: flex; flex-direction: column; gap: calc(var(--r) * 0.8); }
+.rc-field label { font-size: calc(var(--r) * 1.4); font-weight: 500; letter-spacing: -0.01em; color: var(--grey-500); }
+.rc-input {
+  width: 100%;
+  height: calc(var(--r) * 5.2);
+  padding: 0 calc(var(--r) * 1.6);
+  border: 1px solid var(--grey-800);
+  border-radius: calc(var(--r) * 1.2);
+  background: var(--grey-900);
+  color: var(--white);
+  font: inherit;
+  font-size: max(16px, calc(var(--r) * 1.6));
+  letter-spacing: -0.01em;
+  transition: border-color 0.3s ease-in-out, background-color 0.3s ease-in-out;
+}
+.rc-input::placeholder { color: var(--grey-600); }
+.rc-input:hover { border-color: var(--grey-600); }
+.rc-input:focus { outline: none; border-color: var(--white); background: var(--black); }
+.rc-input[aria-invalid='true'] { border-color: var(--orange); }
+.rc-field-error { font-size: calc(var(--r) * 1.3); color: var(--orange); }
+.rc-field-hint { font-size: calc(var(--r) * 1.3); color: var(--grey-600); }
+.rc-pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: calc(var(--r) * 1.6); align-items: start; }
+.rc-strong { font-weight: 500; color: var(--white); }
+
+.rc-login-row { display: flex; align-items: center; justify-content: space-between; gap: calc(var(--r) * 1.6); }
+.rc-check { display: inline-flex; align-items: center; gap: calc(var(--r) * 1); font-size: calc(var(--r) * 1.4); font-weight: 500; letter-spacing: -0.01em; color: var(--grey-500); cursor: pointer; }
+.rc-check input {
+  appearance: none;
+  display: grid;
+  place-items: center;
+  width: calc(var(--r) * 1.8);
+  height: calc(var(--r) * 1.8);
+  margin: 0;
+  border: 1px solid var(--grey-600);
+  border-radius: calc(var(--r) * 0.4);
+  background: var(--grey-900);
+  cursor: pointer;
+  transition: background-color 0.2s ease-in-out, border-color 0.2s ease-in-out;
+}
+.rc-check input::after {
+  content: '';
+  width: 30%;
+  height: 55%;
+  margin-top: -12%;
+  border: solid var(--black);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg) scale(0);
+  transition: transform 0.2s var(--ease-out);
+}
+.rc-check input:checked { background: var(--reclaim); border-color: var(--reclaim); }
+.rc-check input:checked::after { transform: rotate(45deg) scale(1); }
+.rc-check input { flex: none; }
+.rc-check input[aria-invalid='true'] { border-color: var(--orange); }
+.rc-check a { color: var(--white); text-decoration: underline; text-decoration-color: var(--grey-600); text-underline-offset: 0.2em; transition: text-decoration-color 0.3s ease-in-out; }
+.rc-check a:hover { text-decoration-color: var(--white); }
+.rc-link { font-size: calc(var(--r) * 1.4); font-weight: 500; letter-spacing: -0.01em; }
+
+/* buttons, as .cta-button[size="large"] */
+.rc-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: calc(var(--r) * 1);
+  width: 100%;
+  height: calc(var(--r) * 5.2);
+  border: 0;
+  border-radius: calc(var(--r) * 1.2);
+  font: inherit;
+  font-size: max(15px, calc(var(--r) * 1.6));
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  cursor: pointer;
+  transition: background-color 0.3s ease-in-out, color 0.3s ease-in-out;
+}
+.rc-btn[data-theme='green'] { background: var(--reclaim); color: var(--black); }
+.rc-btn[data-theme='green']:hover:not(:disabled) { background: var(--white); }
+.rc-btn[data-theme='dark'] { background: var(--grey-800); color: var(--white); }
+.rc-btn[data-theme='dark']:hover { background: var(--grey-600); }
+.rc-btn:disabled { cursor: progress; opacity: 0.7; }
+.rc-btn svg { flex: none; }
+
+
+.rc-divider { display: flex; align-items: center; gap: calc(var(--r) * 1.6); font-size: calc(var(--r) * 1.3); color: var(--grey-600); }
+.rc-divider::before, .rc-divider::after { content: ''; flex: 1; height: 1px; background: var(--grey-800); }
+
+/* the Google link is the shared GoogleButton; dress it as a dark button here */
+.rc-login-body .wk-btn { gap: calc(var(--r) * 1); height: calc(var(--r) * 5.2); border-radius: calc(var(--r) * 1.2); background: var(--grey-800); color: var(--white); font-size: max(15px, calc(var(--r) * 1.6)); font-weight: 500; display: flex; align-items: center; transition: background-color 0.3s ease-in-out; }
+.rc-login-body .wk-btn:hover { background: var(--grey-600); }
+
+.rc-alert {
+  padding: calc(var(--r) * 1.4) calc(var(--r) * 1.6);
+  border: 1px solid var(--grey-800);
+  border-left: 3px solid var(--orange);
+  border-radius: calc(var(--r) * 1.2);
+  background: var(--grey-900);
+  font-size: calc(var(--r) * 1.4);
+  line-height: 1.4;
+}
+.rc-note {
+  padding: calc(var(--r) * 1.4) calc(var(--r) * 1.6);
+  border: 1px solid var(--grey-800);
+  border-left: 3px solid var(--reclaim);
+  border-radius: calc(var(--r) * 1.2);
+  background: var(--grey-900);
+  font-size: calc(var(--r) * 1.4);
+  line-height: 1.4;
+}
+.rc-alert .rc-btn { width: auto; height: calc(var(--r) * 4); margin-top: calc(var(--r) * 1.2); padding-inline: calc(var(--r) * 1.6); font-size: calc(var(--r) * 1.4); }
+.rc-alert p + p { margin-top: calc(var(--r) * 0.8); color: var(--grey-500); }
+.rc-login-body .wk-token-box { padding: calc(var(--r) * 1.2) calc(var(--r) * 1.6); border: 1px dashed var(--grey-600); border-radius: calc(var(--r) * 1.2); font-size: calc(var(--r) * 1.3); color: var(--grey-500); }
+.rc-login-body .wk-token-box a { color: var(--reclaim); text-decoration: underline; }
+
+/* ---------- below 1024: the landing's order, hero on top and the black section rounding up under it ---------- */
+@media (max-width: 1023px) {
+  .rc-login { --r: clamp(8.53333px, 2.66667vw, 11px); --radius: calc(var(--r) * 4); --side: calc(var(--r) * 2); grid-template-columns: minmax(0, 1fr); }
+  .rc-login-stage { position: relative; height: min(96vw, 58dvh); min-height: 300px; }
+  .rc-login-reel { -webkit-mask-image: none; mask-image: none; }
+  .rc-login-reel video { width: min(100vw, 70dvh); transform: translateY(14%); }
+  .rc-login-legal { display: none; }
+  .rc-login-panel { min-height: 0; margin-top: calc(var(--radius) * -1 + 1px); padding: 0 var(--side) calc(var(--r) * 4); border-radius: var(--radius) var(--radius) 0 0; }
+  .rc-login-alt { height: calc(var(--r) * 6); }
+  .rc-login-head { margin-top: calc(var(--r) * 1.6); }
+  .rc-login-title { font-size: calc(var(--r) * 8); line-height: 0.85; }
+  .rc-login-title[data-size='long'] { font-size: calc(var(--r) * 6.4); }
+  .rc-login-lede { font-size: calc(var(--r) * 1.8); }
+  .rc-login-body { padding-top: calc(var(--r) * 4); }
+  .rc-login-foot { display: flex; }
+}
+@media (max-width: 599px) {
+  .rc-pair { grid-template-columns: minmax(0, 1fr); }
+}
+.rc-login-foot { display: none; gap: calc(var(--r) * 2.4); justify-content: center; padding-top: calc(var(--r) * 2.4); font-size: calc(var(--r) * 1.3); color: var(--grey-600); }
+
+@media (prefers-reduced-motion: reduce) {
+  .rc-login, .rc-login[data-leaving='true'], .rc-login-reel video, .rc-line, .rc-login-lede, .rc-login-body { animation: none; }
+  .rc-logo .fill { transition: none; }
+}

@@ -98,54 +98,71 @@ if SCENE == 'find':
     target, el, az, dist = (0, 0, .55), 34, -58, float(A.get('dist', 14))
 
 # ------------------------------------------------------------------ BUILD
-# Six wedges of a hexagon lock together, lift apart in alternating heights,
-# the whole piece turns 120 deg (keeps the A/B pattern), and locks again.
+# Six wedges of a hexagon, scattered and turned, come in one after another and
+# close around the white ball, which ends up seated in a round opening at the
+# centre; they hold, drift apart again, and the piece turns 120 deg over the loop
+# (keeps the A/B pattern). Same wedges, caps and ball as the original.
 elif SCENE == 'build':
-    R, H, g = .98, .9, .03
+    R, H, g, RI = .98, .9, .03, float(A.get('hole', .27))
     wedges = []
     for k in range(6):
         a0, a1 = math.radians(60 * k), math.radians(60 * (k + 1))
         mid = (a0 + a1) / 2
         off = Vector((math.cos(mid), math.sin(mid))) * g
-        pts = [off, Vector((R * math.cos(a0), R * math.sin(a0))) + off, Vector((R * math.cos(a1), R * math.sin(a1))) + off]
+        pts = [Vector((RI * math.cos(a0), RI * math.sin(a0))) + off,
+               Vector((R * math.cos(a0), R * math.sin(a0))) + off,
+               Vector((R * math.cos(a1), R * math.sin(a1))) + off]
+        pts += [Vector((RI * math.cos(a1 - (a1 - a0) * i / 10), RI * math.sin(a1 - (a1 - a0) * i / 10))) + off for i in range(10)]
         body, cap = ('terr', 'c_cyan') if k % 2 == 0 else ('ply', 'c_orange')
         ob, c = block(f'w{k}', pts, H, body, cap)
         radial = Vector((math.cos(mid), math.sin(mid), 0))
-        wedges.append((ob, Vector((c.x, c.y, H / 2)), radial, k))
+        wedges.append((ob, Vector((c.x, c.y, H / 2)), radial, k,
+                       rnd.uniform(-.12, .12), math.radians(rnd.uniform(-28, 28))))
     core = sphere('core', .2, 'white')
+    SEAT = H + .03                     # the ball sits in the opening, a little proud of the caps
     for f in range(LOOP + 1):
         t = f / LOOP
-        spin = Quaternion(ZAX, math.radians(120) * K.sstep((t - .28) / .52))
-        for ob, base, radial, k in wedges:
-            e = cycle(t, .16 + k * .012, .66 + k * .012, .2)
-            lift = (.30 if k % 2 == 0 else -.16) * e
+        spin = Quaternion(ZAX, math.radians(120) * t)
+        for ob, base, radial, k, dz, roll in wedges:
+            e = 1 - cycle(t, .08 + k * .03, .60 + k * .025, .22)      # 1 = apart, 0 = locked
+            lift = ((.55 if k % 2 == 0 else -.22) + dz) * e
             tang = Vector((-radial.y, radial.x, 0))
-            loc = base + radial * .55 * e + Vector((0, 0, lift))
+            loc = base + radial * 1.0 * e + Vector((0, 0, lift))
             ob.location = spin @ loc
-            ob.rotation_quaternion = spin @ Quaternion(tang, math.radians(-9) * e)
-        e0 = cycle(t, .16, .66, .2)
-        core.location = Vector((0, 0, H / 2 + .55 * e0))
+            ob.rotation_quaternion = spin @ Quaternion(radial, roll * e) @ Quaternion(tang, math.radians(-18) * e)
+        e0 = 1 - cycle(t, .30, .62, .20)
+        core.location = Vector((0, 0, SEAT + .5 * e0))
         core.rotation_quaternion = spin
         keyall(f + 1)
-    target, el, az, dist = (0, 0, .45), 34, -58, float(A.get('dist', 11))
+    target, el, az, dist = (0, 0, .5), 34, -58, float(A.get('dist', 12.5))
 
 # ------------------------------------------------------------------ RECOVER
-# A stack of discs fans out around a pin like a swatch book, then gathers back.
+# A stack of coins fans out around a pin like a swatch book, then gathers back.
+# Same motion as the original disc stack; the discs are now coin-shaped: thinner,
+# a milled edge on the stone and metal-yellow ones, and a low raised rim on top.
 elif SCENE == 'recover':
-    Rd, T, g = .72, .17, .012
-    spec = [('ply', None), ('terr', None), ('ply', 'c_pink'), ('taupe', None), ('ply', None), ('terr', 'c_green')]
+    Rd, T, g = .72, float(A.get('coinT', .12)), .012
+    RIM_W, RIM_H = .055, .016
+    for key in ('terr', 'yel', 'taupe'):
+        M[key + '_r'] = K.reeded(key.title() + 'Reeded', M[key], freq=190, depth=.34)
+    spec = [('ply', None), ('terr_r', None), ('yel_r', None), ('taupe_r', None), ('terr_r', None),
+            ('yel_r', None), ('terr_r', 'c_green')]
     discs = []
     z = 0.0
     for k, (body, cap) in enumerate(spec):
-        ob, c = block(f'd{k}', circle(Rd), T, body, cap, cap_h=.035, smooth=True, bevel=.014)
+        ob, c = block(f'd{k}', circle(Rd), T, body, cap, cap_h=.026, smooth=True, bevel=.012)
+        top = T / 2 + (.028 if cap else 0)
+        rim = K.ring(f'd{k}_rim', Rd, Rd - RIM_W, RIM_H, M[cap or ('oak' if body == 'ply' else body.replace('_r', ''))])
+        rim.parent = ob
+        rim.location = (0, 0, top + RIM_H / 2 - .002)
         discs.append((ob, Vector((0, 0, z + T / 2)), k))
-        z += T + g + (.037 if cap else 0)
+        z += T + g + (.028 if cap else 0) + RIM_H
     pin = Vector((-Rd + .12, -.05, 0))
     ball = sphere('ball', .17, 'white')
     for f in range(LOOP + 1):
         t = f / LOOP
         e = cycle(t, .14, .62, .26)
-        fan = math.radians(float(A.get('fan', 28)))
+        fan = math.radians(float(A.get('fan', 24)))
         for ob, base, k in discs:
             q = Quaternion(ZAX, fan * k * e)
             rel = Vector((base.x - pin.x, base.y - pin.y, 0))
@@ -153,10 +170,48 @@ elif SCENE == 'recover':
             ob.location = Vector((pin.x + p2.x, pin.y + p2.y, base.z + .10 * k * e))
             ob.rotation_quaternion = q
         top, tb, tk = discs[-1]
-        ball.location = top.location + Vector((0, 0, T / 2 + .037 + .17))
+        ball.location = top.location + Vector((0, 0, T / 2 + .028 + .17))
         ball.rotation_quaternion = top.rotation_quaternion
         keyall(f + 1)
     target, el, az, dist = (-.45, .3, .75), 40, -58, float(A.get('dist', 12.5))
+
+# ------------------------------------------------------------------ CONNECT
+# Two hexagonal links, interlocked: one lies flat (terrazzo, green cap), one stands
+# through it (oak, orange cap). Each turns in its own plane (the geometry leaves room
+# for a full turn), so they keep threading through each other without touching.
+# Hexes repeat every 60 deg, so 60 / 120 deg per loop is seamless.
+elif SCENE == 'connect':
+    RO, RIN, HR, CAP = .80, .52, float(A.get('thick', .22)), .03
+    MID = (RO + RIN) / 2 * math.cos(math.pi / 6)      # apothem of the ring's centre line
+    rig = bpy.data.objects.new('Rig', None)
+    sc.collection.objects.link(rig)
+    rig.rotation_mode = 'QUATERNION'
+
+    def link(name, body, cap):
+        ob = K.ring(name, RO, RIN, HR, M[body], sides=6, bevel=.02)
+        cp = K.ring(name + '_cap', RO - .006, RIN + .006, CAP, M[cap], sides=6, bevel=.006)
+        cp.parent = ob
+        cp.location = (0, 0, HR / 2 + CAP / 2 + .002)
+        ob.rotation_mode = 'QUATERNION'
+        ob.parent = rig
+        return ob
+    la = link('LinkA', 'terr', 'c_green')
+    lb = link('LinkB', 'oak', 'c_orange')
+    Z0 = float(A.get('z', 1.0))
+    moving.extend([la, lb, rig])
+    stand = Quaternion(Vector((1, 0, 0)), math.radians(90))     # B's plane is XZ, cap facing the camera side
+    for f in range(LOOP + 1):
+        t = f / LOOP
+        ea = math.radians(60) * K.sstep((t - .05) / .55)
+        eb = -math.radians(120) * K.sstep((t - .30) / .62)
+        la.location = Vector((0, 0, 0))
+        la.rotation_quaternion = Quaternion(ZAX, ea)
+        lb.location = Vector((MID, 0, 0))
+        lb.rotation_quaternion = stand @ Quaternion(ZAX, eb)
+        rig.location = Vector((-MID / 2, 0, Z0 + .05 * math.sin(TAU * t)))
+        rig.rotation_quaternion = Quaternion(ZAX, math.radians(22) * math.sin(TAU * t))
+        keyall(f + 1)
+    target, el, az, dist = (0, 0, Z0), 30, -58, float(A.get('dist', 9.5))
 
 # ------------------------------------------------------------------ UPLOAD
 # Five record slabs drift in loose and tilted, settle into one neat stack

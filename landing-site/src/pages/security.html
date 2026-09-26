@@ -1,13 +1,14 @@
 ---
 title: Security — Reclaim
-description: Reclaim works from files you export and upload. It has no connection to your accounting system, no credentials, and no ability to move money.
+description: Connect your accounting system read-only, or upload exports instead. Reclaim cannot move money or change your books, contacts no vendor without your approval, and gives AI only the minimum it needs for one task.
 folder: security
 template: security
 ---
   <!-- SECURITY.
-       Everything stated on this page is true of the product as it works today. Anything that depends on
-       how files are stored, encrypted, retained or deleted is deliberately NOT claimed here — that
-       section says so plainly and is the one to replace once those decisions are settled and verified. -->
+       Describes the control model the product is built to (plans/RECLAIM_V2_PRODUCT_AND_PRICING_SPEC.md:
+       §0 trust zones and minimum AI context, §17 approval, §19 what the agent may never do, §33 security
+       and control). Where data is held, how long, and the named encryption standards are deliberately NOT
+       claimed — that section says so plainly and is the one to replace once they are settled and verified. -->
 
   <!-- HERO (black) -->
   <section class="section hero-generic" theme="black">
@@ -15,7 +16,7 @@ template: security
     <div class="the-container">
       <div class="the-grid">
         <h1 class="heading heading1 type-h1" data-split="h1">You choose<br>what we see</h1>
-        <p class="desc type-body-large">Reclaim works from files you export and upload. No connection to your accounting system, no credentials, no way to move money.</p>
+        <p class="desc type-body-large">Connect your accounting system with read-only access, or upload exports instead. Either way, Reclaim can't move money, can't change your books, and contacts no vendor until you approve it.</p>
         <div class="bottom"><a href="#contact" class="cta cta-button has-arrow" size="large" theme="white" data-modal="talk"><span class="hover-loop"><span class="inner">Talk to us<svg class="icon"><use href="#i-arrow"/></svg></span></span></a></div>
       </div>
     </div>
@@ -42,20 +43,20 @@ template: security
               <div class="the-grid">
                 <ul class="items" data-cols="2">
                   <li class="type-article-columns-item-card1 item-wrap"><div class="article-columns-item-card1 item">
-                    <div class="top"><div class="images"><svg class="icon" aria-hidden="true"><use href="#i-tile-files"/></svg></div><div class="heading">The files you choose</div></div>
-                    <div class="desc">You export the records you want checked and upload them. Nothing else comes with them.</div>
+                    <div class="top"><div class="images"><svg class="icon" aria-hidden="true"><use href="#i-tile-files"/></svg></div><div class="heading">The source you choose</div></div>
+                    <div class="desc">Connect QuickBooks Online or Xero with the narrowest read access they offer, or export the records you want checked and upload them instead.</div>
                   </div></li>
                   <li class="type-article-columns-item-card1 item-wrap"><div class="article-columns-item-card1 item">
-                    <div class="top"><div class="images"><svg class="icon" aria-hidden="true"><use href="#i-tile-unlinked"/></svg></div><div class="heading">No system access</div></div>
-                    <div class="desc">Reclaim doesn't connect to your accounting system and never asks for a login.</div>
+                    <div class="top"><div class="images"><svg class="icon" aria-hidden="true"><use href="#i-tile-unlinked"/></svg></div><div class="heading">Yours to revoke</div></div>
+                    <div class="desc">A connection can be removed whenever you like. You can also export or delete your data.</div>
                   </div></li>
                   <li class="type-article-columns-item-card1 item-wrap"><div class="article-columns-item-card1 item">
                     <div class="top"><div class="images"><svg class="icon" aria-hidden="true"><use href="#i-tile-view"/></svg></div><div class="heading">Read, never write</div></div>
-                    <div class="desc">Nothing in your books changes. Reclaim reads the exports and reports what it finds.</div>
+                    <div class="desc">Nothing in your books changes. Reclaim reads your records, and when a case is closed it gives you the accounting steps to make yourself.</div>
                   </div></li>
                   <li class="type-article-columns-item-card1 item-wrap"><div class="article-columns-item-card1 item">
                     <div class="top"><div class="images"><svg class="icon" aria-hidden="true"><use href="#i-tile-nomoney"/></svg></div><div class="heading">No payment rights</div></div>
-                    <div class="desc">Reclaim cannot move money, release a payment, or contact a vendor.</div>
+                    <div class="desc">Reclaim cannot move money or release a payment. Refunds and credits go straight to you; Reclaim never holds recovered funds.</div>
                   </div></li>
                 </ul>
               </div>
@@ -77,7 +78,7 @@ template: security
 
             <div class="article-module article-head2">
               <div class="the-grid">
-                <div class="left"><h2 class="heading type-h3" data-split="h2">Every result points<br>at a row</h2></div>
+                <div class="left"><h2 class="heading type-h3" data-split="h2">Every result points<br>at a record</h2></div>
               </div>
             </div>
 
@@ -86,8 +87,8 @@ template: security
                 <ul class="items" data-cols="2">
                   <li class="type-generic-item item-wrap"><div class="item article-columns-item-generic type-body-small">
                     <svg class="icon" aria-hidden="true"><use href="#i-mark-doc"/></svg>
-                    <div class="heading">Traced to a file</div>
-                    <div class="desc type-body-xs">Every finding names the file it came from, the row inside it, and the fields that matched.</div>
+                    <div class="heading">Traced to the source</div>
+                    <div class="desc type-body-xs">Every finding names the records it rests on, where each one came from in your books or your file, and the fields that matched.</div>
                   </div></li>
                   <li class="type-generic-item item-wrap"><div class="item article-columns-item-generic type-body-small">
                     <svg class="icon" aria-hidden="true"><use href="#i-mark-scale"/></svg>
@@ -97,12 +98,12 @@ template: security
                   <li class="type-generic-item item-wrap"><div class="item article-columns-item-generic type-body-small">
                     <svg class="icon" aria-hidden="true"><use href="#i-mark-eye"/></svg>
                     <div class="heading">Yours to check</div>
-                    <div class="desc type-body-xs">You can open the export you uploaded and check any result against the original rows.</div>
+                    <div class="desc type-body-xs">You can open any record behind a result and check it against your books or the export you uploaded.</div>
                   </div></li>
                   <li class="type-generic-item item-wrap"><div class="item article-columns-item-generic type-body-small">
                     <svg class="icon" aria-hidden="true"><use href="#i-mark-flag"/></svg>
                     <div class="heading">Yours to decide</div>
-                    <div class="desc type-body-xs">Reclaim doesn't act on anything it finds. What happens next is your decision, not its.</div>
+                    <div class="desc type-body-xs">Nothing goes to a vendor until you approve the recovery, and every step taken after that is logged: who, what, when and why.</div>
                   </div></li>
                 </ul>
               </div>
@@ -124,13 +125,13 @@ template: security
 
             <div class="article-module article-head2">
               <div class="the-grid">
-                <div class="left"><h2 class="heading type-h3" data-split="h2">What we<br>never ask for</h2></div>
+                <div class="left"><h2 class="heading type-h3" data-split="h2">What Reclaim<br>never gets</h2></div>
               </div>
             </div>
 
             <div class="article-module article-content">
               <div class="the-grid">
-                <div class="the-col"><div class="richtext"><p>Three things Reclaim has no use for, and does not request.</p></div></div>
+                <div class="the-col"><div class="richtext"><p>Three things Reclaim has no use for, and is built never to have.</p></div></div>
               </div>
             </div>
 
@@ -138,16 +139,16 @@ template: security
               <div class="the-grid">
                 <ul class="items" data-cols="2">
                   <li class="type-article-columns-item-card1 item-wrap"><div class="article-columns-item-card1 item">
-                    <div class="top"><div class="images"><svg class="icon" aria-hidden="true"><use href="#i-tile-unlinked"/></svg></div><div class="heading">Logins</div></div>
-                    <div class="desc">Reclaim never needs credentials for your bank, your accounting system or a vendor portal. It never asks, and there is nowhere in the product to enter them.</div>
+                    <div class="top"><div class="images"><svg class="icon" aria-hidden="true"><use href="#i-tile-unlinked"/></svg></div><div class="heading">Your passwords</div></div>
+                    <div class="desc">Connecting QuickBooks Online or Xero happens on their own sign-in and approval screen. Reclaim never asks for your password to your accounting system, your bank or a vendor portal.</div>
                   </div></li>
                   <li class="type-article-columns-item-card1 item-wrap"><div class="article-columns-item-card1 item">
                     <div class="top"><div class="images"><svg class="icon" aria-hidden="true"><use href="#i-tile-nomoney"/></svg></div><div class="heading">Payment authority</div></div>
                     <div class="desc">Nothing in Reclaim can approve, release or reverse a payment. Whoever holds that authority today still holds it afterwards.</div>
                   </div></li>
                   <li class="type-article-columns-item-card1 item-wrap"><div class="article-columns-item-card1 item">
-                    <div class="top"><div class="images"><svg class="icon" aria-hidden="true"><use href="#i-tile-decide"/></svg></div><div class="heading">Your whole ledger</div></div>
-                    <div class="desc">You pick the reports and the date range. Anything outside what you exported never reaches Reclaim at all.</div>
+                    <div class="top"><div class="images"><svg class="icon" aria-hidden="true"><use href="#i-tile-decide"/></svg></div><div class="heading">Your ledger, in an AI prompt</div></div>
+                    <div class="desc">AI never browses your books. The financial engine works out the numbers; AI gets only the few facts one task needs, like the vendor, invoice and amount for a single email.</div>
                   </div></li>
                 </ul>
               </div>
@@ -174,7 +175,7 @@ template: security
                   <div class="body"><div class="richtext">
                     <p><span class="type-body-headline">Some of what belongs on a security page depends on decisions we are still making about storage.</span></p>
                     <p></p>
-                    <p>Where an uploaded file is held, how it is encrypted, how long it is kept and how it is removed are not settled yet. We would rather leave that blank than write something we might have to correct later. It will be published here before Reclaim opens to customers.</p>
+                    <p>Reclaim is built to keep each customer's data separate, encrypt your financial records and connection tokens, and let you export or delete what it holds. Where that data is kept, how long, and exactly which standards protect it are not settled yet. We would rather leave that blank than write something we might have to correct later. It will be published here before Reclaim opens to customers.</p>
                   </div></div>
                 </div>
                 <div class="right"><div class="panel square"><svg class="icon" aria-hidden="true"><use href="#i-shield"/></svg></div></div>
@@ -187,7 +188,7 @@ template: security
                   <li class="type-generic-item item-wrap"><div class="item article-columns-item-generic type-body-small">
                     <svg class="icon" aria-hidden="true"><use href="#i-mark-clock"/></svg>
                     <div class="heading">Storage</div>
-                    <div class="desc type-body-xs">Where an uploaded file is held, and for how long.</div>
+                    <div class="desc type-body-xs">Where your records are held, and for how long.</div>
                   </div></li>
                   <li class="type-generic-item item-wrap"><div class="item article-columns-item-generic type-body-small">
                     <svg class="icon" aria-hidden="true"><use href="#i-shield"/></svg>
@@ -197,7 +198,7 @@ template: security
                   <li class="type-generic-item item-wrap"><div class="item article-columns-item-generic type-body-small">
                     <svg class="icon" aria-hidden="true"><use href="#i-close"/></svg>
                     <div class="heading">Deletion</div>
-                    <div class="desc type-body-xs">How you remove what you uploaded, and what happens then.</div>
+                    <div class="desc type-body-xs">How you remove your data or disconnect, and what happens then.</div>
                   </div></li>
                 </ul>
               </div>
@@ -282,7 +283,7 @@ template: security
               <ul>
                 <li><a class="item" href="#reads"><span class="dot"></span><span class="label type-h6">What it reads</span></a></li>
                 <li><a class="item" href="#evidence"><span class="dot"></span><span class="label type-h6">Evidence</span></a></li>
-                <li><a class="item" href="#never"><span class="dot"></span><span class="label type-h6">Never asked for</span></a></li>
+                <li><a class="item" href="#never"><span class="dot"></span><span class="label type-h6">Never gets</span></a></li>
                 <li><a class="item" href="#pending"><span class="dot"></span><span class="label type-h6">Before launch</span></a></li>
                 <li><a class="item" href="#reporting"><span class="dot"></span><span class="label type-h6">Reporting</span></a></li>
                 <li><a class="item" href="#elsewhere"><span class="dot"></span><span class="label type-h6">Elsewhere</span></a></li>

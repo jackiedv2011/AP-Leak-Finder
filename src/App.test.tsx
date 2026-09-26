@@ -55,7 +55,7 @@ describe('App routes', () => {
     setLocation('/signup')
     render(<App />)
 
-    expect(await screen.findByRole('heading', { name: /create your account/i })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: /sign up/i })).toBeInTheDocument()
     for (const label of ['First name', 'Last name', 'Work email', 'Company name', 'Password', 'Confirm password']) {
       expect(screen.getByLabelText(label)).toBeInTheDocument()
     }
