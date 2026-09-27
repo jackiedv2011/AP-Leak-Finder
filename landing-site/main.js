@@ -595,6 +595,27 @@
   const gridList = $('.grid1 .content');
   if (gridList) {
     gsap.fromTo($$('.grid-item', gridList), { rotationY: -30 }, { rotationY: 0, scrollTrigger: { trigger: gridList, start: 'top bottom', end: 'top center', scrub: true } });
+    // export tiles only: mouse 3d tilt (amount 20, lerp .05) plus a pan, the wordmark
+    // gliding toward the cursor inside the tile, like looking around through a window
+    $$('.grid-item-wrap:not(.is-wide) .grid-item-brand', gridList).forEach(tile => {
+      const target = $('.m3d', tile);
+      const mark = $('.wm', tile);
+      const s = { x: 0, y: 0, tx: 0, ty: 0, w: 0, h: 0 };
+      tile.addEventListener('mousemove', e => {
+        const r = tile.getBoundingClientRect();
+        s.w = r.width; s.h = r.height;
+        s.tx = (e.clientX - r.left) / r.width - .5;
+        s.ty = (e.clientY - r.top) / r.height - .5;
+      });
+      tile.addEventListener('mouseleave', () => { s.tx = 0; s.ty = 0; });
+      gsap.ticker.add(() => {
+        s.x += (s.tx - s.x) * .05;
+        s.y += (s.ty - s.y) * .05;
+        if (Math.abs(s.x) < 1e-4 && Math.abs(s.y) < 1e-4 && !s.tx && !s.ty) return;
+        target.style.transform = `perspective(1000px) rotateY(${s.x * 20}deg) rotateX(${-s.y * 20}deg) translate3d(${s.x * s.w * .06}px, ${s.y * s.h * .06}px, 0)`;
+        mark.style.transform = `translate3d(${s.x * s.w * .22}px, ${s.y * s.h * .3}px, 0)`;
+      });
+    });
   }
 
   // ---------- laptop mock: on narrow screens lay the app out at its desktop width, then scale it to fit ----------

@@ -1033,8 +1033,6 @@ img, video, canvas, svg { display: block; max-width: 100%; }
 .grid1 a.grid-item-brand { display: block; }
 .grid-item-brand .depth { position: absolute; left: 2.8rem; top: 2.4rem; display: flex; align-items: center; gap: .8rem; color: var(--cl-grey-500); text-transform: uppercase; transition: color .2s; }
 .grid-item-brand[idx="0"] .depth::before { content: ""; width: .6rem; height: .6rem; border-radius: 50%; background: var(--cl-reclaim); }
-.grid1 .grid-item-brand[idx="1"] .wrap { background: var(--cl-grey-100); color: var(--cl-black); }
-.grid1 .grid-item-brand:hover[idx="1"] .wrap { background: var(--cl-grey-200); }
 .grid1 .grid-item-brand:hover .depth { color: var(--cl-black); }
 .grid1 .grid-item-brand:hover[idx="0"] .depth::before { background: var(--cl-black); }
 
