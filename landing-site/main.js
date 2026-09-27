@@ -595,9 +595,9 @@
   const gridList = $('.grid1 .content');
   if (gridList) {
     gsap.fromTo($$('.grid-item', gridList), { rotationY: -30 }, { rotationY: 0, scrollTrigger: { trigger: gridList, start: 'top bottom', end: 'top center', scrub: true } });
-    // export tiles only: mouse 3d tilt (amount 20, lerp .05) plus a pan, the wordmark
-    // gliding toward the cursor inside the tile, like looking around through a window
-    $$('.grid-item-wrap:not(.is-wide) .grid-item-brand', gridList).forEach(tile => {
+    // mouse 3d tilt (amount 20, lerp .05) plus a pan: the wordmark glides toward the
+    // cursor inside the tile, like looking around through a window
+    $$('.grid-item-brand', gridList).forEach(tile => {
       const target = $('.m3d', tile);
       const mark = $('.wm', tile);
       const s = { x: 0, y: 0, tx: 0, ty: 0, w: 0, h: 0 };
