@@ -13,6 +13,7 @@ import type { APRecord, Finding } from '@/types'
 import { FINDING_TYPE_LABELS } from '@/lib/labels'
 import { recommendRecoveryMethod, recoveryNextAction, recoveryStatusLabel } from '@/recovery/model'
 import { recoveryLedger, RECOVERY_LEDGER_LABEL } from '@/recovery/ledger'
+import { verifiedReturned } from '@/recovery/financials'
 import { playbookFor } from '@/recovery/playbooks'
 import { evidenceOf, openQuestion, timelineFor } from '../selectors'
 import { InternalReviewPanel, METHOD_LABEL, RecoveryRequestPanel, type RequestPackage } from './RecoveryPanels'
@@ -134,22 +135,24 @@ function Evidence({ finding }: { finding: Finding }) {
 
 /** Only the figures that exist yet. A column of dashes says nothing. */
 function RecoveryFacts({ finding, state }: { finding: Finding; state: CaseState }) {
-  const internal = finding.class !== 'recoverable'
+  const internal = !historicalRecoveryClaim(finding, state)
   const status = state.recoveryStage ? recoveryStatusLabel(state, internal) : state.decision ? DECISION_LABEL[state.decision] : 'Not reviewed'
   const rows: Array<[string, string, boolean?]> = []
   if (internal) {
     rows.push(['Flagged value', formatCurrency(finding.dollarImpact)], ['Status', status])
     if (state.recoveryOutcomeNote) rows.push(['Investigation outcome', state.recoveryOutcomeNote])
   } else {
-    const requested = state.recoveryStage && state.recoveryStage !== 'confirmed' ? state.requestedAmount ?? finding.dollarImpact : null
-    const received = state.recoveredAmount ?? null
+    const requested = state.recoveryStage && state.recoveryStage !== 'confirmed' ? state.requestedAmount ?? null : null
+    const received = verifiedReturned(state)
     const closed = state.recoveryStage === 'recovered' || state.recoveryStage === 'not_recovered'
     const remaining = requested !== null ? Math.max(0, requested - (received ?? 0)) : null
     const methods = new Set(state.recoverySettlements?.map((entry) => entry.method) ?? [])
     const method = state.recoveredVia ?? state.requestedResolution ?? null
     rows.push(['Records support', formatCurrency(finding.dollarImpact)], ['Status', status])
     if (requested !== null) rows.push(['Requested', formatCurrency(requested)])
-    if ((received ?? 0) > 0 || state.recoveryStage === 'not_recovered') rows.push(['Received', formatCurrency(received ?? 0), (received ?? 0) > 0])
+    if (received > 0 || state.recoveryStage === 'not_recovered') rows.push(['Received', formatCurrency(received), received > 0])
+    if ((state.legacyRecoveredAmount ?? 0) > 0) rows.push(['Older unverified amount (not counted)', formatCurrency(state.legacyRecoveredAmount!)])
+    if (requested === null && state.recoveryStage === 'requested') rows.push(['Requested amount', 'Missing from legacy case; confirm the original request'])
     if (remaining !== null && (remaining > 0 || !closed)) rows.push([closed ? 'Unreturned balance' : 'Still outstanding', formatCurrency(remaining)])
     if (methods.size > 1) rows.push(['Method', 'Mixed methods'])
     else if (method) rows.push(['Method', METHOD_LABEL[method]])
@@ -168,13 +171,18 @@ function RecoveryFacts({ finding, state }: { finding: Finding; state: CaseState 
 
 const STEPS = ['Review evidence', 'Approve request', 'Contact vendor', 'Verify return', 'Reconcile'] as const
 
+function historicalRecoveryClaim(finding: Finding, state: CaseState): boolean {
+  return finding.class === 'recoverable' || (['exact_duplicate', 'near_duplicate'].includes(finding.type) &&
+    (state.recoveryStage === 'requested' || state.recoveryStage === 'recovered') && (state.requestedAmount != null || verifiedReturned(state) > 0))
+}
+
 function stepsDone(state: CaseState): boolean[] {
   const sent = ['requested', 'recovered', 'not_recovered'].includes(state.recoveryStage ?? '')
   return [
     state.decision === 'confirmed',
     Boolean(state.approvedAt) || sent,
     sent,
-    state.recoveryStage === 'recovered' && (state.recoveredAmount ?? 0) > 0,
+    state.recoveryStage === 'recovered' && verifiedReturned(state) > 0,
     Boolean(state.reconciledAt),
   ]
 }
@@ -185,10 +193,10 @@ export function CaseDetail(props: CaseDetailProps) {
   const gate = evaluateEligibility(finding, finding.evidence, findings)
   const entitlements = useEntitlements()
   const [deciding, setDeciding] = useState<DecisionValue | null>(null)
-  const internal = finding.class !== 'recoverable'
+  const internal = !historicalRecoveryClaim(finding, state)
   const canChangeDecision = state.decision !== null && (state.recoveryStage === null || state.recoveryStage === 'confirmed')
   const canReopenOutcome = state.recoveryStage === 'recovered' || state.recoveryStage === 'not_recovered'
-  const hasClosedRemainder = !internal && state.recoveryStage === 'recovered' && (state.recoveredAmount ?? 0) > 0 && Math.round((state.requestedAmount ?? 0) * 100) > Math.round((state.recoveredAmount ?? 0) * 100)
+  const hasClosedRemainder = !internal && state.recoveryStage === 'recovered' && verifiedReturned(state) > 0 && Math.round((state.requestedAmount ?? 0) * 100) > Math.round(verifiedReturned(state) * 100)
   const evidence = evidenceOf(finding)
   const question = openQuestion(finding)
   const steps = timelineFor(finding, state, discoveredAt)

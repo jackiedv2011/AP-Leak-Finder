@@ -36,21 +36,25 @@ export function Reports({ env }: { env: LedgerEnvironment }) {
   return (
     <>
       <section className="wk-section">
-        <h2 className="wk-display wk-h2">This audit</h2><p className="wk-dim">Recovery totals include USD only. Flagged amounts show exposure in source units and may include unknown or mixed currencies; they are not money owed.</p>
+        <h2 className="wk-display wk-h2">This audit</h2><p className="wk-dim">USD totals include only records with a known USD currency. Unknown and other currencies appear separately below. Flagged exposure is not money owed.</p>
         <Facts
           rows={[
             ['Payment records', String(s.recordCount)],
             ['Vendors', String(s.vendorCount)],
             ['Findings', String(l.openCount)],
-            ['Open flagged value', formatCurrency(l.flagged)],
+            ['Open flagged value (USD)', formatCurrency(l.flagged)],
             ['Potential recovery (USD)', formatCurrency(l.potential)],
-            ['Payments to verify', formatCurrency(l.atRisk)],
+            ['Payments to verify (USD)', formatCurrency(l.atRisk)],
             ['Recovered', formatCurrency(l.recovered)],
           ]}
         />
       </section>
 
-      <section className="wk-section"><Facts rows={Object.entries(l.recoveredByCurrency).map(([currency, amount]) => [`Verified returned · ${currency}`, amount.toFixed(2)])} /></section>
+      <section className="wk-section"><Facts rows={[
+        ...Object.entries(l.flaggedByCurrency).map(([currency, amount]): [string, string] => [`Flagged exposure · ${currency}`, amount.toFixed(2)]),
+        ...Object.entries(l.atRiskByCurrency).map(([currency, amount]): [string, string] => [`Payments to verify · ${currency}`, amount.toFixed(2)]),
+        ...Object.entries(l.recoveredByCurrency).map(([currency, amount]): [string, string] => [`Verified returned · ${currency}`, amount.toFixed(2)]),
+      ]} /></section>
       <section className="wk-section">
         <div className="wk-section-head">
           <h2 className="wk-display wk-h2">By check</h2>
@@ -73,10 +77,10 @@ export function Reports({ env }: { env: LedgerEnvironment }) {
               </thead>
               <tbody>
                 {causes.map((c) => (
-                  <tr key={c.type} style={{ cursor: 'default' }}>
-                    <td>{c.label}</td>
+                  <tr key={`${c.type}-${c.currency}`} style={{ cursor: 'default' }}>
+                    <td>{c.label} · {c.currency}</td>
                     <td className="wk-num">{c.count}</td>
-                    <td className="wk-right wk-table-money">{formatCurrency(c.value)}</td>
+                    <td className="wk-right wk-table-money">{c.currency === 'USD' ? formatCurrency(c.value) : `${c.value.toFixed(2)} ${c.currency}`}</td>
                   </tr>
                 ))}
               </tbody>

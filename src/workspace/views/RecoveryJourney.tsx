@@ -3,6 +3,7 @@ import { CalendarClock, CircleCheck } from 'lucide-react'
 import { formatCurrency } from '@/lib/format'
 import { type CaseState, type RecoveryMethod, type RecoveryVerification, type VendorUpdate, type VendorUpdateStatus } from '@/ledger/caseState'
 import { latestVendorPosition, VENDOR_STATUS, VENDOR_STATUS_ORDER } from '@/recovery/vendorStatus'
+import { verifiedReturned } from '@/recovery/financials'
 import type { Finding } from '@/types'
 
 const SETTLEMENT_METHOD_LABEL: Record<RecoveryMethod, string> = { refund: 'Cash refund', credit: 'Applied vendor credit', offset: 'Payment offset' }
@@ -36,8 +37,8 @@ export function RecoveryProgressPanel({ finding, state, onVendorUpdate, onFollow
   onVerify: (id: string, proof: RecoveryVerification) => void
   onClose: (id: string, reason: string) => void
 }) {
-  const requested = state.requestedAmount ?? finding.dollarImpact
-  const returned = state.recoveredAmount ?? 0
+  const requested = state.requestedAmount ?? 0
+  const returned = verifiedReturned(state)
   const remaining = Math.max(0, Math.round(requested * 100 - returned * 100) / 100)
   const position = latestVendorPosition(state)
   // Open on the most likely next step: money back once some has arrived or is on its way.
@@ -86,6 +87,7 @@ export function RecoveryProgressPanel({ finding, state, onVendorUpdate, onFollow
   }
 
   const recordSettlement = () => {
+    if (state.requestedAmount == null) { setProofError('The original requested amount is missing. Confirm it from the request before recording a return.'); return }
     const parsed = parseMoney(amount)
     if (!Number.isFinite(parsed) || parsed <= 0 || Math.round(parsed * 100) > Math.round(remaining * 100)) { setProofError(`Enter a settled amount from $0.01 to ${formatCurrency(remaining)}.`); return }
     if (!wholeCents(parsed)) { setProofError('Enter dollars and cents only.'); return }
@@ -97,7 +99,12 @@ export function RecoveryProgressPanel({ finding, state, onVendorUpdate, onFollow
       return
     }
     setProofError('')
-    onVerify(finding.id, { amount: parsed, method, source, reference: reference.trim(), appliedToBill: appliedToBill.trim() || undefined, settledAt: Date.now() })
+    try {
+      onVerify(finding.id, { amount: parsed, method, source, reference: reference.trim(), appliedToBill: appliedToBill.trim() || undefined, settledAt: Date.now() })
+    } catch (error) {
+      setProofError(error instanceof Error ? error.message : 'That return could not be recorded.')
+      return
+    }
     setReference('')
     setAppliedToBill('')
   }
@@ -264,8 +271,8 @@ export function RecoveryAccountingPanel({ finding, state, onReconcile }: { findi
   const settlements = state.recoverySettlements ?? (state.recoveryVerification ? [state.recoveryVerification] : [])
   const hasRefund = settlements.some((entry) => entry.method === 'refund')
   const hasAppliedCredit = settlements.some((entry) => entry.method === 'credit' || entry.method === 'offset')
-  const returned = state.recoveredAmount ?? 0
-  const requested = state.requestedAmount ?? finding.dollarImpact
+  const returned = verifiedReturned(state)
+  const requested = state.requestedAmount ?? 0
 
   if (state.recoveryStage !== 'recovered') return null
   if (returned <= 0) {

@@ -411,11 +411,18 @@ describe('ai drafting', () => {
     expect((await c.put('/api/projects/s1', unapproved)).status).toBe(200)
     expect((await c.post('/api/ai/draft', payload)).body.code).toBe('recovery_not_authorized')
     expect((await c.put('/api/projects/s1', saved.project)).status).toBe(200)
-    // The browser cannot swap the vendor: facts come from the stored case.
-    const ok = await c.post('/api/ai/draft', { ...payload, vendor: 'Someone Else' })
+    // Browser-supplied allegations and resolution cannot override the saved case.
+    const ok = await c.post('/api/ai/draft', { ...payload, vendor: 'Someone Else', findingTitle: 'Vendor committed fraud', explanation: 'Vendor admitted fraud.', method: 'credit', recoveryStage: 'recovered', rows: [{ ...payload.rows[0], invoiceNumber: 'FAKE' }] })
     expect(ok.status).toBe(200)
     expect(ok.body).toEqual({ subject: 'Re: Sierra Coffee Supply', body: 'Please refund 6800.' })
+    expect(drafts.draft).toHaveBeenLastCalledWith(expect.objectContaining({ vendor: 'Sierra Coffee Supply', method: 'refund', recoveryStage: 'confirmed', findingTitle: 'Duplicate payment of invoice INV-1', explanation: 'The saved payment records show the same invoice paid twice.', rows: expect.arrayContaining([expect.objectContaining({ invoiceNumber: 'INV-1' })]) }))
     expect(drafts.draft).toHaveBeenLastCalledWith(expect.not.objectContaining({ extra: expect.anything() }))
+    const closed = { ...saved.project, environment: { ...saved.project.environment, caseStates: { [saved.findingId]: { ...saved.project.environment.caseStates[saved.findingId], recoveryStage: 'recovered' } } } }
+    expect((await c.put('/api/projects/s1', closed)).status).toBe(200)
+    expect((await c.post('/api/ai/draft', payload)).body.code).toBe('recovery_not_authorized')
+    const alreadySent = { ...saved.project, environment: { ...saved.project.environment, caseStates: { [saved.findingId]: { ...saved.project.environment.caseStates[saved.findingId], recoveryStage: 'requested' } } } }
+    expect((await c.put('/api/projects/s1', alreadySent)).status).toBe(200)
+    expect((await c.post('/api/ai/draft', payload)).body.code).toBe('recovery_not_authorized')
   })
 })
 

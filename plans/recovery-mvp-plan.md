@@ -1,6 +1,6 @@
 # Recovery MVP implementation plan
 
-**Goal:** Turn a confirmed Reclaim finding into a dependable, customer-run recovery case from approval through reconciliation, while leaving the eight detection checks untouched.
+**Goal:** Turn a confirmed Reclaim finding into a dependable, customer-run recovery case from approval through reconciliation. The later eligibility follow-up refined duplicate classification while retaining the existing check families.
 
 **Source:** `plans/RECLAIM_V2_PRODUCT_AND_PRICING_SPEC.md`, especially §§2–3, 11–18, 21–25, 28–29, 31, 35. The attached conversation is not available as a file in this workspace; the V2 spec is the local research source.
 
@@ -41,9 +41,9 @@
 - The attached conversation URI is not readable from this workspace. This implementation is aligned to the local V2 research spec and can be checked against an export of that conversation when available.
 - A closed partial recovery was reopened in the browser: the $20 recorded return remained intact, the $44 remainder became outstanding again, and the action stayed distinct from correcting a mistaken return.
 - The financial ledger now names vendor agreement and vendor-reported refunds separately from mere acknowledgement and actual returned value. Activity history records the amount specific to each event.
-- Older saved requests without a stored requested amount can record settlements against the finding value. Full-claim acceptance freezes the then-outstanding amount, and closed/reopened balances are stored in exact cents.
+- Older saved requests without a stored requested amount remain visible, but the original request amount must be confirmed before another settlement can be recorded. The finding value is not substituted for that missing fact. Full-claim acceptance freezes the then-outstanding verified amount, and closed/reopened balances are stored in exact cents.
 - The dashboard now shows open request age and recent returned value. A browser check confirmed the $44 outstanding/$20 returned split and case navigation at desktop and 375px phone width.
-- Open finding totals are labelled flagged value across the workspace, and future-savings signals do not count as protected payments. Detection rules remain unchanged.
+- Open finding totals are labelled flagged value across the workspace, and future-savings signals do not count as protected payments. The original MVP did not change detection; the later eligibility follow-up classified raw exact references separately from normalized variants.
 - Internal reviews now close with a required investigation note. Their current and legacy outcomes are excluded from returned-money totals and vendor rollups; the case summary, timeline, and history use review labels. Focused tests cover this boundary.
 - Browser walkthrough of a sample future-savings finding confirmed the internal note can be filed and closed with an outcome, recovered and in-recovery dollars stay at $0, and the closed case leaves Priority findings. The decision dialog now explains that the path is internal rather than a vendor request.
 - Legacy recovered cases without a positive recorded amount no longer create inferred returned dollars, a recent return, or a ledger movement. They show a correction action and cannot be reconciled until an amount is recorded.

@@ -75,7 +75,7 @@ async function openAttestedCase() {
 
 /** Every open signal's involved amount that is not suppressed. It is never money owed. */
 function sumFlagged(findings: Finding[]): number {
-  return findings.filter((f) => !f.suppressionReason).reduce((total, f) => total + Math.round((f.flaggedAmount ?? f.dollarImpact) * 100), 0) / 100
+  return findings.filter((f) => !f.suppressionReason && f.currency === 'USD').reduce((total, f) => total + Math.round((f.flaggedAmount ?? f.dollarImpact) * 100), 0) / 100
 }
 
 function workspace() {
@@ -387,9 +387,8 @@ describe('AuditApp', () => {
     await waitFor(() => expect(screen.getAllByText('Expected').length).toBeGreaterThan(0))
 
     goToMode('Overview')
-    const dismissed = sampleFindings().find((f) => formatCurrency(f.dollarImpact) === value)!
     expect(potentialValue()).toBe(formatCurrency(0))
-    expect(flaggedValue()).toBe(formatCurrency(sumFlagged(sampleFindings()) - (dismissed.flaggedAmount ?? impact)))
+    expect(flaggedValue()).toBe(formatCurrency(sumFlagged(sampleFindings())))
     expect(findingsFact().findings).toBe(String(sampleFindings().length - 1))
     const causes = Array.from(document.querySelectorAll<HTMLElement>('.wk-bars-row[data-amount]')).map((n) => Number(n.dataset.amount))
     const dupTotal = sumImpact(sampleFindings().filter((f) => f.type === 'exact_duplicate')) - impact
@@ -554,7 +553,7 @@ describe('AuditApp', () => {
     expect(stageValue('In recovery')).toBe(formatCurrency(impact - 20))
   })
 
-  it('accepts a settlement on an older saved request that has no requested-amount field', async () => {
+  it('does not invent an amount or record a settlement on an older request with no saved amount', async () => {
     const { environment, finding } = attestedEnvironment()
     const legacy = setCaseState(environment, finding.id, markRecoveryRequested(confirmCase(null)))
     createProject({ name: 'Legacy ledger', sourceLabel: 'ledger.csv', mode: 'upload', environment: legacy })
@@ -563,8 +562,8 @@ describe('AuditApp', () => {
     await waitFor(DASHBOARD_READY)
     goToMode('Recoveries')
     fireEvent.click(screen.getAllByRole('button', { name: `Open ${finding.vendor} recovery case` })[0])
-    await recordSettled()
-    expect(fact('Received')).toBe(formatCurrency(finding.dollarImpact))
+    expect(fact('Requested amount')).toMatch(/Missing from legacy case/)
+    expect(fact('Received')).toBe('')
   })
 
   it('copies and downloads the recovery request without sending anything', async () => {

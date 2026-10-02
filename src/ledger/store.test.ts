@@ -12,6 +12,8 @@ import {
   type LedgerEnvironment,
 } from '@/ledger/store'
 import { confirmCase } from '@/ledger/caseState'
+import { recoveries } from '@/workspace/selectors'
+import { verifyRecovery } from '@/recovery/model'
 
 const HEADER = 'vendor,invoice_number,invoice_date,payment_date,invoice_amount,amount_paid,terms,bank_account_last4,category'
 
@@ -56,6 +58,18 @@ describe('ledger store', () => {
 
     expect(stillThere).toBeDefined()
     expect(second.caseStates[acmeFinding.id]?.decision).toBe('confirmed')
+  })
+
+  it('keeps an open request available for settlement when a later payment supersedes its finding', () => {
+    const first = mergeImport(null, { sourceLabel: 'a.csv', mode: 'upload', parsed: parseCsv(csvWithDuplicate('Acme', 'INV-1')) })
+    const finding = first.result.findings.find((f) => f.type === 'exact_duplicate')!
+    const open = setCaseState(first, finding.id, { ...confirmCase(null), recoveryStage: 'requested', approvedAt: 100, requestedAmount: 100 })
+    const merged = mergeImport(open, { sourceLabel: 'b.csv', mode: 'upload', parsed: parseCsv([HEADER, 'Acme,INV-1,2025-01-01,2025-01-30,100,100,,,'].join('\n')) })
+    expect(merged.caseStates[finding.id]).toMatchObject({ recoveryStage: 'requested', requiresRevalidation: true, approvedAt: 100 })
+    expect(recoveries(merged).some((row) => row.finding.id === finding.id)).toBe(true)
+    const settled = verifyRecovery(merged.caseStates[finding.id], { amount: 40, method: 'refund', source: 'bank', reference: 'ACH-1', settledAt: 200 })
+    expect(settled.recoveryStage).toBe('requested')
+    expect(settled.recoveredAmount).toBe(40)
   })
 
   it('tracks which findings are new after a merge, and clears them on acknowledgement', () => {

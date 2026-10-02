@@ -275,7 +275,7 @@ export function Dashboard({ env, visible, auditLabel, onOpenCase, onSeeAllFindin
 
     types: () => {
       if (!causes.length) return null
-      const biggest = causes[0].value || 1
+      const biggest = Object.fromEntries(causes.map((cause) => [cause.currency, Math.max(1, ...causes.filter((row) => row.currency === cause.currency).map((row) => row.value))]))
       return (
         <section className="wk-panelcard" aria-labelledby="ov-types" key="types">
           <div className="wk-panelcard-head">
@@ -287,10 +287,10 @@ export function Dashboard({ env, visible, auditLabel, onOpenCase, onSeeAllFindin
           </div>
           <div className="wk-panelcard-body wk-bars" data-columns="2">
             {causes.slice(0, 6).map((cause) => (
-              <button type="button" className="wk-bars-row" key={cause.type} data-amount={cause.value} onClick={() => onSearchFindings(cause.label)}>
-                <span><em>{cause.label}</em></span>
-                <strong>{money(cause.value)}</strong>
-                <span className="wk-bars-track"><i style={{ width: `${Math.max(2, (cause.value / biggest) * 100)}%` }} /></span>
+              <button type="button" className="wk-bars-row" key={`${cause.type}-${cause.currency}`} data-amount={cause.value} onClick={() => onSearchFindings(cause.label)}>
+                <span><em>{cause.label} · {cause.currency}</em></span>
+                <strong>{cause.currency === 'USD' ? money(cause.value) : `${cause.value.toFixed(2)} ${cause.currency}`}</strong>
+                <span className="wk-bars-track"><i style={{ width: `${Math.max(2, (cause.value / biggest[cause.currency]) * 100)}%` }} /></span>
                 <small>{cause.count} {plural(cause.count, 'finding')}</small>
               </button>
             ))}

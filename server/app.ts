@@ -382,8 +382,8 @@ export function createApp(deps: AppDependencies): App {
       const stored = db.prepare('SELECT payload FROM projects WHERE user_id = ? AND id = ?').get(user.id, projectId) as { payload: string } | undefined
       const facts = authorizedDraftFacts(stored ? JSON.parse(stored.payload) : null, findingId, clientFacts.amountRequested)
       if (!facts.ok) throw new HttpError(403, facts.reason, 'recovery_not_authorized')
-      // Vendor, supported amount and ledger rows come from the stored case, never the browser.
-      const request = { ...clientFacts, vendor: facts.vendor, amountFlagged: facts.amountFlagged, rows: facts.rows }
+      // Only the reviewer's tone/context and sender may come from the browser.
+      const request = { ...facts.facts, userContext: clientFacts.userContext, sender: clientFacts.sender }
       let draft
       try {
         draft = await drafts.draft(request)

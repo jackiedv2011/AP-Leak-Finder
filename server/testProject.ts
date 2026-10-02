@@ -20,12 +20,12 @@ export function authorizedProject(id: string, input: { vendor: string; invoice: 
     contradictions: [], notes: 'Synthetic fixture only',
   }
   const finding = {
-    id: findingId, type: 'exact_duplicate', vendor: input.vendor, currency: 'USD', dollarImpact: input.amount, flaggedAmount: input.amount,
+    id: findingId, type: 'exact_duplicate', title: `Duplicate payment of invoice ${input.invoice ?? 'unknown'}`, explanation: 'The saved payment records show the same invoice paid twice.', severity: 'high', vendor: input.vendor, currency: 'USD', dollarImpact: input.amount, flaggedAmount: input.amount,
     classification: 'recovery_candidate', class: 'recoverable', relatedRecords: records.map((r) => ({ id: r.id })), evidence,
   }
   const project = {
     id, name: id, sourceLabel: `${id}.csv`, mode: 'upload', createdAt: 1, updatedAt: 2,
-    environment: { records, imports: [], result: { findings: [finding] }, caseStates: { [findingId]: { approvedAt: 100, requestedAmount: input.requested, recoveryStage: 'confirmed' } } },
+    environment: { records, imports: [], result: { findings: [finding] }, caseStates: { [findingId]: { approvedAt: 100, requestedAmount: input.requested, requestedResolution: 'refund', recoveryStage: 'confirmed' } } },
   }
   return { project, findingId }
 }

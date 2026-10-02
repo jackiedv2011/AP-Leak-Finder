@@ -36,6 +36,7 @@ const isCents = (n: number) => Math.abs(n * 100 - Math.round(n * 100)) < 1e-6
 function checkInvariants(env: LedgerEnvironment, where: string) {
   let outstanding = 0
   let recovered = 0
+  let unknownRecovered = 0
   let potential = 0
   for (const f of env.result.findings) {
     const s = getCaseState(env, f.id)
@@ -58,7 +59,8 @@ function checkInvariants(env: LedgerEnvironment, where: string) {
     if (s.recoveryStage === 'not_recovered') expect(cents(s.recoveredAmount), tag).toBe(0)
     if (s.reconciledAt) expect(s.recoveryStage, tag).toBe('recovered')
     // Verified returns always count; only an open, evidenced candidate carries potential or outstanding money.
-    recovered += cents(verifiedReturned(s))
+    if ((f.currency ?? f.evidence?.obligation.currency) === 'USD') recovered += cents(verifiedReturned(s))
+    else unknownRecovered += cents(verifiedReturned(s))
     const open = s.decision !== 'expected' && s.recoveryStage !== 'recovered' && s.recoveryStage !== 'not_recovered'
     const supported = eligiblePotential(f, env.result.findings)
     if (open && supported !== null) {
@@ -72,6 +74,7 @@ function checkInvariants(env: LedgerEnvironment, where: string) {
   }
   expect(cents(l.inRecovery), `${where} inRecovery`).toBe(outstanding)
   expect(cents(l.recovered), `${where} recovered`).toBe(recovered)
+  expect(cents(l.recoveredByCurrency.Unknown), `${where} unknown-currency returns`).toBe(unknownRecovered)
   expect(cents(l.potential), `${where} potential`).toBe(potential)
   expect(vendors(env).reduce((sum, v) => sum + cents(v.recovered), 0), `${where} vendor recovered`).toBe(recovered)
 }

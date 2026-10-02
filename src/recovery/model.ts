@@ -2,6 +2,7 @@ import { markRecoveryRequested, recordRecoveryOutcome, type CaseState, type Reco
 import { normalizeVendor } from '@/lib/format'
 import type { APRecord, Finding } from '@/types'
 import { latestVendorPosition, VENDOR_STATUS } from './vendorStatus'
+import { verifiedReturned } from './financials'
 
 const DAY = 86_400_000
 
@@ -65,7 +66,7 @@ export function recordVendorUpdate(state: CaseState, update: VendorUpdate, now =
     throw new Error('The promised date cannot be before the reply.')
   }
   const info = VENDOR_STATUS[update.status]
-  const remainingCents = Math.max(0, Math.round((state.requestedAmount ?? 0) * 100) - Math.round((state.recoveredAmount ?? 0) * 100))
+  const remainingCents = Math.max(0, Math.round((state.requestedAmount ?? 0) * 100) - Math.round(verifiedReturned(state) * 100))
   if (info.amount === 'none' && update.amount !== undefined) throw new Error('This kind of reply does not carry an amount.')
   if (info.amount === 'required' && update.amount === undefined) throw new Error('Enter the amount the vendor accepted.')
   if (update.amount !== undefined && (!Number.isFinite(update.amount) || update.amount < 0 || update.amount > (state.requestedAmount ?? Infinity))) {
@@ -90,7 +91,7 @@ function startOfDay(time: number): number {
 export function verifyRecovery(state: CaseState, proof: RecoveryVerification): CaseState {
   if (state.recoveryStage !== 'requested') throw new Error('A request must be open before recording returned value.')
   const requested = state.requestedAmount ?? 0
-  const alreadyReturned = state.recoveredAmount ?? 0
+  const alreadyReturned = verifiedReturned(state)
   const remainingCents = Math.round(requested * 100) - Math.round(alreadyReturned * 100)
   const normalized = { ...proof, reference: proof.reference.trim(), appliedToBill: proof.appliedToBill?.trim() }
   const prior = state.recoverySettlements ?? (state.recoveryVerification ? [state.recoveryVerification] : [])
@@ -111,6 +112,7 @@ export function verifyRecovery(state: CaseState, proof: RecoveryVerification): C
     ...state,
     recoveryStage: fullyReturned ? 'recovered' : 'requested',
     recoveredAmount: returned,
+    legacyRecoveredAmount: state.legacyRecoveredAmount ?? (prior.length === 0 && (state.recoveredAmount ?? 0) > 0 ? state.recoveredAmount : null),
     recoveredVia: proof.method,
     recoveryOutcomeNote: normalized.reference,
     recoveryResolvedAt: fullyReturned ? proof.settledAt : null,
@@ -123,7 +125,7 @@ export function verifyRecovery(state: CaseState, proof: RecoveryVerification): C
 export function closeWithoutRecovery(state: CaseState, reason: string, at = Date.now()): CaseState {
   if (state.recoveryStage !== 'requested') throw new Error('A request must be open before closing without recovery.')
   if (!reason.trim()) throw new Error('Explain why the recovery was closed.')
-  if ((state.recoveredAmount ?? 0) > 0) {
+  if (verifiedReturned(state) > 0) {
     return { ...state, recoveryStage: 'recovered', recoveryOutcomeNote: reason.trim(), recoveryResolvedAt: at, nextFollowUpAt: null }
   }
   return { ...recordRecoveryOutcome(state, 'not_recovered', null, reason.trim()), recoveryResolvedAt: at, nextFollowUpAt: null }
@@ -132,7 +134,7 @@ export function closeWithoutRecovery(state: CaseState, reason: string, at = Date
 /** Resume pursuing an unpaid remainder while keeping its recorded settlements intact. */
 export function reopenRemainingBalance(state: CaseState, at = Date.now()): CaseState {
   const requestedCents = Math.round((state.requestedAmount ?? 0) * 100)
-  const returnedCents = Math.round((state.recoveredAmount ?? 0) * 100)
+  const returnedCents = Math.round(verifiedReturned(state) * 100)
   if (state.recoveryStage !== 'recovered' || returnedCents <= 0 || returnedCents >= requestedCents) {
     throw new Error('Only a closed case with a partially returned remaining balance can be reopened this way.')
   }
@@ -150,7 +152,7 @@ export function reopenRemainingBalance(state: CaseState, at = Date.now()): CaseS
 
 export function reconcileRecovery(state: CaseState, input: { note: string; rootCause: string; at?: number }): CaseState {
   if (state.recoveryStage !== 'recovered') throw new Error('Record settled value before reconciliation.')
-  if (!Number.isFinite(state.recoveredAmount) || (state.recoveredAmount ?? 0) <= 0) throw new Error('A recorded return amount is required before reconciliation.')
+  if (verifiedReturned(state) <= 0) throw new Error('A recorded return with verified proof is required before reconciliation.')
   if (!input.note.trim()) throw new Error('Describe the accounting entry or reconciliation.')
   return { ...state, reconciledAt: input.at ?? Date.now(), reconciliationNote: input.note.trim(), rootCause: input.rootCause.trim() || null }
 }
@@ -187,7 +189,7 @@ export function recoveryNextAction(state: CaseState, now = Date.now(), internal 
   }
   if (state.recoveryStage === 'requested') {
     if (internal) return { label: 'Record investigation outcome', detail: 'Finish the internal review and record the result.' }
-    if ((state.recoveredAmount ?? 0) > 0) return { label: 'Pursue remaining balance', detail: 'Record the next settled return, follow up with the vendor, or close the outstanding balance.', dueAt: state.nextFollowUpAt }
+    if (verifiedReturned(state) > 0) return { label: 'Pursue remaining balance', detail: 'Record the next settled return, follow up with the vendor, or close the outstanding balance.', dueAt: state.nextFollowUpAt }
     const last = latestVendorPosition(state)
     if (last?.status === 'credit_issued') return { label: 'Verify credit application', detail: 'A credit memo is pending until it offsets a valid bill.' }
     if (last?.status === 'already_refunded') return { label: 'Verify refund settlement', detail: 'The vendor says a refund was sent. Match it to an actual bank or accounting record before counting recovery.' }
@@ -198,7 +200,7 @@ export function recoveryNextAction(state: CaseState, now = Date.now(), internal 
     return { label: 'Wait for vendor', detail: 'Track a reply or follow up on the scheduled date.', dueAt: state.nextFollowUpAt }
   }
   if (state.recoveryStage === 'recovered') {
-    if ((state.recoveredAmount ?? 0) <= 0) return { label: 'Record missing return', detail: 'This older case has no recorded return amount. Reopen it and record the settlement before reconciliation.' }
+    if (verifiedReturned(state) <= 0) return { label: 'Record missing return', detail: 'This older case has no verified return. Reopen it and record the settlement before reconciliation.' }
     if (!state.reconciledAt) return { label: 'Reconcile in accounting', detail: 'Match the settled return to the original payable and record the root cause.' }
     return { label: 'Case complete', detail: 'Returned value and accounting reconciliation have been recorded.' }
   }
@@ -208,10 +210,10 @@ export function recoveryNextAction(state: CaseState, now = Date.now(), internal 
 export function requiresCustomerAction(state: CaseState, now = Date.now(), internal = false): boolean {
   if (internal && (state.recoveryStage === 'not_recovered' || state.recoveryStage === 'recovered')) return false
   if (state.recoveryStage === 'confirmed') return true
-  if (state.recoveryStage === 'recovered') return (state.recoveredAmount ?? 0) <= 0 || !state.reconciledAt
+  if (state.recoveryStage === 'recovered') return verifiedReturned(state) <= 0 || !state.reconciledAt
   if (state.recoveryStage !== 'requested') return false
   if (internal) return true
-  if ((state.recoveredAmount ?? 0) > 0) return true
+  if (verifiedReturned(state) > 0) return true
   const last = latestVendorPosition(state)
   return Boolean(last && (VENDOR_STATUS[last.status].needsAction || (last.status === 'accepted' && !last.expectedAt))) || Boolean(state.nextFollowUpAt && state.nextFollowUpAt <= now)
 }
@@ -222,11 +224,11 @@ export function recoveryStatusLabel(state: CaseState, internal = false): string 
   if (internal && (state.recoveryStage === 'not_recovered' || state.recoveryStage === 'recovered')) return 'Review closed'
   if (state.recoveryStage === 'confirmed') return state.contactHold ? 'Contact on hold' : state.approvedAt ? 'Ready to send' : 'Awaiting approval'
   if (state.recoveryStage === 'requested') {
-    if ((state.recoveredAmount ?? 0) > 0) return 'Partially returned'
+    if (verifiedReturned(state) > 0) return 'Partially returned'
     const status = latestVendorPosition(state)?.status
     if (status && VENDOR_STATUS[status].caseStatus) return VENDOR_STATUS[status].caseStatus!
     return 'Waiting on vendor'
   }
-  if (state.recoveryStage === 'recovered') return (state.recoveredAmount ?? 0) <= 0 ? 'Return amount missing' : state.reconciledAt ? 'Reconciled' : 'Returned, reconcile'
+  if (state.recoveryStage === 'recovered') return verifiedReturned(state) <= 0 ? 'Return amount missing' : state.reconciledAt ? 'Reconciled' : 'Returned, reconcile'
   return 'Closed, no money back'
 }

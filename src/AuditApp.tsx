@@ -22,6 +22,7 @@ import { useAuditRoute, loadPersistedContext, type RouteMode } from '@/audit/use
 import {
   loadEnvironment,
   mergeImport,
+  inspectImport,
   setCaseState,
   getCaseState,
   recordEvidence,
@@ -159,6 +160,12 @@ export function AuditApp() {
       // since rAF doesn't fire reliably in a backgrounded or non-compositing tab.
       await new Promise((resolve) => setTimeout(resolve, 0))
       try {
+        const inspection = inspectImport(options.replaceEnvironment ? null : environmentRef.current, input)
+        if (inspection.duplicateFile) {
+          setEntryError('This exact file is already in this audit. No records were added.')
+          setImportDialogOpen(true)
+          return
+        }
         const next = mergeImport(options.replaceEnvironment ? null : environmentRef.current, input)
         if (options.persist !== false) {
           const current = projectRef.current

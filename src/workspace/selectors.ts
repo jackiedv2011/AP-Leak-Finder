@@ -45,6 +45,8 @@ export interface Ladder {
   flaggedCount: number
   currency: 'USD'
   recoveredByCurrency: Record<string, number>
+  flaggedByCurrency: Record<string, number>
+  atRiskByCurrency: Record<string, number>
   /**
    * Money still in play that could come back: every claim (see lib/claims)
    * that has not been dismissed and has not reached an outcome. Missed
@@ -76,6 +78,14 @@ export interface Ladder {
   awaitingDecision: number
 }
 
+/** Currency may come from an attested obligation even when the source CSV omitted its column. */
+function currencyOf(finding: Finding): string {
+  const obligation = finding.evidence?.obligation
+  if (finding.currency) return finding.currency
+  if (obligation?.reference?.trim() && obligation.confirmedBy?.trim() && obligation.currency?.trim()) return obligation.currency.trim().toUpperCase()
+  return 'Unknown'
+}
+
 /**
  * `RecoveryStage.confirmed` is the customer's decision to pursue a case.
  * Vendor agreement is separate and comes from recorded vendor updates in
@@ -104,6 +114,7 @@ export interface VendorRollup {
 export interface RootCause {
   type: FindingType
   label: string
+  currency: string
   count: number
   value: number
 }
@@ -163,13 +174,13 @@ export function opportunities(env: LedgerEnvironment): Opportunity[] {
  */
 export function recoveries(env: LedgerEnvironment): Opportunity[] {
   return opportunities(env).filter(
-    (o) => (eligiblePotential(o.finding, env.result.findings) !== null || verifiedReturned(o.state) > 0) && o.state.recoveryStage !== null && o.state.recoveryStage !== undefined
+    (o) => (eligiblePotential(o.finding, env.result.findings) !== null || verifiedReturned(o.state) > 0 || (['exact_duplicate', 'near_duplicate'].includes(o.finding.type) && o.state.recoveryStage === 'requested' && o.state.requestedAmount != null)) && o.state.recoveryStage !== null && o.state.recoveryStage !== undefined
   )
 }
 
 /** Nonrecoverable findings with an internal investigation still in progress. */
 export function internalReviews(env: LedgerEnvironment): Opportunity[] {
-  return opportunities(env).filter((o) => eligiblePotential(o.finding, env.result.findings) === null && verifiedReturned(o.state) === 0 && (o.state.recoveryStage === 'confirmed' || o.state.recoveryStage === 'requested'))
+  return opportunities(env).filter((o) => eligiblePotential(o.finding, env.result.findings) === null && verifiedReturned(o.state) === 0 && (o.state.recoveryStage === 'confirmed' || o.state.recoveryStage === 'requested') && !(['exact_duplicate', 'near_duplicate'].includes(o.finding.type) && o.state.recoveryStage === 'requested' && o.state.requestedAmount != null))
 }
 
 export type RecoveryAgeLabel = '0–14 days' | '15–30 days' | '31+ days' | 'Date unknown'
@@ -185,8 +196,8 @@ export function recoveryAging(env: LedgerEnvironment, asOf = Date.now()): Recove
   ]
   const localDay = (time: number) => { const date = new Date(time); return Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()) }
   for (const finding of env.result.findings) {
-    if (eligiblePotential(finding, env.result.findings) === null) continue
     const state = getCaseState(env, finding.id)
+    if (eligiblePotential(finding, env.result.findings) === null && !(currencyOf(finding) === 'USD' && state.recoveryStage === 'requested' && state.requestedAmount != null)) continue
     if (state.recoveryStage !== 'requested') continue
     const outstandingCents = Math.round(authorizedOutstanding(state) * 100)
     const start = state.recoveryRequestedAt
@@ -238,6 +249,8 @@ export function ladder(env: LedgerEnvironment): Ladder {
   let atRiskCents = 0
   let openCount = 0
   const recoveredByCurrency: Record<string, number> = {}
+  const flaggedByCurrency: Record<string, number> = {}
+  const atRiskByCurrency: Record<string, number> = {}
 
   for (const finding of env.result.findings) {
     const state = getCaseState(env, finding.id)
@@ -247,19 +260,31 @@ export function ladder(env: LedgerEnvironment): Ladder {
       // Returns were always entered in the app's dollar fields, so a legacy
       // finding without a currency keeps its verified money as USD. Only a known
       // other currency is held out of the USD total.
-      const key = finding.currency ?? 'USD'
+      const key = currencyOf(finding)
       recoveredByCurrency[key] = sumMoney([recoveredByCurrency[key] ?? 0, returned])
       if (key === 'USD') add('recovered', returned)
+    }
+    // An import can supersede the detector's finding while an authorized request
+    // remains open. Keep its proven outstanding balance visible for closeout.
+    if (currencyOf(finding) === 'USD' && state.recoveryStage === 'requested' && eligiblePotential(finding, env.result.findings) === null && state.requestedAmount != null && state.approvedAt) {
+      add('inRecovery', authorizedOutstanding(state))
     }
     if (!isStillInPlay(state)) continue
     openCount += 1
     // Flagged is every open signal's involved amount. It is never money owed.
     // A suppressed signal (recurring cadence, installments) stays visible with its reason but adds no flagged value.
     if (!finding.suppressionReason) {
-      flaggedCents += Math.round((finding.flaggedAmount ?? finding.dollarImpact) * 100)
+      const amount = finding.flaggedAmount ?? finding.dollarImpact
+      const currency = currencyOf(finding)
+      flaggedByCurrency[currency] = sumMoney([flaggedByCurrency[currency] ?? 0, amount])
+      if (currency === 'USD') flaggedCents += Math.round(amount * 100)
       flaggedCount += 1
     }
-    if (isAtRisk(finding)) atRiskCents += Math.round(finding.dollarImpact * 100)
+    if (isAtRisk(finding)) {
+      const currency = currencyOf(finding)
+      atRiskByCurrency[currency] = sumMoney([atRiskByCurrency[currency] ?? 0, finding.dollarImpact])
+      if (currency === 'USD') atRiskCents += Math.round(finding.dollarImpact * 100)
+    }
     // Only an eligible recovery candidate carries potential recovery.
     const potential = eligiblePotential(finding, env.result.findings)
     if (potential === null) continue
@@ -285,6 +310,8 @@ export function ladder(env: LedgerEnvironment): Ladder {
     flaggedCount,
     currency: 'USD',
     recoveredByCurrency,
+    flaggedByCurrency,
+    atRiskByCurrency,
   }
 }
 
@@ -299,8 +326,8 @@ export interface VendorCommitments {
 export function vendorCommitments(env: LedgerEnvironment): VendorCommitments {
   const totals: VendorCommitments = { confirmed: 0, pendingReturn: 0, confirmedCases: 0, pendingCases: 0 }
   for (const finding of env.result.findings) {
-    if (eligiblePotential(finding, env.result.findings) === null) continue
     const state = getCaseState(env, finding.id)
+    if (eligiblePotential(finding, env.result.findings) === null && !(currencyOf(finding) === 'USD' && ['exact_duplicate', 'near_duplicate'].includes(finding.type) && state.recoveryStage === 'requested' && state.requestedAmount != null)) continue
     if (state.recoveryStage !== 'requested') continue
     const update = latestVendorPosition(state)
     if (!update || !VENDOR_STATUS[update.status].agreed) continue
@@ -361,8 +388,7 @@ export function vendors(env: LedgerEnvironment): VendorRollup[] {
     const row = rowFor(finding.vendor)
     row.caseCount += 1
     if (isStillInPlay(state)) row.potential = sumMoney([row.potential, Math.max(0, (eligiblePotential(finding, env.result.findings) ?? 0) - verifiedReturned(state))])
-    // Same rule as the ladder: a legacy finding without a currency kept its returns in dollars.
-    if ((finding.currency ?? 'USD') === 'USD') row.recovered = sumMoney([row.recovered, verifiedReturned(state)])
+    if (currencyOf(finding) === 'USD') row.recovered = sumMoney([row.recovered, verifiedReturned(state)])
     if (row.strongest === null || order.indexOf(evidence) > order.indexOf(row.strongest)) row.strongest = evidence
   }
 
@@ -382,18 +408,21 @@ function isStillInPlay(state: CaseState): boolean {
  * that has since been recovered still left in the first place, so it stays.
  */
 export function rootCauses(env: LedgerEnvironment): RootCause[] {
-  const byType = new Map<FindingType, RootCause>()
+  const byType = new Map<string, RootCause>()
   for (const finding of env.result.findings) {
     if (getCaseState(env, finding.id).decision === 'expected') continue
-    const row = byType.get(finding.type) ?? {
+    const currency = currencyOf(finding)
+    const key = `${finding.type}|${currency}`
+    const row = byType.get(key) ?? {
       type: finding.type,
       label: FINDING_TYPE_LABELS[finding.type] ?? finding.type,
+      currency,
       count: 0,
       value: 0,
     }
     row.count += 1
     row.value += finding.dollarImpact
-    byType.set(finding.type, row)
+    byType.set(key, row)
   }
   return [...byType.values()].sort((a, b) => b.value - a.value)
 }
@@ -405,7 +434,7 @@ export function recordedRootCauses(env: LedgerEnvironment): RecordedRootCause[] 
   const causes = new Map<string, RecordedRootCause>()
   for (const finding of env.result.findings) {
     const state = getCaseState(env, finding.id)
-    if (finding.currency !== 'USD' || state.recoveryStage !== 'recovered' || verifiedReturned(state) <= 0 || !state.reconciledAt || !state.rootCause) continue
+    if (currencyOf(finding) !== 'USD' || state.recoveryStage !== 'recovered' || verifiedReturned(state) <= 0 || !state.reconciledAt || !state.rootCause) continue
     const cause = causes.get(state.rootCause) ?? { label: state.rootCause, count: 0, recovered: 0 }
     cause.count += 1
     cause.recovered += verifiedReturned(state)
@@ -458,15 +487,15 @@ export function timelineFor(finding: Finding, state: CaseState, discoveredAt: nu
       what:
         state.recoveryStage === 'not_recovered'
           ? 'Closed without recovery'
-          : state.recoveryStage === 'recovered' && (state.recoveredAmount ?? 0) <= 0
+          : state.recoveryStage === 'recovered' && verifiedReturned(state) <= 0
             ? 'Return amount missing — correct this case before reconciliation'
             : state.recoveryStage === 'recovered'
-              ? `Money received — ${formatCurrency(state.recoveredAmount ?? 0)} recorded by you`
-            : (state.recoveredAmount ?? 0) > 0
-              ? `Partial return — ${formatCurrency(state.recoveredAmount ?? 0)} recorded by you`
+              ? `Money received — ${formatCurrency(verifiedReturned(state))} recorded by you`
+            : verifiedReturned(state) > 0
+              ? `Partial return — ${formatCurrency(verifiedReturned(state))} recorded by you`
               : 'Outcome pending',
       detail: state.recoveryOutcomeNote ?? undefined,
-      done: state.recoveryStage === 'recovered' || state.recoveryStage === 'not_recovered' || (state.recoveredAmount ?? 0) > 0,
+      done: state.recoveryStage === 'recovered' || state.recoveryStage === 'not_recovered' || verifiedReturned(state) > 0,
     },
   ]
   return steps

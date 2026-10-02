@@ -1,6 +1,5 @@
 import type { APRecord, Finding, FindingClass, DetectionResult } from '@/types'
 import { normalizeVendor, normalizeAccountLast4, daysBetween, parseTerms, formatCurrency, formatDate, plural, toCents } from '@/lib/format'
-import { damerauLevenshteinDistance } from '@/lib/stringDistance'
 import { normalizeReference } from '@/lib/sourceIdentity'
 import { reviewMetadata } from '@/lib/findingMetadata'
 
@@ -8,8 +7,6 @@ import { reviewMetadata } from '@/lib/findingMetadata'
 export const DEFAULT_REVIEW_WINDOW_DAYS = 45
 
 const EPSILON = 0.01
-/** Max Damerau-Levenshtein distance between normalized invoice numbers to count as "near-identical" for Rule 2. */
-const MAX_NEAR_DUPLICATE_INVOICE_DISTANCE = 2
 /**
  * Rule 2 treats three or more identically priced payments to one vendor on a
  * steady cadence (weekly standing orders, rent, subscriptions, retainers) as a
@@ -47,7 +44,9 @@ function median(values: number[]): number {
 type RefundPool = Map<string, number>
 
 function invoiceKey(r: APRecord): string {
-  return `${normalizeVendor(r.vendor)}|${normalizeInvoiceNumber(r.invoiceNumber!)}`
+  const raw = r.source?.raw?.invoice_number
+  const reference = typeof raw === 'string' ? raw : r.invoiceNumber!
+  return `${normalizeVendor(r.vendor)}|${reference}`
 }
 
 function buildRefundPool(records: APRecord[]): RefundPool {
@@ -257,16 +256,10 @@ function recurringRecordIds(sortedByDate: APRecord[]): Set<string> {
   return recurring
 }
 
-/** Two invoice references that match after the recorded normalization, or differ by at most a typo or two. */
+/** Only deterministic reference normalization establishes a variant; typos remain general near-match review. */
 function referenceVariant(a: string, b: string): boolean {
   const na = normalizeReference(a).value
-  if (na !== null && na === normalizeReference(b).value) return true
-  const ea = normalizeInvoiceNumber(a)
-  const eb = normalizeInvoiceNumber(b)
-  // Cheap bounds first: edit distance is at least the length difference, and
-  // no real invoice reference is long enough to need a quadratic comparison.
-  if (Math.abs(ea.length - eb.length) > MAX_NEAR_DUPLICATE_INVOICE_DISTANCE || eb.length > 64) return false
-  return damerauLevenshteinDistance(ea, eb) <= MAX_NEAR_DUPLICATE_INVOICE_DISTANCE
+  return na !== null && na === normalizeReference(b).value
 }
 
 /** Rows that cannot be the same economic event: known, different companies or currencies. */

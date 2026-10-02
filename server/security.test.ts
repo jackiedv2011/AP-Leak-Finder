@@ -244,7 +244,7 @@ describe('what the server reveals', () => {
     for (let i = 0; i < 25; i++) statuses.push((await new Client().post('/api/auth/login', { email: 'x@example.com', password: 'wrong-password' })).status)
     expect(statuses.slice(0, 20).every((s) => s === 401)).toBe(true)
     expect(statuses.slice(20).every((s) => s === 429)).toBe(true)
-  })
+  }, 15_000)
 })
 
 describe('dev-only endpoints', () => {

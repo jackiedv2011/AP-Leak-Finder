@@ -90,6 +90,8 @@ export interface CaseState {
   recoveryRequestedAt?: number | null
   recoveryResolvedAt?: number | null
   recoveredAmount?: number | null
+  /** Preserved from old cases when a later verified settlement replaces an unproved total. */
+  legacyRecoveredAmount?: number | null
   recoveryOutcomeNote?: string | null
   /** Structured reason captured when dismissing a finding — feedback for detection, not just "no". */
   dismissalTag?: DismissalTag | null

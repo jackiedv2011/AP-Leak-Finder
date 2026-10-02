@@ -125,7 +125,8 @@ describe('ladder — fresh audit', () => {
     expect(l.flaggedCount).toBe(5)
     expect(l.counts.potential).toBe(3)
     expect(l.potential).toBe(1750)
-    expect(l.atRisk).toBe(720)
+    expect(l.atRisk).toBe(0)
+    expect(l.atRiskByCurrency.Unknown).toBe(720)
     expect(l.counts.verified).toBe(3)
     expect(l.verified).toBe(1750)
     expect(l.awaitingDecision).toBe(1750)
@@ -151,6 +152,17 @@ describe('ladder — the recovery lifecycle moves money along, never duplicating
     const disputed = recordVendorUpdate(partial, { status: 'disputed', note: 'Disputes the remainder', at: 500 })
     env = setCaseState(env, alpha.id, disputed)
     expect(vendorCommitments(env)).toMatchObject({ confirmed: 0, pendingReturn: 0 })
+  })
+
+  it('counts an accepted partial claim as pending until its return is proved', () => {
+    let env = baseline()
+    const finding = findingFor(env, 'Alpha')
+    const requested = startRecoveryRequest(approveRecovery(confirmCase(null), { at: 100, knownBeforeReclaim: false }), 1000, 200)
+    const accepted = recordVendorUpdate(requested, { status: 'partial_acceptance', note: 'Will return part', amount: 400, at: 300 })
+    env = setCaseState(env, finding.id, accepted)
+    expect(vendorCommitments(env)).toMatchObject({ confirmed: 400, pendingReturn: 400 })
+    env = setCaseState(env, finding.id, verifyRecovery(accepted, { amount: 150, method: 'refund', source: 'bank', reference: 'ACH-1', settledAt: 400 }))
+    expect(vendorCommitments(env)).toMatchObject({ confirmed: 250, pendingReturn: 250 })
   })
 
   it('does not invent a vendor commitment amount when a partial claim, promise, or credit has no amount', () => {
@@ -304,7 +316,8 @@ describe('ladder — the recovery lifecycle moves money along, never duplicating
     expect(l.recovered).toBe(1750)
     expect(l.potential).toBe(0)
     expect(l.verified).toBe(0)
-    expect(l.atRisk).toBe(720)
+    expect(l.atRisk).toBe(0)
+    expect(l.atRiskByCurrency.Unknown).toBe(720)
     // A missed discount is a future saving, not a prevented payment: protected stays zero.
     expect(l.protected).toBe(0)
     expect(l.potential + l.recovered).toBe(1750)

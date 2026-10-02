@@ -206,8 +206,18 @@ export function Audits({
                 <div>
                   <div style={{ fontWeight: 500 }}>{batch.sourceLabel}</div>
                   <div className="wk-table-sub">
-                    {batch.mode === 'sample' ? 'Sample data' : 'Uploaded CSV'} · {batch.recordCount} {plural(batch.recordCount, 'record')}
+                    {batch.mode === 'sample' ? 'Sample data' : 'Uploaded CSV'} · {batch.recordCount} newly imported · {batch.skippedCount} rejected · {(batch.rowResults ?? []).filter((row) => row.status === 'exact_duplicate' || row.status === 'possible_overlap').length} overlapping
                   </div>
+                  {batch.rowResults?.some((row) => row.status !== 'newly_imported') ? (
+                    <details className="wk-table-sub" style={{ marginTop: 6 }}>
+                      <summary>Review skipped and uncertain rows</summary>
+                      <ul className="wk-list">
+                        {batch.rowResults.filter((row) => row.status !== 'newly_imported').map((row, index) => (
+                          <li key={`${row.rowNumber}-${index}`}>Row {row.rowNumber}: {row.reason}</li>
+                        ))}
+                      </ul>
+                    </details>
+                  ) : null}
                 </div>
                 <span className="wk-dim" style={{ fontSize: 12.5 }}>
                   {when(batch.importedAt)}

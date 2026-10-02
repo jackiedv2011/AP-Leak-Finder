@@ -224,7 +224,10 @@ export function mergeImport(env: LedgerEnvironment | null, input: MergeImportInp
   // Keep findings with decisions/recovery history visible even when new rows supersede the rule result.
   const currentIds=new Set(result.findings.map(f=>f.id))
   const superseded=base.result.findings.filter(f=>!currentIds.has(f.id))
-  for(const old of superseded) if(base.caseStates[old.id]) result.findings.push({ ...old, requiresRevalidation:true, potentialAmountMinor:null, classification:'review_needed', class:'review', suppressionReason:'Source records changed after this finding. Revalidate the evidence against the current ledger.' })
+  for(const old of superseded) if(base.caseStates[old.id]) {
+    caseStates[old.id] = { ...base.caseStates[old.id], requiresRevalidation: true }
+    result.findings.push({ ...old, requiresRevalidation:true, potentialAmountMinor:null, classification:'review_needed', class:'review', suppressionReason:'Source records changed after this finding. Revalidate the evidence against the current ledger.' })
+  }
 
   const previousFindingIds = new Set(base.result.findings.map((f) => f.id))
   const newFindingIds = result.findings.filter((f) => !previousFindingIds.has(f.id)).map((f) => f.id)
@@ -268,19 +271,11 @@ export function recordEvidence(env: LedgerEnvironment, findingId: string, eviden
   const classification = gate.eligible ? 'recovery_candidate' : original.type==='bank_account_change' ? 'preventive_security' : ['unclaimed_discount','missed_discount'].includes(original.type) ? 'future_savings' : 'review_needed'
   const updated: Finding = { ...finding, ...gate, classification, class: gate.eligible ? 'recoverable' : classification==='future_savings' ? 'opportunity' : 'review', requiresRevalidation:!gate.eligible }
   const state=env.caseStates[findingId]
-  return { ...env, updatedAt:Date.now(), result:{...env.result,findings:env.result.findings.map(f=>f.id===findingId ? updated : f)}, historicalFindings:[...(env.historicalFindings??[]),original], caseStates:state ? {...env.caseStates,[findingId]:{...state,requiresRevalidation:!gate.eligible,approvedAt:null}} : env.caseStates }
+  return { ...env, updatedAt:Date.now(), result:{...env.result,findings:env.result.findings.map(f=>f.id===findingId ? updated : f)}, historicalFindings:[...(env.historicalFindings??[]),original], caseStates:state ? {...env.caseStates,[findingId]:{...state,requiresRevalidation:!gate.eligible,approvedAt:state.recoveryStage==='confirmed' ? null : state.approvedAt}} : env.caseStates }
 }
 
 export function getCaseState(env: LedgerEnvironment, findingId: string): CaseState {
-  const state = env.caseStates[findingId] ?? EMPTY_CASE_STATE
-  // Requests sent before amounts were stored used the finding's value on screen.
-  // Keep that value so money that actually came back can still be recorded; it
-  // never authorizes new outreach, which re-checks the evidence gate.
-  if (state.recoveryStage && state.recoveryStage !== 'confirmed' && state.requestedAmount == null) {
-    const finding = env.result.findings.find((row) => row.id === findingId)
-    if (finding) return { ...state, requestedAmount: finding.flaggedAmount ?? finding.dollarImpact }
-  }
-  return state
+  return env.caseStates[findingId] ?? EMPTY_CASE_STATE
 }
 
 export function setCaseState(env: LedgerEnvironment, findingId: string, state: CaseState): LedgerEnvironment {

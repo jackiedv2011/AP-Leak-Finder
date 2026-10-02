@@ -3,6 +3,7 @@ import { formatCurrency, plural } from '@/lib/format'
 import type { RecoveryStage } from '@/ledger/caseState'
 import type { LedgerEnvironment } from '@/ledger/store'
 import { recoveryNextAction, recoveryStatusLabel, requiresCustomerAction } from '@/recovery/model'
+import { verifiedReturned } from '@/recovery/financials'
 import { ladder, recoveries, vendorCommitments, type Opportunity } from '../selectors'
 import { useHeadlineMoney } from '../preferences'
 import { CountUp } from './CountUp'
@@ -18,9 +19,9 @@ const short = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' 
 /** What a case is worth right now: the open balance while it is out, what came back once it is done. */
 function caseValue(o: Opportunity): { amount: number; label: string } {
   const { state, finding } = o
-  if (state.recoveryStage === 'recovered') return { amount: state.recoveredAmount ?? 0, label: (state.recoveredAmount ?? 0) > 0 ? 'returned' : 'amount missing' }
-  if (state.recoveryStage === 'requested') return { amount: Math.max(0, (state.requestedAmount ?? finding.dollarImpact) - (state.recoveredAmount ?? 0)), label: 'outstanding' }
-  if (state.recoveryStage === 'not_recovered') return { amount: state.requestedAmount ?? finding.dollarImpact, label: 'unreturned' }
+  if (state.recoveryStage === 'recovered') return { amount: verifiedReturned(state), label: verifiedReturned(state) > 0 ? 'returned' : 'amount missing' }
+  if (state.recoveryStage === 'requested') return { amount: Math.max(0, (state.requestedAmount ?? 0) - verifiedReturned(state)), label: state.requestedAmount == null ? 'amount missing' : 'outstanding' }
+  if (state.recoveryStage === 'not_recovered') return { amount: state.requestedAmount ?? 0, label: state.requestedAmount == null ? 'amount missing' : 'unreturned' }
   return { amount: finding.dollarImpact, label: 'to request' }
 }
 
@@ -56,7 +57,7 @@ export function Recoveries({ env, onOpenCase, onOpenFindings }: { env: LedgerEnv
   }
 
   const needsAction = rows
-    .filter(({ state, finding }) => requiresCustomerAction(state, now, finding.class !== 'recoverable'))
+    .filter(({ state, finding }) => requiresCustomerAction(state, now, finding.class !== 'recoverable' && !(['exact_duplicate', 'near_duplicate'].includes(finding.type) && state.recoveryStage === 'requested' && state.requestedAmount != null)))
     .sort((a, b) => (recoveryNextAction(a.state, now).dueAt ?? Infinity) - (recoveryNextAction(b.state, now).dueAt ?? Infinity) || b.finding.dollarImpact - a.finding.dollarImpact)
 
   return (
