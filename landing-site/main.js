@@ -99,33 +99,7 @@
     splitTimer = setTimeout(() => { splitAll(); ScrollTrigger.refresh(); }, 150);
   });
 
-  // ---------- hover-loop (text / icon roll) ----------
-  $$('.hover-loop').forEach(hl => {
-    const first = $(':scope > .inner', hl);
-    if (!first) return;
-    const second = first.cloneNode(true);
-    first.classList.add('first');
-    second.classList.add('second');
-    second.setAttribute('aria-hidden', 'true');
-    second.removeAttribute('id');
-    $$('[id]', second).forEach(el => el.removeAttribute('id'));
-    hl.appendChild(second);
-    gsap.set(second, { x: 0, y: 0 });
-
-    const dir = ['up-right', 'down-right', 'right', 'left'].find(d => hl.classList.contains(d)) || 'up';
-    const tl = gsap.timeline({ paused: true, defaults: { duration: parseFloat(hl.dataset.duration || .3), ease: 'power1.inOut' } });
-    if (dir === 'up') tl.fromTo(first, { yPercent: 0 }, { yPercent: -100 }, 0).fromTo(second, { yPercent: 100 }, { yPercent: 0 }, 0);
-    if (dir === 'right') tl.fromTo(first, { xPercent: 0 }, { xPercent: 100 }, 0).fromTo(second, { xPercent: -100 }, { xPercent: 0 }, 0);
-    if (dir === 'left') tl.fromTo(first, { xPercent: 0 }, { xPercent: -100 }, 0).fromTo(second, { xPercent: 100 }, { xPercent: 0 }, 0);
-    if (dir === 'up-right') tl.fromTo(first, { xPercent: 0, yPercent: 0 }, { xPercent: 100, yPercent: -100 }, 0).fromTo(second, { xPercent: -100, yPercent: 100 }, { xPercent: 0, yPercent: 0 }, 0);
-    if (dir === 'down-right') tl.fromTo(first, { xPercent: 0, yPercent: 0 }, { xPercent: 100, yPercent: 100 }, 0).fromTo(second, { xPercent: -100, yPercent: -100 }, { xPercent: 0, yPercent: 0 }, 0);
-
-    const trigger = hl.closest('a, button, .entry-item1, [data-hover-host]') || hl;
-    trigger.addEventListener('mouseenter', () => tl.play());
-    trigger.addEventListener('mouseleave', () => tl.reverse());
-  });
-
-  // ---------- button hover state ----------
+  // ---------- button hover state (colour only: labels and icons stay where they are) ----------
   $$('.cta-button, .cta-button-square').forEach(btn => {
     const host = btn.closest('a, button, [data-hover-host]') || btn;
     host.addEventListener('mouseenter', () => btn.classList.add('hovering'));
@@ -621,8 +595,8 @@
   const gridList = $('.grid1 .content');
   if (gridList) {
     gsap.fromTo($$('.grid-item', gridList), { rotationY: -30 }, { rotationY: 0, scrollTrigger: { trigger: gridList, start: 'top bottom', end: 'top center', scrub: true } });
-    // mouse 3d tilt (amount 20, lerp .05, as the reference) plus a pan: the wordmark
-    // glides toward the cursor inside the tile, like looking around through a window
+    // mouse 3d tilt (amount 20, lerp .05) plus a pan: the wordmark glides toward the
+    // cursor inside the tile, like looking around through a window
     $$('.grid-item-brand', gridList).forEach(tile => {
       const target = $('.m3d', tile);
       const mark = $('.wm', tile);
@@ -679,26 +653,6 @@
     const tl = gsap.timeline({ scrollTrigger: { trigger: grid, start: 'top bottom', end: 'top center', scrub: true } });
     tl.fromTo(raised, { y: '50%' }, { y: 0, ease: 'power1.inOut' }, 0)
       .fromTo(cells, { rotationY: -30 }, { rotationY: 0, ease: 'power1.inOut' }, 0);
-
-    // each card leans toward the cursor (15deg, eased)
-    $$('.mouse-3d-rotate', grid).forEach(el => {
-      const target = $('.rotate', el);
-      const s = { x: 0, y: 0, tx: 0, ty: 0, live: false };
-      el.addEventListener('mousemove', e => {
-        const r = el.getBoundingClientRect();
-        s.tx = (e.clientX - r.left) / r.width * 2 - 1;
-        s.ty = (e.clientY - r.top) / r.height * 2 - 1;
-        s.live = true;
-      });
-      el.addEventListener('mouseleave', () => { s.tx = 0; s.ty = 0; });
-      gsap.ticker.add(() => {
-        if (!s.live) return;
-        s.x += (s.tx - s.x) * .05;
-        s.y += (s.ty - s.y) * .05;
-        target.style.transform = `rotateY(${s.x * 15}deg) rotateX(${s.y * -15}deg)`;
-        if (!s.tx && !s.ty && Math.abs(s.x) < 1e-3 && Math.abs(s.y) < 1e-3) { s.live = false; target.style.transform = ''; }
-      });
-    });
   });
 
   // ---------- article nav: light the section being read ----------

@@ -9,6 +9,7 @@ import { ClearLedgerDialog } from '@/components/audit/ClearLedgerDialog'
 import { LegacyImportDialog } from '@/components/audit/LegacyImportDialog'
 import { deferLegacyProjects, discardLegacyProjects, importLegacyProjects, legacyProjectsPresent, type LegacySummary } from '@/ledger/legacyMigration'
 import { WorkspaceShell } from '@/workspace/WorkspaceShell'
+import { PreferencesProvider } from '@/workspace/preferences'
 import { Launch } from '@/workspace/views/Launch'
 import { Dashboard } from '@/workspace/views/Dashboard'
 import { Audits } from '@/workspace/views/Audits'
@@ -556,8 +557,11 @@ export function AuditApp() {
   }
 
   if (running || route.entry !== null || !environment) {
+    // The dashboard's surface (tokens, accent and density on <html>), so the
+    // first screen, its dialogs and the tour already look like the workspace.
+    // The provider clears those attributes again when this branch unmounts.
     return (
-      <>
+      <PreferencesProvider>
         {legacyDialog}
         {tour}
         <Launch onRunSample={runSampleAudit} onUseOwn={() => openImport('new')} running={running} note={entryError ?? undefined} />
@@ -567,7 +571,7 @@ export function AuditApp() {
           reason={`You've used ${entitlements.usage.auditsThisMonth} of ${entitlements.limits.auditsPerMonth ?? '∞'} audits this month on the Free plan.`}
         />
         <ImportDialog open={importDialogOpen} onOpenChange={setImportDialogOpen} onImport={handleImport} error={entryError} intent="new" />
-      </>
+      </PreferencesProvider>
     )
   }
 

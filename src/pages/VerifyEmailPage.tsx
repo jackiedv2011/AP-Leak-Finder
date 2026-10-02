@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
-import { AuthLayout } from '@/pages/AuthLayout'
 import { nextAfterAuth } from '@/pages/authRedirect'
 import { useAuth } from '@/lib/auth/AuthContext'
 import type { AuthOutcome } from '@/lib/auth/types'
+import { AuthSplit, SplitField } from '@/pages/AuthSplit'
 
 /**
  * One request per token, shared across effect runs. React runs effects twice
@@ -44,52 +44,58 @@ export function VerifyEmailPage() {
     }
   }, [token, verifyEmail])
 
+  if (state.kind === 'working') {
+    return <AuthSplit title={['Confirming']} lede="Confirming your email. One moment." />
+  }
+
+  if (state.kind === 'done') {
+    return <AuthSplit title={['Confirmed']} lede="Email confirmed. Taking you to your dashboard." />
+  }
+
   return (
-    <AuthLayout>
-      <div className="wk-auth-card">
-        {state.kind === 'working' ? (
-          <div>
-            <h1>Confirming your email…</h1>
-            <p>One moment.</p>
-          </div>
-        ) : state.kind === 'done' ? (
-          <div>
-            <h1>Email confirmed</h1>
-            <p>Taking you to your dashboard.</p>
-          </div>
-        ) : (
-          <>
-            <div>
-              <h1>That link didn&apos;t work</h1>
-              <p>{state.message}</p>
-            </div>
-            {resent ? (
-              <div className="wk-success">If that address has an unconfirmed account, a new link is on its way.</div>
-            ) : (
-              <form
-                className="wk-auth-form"
-                onSubmit={async (event) => {
-                  event.preventDefault()
-                  await resendVerification(email)
-                  setResent(true)
-                }}
-                noValidate
-              >
-                <div className="wk-field">
-                  <label htmlFor="verify-email">Email</label>
-                  <input id="verify-email" className="wk-input" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} />
-                </div>
-                <button className="wk-btn" data-variant="primary" type="submit">
-                  Send a new link
-                </button>
-              </form>
-            )}
-            <p className="wk-auth-foot">
-              <a href="/login">Back to log in</a>
-            </p>
-          </>
-        )}
-      </div>
-    </AuthLayout>
+    <AuthSplit
+      title={['Link', "didn't work"]}
+      titleSize="long"
+      lede={state.message}
+      alternate={
+        <>
+          Already confirmed? <a href="/login">Log in</a>
+        </>
+      }
+    >
+      {resent ? (
+        <div className="rc-note" role="status">
+          If that address has an unconfirmed account, a new link is on its way.
+        </div>
+      ) : (
+        <form
+          className="rc-login-form"
+          onSubmit={async (event) => {
+            event.preventDefault()
+            await resendVerification(email)
+            setResent(true)
+          }}
+          noValidate
+        >
+          <SplitField id="verify-email" label="Email">
+            <input
+              id="verify-email"
+              className="rc-input"
+              type="email"
+              autoComplete="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              placeholder="you@company.com"
+            />
+          </SplitField>
+          <button className="rc-btn" data-theme="green" type="submit">
+            Send a new link
+          </button>
+        </form>
+      )}
+      <a className="rc-btn" data-theme="dark" href="/login">
+        Back to log in
+      </a>
+    </AuthSplit>
   )
 }

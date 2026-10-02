@@ -54,7 +54,13 @@ function ScannerRoute() {
   return <AuditApp />
 }
 
+/** Pages drawn in AuthSplit; index.html gives them the same data-route. */
+const AUTH_SPLIT_ROUTES = ['/login', '/signup', '/forgot-password', '/reset-password', '/verify-email']
+
 function RouteFallback() {
+  // The account pages are reached from the marketing site's fade-out, so they hold that blank
+  // grey frame (set in index.html) until they can fade in, rather than flashing a message.
+  if (AUTH_SPLIT_ROUTES.includes(window.location.pathname.replace(/\/+$/, ''))) return <main aria-busy="true" />
   return (
     <main className="grid min-h-[100dvh] place-items-center bg-[#f7f4ee] text-[#171716]" aria-busy="true">
       <p className="text-sm text-[#7c786f]">Loading Reclaim…</p>

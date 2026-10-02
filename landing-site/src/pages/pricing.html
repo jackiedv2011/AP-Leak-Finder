@@ -1,20 +1,26 @@
 ---
 title: Pricing — Reclaim
-description: Start free with unlimited uploads. Growth is $19.99 a month plus 15% of what actually comes back; Flat is $100 a month with no success fee.
+description: Reclaim's prices aren't set yet. What is settled: refunds and credits go straight to you, only money that actually comes back is counted as recovered, and nothing reaches a vendor without your approval.
 folder: pricing
 template: pricing
 ---
+  <!-- PRICING.
+       No prices, rates or plan limits are published here, because none have been decided: the product spec
+       (plans/RECLAIM_V2_PRODUCT_AND_PRICING_SPEC.md §45) says the economics are still to be modelled. This page
+       states only what is settled: what the product includes and in what order (§35), what counts as
+       recovered (§3, §22–23, §31, §40), who holds the money (§0) and who approves outreach (§17, §19). -->
+
   <!-- HERO (black): the pricing idea in one line, with jump rows -->
   <section class="section hero-solutions" theme="black">
     <div class="nav-slot" data-theme="black"></div>
     <div class="the-container">
       <div class="the-grid">
         <div class="content">
-          <h1 class="heading heading1 type-h2" data-split="h1">Find it free.<br>Get it <span class="highlight">back</span></h1>
-          <p class="desc type-body-medium cl-grey-500">Upload every ledger you have and see where money leaked, free. When you're ready to get it back, pick how you'd rather pay: a small monthly fee plus a share of what actually comes back, or one flat price and keep every dollar.</p>
+          <h1 class="heading heading1 type-h2" data-split="h1">You keep what<br>comes <span class="highlight">back</span></h1>
+          <p class="desc type-body-medium cl-grey-500">We haven't set prices yet, and we won't publish numbers we might have to change. What is settled: refunds and credits go straight to you, never through Reclaim, and money only counts as recovered once it has actually come back. A vendor promising a refund is not a recovery, so Reclaim never reports it as one.</p>
           <ul class="links">
-            <li><a href="#plans" class="hero-services-nav-item type-h4" data-idx="0"><span class="heading">Plans</span><span class="hover-loop down-right cta-button-square cta" theme="outline" size="large"><span class="inner"><svg class="icon"><use href="#i-arrow-dr"/></svg></span></span><span class="line"><span class="line-bg"></span></span></a></li>
-            <li><a href="#lifecycle" class="hero-services-nav-item type-h4" data-idx="1"><span class="heading">What a recovery goes through</span><span class="hover-loop down-right cta-button-square cta" theme="outline" size="large"><span class="inner"><svg class="icon"><use href="#i-arrow-dr"/></svg></span></span><span class="line"><span class="line-bg"></span></span></a></li>
+            <li><a href="#plans" class="hero-services-nav-item type-h4" data-idx="0"><span class="heading">What's included</span><span class="hover-loop down-right cta-button-square cta" theme="outline" size="large"><span class="inner"><svg class="icon"><use href="#i-arrow-dr"/></svg></span></span><span class="line"><span class="line-bg"></span></span></a></li>
+            <li><a href="#lifecycle" class="hero-services-nav-item type-h4" data-idx="1"><span class="heading">What counts as recovered</span><span class="hover-loop down-right cta-button-square cta" theme="outline" size="large"><span class="inner"><svg class="icon"><use href="#i-arrow-dr"/></svg></span></span><span class="line"><span class="line-bg"></span></span></a></li>
             <li><a href="#faq" class="hero-services-nav-item type-h4" data-idx="2"><span class="heading">FAQ</span><span class="hover-loop down-right cta-button-square cta" theme="outline" size="large"><span class="inner"><svg class="icon"><use href="#i-arrow-dr"/></svg></span></span><span class="line"><span class="line-bg"></span></span></a></li>
           </ul>
         </div>
@@ -24,7 +30,7 @@ template: pricing
 
   <div class="article-sections hide-nav">
 
-    <!-- PLANS: three tiers, then the terms that apply to all of them -->
+    <!-- WHAT'S INCLUDED: the three releases in the spec (§35), in order. These are stages, not tiers. -->
     <section class="rounded-section shouldAnimate hide-nav" id="plans" theme="white">
       <div class="bg bg-top" theme="black"></div>
       <div class="bg bg-bottom" theme="white"></div>
@@ -36,8 +42,8 @@ template: pricing
 
             <div class="article-module article-head">
               <div class="the-grid">
-                <div class="the-col"><div class="generic"><div class="icon"><svg aria-hidden="true"><use href="#i-tile-decide"/></svg></div><div class="name type-h5">Plans</div></div></div>
-                <h2 class="type-h3 heading" data-split="h2">Three tracks. Every check on all of them.</h2>
+                <div class="the-col"><div class="generic"><div class="icon"><svg aria-hidden="true"><use href="#i-tile-decide"/></svg></div><div class="name type-h5">What's included</div></div></div>
+                <h2 class="type-h3 heading" data-split="h2">What Reclaim does, in the order it arrives</h2>
               </div>
             </div>
 
@@ -45,67 +51,71 @@ template: pricing
               <div class="the-grid">
                 <ul class="plans">
 
-                  <li class="plan">
-                    <div class="plan-top">
-                      <div class="plan-name type-h5">Free</div>
-                      <p class="plan-note type-body-xs">See what you’re owed. Upload every ledger you have.</p>
-                      <div class="plan-price"><b>$0</b><span>/forever</span></div>
-                    </div>
-                    <ul class="plan-list type-body-xs">
-                      <li><span class="tick" aria-hidden="true"></span>Unlimited ledger uploads</li>
-                      <li><span class="tick" aria-hidden="true"></span>All eight checks on every file</li>
-                      <li><span class="tick" aria-hidden="true"></span>The 3 lowest-value findings of each upload, in full</li>
-                      <li><span class="tick" aria-hidden="true"></span>Recovery letters to read and copy</li>
-                      <li><span class="tick" aria-hidden="true"></span>Track what comes back by hand</li>
-                    </ul>
-                    <div class="plan-rate"><b>One audit</b> per ledger</div>
-                    <a href="/signup" class="cta cta-button plan-cta" size="large" theme="black"><span class="hover-loop"><span class="inner">Start free</span></span></a>
-                    <div class="plan-launch type-body-xs">Re-uploading a file, or a smaller piece of it, is flagged and doesn’t unlock more findings.</div>
-                  </li>
-
                   <li class="plan is-featured">
-                    <div class="plan-flag" aria-label="Most popular plan"></div>
                     <div class="plan-top">
-                      <div class="plan-name type-h5">Growth</div>
-                      <p class="plan-note type-body-xs">Pay when you get paid. The whole recovery, run for you.</p>
-                      <div class="plan-price"><b>$19.99</b><span>/mo</span></div>
+                      <div class="plan-name type-h5">Recovery core</div>
+                      <p class="plan-note type-body-xs">Everything a recovery needs, from the first finding to the money back.</p>
+                      <div class="plan-price plan-stage"><b>01</b><span>First</span></div>
                     </div>
                     <ul class="plan-list type-body-xs">
-                      <li><span class="tick" aria-hidden="true"></span>Every finding in every audit</li>
-                      <li><span class="tick" aria-hidden="true"></span>AI-drafted recovery emails from your records</li>
-                      <li><span class="tick" aria-hidden="true"></span>Automatic sending through your Gmail — coming soon</li>
-                      <li><span class="tick" aria-hidden="true"></span>Approvals, follow-ups and partial returns</li>
-                      <li><span class="tick" aria-hidden="true"></span>Full case history and accounting closeout</li>
-                      <li><span class="tick" aria-hidden="true"></span>Every-vendor reports</li>
-                      <li><span class="tick" aria-hidden="true"></span>Unlimited uploads and re-audits</li>
+                      <li><span class="tick" aria-hidden="true"></span>Connect QuickBooks Online or Xero, or upload a CSV</li>
+                      <li><span class="tick" aria-hidden="true"></span>Duplicate payments and bills paid twice</li>
+                      <li><span class="tick" aria-hidden="true"></span>Overpayments and unused vendor credits</li>
+                      <li><span class="tick" aria-hidden="true"></span>The evidence and a verification check on every finding</li>
+                      <li><span class="tick" aria-hidden="true"></span>Recovery cases you approve before anything goes out</li>
+                      <li><span class="tick" aria-hidden="true"></span>Vendor emails, reply tracking and follow-ups</li>
+                      <li><span class="tick" aria-hidden="true"></span>The Recovery Ledger, and checks that the money came back</li>
+                      <li><span class="tick" aria-hidden="true"></span>Steps to reconcile it in your books</li>
+                      <li><span class="tick" aria-hidden="true"></span>Dashboard and a full history of every action</li>
                     </ul>
-                    <div class="plan-rate"><b>+ 15%</b> of what’s recovered</div>
-                    <a href="/signup" class="cta cta-button plan-cta" size="large" theme="green"><span class="hover-loop"><span class="inner">Get Growth</span></span></a>
-                    <div class="plan-launch type-body-xs">The 15% applies only to money that actually comes back.</div>
                   </li>
 
                   <li class="plan">
                     <div class="plan-top">
-                      <div class="plan-name type-h5">Flat</div>
-                      <p class="plan-note type-body-xs">Keep every dollar. One predictable price.</p>
-                      <div class="plan-price"><b>$100</b><span>/mo</span></div>
+                      <div class="plan-name type-h5">Recovery agent</div>
+                      <p class="plan-note type-body-xs">More of the routine work done for you, inside the same approvals.</p>
+                      <div class="plan-price plan-stage"><b>02</b><span>Next</span></div>
                     </div>
                     <ul class="plan-list type-body-xs">
-                      <li><span class="tick" aria-hidden="true"></span>Everything in Growth</li>
-                      <li><span class="tick" aria-hidden="true"></span>No success fee — 100% of every recovery is yours</li>
-                      <li><span class="tick" aria-hidden="true"></span>One fixed monthly cost</li>
+                      <li><span class="tick" aria-hidden="true"></span>Vendor replies read and sorted</li>
+                      <li><span class="tick" aria-hidden="true"></span>Evidence gathered and cases summarised automatically</li>
+                      <li><span class="tick" aria-hidden="true"></span>Follow-ups scheduled for you</li>
+                      <li><span class="tick" aria-hidden="true"></span>A recommendation: cash refund or vendor credit</li>
+                      <li><span class="tick" aria-hidden="true"></span>Suggested next steps, and cases ranked by what they're worth</li>
+                      <li><span class="tick" aria-hidden="true"></span>Accounting guidance for closing each case</li>
+                      <li><span class="tick" aria-hidden="true"></span>Better vendor matching that learns from what you dismiss</li>
+                      <li><span class="tick" aria-hidden="true"></span>How long each case has been open</li>
                     </ul>
-                    <div class="plan-rate"><b>0%</b> success fee</div>
-                    <a href="/signup" class="cta cta-button plan-cta" size="large" theme="black"><span class="hover-loop"><span class="inner">Get Flat</span></span></a>
-                    <div class="plan-launch type-body-xs">Costs less than Growth once you recover more than <b>$533.40</b> a month.</div>
                   </li>
+
+                  <li class="plan">
+                    <div class="plan-top">
+                      <div class="plan-name type-h5">Recovery network</div>
+                      <p class="plan-note type-body-xs">Reclaim sees more than your ledger, and keeps watching.</p>
+                      <div class="plan-price plan-stage"><b>03</b><span>After that</span></div>
+                    </div>
+                    <ul class="plan-list type-body-xs">
+                      <li><span class="tick" aria-hidden="true"></span>Your AP inbox</li>
+                      <li><span class="tick" aria-hidden="true"></span>Supplier statements, requested, read and reconciled</li>
+                      <li><span class="tick" aria-hidden="true"></span>Credits your vendor shows that your books don't</li>
+                      <li><span class="tick" aria-hidden="true"></span>Refunds confirmed against your bank</li>
+                      <li><span class="tick" aria-hidden="true"></span>Invoices, documents and purchase orders</li>
+                      <li><span class="tick" aria-hidden="true"></span>Root causes: why the money left</li>
+                      <li><span class="tick" aria-hidden="true"></span>Continuous monitoring for new mistakes</li>
+                    </ul>
+                  </li>
+
                 </ul>
                 <ul class="plan-terms type-body-small">
-                  <li><span class="tick" aria-hidden="true"></span>No setup fees</li>
-                  <li><span class="tick" aria-hidden="true"></span>Cancel anytime</li>
-                  <li><span class="tick" aria-hidden="true"></span>The success fee only applies to money actually recovered</li>
-                  <li><span class="tick" aria-hidden="true"></span>Paid plans open soon — nothing is charged today</li>
+                  <li><span class="tick" aria-hidden="true"></span>Refunds and credits go straight to you</li>
+                  <li><span class="tick" aria-hidden="true"></span>A promise is never counted as recovered</li>
+                  <li><span class="tick" aria-hidden="true"></span>You approve before the first vendor email</li>
+                  <li><span class="tick" aria-hidden="true"></span>Setup, billing and cancelling all happen in the product</li>
                 </ul>
+                <div class="plan-ask">
+                  <p class="type-body-large">These are stages of the product, not plans, and none of them has a price yet. Tell us about your business and we'll tell you where things stand.</p>
+                  <a href="#contact" class="cta cta-button" size="large" theme="black" data-modal="talk"><span class="hover-loop"><span class="inner">Talk to Us</span></span></a>
+                </div>
               </div>
             </div>
 
@@ -114,7 +124,7 @@ template: pricing
       </div>
     </section>
 
-    <!-- LIFECYCLE: what the Growth success fee is actually charged against -->
+    <!-- LIFECYCLE: what "recovered" means -->
     <section class="rounded-section hide-nav" id="lifecycle" theme="white">
       <div class="bg bg-top" theme="white"></div>
       <div class="bg bg-bottom" theme="white"></div>
@@ -126,7 +136,7 @@ template: pricing
             <div class="article-module article-head">
               <div class="the-grid">
                 <div class="the-col"><div class="generic"><div class="icon"><svg aria-hidden="true"><use href="#i-tile-row"/></svg></div><div class="name type-h5">The Recovery Ledger</div></div></div>
-                <h2 class="type-h3 heading" data-split="h2">Billed at the last step, not the first</h2>
+                <h2 class="type-h3 heading" data-split="h2">Counted when it's back, not when it's found</h2>
               </div>
             </div>
 
@@ -134,7 +144,7 @@ template: pricing
               <div class="the-grid">
                 <div class="left">
                   <div class="desc type-body-headline">Found money and recovered money are different numbers, and Reclaim never blurs them.</div>
-                  <div class="desc2 type-body-large">Every case moves through the same five stages, and the Recovery Ledger records the amount at each one. Growth’s 15% applies to the last stage only: cash that settled, or a credit that actually offset a real bill. Nothing earlier is billable, and Flat never charges a fee at all.</div>
+                  <div class="desc2 type-body-large">Every case moves through the same stages, and the Recovery Ledger records the amount at each one, along with how the issue was discovered and whether your team already knew about it. Only one stage counts as recovered: cash that settled, or a credit that actually offset a real bill.</div>
                 </div>
               </div>
             </div>
@@ -142,11 +152,11 @@ template: pricing
             <div class="article-module stage-row">
               <div class="the-grid">
                 <ol class="stages">
-                  <li class="stage"><span class="stage-no type-mono">01</span><div class="stage-name type-h5">Discover</div><p class="type-body-xs">A signal turns into one case: same vendor, same obligation, both payments settled.</p></li>
+                  <li class="stage"><span class="stage-no type-mono">01</span><div class="stage-name type-h5">Discover</div><p class="type-body-xs">Related signals become one case: same vendor, same obligation, both payments settled.</p></li>
                   <li class="stage"><span class="stage-no type-mono">02</span><div class="stage-name type-h5">Verify</div><p class="type-body-xs">The records are checked against each other until the amount is provable, or marked as needing review.</p></li>
-                  <li class="stage"><span class="stage-no type-mono">03</span><div class="stage-name type-h5">Recover</div><p class="type-body-xs">You approve it. Reclaim drafts the request from the records and tracks every reply; you send it from your own email.</p></li>
-                  <li class="stage"><span class="stage-no type-mono">04</span><div class="stage-name type-h5">Reconcile</div><p class="type-body-xs">The refund or credit is confirmed against your books, and the accounting is closed out.</p></li>
-                  <li class="stage is-billed"><span class="stage-no type-mono">05</span><div class="stage-name type-h5">Recovered</div><p class="type-body-xs">Money is back. This is the only figure Growth’s success fee is calculated on.</p></li>
+                  <li class="stage"><span class="stage-no type-mono">03</span><div class="stage-name type-h5">Recover</div><p class="type-body-xs">You approve it. Reclaim sends the request with the evidence, tracks every reply, and follows up.</p></li>
+                  <li class="stage is-counted"><span class="stage-no type-mono">04</span><div class="stage-name type-h5">Recovered</div><p class="type-body-xs">The refund settled, or the credit offset a real bill. This is the only figure Reclaim reports as recovered.</p></li>
+                  <li class="stage"><span class="stage-no type-mono">05</span><div class="stage-name type-h5">Reconcile</div><p class="type-body-xs">Reclaim gives you the accounting steps to close the case in your books, and you confirm them.</p></li>
                 </ol>
               </div>
             </div>
@@ -175,13 +185,14 @@ template: pricing
               <div class="the-grid">
                 <div class="the-col">
                   <ul class="items">
-                    <li><details><summary class="type-body-medium">What does Free actually include?</summary><p class="desc type-body-small">Unlimited uploads, and every check runs on every file. For each ledger you upload you see the three lowest-value findings in full, with their evidence and a recovery letter you can copy. The larger findings are listed but locked until you move to Growth or Flat.</p></details></li>
-                    <li><details><summary class="type-body-medium">Can I upload the same file again to see other findings?</summary><p class="desc type-body-small">No. On Free each ledger is audited once. Reclaim recognizes a repeat by its payments, not its file name, so a renamed copy or a smaller piece of a file you already uploaded is flagged and doesn’t unlock anything new. A new month’s export is a new ledger and is welcome.</p></details></li>
-                    <li><details><summary class="type-body-medium">What counts as recovered?</summary><p class="desc type-body-small">Cash that settled, or a credit that actually offset a real bill. A vendor agreeing that they owe you is not recovered, and neither is a credit note sitting unapplied. Growth’s 15% applies only once value has genuinely come back.</p></details></li>
-                    <li><details><summary class="type-body-medium">Growth or Flat?</summary><p class="desc type-body-small">Same features. Growth costs $19.99 a month plus 15% of what’s recovered; Flat is $100 a month with no fee. If you expect to recover more than $533.40 a month, Flat costs less.</p></details></li>
-                    <li><details><summary class="type-body-medium">Do you email our vendors for us?</summary><p class="desc type-body-small">Reclaim drafts every recovery email — with AI on Growth and Flat — and you send it from your own inbox. Automatic sending through your Gmail is coming soon, and even then nothing goes to a vendor without your approval.</p></details></li>
-                    <li><details><summary class="type-body-medium">Can Reclaim move money or change our books?</summary><p class="desc type-body-small">No. You upload a CSV export; Reclaim never connects to your bank or accounting system, cannot move money, and never takes custody of recovered funds.</p></details></li>
-                    <li><details><summary class="type-body-medium">Is there a setup fee or a contract?</summary><p class="desc type-body-small">No setup fee, no contract, cancel anytime. Paid plans open soon — nothing is charged today.</p></details></li>
+                    <li><details><summary class="type-body-medium">How much does Reclaim cost?</summary><p class="desc type-body-small">We haven't set prices yet, and we'd rather not publish numbers we might have to change. <a href="#contact" data-modal="talk">Talk to us</a> and we'll tell you where things stand. Whatever the price turns out to be, refunds and credits go directly to you, and Reclaim never reports promised money as recovered.</p></details></li>
+                    <li><details><summary class="type-body-medium">What counts as recovered?</summary><p class="desc type-body-small">Cash that settled, or a credit that actually offset a real bill. A vendor agreeing that they owe you is not recovered. A credit note sitting unapplied is not recovered either: it is tracked as confirmed but unapplied until it is used.</p></details></li>
+                    <li><details><summary class="type-body-medium">Will any of the price depend on what's recovered?</summary><p class="desc type-body-small">That isn't decided. If it does, it will be worked out from the Recovery Ledger, which records for every case how the issue was discovered, when, and whether your team already knew about it. An issue your team was already working on would not count as Reclaim's.</p></details></li>
+                    <li><details><summary class="type-body-medium">What about a credit we already had?</summary><p class="desc type-body-small">An unused vendor credit is money you already own, so recovering it may need no outreach at all. Reclaim shows you the credit and recommends whether to apply it to an upcoming bill or ask for a cash refund. It counts once the credit is actually used or the refund arrives.</p></details></li>
+                    <li><details><summary class="type-body-medium">Can Reclaim move money or change our books?</summary><p class="desc type-body-small">No. The accounting connection is read-only. Reclaim cannot move money, cannot alter your ledger, and cannot send anything to a vendor without your approval. Refunds go directly to you; Reclaim never takes custody of recovered funds.</p></details></li>
+                    <li><details><summary class="type-body-medium">Will you contact our vendors without asking?</summary><p class="desc type-body-small">No. The first outreach on any case needs your approval, and you can mark any vendor Do Not Contact: detection keeps running, outreach stops. Later, we plan to let you choose rules under which approved playbooks start on their own, such as exact duplicates under an amount you set. That mode, Recovery Autopilot, is software you configure, not a person working your cases, and it isn't part of the first release.</p></details></li>
+                    <li><details><summary class="type-body-medium">What happens to a disputed case?</summary><p class="desc type-body-small">Automation stops and the case comes back to you. Anything subjective, contested, or legal is a decision for your team, not a step a playbook takes on its own.</p></details></li>
+                    <li><details><summary class="type-body-medium">How do we get started?</summary><p class="desc type-body-small">Onboarding is self-service: connect QuickBooks Online or Xero, or upload your exports, choose how far back to look, and the first sweep starts. Billing and cancelling happen in the product too, with no call needed.</p></details></li>
                   </ul>
                 </div>
               </div>

@@ -5,11 +5,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Reclaim — Find money your business should still have</title>
-<meta name="description" content="Upload your transactions, bills, or accounting export. Reclaim finds duplicate payments, overpayments, unused credits, and other clear mistakes, shows you the evidence, and helps you recover the money.">
+<meta name="description" content="Connect your accounting system or upload an export. Reclaim finds duplicate payments, overpayments, unused credits and bills paid twice, shows you the evidence, and helps you recover the money once you approve.">
 <link rel="icon" type="image/svg+xml" href="/assets/favicon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Anton&family=Barlow+Condensed:wght@700&family=Bebas+Neue&family=Inter:ital,opsz,wght@0,14..32,300..800;1,14..32,300..800&family=JetBrains+Mono:wght@400;500&display=block" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Barlow+Condensed:wght@700&family=Bebas+Neue&family=Geist:wght@400..700&family=Inter:ital,opsz,wght@0,14..32,300..800;1,14..32,300..800&family=JetBrains+Mono:wght@400;500&display=block" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11.2.6/swiper-bundle.min.css">
 <link rel="stylesheet" href="/styles.css">
 <link rel="stylesheet" href="/pages.css">
@@ -64,6 +64,25 @@
   <symbol id="hx-wheel" viewBox="-13 -11.5 26 23">
     <path d="M-2.056,-4.6 L-5.751,-11 L5.751,-11 L2.056,-4.6 Z"/><path d="M2.956,-4.081 L6.651,-10.481 L12.402,-0.520 L5.012,-0.520 Z"/><path d="M5.012,0.520 L12.402,0.520 L6.651,10.481 L2.956,4.081 Z"/><path d="M2.056,4.6 L5.751,11 L-5.751,11 L-2.056,4.6 Z"/><path d="M-2.956,4.081 L-6.651,10.481 L-12.402,0.520 L-5.012,0.520 Z"/><path d="M-5.012,-0.520 L-12.402,-0.520 L-6.651,-10.481 L-2.956,-4.081 Z"/>
   </symbol>
+  <!-- dashboard mock-ups: the lucide icons the workspace uses (src/workspace/WorkspaceShell.tsx) -->
+  <symbol id="d-grid" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></g></symbol>
+  <symbol id="d-search" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></g></symbol>
+  <symbol id="d-banknote" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></g></symbol>
+  <symbol id="d-report" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4M8 18v-2M12 18v-4M16 18v-6"/></g></symbol>
+  <symbol id="d-folder" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M10.7 20H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H20a2 2 0 0 1 2 2v4.1"/><circle cx="17" cy="17" r="3"/><path d="m21 21-1.9-1.9"/></g></symbol>
+  <symbol id="d-settings" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></g></symbol>
+  <symbol id="d-sliders" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 4h-7M10 4H3M21 12h-9M8 12H3M21 20h-5M12 20H3M14 2v4M8 10v4M16 18v4"/></g></symbol>
+  <symbol id="d-panel" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18M16 15l-3-3 3-3"/></g></symbol>
+  <symbol id="d-moon" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></g></symbol>
+  <symbol id="d-chev-r" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="d-chev-d" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="d-arrow-r" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="d-plus" viewBox="0 0 24 24"><path d="M5 12h14M12 5v14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="d-clock" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></g></symbol>
+  <symbol id="d-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="d-send" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z"/><path d="m21.854 2.147-10.94 10.939"/></g></symbol>
+  <symbol id="d-upload" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5M12 3v12"/></g></symbol>
+  <symbol id="d-mail" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></g></symbol>
 </svg>
 
 <!-- intro (first page of a visit only) -->
@@ -108,7 +127,13 @@
     </div>
     <div class="content the-grid">
       <h1 class="heading heading1 type-h1" data-split="h1">Find money<br>your business<br>should still<br>have.</h1>
-      <p class="desc type-body-large">Upload your transactions, bills, or accounting export. Reclaim finds duplicate payments, overpayments, unused credits, and other clear mistakes, shows you the evidence, and helps you recover the money.</p>
+      <div class="desc">
+        <p class="type-body-large">Connect QuickBooks Online or Xero, or upload an export. Reclaim finds duplicate payments, overpayments and unused credits, shows you the proof, and follows each one through until the money is back.</p>
+        <div class="hero-ctas">
+          <a href="/audit?entry=sample" class="cta cta-button" size="large" theme="black"><span class="hover-loop"><span class="inner">Get Started</span></span></a>
+          <a href="/how-it-works" class="cta cta-button has-arrow" size="large" theme="none"><span class="hover-loop"><span class="inner">See how it works<svg class="icon"><use href="#i-arrow"/></svg></span></span></a>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -122,9 +147,9 @@
       <section class="section content-columns" theme="black">
         <div class="the-grid">
           <div class="columns">
-            <div class="content-column"><h3 class="heading type-h3" data-split="h2">Upload.</h3><p class="desc type-body-medium">Add a CSV, accounting export, bills, invoices, or payment history. No complicated setup.</p></div>
-            <div class="content-column"><h3 class="heading type-h3" data-split="h2">Find.</h3><p class="desc type-body-medium">Reclaim finds money you may be owed: duplicate payments, overpayments, unused credits, and other clear mistakes. Every finding shows the records, the amounts, and the evidence.</p></div>
-            <div class="content-column"><h3 class="heading type-h3" data-split="h2">Recover.</h3><p class="desc type-body-medium">Reclaim prepares the vendor message, tracks the response, follows up, and confirms when the refund or credit arrives.</p></div>
+            <div class="content-column"><span class="step-no type-mono">01</span><h3 class="heading type-h4" data-split="h2">Connect.</h3><p class="desc type-body-medium">Read-only access to QuickBooks Online or Xero, or a CSV export of your bills and payments.</p></div>
+            <div class="content-column"><span class="step-no type-mono">02</span><h3 class="heading type-h4" data-split="h2">Find.</h3><p class="desc type-body-medium">Duplicate payments, bills paid twice, overpayments and unused credits, each with the records behind it.</p></div>
+            <div class="content-column"><span class="step-no type-mono">03</span><h3 class="heading type-h4" data-split="h2">Recover.</h3><p class="desc type-body-medium">You approve the request. Reclaim sends it, tracks the reply and follows up until the refund or credit arrives.</p></div>
           </div>
         </div>
       </section>
@@ -134,10 +159,8 @@
           <div class="header" theme="black" style="grid-column-end:span 8">
             <h2 class="heading type-h2" data-split="h2">Most tools<br>stop here.<br>Reclaim keeps going.</h2>
             <div class="desc type-body-large">
-              <p>Most tools hand you a finding: possible duplicate payment, $4,280.</p>
-              <p>Then the work lands back on your team.</p>
-              <p>Reclaim keeps going: evidence gathered, case reviewed, vendor contacted, response received, refund promised, refund confirmed.</p>
-              <p>Finding the mistake is only the beginning. Reclaim helps move the issue from a possible finding to an actual outcome. It organizes the evidence, helps prepare the claim, tracks the vendor conversation, manages follow-ups, and confirms whether the money actually came back.</p>
+              <p>Most tools hand you a finding: possible duplicate payment, $4,280. Then the work lands back on your team.</p>
+              <p>Reclaim takes it the rest of the way. It builds the case, drafts the vendor request for your approval, keeps track of the reply and the follow-ups, and closes the case when the refund actually lands.</p>
             </div>
           </div>
         </div>
@@ -148,46 +171,96 @@
           <div class="header" theme="black" style="grid-column-end:span 5">
             <h2 class="heading type-h2" data-split="h2">See the money<br>and the proof.</h2>
             <div class="desc type-body-large">
-              <p>Every case shows how much is involved, why Reclaim flagged it, the records behind it, and the best next step.</p>
-              <p>Take a duplicate payment to Example Supply Co. Two payments were made to the same vendor for the same amount and appear linked to the same invoice. Flagged amount: $4,280. Recovery eligibility requires distinct settled payments, the same obligation, and completed evidence checks.</p>
-              <p>The evidence is right there: Invoice #1834, a payment on May 4, and another on May 9. Review it, draft the vendor email, and approve it before anything is sent.</p>
+              <p>Every case shows how much is involved, why Reclaim flagged it, the records behind it, and the best next step. Only money that has actually come back counts as recovered.</p>
+              <p>Take Example Supply Co.: invoice INV-1834 was paid on May 4 and again on May 9. Reclaim flags $4,280 for review, then requires proof of distinct settled payments, the same obligation, and no resolving refund, credit, void, or reversal before it becomes a recovery candidate.</p>
+              <p>Review the evidence, approve the amount and resolution, then send the prepared vendor request from your own email. Reclaim tracks the response, settlement proof, remaining balance, and accounting closeout.</p>
             </div>
-            <a href="/audit?entry=sample" class="cta cta-button" size="large" theme="white"><span class="hover-loop"><span class="inner">Get Started</span></span></a>
+            <a href="/audit?entry=sample" class="cta cta-button" size="large" theme="green"><span class="hover-loop"><span class="inner">Get Started</span></span></a>
           </div>
           <div class="image">
             <div class="wrap">
               <div class="laptop" aria-hidden="true">
                 <div class="screen">
                   <div class="notch"></div>
-                  <div class="app">
+                  <!-- The Overview page of the dashboard (src/workspace/views/Dashboard.tsx), light theme.
+                       Invented figures that add up: 7 open findings = $11,630 ready to claim (5) + $2,340 needing
+                       context (2); 2 requests out = $4,960 + $2,220; recovered = $2,150 + $1,270. -->
+                  <div class="app app-dash">
+                    <!-- dashboard mock-up sidebar, as in src/workspace/WorkspaceShell.tsx.
+                         Mark the open page with overview="is-current" (or findings, recoveries, reports, audits, settings). -->
                     <aside class="app-side">
-                      <div class="app-brand"><svg viewBox="0 0 26 23" fill="currentColor"><use href="#hx-wheel"/></svg>Reclaim<span class="kbd">⌘K</span></div>
-                      <div class="app-new"><b>+</b>New recovery</div>
-                      <div class="app-label">Cases</div>
-                      <div class="app-link"><i style="--c:var(--cl-blue-1)"></i>Needs review<b>4</b></div>
-                      <div class="app-link"><i style="--c:var(--cl-reclaim)"></i>Ready to send<b>2</b></div>
-                      <div class="app-link"><i style="--c:var(--cl-orange-1)"></i>Waiting on vendor<b>3</b></div>
-                      <div class="app-link"><i style="--c:var(--cl-green-1)"></i>Recovered<b>6</b></div>
-                      <div class="app-label">Recent cases</div>
-                      <div class="app-recent">Duplicate payment — Example Supply Co.</div>
-                      <div class="app-recent">Overpayment — Kestrel Packaging</div>
-                      <div class="app-label">Evidence</div>
-                      <div class="app-recent">Invoice #1834</div>
-                      <div class="app-recent">Payment — May 4</div>
-                      <div class="app-recent">Payment — May 9</div>
-                      <div class="app-user"><span class="av">PS</span><span>Priya S.<small>AP lead · Finance</small></span></div>
+                      <div class="app-brand"><svg viewBox="0 0 26 23" fill="currentColor"><use href="#hx-wheel"/></svg><b>Reclaim</b></div>
+                      <div class="app-find"><svg><use href="#d-search"/></svg><span>Find</span><span class="app-kbd">F</span></div>
+                      <ul class="app-nav">
+                        <li class="is-current"><svg><use href="#d-grid"/></svg><span>Overview</span></li>
+                        <li class=""><svg><use href="#d-search"/></svg><span>Findings</span><b>11</b></li>
+                        <li class=""><svg><use href="#d-banknote"/></svg><span>Recoveries</span><b>4</b></li>
+                        <li class=""><svg><use href="#d-report"/></svg><span>Reports</span></li>
+                        <li class=""><svg><use href="#d-folder"/></svg><span>Audits</span><b>2</b></li>
+                      </ul>
+                      <div class="app-rule"></div>
+                      <ul class="app-nav">
+                        <li class=""><svg><use href="#d-settings"/></svg><span>Settings</span></li>
+                      </ul>
+                      <div class="app-foot">
+                        <div class="app-sidebtn"><svg><use href="#d-sliders"/></svg>Customize</div>
+                        <div class="app-sidebtn"><svg><use href="#d-panel"/></svg>Collapse sidebar</div>
+                        <div class="app-user"><span class="av">MC</span><span><b>Maya Chen</b><small>Harbor Goods Co.</small></span></div>
+                      </div>
                     </aside>
                     <div class="app-main">
-                      <div class="app-top"><span class="app-pill">Found <b>$18,420</b></span><span class="app-pill">In recovery <b>$11,200</b></span><span class="app-pill"><i></i>Recovered <b>$7,850</b></span></div>
-                      <div class="app-hello">Morning, Priya. $7,850 recovered this quarter.<br><span>2 cases are ready to send.</span></div>
-                      <ul class="app-list">
-                        <li><i style="--c:var(--cl-orange-1)"></i><div><b>Duplicate payment — Example Supply Co.</b><small>Invoice #1834 paid May 4 and May 9 · $4,280 · evidence complete</small></div><span class="chip go">Approve &amp; Send</span></li>
-                        <li><i style="--c:var(--cl-blue-1)"></i><div><b>Overpayment — Kestrel Packaging</b><small>Paid $1,200 more than the invoice · needs review</small></div><span class="chip">Review Evidence</span></li>
-                        <li><i style="--c:var(--cl-green-1)"></i><div><b>Unused credit — Northgate Freight</b><small>$850 credit applied · confirmed on statement</small></div><span class="chip ok">Recovered</span></li>
-                        <li><i style="--c:var(--cl-pink-1)"></i><div><b>Refund promised — Arden Office</b><small>$2,900 promised · not counted until it arrives</small></div><span class="chip">Draft Vendor Email</span></li>
-                      </ul>
-                      <div class="app-suggest"><span>Needs review</span><span>Missing proof</span><span>Refund not received</span></div>
-                      <div class="app-input">Search cases, vendors, or invoices<span class="send">↑</span></div>
+                      <div class="app-top">
+                        <span class="app-switch"><i><svg viewBox="0 0 26 23" fill="currentColor"><use href="#hx-wheel"/></svg></i>Q2 vendor payments<svg><use href="#d-chev-d"/></svg></span>
+                        <svg><use href="#d-chev-r"/></svg><span class="app-crumb">Overview</span>
+                        <span class="app-actions"><svg><use href="#d-moon"/></svg><svg><use href="#d-sliders"/></svg><span class="app-btn is-dark"><svg><use href="#d-plus"/></svg>Start an audit</span></span>
+                      </div>
+                      <div class="app-body">
+                        <div class="app-head">
+                          <div class="app-head-copy">
+                            <div class="app-meta"><span>QuickBooks Online</span><span>1,284 payments</span><span>212 vendors</span><span>Apr 1 – Jun 30, 2026</span></div>
+                            <div class="app-h1">Overview</div>
+                            <p>7 open findings worth $13,970 in Q2 vendor payments. $11,630 of it is supported by the records and ready to claim.</p>
+                          </div>
+                          <span class="app-btn is-accent">Review next finding<svg><use href="#d-arrow-r"/></svg></span>
+                        </div>
+                        <div class="app-totals">
+                          <div class="app-total"><span class="lbl">Ready to claim</span><strong>$11,630</strong><small>5 findings the records support</small></div>
+                          <div class="app-total"><span class="lbl">Needs more context</span><strong>$2,340</strong><small>2 findings to check against a PO or statement</small></div>
+                          <div class="app-total"><span class="lbl">In recovery</span><strong>$7,180</strong><small>2 requests out with vendors</small></div>
+                          <div class="app-total"><span class="lbl">Recovered</span><strong class="is-back">$3,420</strong><small>From 2 cases</small></div>
+                        </div>
+                        <div class="app-grid">
+                          <div class="app-card">
+                            <div class="app-card-head"><div><b>Up next</b><small>7 findings waiting on your decision, most worth your time first</small></div><span class="app-more">All findings<svg><use href="#d-arrow-r"/></svg></span></div>
+                            <div class="app-row"><div class="app-row-main"><strong>Example Supply Co.</strong><span><span class="app-chip" data-kind="claim">Exact duplicate payment</span><em>INV-1834 · paid May 4 and May 9</em></span></div><span class="app-amt">$4,280</span><span class="app-go">Review<svg><use href="#d-arrow-r"/></svg></span></div>
+                            <div class="app-row"><div class="app-row-main"><strong>Arden Office</strong><span><span class="app-chip" data-kind="claim">Near-duplicate payment</span><em>5521, INV 5521 · paid May 12 and Jun 2</em></span></div><span class="app-amt">$2,900</span><span class="app-go">Review<svg><use href="#d-arrow-r"/></svg></span></div>
+                            <div class="app-row"><div class="app-row-main"><strong>Halden Print Works</strong><span><span class="app-chip" data-kind="claim">Overpayment vs. invoice</span><em>INV-7702 · paid Jun 18</em></span></div><span class="app-amt">$2,400</span><span class="app-go">Review<svg><use href="#d-arrow-r"/></svg></span></div>
+                            <div class="app-row"><div class="app-row-main"><strong>Metro Freight</strong><span><span class="app-chip" data-kind="review">Near-duplicate payment</span><em>BOL-3310 · paid Apr 9 and Apr 23</em></span></div><span class="app-amt">$1,540</span><span class="app-go">Review<svg><use href="#d-arrow-r"/></svg></span></div>
+                            <div class="app-row"><div class="app-row-main"><strong>Kestrel Packaging</strong><span><span class="app-chip" data-kind="claim">Overpayment vs. invoice</span><em>INV-20931 · paid Apr 18</em></span></div><span class="app-amt">$1,200</span><span class="app-go">Review<svg><use href="#d-arrow-r"/></svg></span></div>
+                          </div>
+                          <div class="app-card">
+                            <div class="app-card-head"><div><b>Recovery progress</b><small>Claimable findings by stage</small></div></div>
+                            <div class="app-flow">
+                              <div class="app-flow-bar"><i data-stage="found" style="flex:5"></i><i data-stage="requested" style="flex:2"></i><i data-stage="recovered" style="flex:2"></i></div>
+                              <div class="app-steps">
+                                <div class="app-step"><span><i data-stage="found"></i>To decide</span><strong>5</strong><small>Supported, not reviewed</small></div>
+                                <div class="app-step"><span><i data-stage="confirmed"></i>Confirmed</span><strong>0</strong><small>Request not sent</small></div>
+                                <div class="app-step"><span><i data-stage="requested"></i>Requested</span><strong>2</strong><small>Out with the vendor</small></div>
+                                <div class="app-step"><span><i data-stage="recovered"></i>Recovered</span><strong>2</strong><small>Money came back</small></div>
+                              </div>
+                              <dl class="app-kv"><div><dt>Vendor agreed</dt><dd>$4,960</dd></div><div><dt>Return pending</dt><dd>$4,960</dd></div></dl>
+                              <div class="app-note"><svg><use href="#d-clock"/></svg>Open requests: 2 at 0–14 days</div>
+                              <div>
+                                <div class="app-label">Latest money back</div>
+                                <ul class="app-returns">
+                                  <li><span><b>Birch &amp; Vale Foods</b><small>Sep 12, 2026</small></span><span>$2,150</span></li>
+                                  <li><span><b>Southport Janitorial</b><small>Sep 3, 2026</small></span><span>$1,270</span></li>
+                                </ul>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -201,14 +274,14 @@
       <section class="section entry-solutions" theme="black">
         <div class="the-grid">
           <div class="header" theme="black" style="grid-column-end:span 6">
-            <h2 class="heading type-quote upper" data-split="h2">You approve<br>what goes out.</h2>
-            <p class="desc type-body-large">Reclaim can do the digging. You stay in control.</p>
+            <h2 class="heading type-quote" data-split="h2">You approve<br>what goes out.</h2>
+            <p class="desc type-body-large">Reclaim does the digging and the chasing. Every decision stays with you.</p>
             <a href="/how-it-works#upload" class="cta cta-button has-arrow" size="large" theme="dark-grey"><span class="hover-loop"><span class="inner">See how it works<svg class="icon"><use href="#i-arrow"/></svg></span></span></a>
           </div>
           <div class="columns">
-            <a href="/how-it-works#evidence" class="entry-solution"><div class="media-wrap"><div class="media"><video data-reel src="/media/find.webm" loop muted playsinline preload="auto" aria-hidden="true"></video></div></div><h4 class="heading type-h4" data-split="h2">Proof</h4><p class="desc type-body-medium">See the evidence behind every finding, and review every claim before it is pursued.</p></a>
-            <a href="/how-it-works#evidence" class="entry-solution"><div class="media-wrap"><div class="media"><video data-reel src="/media/build.webm" loop muted playsinline preload="auto" aria-hidden="true"></video></div></div><h4 class="heading type-h4" data-split="h2">Control</h4><p class="desc type-body-medium">Approve every vendor email before it is sent, and see every action taken. Reclaim does not automatically accuse vendors.</p></a>
-            <a href="/how-it-works#evidence" class="entry-solution"><div class="media-wrap"><div class="media"><video data-reel src="/media/recover.webm" loop muted playsinline preload="auto" aria-hidden="true"></video></div></div><h4 class="heading type-h4" data-split="h2">Real money</h4><p class="desc type-body-medium">A promised refund is not counted as recovered money. It only counts once it actually arrives.</p></a>
+            <a href="/how-it-works#evidence" class="entry-solution"><div class="media-wrap"><div class="media"><video data-reel src="/media/find.webm" loop muted playsinline preload="auto" aria-hidden="true"></video></div></div><h4 class="heading type-h4" data-split="h2">Proof</h4><p class="desc type-body-medium">Each finding says why it was flagged and links every record to where it came from. Nothing rests on a guess.</p></a>
+            <a href="/how-it-works#evidence" class="entry-solution"><div class="media-wrap"><div class="media"><video data-reel src="/media/build.webm" loop muted playsinline preload="auto" aria-hidden="true"></video></div></div><h4 class="heading type-h4" data-split="h2">Control</h4><p class="desc type-body-medium">Nothing reaches a vendor until you approve it, and every step after is on the record. Reclaim never accuses a vendor of fraud or threatens legal action.</p></a>
+            <a href="/how-it-works#evidence" class="entry-solution"><div class="media-wrap"><div class="media"><video data-reel src="/media/recover.webm" loop muted playsinline preload="auto" aria-hidden="true"></video></div></div><h4 class="heading type-h4" data-split="h2">Real money</h4><p class="desc type-body-medium">A promised refund isn't money back. It counts once the refund settles or the credit is used on a real bill, and not before.</p></a>
           </div>
         </div>
       </section>
@@ -226,7 +299,7 @@
       <section class="section carousel1 use-cases" theme="white">
         <div class="the-grid">
           <div class="header" style="grid-column-end:span 6">
-            <h2 class="heading type-quote upper" data-split="h2">What Reclaim finds:<br>clear, provable mistakes.</h2>
+            <h2 class="heading type-quote" data-split="h2">What Reclaim finds:<br>clear, provable mistakes.</h2>
             <p class="desc type-body-large">Not a long list of maybes. Just the issues your own records can show.</p>
           </div>
         </div>
@@ -235,7 +308,7 @@
             <div class="swiper-wrapper">
               <div class="swiper-slide"><div class="carousel-cell"><a href="/what-it-checks#duplicate-payments" class="carousel-item-case-study">
                 <div class="left">
-                  <div class="meta"><span class="tag-mint">Duplicate Payments</span><span class="label-mono">Use case 01 / 05</span></div>
+                  <div class="meta"><span class="tag-mint">Duplicate Payments</span><span class="label-mono">Use case 01 / 04</span></div>
                   <h4 class="heading type-h4">You paid this invoice twice.</h4>
                   <p class="desc type-body-small">Paid the same vendor twice? Reclaim connects the records and shows why the payments may be duplicates.</p>
                   <span class="cta cta-button" size="large" theme="black"><span class="hover-loop"><span class="inner">More details</span></span></span>
@@ -244,36 +317,27 @@
               </a></div></div>
               <div class="swiper-slide"><div class="carousel-cell"><a href="/what-it-checks#overpayments" class="carousel-item-case-study">
                 <div class="left">
-                  <div class="meta"><span class="tag-mint">Overpayments</span><span class="label-mono">Use case 02 / 05</span></div>
+                  <div class="meta"><span class="tag-mint">Overpayments</span><span class="label-mono">Use case 02 / 04</span></div>
                   <h4 class="heading type-h4">This payment is $1,200 higher than the invoice.</h4>
                   <p class="desc type-body-small">Paid more than the invoice supports? Reclaim shows the mismatch and the amount involved.</p>
                   <span class="cta cta-button" size="large" theme="black"><span class="hover-loop"><span class="inner">More details</span></span></span>
                 </div>
-                <div class="right"><img src="/assets/cs-2.png" alt="" loading="lazy"></div>
+                <div class="right"><img src="/assets/cs-3.png" alt="" loading="lazy"></div>
               </a></div></div>
               <div class="swiper-slide"><div class="carousel-cell"><a href="/what-it-checks#unused-credits" class="carousel-item-case-study">
                 <div class="left">
-                  <div class="meta"><span class="tag-mint">Unused Credits</span><span class="label-mono">Use case 03 / 05</span></div>
+                  <div class="meta"><span class="tag-mint">Unused Credits</span><span class="label-mono">Use case 03 / 04</span></div>
                   <h4 class="heading type-h4">This $850 vendor credit was never used.</h4>
                   <p class="desc type-body-small">Reclaim finds vendor credits that appear to exist but were never applied.</p>
                   <span class="cta cta-button" size="large" theme="black"><span class="hover-loop"><span class="inner">More details</span></span></span>
                 </div>
-                <div class="right"><img src="/assets/cs-3.png" alt="" loading="lazy"></div>
+                <div class="right"><img src="/assets/cs-2.png" alt="" loading="lazy"></div>
               </a></div></div>
               <div class="swiper-slide"><div class="carousel-cell"><a href="/what-it-checks#duplicate-bills" class="carousel-item-case-study">
                 <div class="left">
-                  <div class="meta"><span class="tag-mint">Duplicate Bills</span><span class="label-mono">Use case 04 / 05</span></div>
+                  <div class="meta"><span class="tag-mint">Duplicate Bills</span><span class="label-mono">Use case 04 / 04</span></div>
                   <h4 class="heading type-h4">Two bills. One purchase.</h4>
                   <p class="desc type-body-small">Two bills can look different and still represent the same purchase. Reclaim compares the records and shows the connection.</p>
-                  <span class="cta cta-button" size="large" theme="black"><span class="hover-loop"><span class="inner">More details</span></span></span>
-                </div>
-                <div class="right"><img src="/assets/cs-2.png" alt="" loading="lazy"></div>
-              </a></div></div>
-              <div class="swiper-slide"><div class="carousel-cell"><a href="/what-it-checks#payment-mismatches" class="carousel-item-case-study">
-                <div class="left">
-                  <div class="meta"><span class="tag-mint">Payment Mismatches</span><span class="label-mono">Use case 05 / 05</span></div>
-                  <h4 class="heading type-h4">The invoice and the payment don't line up.</h4>
-                  <p class="desc type-body-small">Reclaim identifies cases where the invoice, payment, bill, or credit does not line up.</p>
                   <span class="cta cta-button" size="large" theme="black"><span class="hover-loop"><span class="inner">More details</span></span></span>
                 </div>
                 <div class="right"><img src="/assets/cs-1.png" alt="" loading="lazy"></div>
@@ -282,7 +346,7 @@
           </div>
           <div class="carousel-play-controls">
             <button type="button" aria-label="Play"></button>
-            <div class="pagination"><span class="dot"><span class="base"></span><span class="progress"></span></span><span class="dot"><span class="base"></span><span class="progress"></span></span><span class="dot"><span class="base"></span><span class="progress"></span></span><span class="dot"><span class="base"></span><span class="progress"></span></span><span class="dot"><span class="base"></span><span class="progress"></span></span></div>
+            <div class="pagination"><span class="dot"><span class="base"></span><span class="progress"></span></span><span class="dot"><span class="base"></span><span class="progress"></span></span><span class="dot"><span class="base"></span><span class="progress"></span></span><span class="dot"><span class="base"></span><span class="progress"></span></span></div>
           </div>
         </div>
       </section>
@@ -290,49 +354,22 @@
       <section class="section grid1" theme="white">
         <div class="the-grid">
           <div class="header" style="grid-column-end:span 8">
-            <h2 class="heading type-h2" data-split="h2">Start with<br>the records you<br>already have.</h2>
-            <p class="desc type-body-headline">Upload a CSV, accounting export, bill list, payment history, invoice file, or vendor-credit report. Reclaim works from the records your business already produces, including exports from tools like these.</p>
+            <h2 class="heading type-h3" data-split="h2">Start with<br>the records you<br>already have.</h2>
+            <p class="desc type-body-headline">Connect QuickBooks Online or Xero directly, with read-only access. Anything else comes in as an export of your bills, payments, vendors and credits, with step-by-step guides for the common systems.</p>
           </div>
           <ul class="content">
-            <li class="grid-item-wrap"><div class="grid-item grid-item-brand" idx="0"><div class="m3d"><div class="rotate"><div class="wrap"><span class="wm wm-quickbooks">quickbooks</span></div></div></div></div></li>
-            <li class="grid-item-wrap"><div class="grid-item grid-item-brand" idx="1"><div class="m3d"><div class="rotate"><div class="wrap"><span class="wm wm-xero">XERO</span></div></div></div></div></li>
-            <li class="grid-item-wrap"><div class="grid-item grid-item-brand" idx="2"><div class="m3d"><div class="rotate"><div class="wrap"><span class="wm wm-stripe">stripe</span></div></div></div></div></li>
-            <li class="grid-item-wrap"><div class="grid-item grid-item-brand" idx="3"><div class="m3d"><div class="rotate"><div class="wrap"><span class="wm wm-ramp">ramp</span></div></div></div></div></li>
-            <li class="grid-item-wrap"><div class="grid-item grid-item-brand" idx="4"><div class="m3d"><div class="rotate"><div class="wrap"><span class="wm wm-brex">BREX</span></div></div></div></div></li>
-            <li class="grid-item-wrap"><div class="grid-item grid-item-brand" idx="0"><div class="m3d"><div class="rotate"><div class="wrap"><span class="wm wm-bill">bill</span></div></div></div></div></li>
-            <li class="grid-item-wrap"><div class="grid-item grid-item-brand" idx="1"><div class="m3d"><div class="rotate"><div class="wrap"><span class="wm wm-netsuite">NETSUITE</span></div></div></div></div></li>
-            <li class="grid-item-wrap"><div class="grid-item grid-item-brand" idx="2"><div class="m3d"><div class="rotate"><div class="wrap"><span class="wm wm-csv">csv</span></div></div></div></div></li>
+            <li class="grid-item-wrap is-wide"><div class="grid-item grid-item-brand" idx="0"><div class="m3d"><div class="rotate"><div class="wrap"><span class="wm wm-quickbooks">quickbooks</span><span class="depth type-mono">Direct connection · read-only</span></div></div></div></div></li>
+            <li class="grid-item-wrap is-wide"><div class="grid-item grid-item-brand" idx="0"><div class="m3d"><div class="rotate"><div class="wrap"><span class="wm wm-xero">XERO</span><span class="depth type-mono">Direct connection · read-only</span></div></div></div></div></li>
+            <li class="grid-item-wrap"><a href="/guides/netsuite" class="grid-item grid-item-brand" idx="1"><div class="m3d"><div class="rotate"><div class="wrap"><span class="wm wm-netsuite">NETSUITE</span><span class="depth type-mono">CSV export</span></div></div></div></a></li>
+            <li class="grid-item-wrap"><a href="/guides/bill" class="grid-item grid-item-brand" idx="2"><div class="m3d"><div class="rotate"><div class="wrap"><span class="wm wm-bill">bill</span><span class="depth type-mono">CSV export</span></div></div></div></a></li>
+            <li class="grid-item-wrap"><div class="grid-item grid-item-brand" idx="3"><div class="m3d"><div class="rotate"><div class="wrap"><span class="wm wm-ramp">ramp</span><span class="depth type-mono">CSV export</span></div></div></div></div></li>
+            <li class="grid-item-wrap"><a href="/guides" class="grid-item grid-item-brand" idx="4"><div class="m3d"><div class="rotate"><div class="wrap"><span class="wm wm-csv">csv</span><span class="depth type-mono">Any spreadsheet</span></div></div></div></a></li>
           </ul>
         </div>
       </section>
 
     </div>
   </div>
-
-  <!-- DEPARTMENTS (grey) -->
-  <section class="section carousel1 departments" theme="grey">
-    <div class="nav-slot" data-theme="grey"></div>
-    <div class="the-grid">
-      <div class="header" theme="grey" style="grid-column-end:span 8">
-        <h2 class="heading type-h2" data-split="h2">Who Reclaim<br>is for.</h2>
-        <p class="desc type-body-headline">Businesses that pay a lot of vendors, without a team to chase every mistake.</p>
-      </div>
-    </div>
-    <div class="carousel-wrapper">
-      <div class="swiper">
-        <div class="swiper-wrapper">
-          <div class="swiper-slide"><div class="carousel-cell"><a href="/how-it-works" class="carousel-item-card"><div class="image"><img src="/assets/dept-inventory.png" alt="" loading="lazy"></div><div class="details"><div><h5 class="type-body-small">Finance</h5><p class="desc type-body-small">See mistakes, supporting records, open vendor conversations, and recovered money in one place.</p></div><span class="cta cta-button" size="small" theme="grey"><span class="hover-loop"><span class="inner">More details</span></span></span></div></a></div></div>
-          <div class="swiper-slide"><div class="carousel-cell"><a href="/how-it-works" class="carousel-item-card"><div class="image"><img src="/assets/dept-freight.png" alt="" loading="lazy"></div><div class="details"><div><h5 class="type-body-small">Accounts Payable</h5><p class="desc type-body-small">Turn duplicate bills, duplicate payments, overpayments, and credits into clear recovery workflows.</p></div><span class="cta cta-button" size="small" theme="grey"><span class="hover-loop"><span class="inner">More details</span></span></span></div></a></div></div>
-          <div class="swiper-slide"><div class="carousel-cell"><a href="/how-it-works" class="carousel-item-card"><div class="image"><img src="/assets/dept-procurement.png" alt="" loading="lazy"></div><div class="details"><div><h5 class="type-body-small">Operators</h5><p class="desc type-body-small">Keep evidence, vendor replies, deadlines, and follow-ups organized without turning every mistake into a manual project.</p></div><span class="cta cta-button" size="small" theme="grey"><span class="hover-loop"><span class="inner">More details</span></span></span></div></a></div></div>
-          <div class="swiper-slide"><div class="carousel-cell"><a href="/how-it-works" class="carousel-item-card"><div class="image"><img src="/assets/dept-warehousing.png" alt="" loading="lazy"></div><div class="details"><div><h5 class="type-body-small">Founders</h5><p class="desc type-body-small">See whether money is slipping through the business without personally chasing every invoice and vendor email.</p></div><span class="cta cta-button" size="small" theme="grey"><span class="hover-loop"><span class="inner">More details</span></span></span></div></a></div></div>
-        </div>
-      </div>
-      <div class="carousel-prev-next-controls">
-        <button type="button" class="cta-button-square prev" size="medium" theme="white" aria-label="Previous"><svg class="icon"><use href="#i-arrow"/></svg></button>
-        <button type="button" class="cta-button-square next" size="medium" theme="white" aria-label="Next"><svg class="icon"><use href="#i-arrow"/></svg></button>
-      </div>
-    </div>
-  </section>
 
   <!-- ENTRY1 (white) -->
   <section class="section entry1" theme="white">
@@ -346,7 +383,7 @@
             <div class="button"><span class="hover-loop up-right" data-duration=".9"><span class="inner"><svg class="arrow"><use href="#i-arrow-ur"/></svg></span></span></div>
           </div>
         </div>
-        <p class="desc type-body-small">Upload your records and see whether your business has duplicate payments, overpayments, unused credits, or other recoverable mistakes. Get started.</p>
+        <p class="desc type-body-small">Connect your books or upload an export, and see what your own records show. Nothing reaches a vendor until you say so.</p>
       </a></li>
       <li><a href="#contact" class="entry-item1" idx="1" data-modal="talk">
         <div class="bg"></div>
@@ -356,7 +393,7 @@
             <div class="button"><span class="hover-loop up-right" data-duration=".9"><span class="inner"><svg class="arrow"><use href="#i-arrow-ur"/></svg></span></span></div>
           </div>
         </div>
-        <p class="desc type-body-small">Not sure which records to upload? We'll help you pick the right ones.</p>
+        <p class="desc type-body-small">Not sure whether to connect or upload? We'll help you pick the right records.</p>
       </a></li>
     </ul>
   </section>
@@ -390,6 +427,7 @@
           <a href="#" class="cta-scroll"><span class="wrap"><span class="hover-loop"><span class="inner"><svg class="icon"><use href="#i-arrow"/></svg></span></span></span><span class="label">Back to top</span></a>
           <div class="legal">Reclaim © 2026</div>
         </div>
+        <div class="promise"><span>Read-only access to your books</span><span>Nothing sent without your approval</span><span>Refunds go straight to you</span></div>
       </div>
     </div>
   </footer>
@@ -476,7 +514,7 @@
             <button type="button" class="hover-loop cta-button-square close" theme="outline" size="medium" aria-label="Close"><span class="inner"><svg class="icon"><use href="#i-close"/></svg></span></button>
             <svg class="icon-check" aria-hidden="true"><use href="#i-check-circle"/></svg>
             <h2 class="heading" id="modal-success-heading">Thanks,<br>we have it</h2>
-            <p class="desc">We'll email you about next steps, including which records to export.</p>
+            <p class="desc">We'll email you about next steps, including how to connect your books or which records to export.</p>
             <button type="button" class="hover-loop cta-button submit done" theme="black" size="large"><span class="inner">Back to the site</span></button>
           </div>
         </div>

@@ -42,7 +42,7 @@ describe('upload guard rails', () => {
   it('a CSV with some bad rows shows how many will be skipped before anything is saved', async () => {
     const { upload, onImport } = mount()
     upload(new File(['vendor,payment_date,amount_paid\nAcme,2025-01-01,100\nBad,notadate,5\nEuro,2025-01-02,"1.234,56"\n'], 'mixed.csv'))
-    expect(await screen.findByText(/1 valid record parsed/)).toBeInTheDocument()
+    expect((await screen.findByText('Valid records')).closest('div')).toHaveTextContent('1')
     expect(screen.getByText(/2 rows need attention and will be skipped/)).toBeInTheDocument()
     expect(onImport).not.toHaveBeenCalled()
   })
