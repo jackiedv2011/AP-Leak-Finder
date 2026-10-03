@@ -12,6 +12,7 @@ import { HttpError, RateLimiter, empty, json, redirect, serializeCookie, toReque
 import { newToken } from './crypto.ts'
 import { entitlementsFor, isPlan, monthStart, planOf, PLAN_LIMITS, type Plan } from './plans.ts'
 import { checkRepeat, repeatMessage, rowFingerprint } from './uploads.ts'
+import { OnboardingProfileSchema } from './onboarding.ts'
 
 const SESSION_COOKIE = 'reclaim_session'
 const OAUTH_STATE_COOKIE = 'reclaim_oauth_state'
@@ -274,6 +275,15 @@ export function createApp(deps: AppDependencies): App {
     if (path === '/api/account/onboarding-seen' && method === 'POST') {
       const user = requireUser(req)
       auth.markOnboardingSeen(user.id)
+      return json(200, { user: publicUser(auth.findUserById(user.id)!) })
+    }
+
+    if (path === '/api/account/onboarding' && method === 'POST') {
+      const user = requireUser(req)
+      requireJson(req)
+      const parsed = OnboardingProfileSchema.safeParse(await req.json())
+      if (!parsed.success) throw new HttpError(400, 'Some onboarding answers were not recognised.', 'validation')
+      auth.saveOnboarding(user.id, parsed.data)
       return json(200, { user: publicUser(auth.findUserById(user.id)!) })
     }
 

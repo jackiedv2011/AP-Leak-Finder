@@ -4,6 +4,7 @@ import type { UserRow } from './db.ts'
 import { HttpError } from './http.ts'
 import type { Mailer } from './mailer.ts'
 import { planOf, type Plan } from './plans.ts'
+import { readProfile, type OnboardingProfile } from './onboarding.ts'
 
 export interface PublicUser {
   id: string
@@ -19,8 +20,10 @@ export interface PublicUser {
   /** Which sign-in methods are attached: a password, a Google identity, or both. */
   methods: Array<'password' | 'google'>
   plan: Plan
-  /** Null until the person has been through (or skipped) the first-run tour. */
+  /** Null until the person has been through (or skipped) onboarding. */
   onboardingSeenAt: number | null
+  /** What onboarding learned; null if it was skipped or never answered. */
+  onboardingProfile: OnboardingProfile | null
 }
 
 const VERIFY_TTL_MS = 24 * 60 * 60 * 1000
@@ -70,6 +73,7 @@ export class AuthService {
       methods,
       plan: planOf(row.plan),
       onboardingSeenAt: row.onboarding_seen_at,
+      onboardingProfile: readProfile(row.onboarding_profile),
     }
   }
 
@@ -79,6 +83,11 @@ export class AuthService {
 
   markOnboardingSeen(userId: string): void {
     this.db.prepare('UPDATE users SET onboarding_seen_at = ? WHERE id = ?').run(Date.now(), userId)
+  }
+
+  /** Stores onboarding's answers and marks onboarding as done in the same write. */
+  saveOnboarding(userId: string, profile: OnboardingProfile): void {
+    this.db.prepare('UPDATE users SET onboarding_profile = ?, onboarding_seen_at = ? WHERE id = ?').run(JSON.stringify(profile), Date.now(), userId)
   }
 
   findUserByEmail(email: string): UserRow | null {

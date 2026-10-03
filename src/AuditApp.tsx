@@ -61,7 +61,8 @@ import {
 import { approveRecovery, closeWithoutRecovery, recordVendorUpdate, reconcileRecovery, reopenRemainingBalance, setContactHold, setNextFollowUp, startRecoveryRequest, verifyRecovery } from '@/recovery/model'
 import { useEntitlements, useOptionalAuth } from '@/lib/auth/AuthContext'
 import { Locked } from '@/components/plan/Locked'
-import { OnboardingTour } from '@/components/tutorial/OnboardingTour'
+import { Onboarding } from '@/onboarding/Onboarding'
+import { emptyProfile, type OnboardingProfile } from '../server/onboarding.ts'
 import { UpgradeDialog } from '@/components/plan/UpgradeDialog'
 import { visibleFindingIds } from '@/workspace/planGates'
 import { projectSync } from '@/ledger/projectSync'
@@ -92,14 +93,20 @@ export function AuditApp() {
   // Lives here, not in Settings, so a `system` choice follows the OS on every screen.
   const { choice: themeChoice, resolved: resolvedTheme, choose: chooseTheme } = useTheme()
   const [limitDialog, setLimitDialog] = useState(false)
-  const [tourRequested, setTourRequested] = useState(false)
+  const [onboardingRequested, setOnboardingRequested] = useState(false)
   const account = auth?.user && !auth.user.isGuest ? auth.user : null
-  // First run: the account (or guest tab) has not been through the tour.
-  const tourOpen = tourRequested || (auth !== null && auth.status === 'ready' && auth.user !== null && !auth.user.onboardingSeenAt)
-  const closeTour = useCallback(() => {
-    setTourRequested(false)
-    void auth?.markOnboardingSeen()
-  }, [auth])
+  // First run: the account (or guest tab) has not been through onboarding. Someone who
+  // arrived with a deliberate entry (`?entry=upload`, `?entry=sample`) came to do that
+  // first; onboarding waits for their next visit rather than standing in the way.
+  const onboardingOpen =
+    onboardingRequested || (auth !== null && auth.status === 'ready' && auth.user !== null && !auth.user.onboardingSeenAt && route.entry === null)
+  const completeOnboarding = useCallback(
+    async (profile: OnboardingProfile) => {
+      await auth?.saveOnboarding(profile)
+      setOnboardingRequested(false)
+    },
+    [auth]
+  )
   const actor = account ? account.name || account.email : null
   const sender = useMemo<SenderProfile>(
     () => ({ businessName: account?.company ?? '', senderName: account?.name ?? '', senderEmail: account?.email ?? '' }),
@@ -470,8 +477,6 @@ export function AuditApp() {
 
   // The entry sequence and the running state share one screen, so arriving from
   // the marketing site never flashes through a differently-styled interstitial.
-  const tour = auth ? <OnboardingTour open={tourOpen && legacy === null} entitlements={entitlements} onDone={closeTour} /> : null
-
   const legacyDialog = (
     <LegacyImportDialog
       summary={legacy}
@@ -486,6 +491,22 @@ export function AuditApp() {
       }}
     />
   )
+
+  // Onboarding takes the whole screen; when it ends, whatever comes next (the ledger
+  // choice on Launch, or the page it was reopened from) renders in its place.
+  if (auth?.user && onboardingOpen && legacy === null) {
+    return (
+      <PreferencesProvider>
+        <Onboarding
+          initial={auth.user.onboardingProfile ?? { ...emptyProfile(), businessName: account?.company ?? '' }}
+          firstName={account?.firstName ?? null}
+          isGuest={auth.user.isGuest}
+          revisit={onboardingRequested}
+          onComplete={completeOnboarding}
+        />
+      </PreferencesProvider>
+    )
+  }
 
   // Plans is reachable before a first audit too: it's where someone decides how to use Reclaim.
   if (!running && route.entry === null && !environment && route.mode === 'plans') {
@@ -523,7 +544,6 @@ export function AuditApp() {
     return (
       <PreferencesProvider>
         {legacyDialog}
-        {tour}
         <Launch onRunSample={runSampleAudit} onUseOwn={() => openImport('new')} running={running} note={entryError ?? undefined} />
         <UpgradeDialog
           open={limitDialog}
@@ -661,7 +681,7 @@ export function AuditApp() {
           <SettingsView
             env={environment}
             onClear={() => setClearDialogOpen(true)}
-            onShowTour={() => setTourRequested(true)}
+            onEditOnboarding={() => setOnboardingRequested(true)}
             theme={themeChoice}
             resolvedTheme={resolvedTheme}
             onThemeChange={chooseTheme}
@@ -683,7 +703,6 @@ export function AuditApp() {
         reason={`You've used ${entitlements.usage.auditsThisMonth} of ${entitlements.limits.auditsPerMonth ?? '∞'} audits this month on the Free plan.`}
       />
       {legacyDialog}
-      {tour}
     </>
   )
 }

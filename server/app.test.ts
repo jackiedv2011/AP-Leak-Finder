@@ -373,6 +373,19 @@ describe('plans and entitlements', () => {
     expect((await c.get('/api/auth/me')).body.user.onboardingSeenAt).toBeTypeOf('number')
   })
 
+  it('onboarding answers are saved on the account, and malformed ones are refused', async () => {
+    const c = new Client()
+    await signUpAndVerify(c, alice)
+    expect((await c.get('/api/auth/me')).body.user.onboardingProfile).toBeNull()
+    const res = await c.post('/api/account/onboarding', { goals: ['duplicates', 'credits'], role: 'owner', tools: ['xero'], autonomy: 'show', purpose: '  Payroll  ' })
+    expect(res.status).toBe(200)
+    expect(res.body.user.onboardingSeenAt).toBeTypeOf('number')
+    const profile = (await c.get('/api/auth/me')).body.user.onboardingProfile
+    expect(profile).toMatchObject({ goals: ['duplicates', 'credits'], role: 'owner', tools: ['xero'], autonomy: 'show', purpose: 'Payroll', businessName: '', teamSize: null })
+    expect((await c.post('/api/account/onboarding', { goals: ['everything'] })).status).toBe(400)
+    expect((await c.post('/api/account/onboarding', { autonomy: 'send_without_asking' })).status).toBe(400)
+  })
+
   it('the dev plan switch is not available in production', async () => {
     const prodConfig = { ...config, devMailbox: false }
     const prod = createApp({ config: prodConfig, db: openDatabase(':memory:'), mailer: new DevMailer(openDatabase(':memory:')), google: null, drafts: null })

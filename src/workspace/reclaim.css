@@ -605,7 +605,6 @@ html[data-surface='workspace'] :is(.wk-input, .wk-field input, .wk-field select,
 .wk-command-empty { padding: 24px 10px; color: var(--text-muted); text-align: center; }
 .wk-command-footer { display: flex; gap: 16px; padding: 10px 16px; border-top: 1px solid var(--line-soft); background: var(--surface-sunk); color: var(--text-muted); font: 400 12px var(--f-text); }
 
-
 /* ---------- forms and recovery work ---------- */
 .wk-stack { display: flex; flex-direction: column; gap: 14px; }
 .wk-subsection { border-top: 1px solid var(--line-soft); }
@@ -973,16 +972,7 @@ html[data-surface='workspace'] .wk-overlay { background: var(--scrim); }
 html[data-surface='workspace'] .wk-panel { background: var(--surface); color: var(--text); line-height: 1.5; }
 html[data-surface='workspace'] .wk-panel .wk-import { background: transparent; }
 
-/* ---------- launch: the page ---------- */
-html[data-surface='workspace'] .wk-launch { display: flex; flex-direction: column; min-height: 100dvh; padding: 0; place-items: normal; }
-html[data-surface='workspace'] .wk-launch-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 60px; padding: 0 var(--gutter); border-bottom: 1px solid var(--line); background: color-mix(in srgb, var(--bg) 88%, transparent); }
-html[data-surface='workspace'] .wk-launch-brand { margin: 0 0 0 -8px; }
-html[data-surface='workspace'] .wk-launch-main { display: flex; flex: 1; justify-content: center; align-items: flex-start; padding: clamp(40px, 9vh, 104px) var(--gutter) 80px; }
-html[data-surface='workspace'] .wk-launch-card { display: flex; width: min(760px, 100%); flex-direction: column; gap: 28px; padding: 0; border: 0; background: none; }
-
-html[data-surface='workspace'] .wk-launch-head { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; }
-html[data-surface='workspace'] .wk-launch-head h1 { max-width: 24ch; font: 600 clamp(28px, 2.8vw, 36px)/1.14 var(--f-text); letter-spacing: -.035em; text-wrap: balance; }
-html[data-surface='workspace'] .wk-launch-head p { max-width: 64ch; color: var(--text-muted); font-size: 14.5px; line-height: 1.6; }
+/* ---------- launch: the steps (also on Audits) and the running state; the page wears onboarding.css ---------- */
 
 /* The three steps read like the dashboard's totals row: one card, hairline
    dividers, a label, a figure-weight title and a muted note. */
@@ -994,8 +984,6 @@ html[data-surface='workspace'] .wk-launch-steps .wk-label::before { content: '';
 html[data-surface='workspace'] .wk-launch-steps > li[data-first] .wk-label::before { background: var(--accent); box-shadow: 0 0 0 3px var(--accent-ring); }
 html[data-surface='workspace'] .wk-launch-steps strong { margin-top: 6px; font: 600 15px/1.3 var(--f-text); letter-spacing: -.01em; }
 html[data-surface='workspace'] .wk-launch-steps small { color: var(--text-muted); font-size: 13px; line-height: 1.5; }
-
-html[data-surface='workspace'] .wk-launch-actions { display: flex; flex-wrap: wrap; gap: 10px; }
 
 /* Running: one card with a spinner and an indeterminate bar along its foot. */
 html[data-surface='workspace'] .wk-launch-status { position: relative; display: flex; align-items: center; gap: 12px; overflow: hidden; padding: 14px 16px 16px; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface); box-shadow: var(--shadow-rest); }
@@ -1009,12 +997,6 @@ html[data-surface='workspace'] .wk-launch-progress { position: absolute; right: 
 html[data-surface='workspace'] .wk-launch-progress::after { content: ''; position: absolute; top: 0; bottom: 0; left: 0; width: 40%; border-radius: 2px; background: var(--accent); animation: wk-indeterminate 1.2s var(--ease-in-out) infinite; }
 @keyframes wk-spin { to { transform: rotate(360deg); } }
 @keyframes wk-indeterminate { from { transform: translateX(-100%); } to { transform: translateX(260%); } }
-
-/* The page settles in the way a dashboard page does: blocks rise, a beat apart. */
-html[data-surface='workspace'] .wk-launch-card > * { animation: wk-rise var(--t-slow) var(--ease-out) both; }
-html[data-surface='workspace'] .wk-launch-card > :nth-child(2) { animation-delay: 60ms; }
-html[data-surface='workspace'] .wk-launch-card > :nth-child(3) { animation-delay: 120ms; }
-html[data-surface='workspace'] .wk-launch-card > :nth-child(n + 4) { animation-delay: 0ms; animation-name: wk-fade; }
 
 /* ---------- callouts: danger tone and inline actions ---------- */
 html[data-surface='workspace'] .wk-callout[data-tone='danger'] { border-color: color-mix(in srgb, var(--danger) 32%, transparent); background: var(--danger-soft); color: var(--text); }
@@ -1130,17 +1112,10 @@ html[data-surface='workspace'] .wk-tour .wk-tour-dots i[data-active] { width: 18
   html[data-surface='workspace'] .wk-import-links .wk-link { min-height: 40px; }
 }
 @media (max-width: 640px) {
-  html[data-surface='workspace'] .wk-launch-top { min-height: calc(56px + env(safe-area-inset-top, 0px)); padding: env(safe-area-inset-top, 0px) 10px 0 16px; }
-  html[data-surface='workspace'] .wk-launch-main { padding: 28px 16px calc(40px + env(safe-area-inset-bottom, 0px)); }
-  html[data-surface='workspace'] .wk-launch-card { gap: 22px; }
-  html[data-surface='workspace'] .wk-launch-head h1 { font-size: 26px; }
-  html[data-surface='workspace'] .wk-launch-head p { font-size: 14px; }
   html[data-surface='workspace'] .wk-launch-steps { grid-template-columns: minmax(0, 1fr); }
   html[data-surface='workspace'] .wk-launch-steps > li { padding: 14px 16px; }
   html[data-surface='workspace'] .wk-launch-steps > li + li { border-top: 1px solid var(--line-soft); border-left: 0; }
   html[data-surface='workspace'] .wk-launch-steps strong { margin-top: 2px; }
-  html[data-surface='workspace'] .wk-launch-actions { flex-direction: column; }
-  html[data-surface='workspace'] .wk-launch-actions .wk-btn { width: 100%; min-height: 48px; }
 
   html[data-surface='workspace'] .wk-drop { padding: 24px 16px 20px; }
   html[data-surface='workspace'] .wk-drop > .wk-btn { width: 100%; min-height: 44px; }

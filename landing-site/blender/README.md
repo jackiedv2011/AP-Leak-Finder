@@ -12,6 +12,12 @@ Chrome/Firefox/Edge, plus an H.264 MP4 with the section colour baked in for Safa
 | `encode.py` | PNG frames -> `.webm` (alpha) or, with `bg=RRGGBB`, `.mp4` |
 | `montage.py` | frames side by side at the size the page shows them, over the section colour |
 | `compare.py` | side-by-side sheet vs reference frames (`path@x0,y0,x1,y1` crops) |
+| `onboardlib.py` | onboarding substance: black clay, cream paper and ruled ledger stock, one glossy green, brass; the Reclaim mark as geometry |
+| `onboarding.py` | the app's onboarding loops (`scene=welcome\|business\|tools\|how\|data\|finale_in\|finale\|ic_*\|card_*`); `card_*` are the two ledger-choice cards on Launch |
+| `render_onboarding.sh` | renders every onboarding loop and ships it to `public/onboarding/` (WebM + dark/light MP4 + poster) |
+| `poster.py` | first frame as a transparent WebP (`<video poster>`, reduced motion) |
+| `grid.py` | contact sheet of frames at any aspect, for reviewing a batch at once |
+| `render_tests.sh` | half-size preview frames of named onboarding scenes (`scene:1,40,80`) |
 
 ## What these are of
 
@@ -63,6 +69,22 @@ Each loop is about one event:
 The hero renders on grey `#e5e5e5`, so it can go all the way to `carbon` for its darks. The
 solution loops sit on black and bottom out at `dark` instead — anything nearer to black
 there stops being an object and becomes a hole in the page.
+
+## Onboarding (the app, not the site)
+
+Onboarding uses the same light, render settings, camera and motion grammar as these loops — only the
+substance changes: matte black clay blocks, cream paper (some ruled in faint green), and one glossy green
+piece per scene, the money still in the paperwork. Stage loops sit on the workspace canvas
+(`#000` / `#f3f3f3`), card icons on a card (`#111` / `#fff`); the MP4 bakes match those.
+The pile in `welcome`, `business`, `tools` and `finale` is one object at rest at every loop seam, so
+moving between those steps reads as the same thing continuing. `finale_in` plays once and its last
+frame is `finale`'s first. The ledger-choice cards (`card_upload`, `card_sample`) render on the card colours, like the icons.
+
+```bash
+./render_onboarding.sh                       # everything
+SCENES="ic_show ic_draft" ./render_onboarding.sh  # just these (delete their out/onb_final/<scene> to re-render)
+./render_tests.sh welcome:1,120 how:1,130     # quick look
+```
 
 ## Render
 
