@@ -1,4 +1,6 @@
 import { useState, type ReactNode } from 'react'
+import { evaluateEligibility, type RecoveryEvidence } from '@/recovery/eligibility'
+import { EvidencePanel } from './EvidencePanel'
 import { CalendarClock, CircleCheck, CircleHelp, CircleX, ListChecks, TriangleAlert } from 'lucide-react'
 import { formatCurrency, formatDate } from '@/lib/format'
 import { DECISION_LABEL, type DecisionValue, type DismissalTag, type RecoveryMethod, type RecoveryVerification, type VendorUpdate } from '@/ledger/caseState'
@@ -11,6 +13,7 @@ import type { APRecord, Finding } from '@/types'
 import { FINDING_TYPE_LABELS } from '@/lib/labels'
 import { recommendRecoveryMethod, recoveryNextAction } from '@/recovery/model'
 import { recoveryLedger, RECOVERY_LEDGER_LABEL } from '@/recovery/ledger'
+import { verifiedReturned } from '@/recovery/financials'
 import { playbookFor } from '@/recovery/playbooks'
 import { evidenceOf, openQuestion, timelineFor } from '../selectors'
 import { StatusChip } from './StatusChip'
@@ -18,10 +21,13 @@ import { InternalReviewPanel, METHOD_LABEL, RecoveryRequestPanel, type RequestPa
 import { RecoveryAccountingPanel, RecoveryProgressPanel } from './RecoveryJourney'
 import { KIND_LABEL, KindChip } from './KindChip'
 import { Strength } from './Strength'
-import { findingReference } from './findingText'
+import { findingReference, nextActionLabel } from './findingText'
 
 interface CaseDetailProps {
   finding: Finding
+  findings?: Finding[]
+  projectId?: string
+  onSaveEvidence?: (findingId: string, evidence: RecoveryEvidence) => void
   state: CaseState
   records: APRecord[]
   discoveredAt: number | null
@@ -130,22 +136,24 @@ function Evidence({ finding }: { finding: Finding }) {
 
 /** Only the figures that exist yet. A column of dashes says nothing. */
 function RecoveryFacts({ finding, state }: { finding: Finding; state: CaseState }) {
-  const internal = finding.class !== 'recoverable'
+  const internal = !historicalRecoveryClaim(finding, state)
   const status = <StatusChip state={state} internal={internal} />
   const rows: Array<[string, ReactNode, boolean?]> = []
   if (internal) {
     rows.push(['Flagged value', formatCurrency(finding.dollarImpact)], ['Status', status])
     if (state.recoveryOutcomeNote) rows.push(['Investigation outcome', state.recoveryOutcomeNote])
   } else {
-    const requested = state.recoveryStage && state.recoveryStage !== 'confirmed' ? state.requestedAmount ?? finding.dollarImpact : null
-    const received = state.recoveredAmount ?? null
+    const requested = state.recoveryStage && state.recoveryStage !== 'confirmed' ? state.requestedAmount ?? null : null
+    const received = verifiedReturned(state)
     const closed = state.recoveryStage === 'recovered' || state.recoveryStage === 'not_recovered'
     const remaining = requested !== null ? Math.max(0, requested - (received ?? 0)) : null
     const methods = new Set(state.recoverySettlements?.map((entry) => entry.method) ?? [])
     const method = state.recoveredVia ?? state.requestedResolution ?? null
     rows.push(['Records support', formatCurrency(finding.dollarImpact)], ['Status', status])
     if (requested !== null) rows.push(['Requested', formatCurrency(requested)])
-    if ((received ?? 0) > 0 || state.recoveryStage === 'not_recovered') rows.push(['Received', formatCurrency(received ?? 0), (received ?? 0) > 0])
+    if (received > 0 || state.recoveryStage === 'not_recovered') rows.push(['Received', formatCurrency(received), received > 0])
+    if ((state.legacyRecoveredAmount ?? 0) > 0) rows.push(['Older unverified amount (not counted)', formatCurrency(state.legacyRecoveredAmount!)])
+    if (requested === null && state.recoveryStage === 'requested') rows.push(['Requested amount', 'Missing from legacy case; confirm the original request'])
     if (remaining !== null && (remaining > 0 || !closed)) rows.push([closed ? 'Unreturned balance' : 'Still outstanding', formatCurrency(remaining)])
     if (methods.size > 1) rows.push(['Method', 'Mixed methods'])
     else if (method) rows.push(['Method', METHOD_LABEL[method]])
@@ -164,26 +172,32 @@ function RecoveryFacts({ finding, state }: { finding: Finding; state: CaseState 
 
 const STEPS = ['Review evidence', 'Approve request', 'Contact vendor', 'Verify return', 'Reconcile'] as const
 
+function historicalRecoveryClaim(finding: Finding, state: CaseState): boolean {
+  return finding.class === 'recoverable' || (['exact_duplicate', 'near_duplicate'].includes(finding.type) &&
+    (state.recoveryStage === 'requested' || state.recoveryStage === 'recovered') && (state.requestedAmount != null || verifiedReturned(state) > 0))
+}
+
 function stepsDone(state: CaseState): boolean[] {
   const sent = ['requested', 'recovered', 'not_recovered'].includes(state.recoveryStage ?? '')
   return [
     state.decision === 'confirmed',
     Boolean(state.approvedAt) || sent,
     sent,
-    state.recoveryStage === 'recovered' && (state.recoveredAmount ?? 0) > 0,
+    state.recoveryStage === 'recovered' && verifiedReturned(state) > 0,
     Boolean(state.reconciledAt),
   ]
 }
 
 /** §29 — what happened and the work in front of you, the decision and money alongside. */
 export function CaseDetail(props: CaseDetailProps) {
-  const { finding, state, records, discoveredAt, sender, onDecide, onMarkRequested, onRecordOutcome, onReopen, onReopenBalance, onApproveRecovery, onApproveAndSend, onContactHold, onVendorUpdate, onFollowUp, onVerifyRecovery, onCloseRecovery, onReconcileRecovery } = props
+  const { finding, findings = [], projectId, onSaveEvidence, state, records, discoveredAt, sender, onDecide, onMarkRequested, onRecordOutcome, onReopen, onReopenBalance, onApproveRecovery, onApproveAndSend, onContactHold, onVendorUpdate, onFollowUp, onVerifyRecovery, onCloseRecovery, onReconcileRecovery } = props
+  const gate = evaluateEligibility(finding, finding.evidence, findings)
   const entitlements = useEntitlements()
   const [deciding, setDeciding] = useState<DecisionValue | null>(null)
-  const internal = finding.class !== 'recoverable'
+  const internal = !historicalRecoveryClaim(finding, state)
   const canChangeDecision = state.decision !== null && (state.recoveryStage === null || state.recoveryStage === 'confirmed')
   const canReopenOutcome = state.recoveryStage === 'recovered' || state.recoveryStage === 'not_recovered'
-  const hasClosedRemainder = !internal && state.recoveryStage === 'recovered' && (state.recoveredAmount ?? 0) > 0 && Math.round((state.requestedAmount ?? 0) * 100) > Math.round((state.recoveredAmount ?? 0) * 100)
+  const hasClosedRemainder = !internal && state.recoveryStage === 'recovered' && verifiedReturned(state) > 0 && Math.round((state.requestedAmount ?? 0) * 100) > Math.round(verifiedReturned(state) * 100)
   const evidence = evidenceOf(finding)
   const question = openQuestion(finding)
   const steps = timelineFor(finding, state, discoveredAt)
@@ -238,10 +252,12 @@ export function CaseDetail(props: CaseDetailProps) {
     </ul>
   )
 
+  // Vendor outreach needs a passed evidence gate; internal reviews keep their note-to-team flow.
   const workPanel =
-    state.recoveryStage === 'confirmed' ? (
+    state.recoveryStage === 'confirmed' && (internal || (gate.eligible && !state.requiresRevalidation)) ? (
       <RecoveryRequestPanel
         key={finding.id}
+        projectId={projectId}
         finding={finding}
         state={state}
         sender={sender}
@@ -295,6 +311,11 @@ export function CaseDetail(props: CaseDetailProps) {
           </section>
 
           {workPanel ? <div className="wk-case-work" data-m="work">{workPanel}</div> : null}
+
+          {state.requiresRevalidation ? <p className="wk-field-hint" role="status">This existing recovery needs its evidence revalidated before any further outreach. Recorded returns stay preserved.</p> : null}
+
+          {/* Only duplicate rules have a recovery gate; savings and security findings never collect recovery evidence. */}
+          {onSaveEvidence && (finding.type === 'exact_duplicate' || finding.type === 'near_duplicate') ? <EvidencePanel key={`evidence-${finding.id}`} finding={finding} findings={findings} onSave={(evidence) => onSaveEvidence(finding.id, evidence)} /> : null}
 
           <Evidence finding={finding} />
 
@@ -364,7 +385,7 @@ export function CaseDetail(props: CaseDetailProps) {
             <div className="wk-panelcard-head">
               <div>
                 <h2 id="case-decision">{state.decision === null ? 'Your decision' : 'Decision'}</h2>
-                <p>{state.decision === null ? (internal ? 'This finding is reviewed inside your business.' : 'Nothing is sent to a vendor until you confirm.') : 'Recorded on this finding.'}</p>
+                <p>{state.decision === null ? <>Next: <strong>{nextActionLabel(finding, gate.eligible)}</strong>. {internal ? 'This signal is reviewed inside your business; it is not money owed until the evidence gate passes.' : 'Nothing is sent to a vendor until you authorize it.'}</> : 'Recorded on this finding.'}</p>
               </div>
             </div>
             <div className="wk-panelcard-body">

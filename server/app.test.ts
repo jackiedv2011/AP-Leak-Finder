@@ -6,6 +6,7 @@ import { openDatabase } from './db.ts'
 import { DevMailer } from './mailer.ts'
 import type { GoogleClient, GoogleIdentity } from './google.ts'
 import type { DraftService } from './ai.ts'
+import { authorizedProject } from './testProject.ts'
 
 const config = loadConfig({ NODE_ENV: 'test', DATABASE_PATH: ':memory:', APP_ORIGIN: 'http://localhost:0', SESSION_DAYS: '1', REMEMBER_ME_DAYS: '30' })
 
@@ -334,7 +335,9 @@ describe('plans and entitlements', () => {
   it('Growth unlocks every finding and AI drafts; Free is told AI is a paid feature before anything is sent to the model', async () => {
     const c = new Client()
     await signUpAndVerify(c, alice)
+    const saved = authorizedProject('p0', { vendor: 'V', invoice: null, amount: 1, requested: 1 })
     const draftPayload = {
+      projectId: 'p0', findingId: saved.findingId,
       vendor: 'V', findingType: 'T', findingTitle: 'X', explanation: 'E', evidenceStrength: 'strong', amountFlagged: 1, amountRequested: 1, method: 'refund', recoveryStage: 'confirmed',
       rows: [{ invoiceNumber: null, invoiceDate: null, paymentDate: '2025-01-01', invoiceAmount: null, amountPaid: 1, terms: null }],
       userContext: '', sender: { businessName: '', senderName: '', senderEmail: '' },
@@ -350,6 +353,7 @@ describe('plans and entitlements', () => {
     expect((await c.get('/api/auth/me')).body.user.plan).toBe('growth')
     for (const id of ['p1', 'p2', 'p3', 'p4', 'p5']) expect((await c.put(`/api/projects/${id}`, project(id))).status).toBe(200)
     expect((await c.get('/api/account/entitlements')).body).toMatchObject({ plan: 'growth', limits: { auditsPerMonth: null, findingsVisible: null, blocksRepeatUploads: false, aiDrafts: true }, canStartAudit: true })
+    expect((await c.put('/api/projects/p0', saved.project)).status).toBe(200)
     expect((await c.post('/api/ai/draft', draftPayload)).status).toBe(200)
     // a plan is per account: Bob is still Free
     const b = new Client()
@@ -398,7 +402,9 @@ describe('plans and entitlements', () => {
 
 describe('ai drafting', () => {
   it('requires a session, validates the payload, and returns the draft', async () => {
+    const saved = authorizedProject('s1', { vendor: 'Sierra Coffee Supply', invoice: 'INV-1', amount: 6800, requested: 6800 })
     const payload = {
+      projectId: 's1', findingId: saved.findingId,
       vendor: 'Sierra Coffee Supply', findingType: 'Exact duplicate payment', findingTitle: 'Duplicate payment of invoice INV-1', explanation: 'Paid twice.', evidenceStrength: 'strong',
       amountFlagged: 6800, amountRequested: 6800, method: 'refund', recoveryStage: 'confirmed',
       rows: [{ invoiceNumber: 'INV-1', invoiceDate: '2025-01-05', paymentDate: '2025-02-02', invoiceAmount: 6800, amountPaid: 6800, terms: null }],
@@ -410,10 +416,26 @@ describe('ai drafting', () => {
     await c.post('/api/dev/plan', { plan: 'growth' })
     expect((await c.post('/api/ai/draft', { ...payload, extra: 'smuggled' })).status).toBe(400)
     expect((await c.post('/api/ai/draft', { ...payload, rows: [{ ...payload.rows[0], bankAccountLast4: '1234' }] })).status).toBe(400)
-    const ok = await c.post('/api/ai/draft', payload)
+    // Nothing is drafted until the case is saved on this account with evidence and an approval.
+    expect((await c.post('/api/ai/draft', payload)).body.code).toBe('recovery_not_authorized')
+    expect((await c.put('/api/projects/s1', saved.project)).status).toBe(200)
+    expect((await c.post('/api/ai/draft', { ...payload, amountRequested: 5000, amountFlagged: 6800 })).body.code).toBe('recovery_not_authorized')
+    const unapproved = { ...saved.project, environment: { ...saved.project.environment, caseStates: {} } }
+    expect((await c.put('/api/projects/s1', unapproved)).status).toBe(200)
+    expect((await c.post('/api/ai/draft', payload)).body.code).toBe('recovery_not_authorized')
+    expect((await c.put('/api/projects/s1', saved.project)).status).toBe(200)
+    // Browser-supplied allegations and resolution cannot override the saved case.
+    const ok = await c.post('/api/ai/draft', { ...payload, vendor: 'Someone Else', findingTitle: 'Vendor committed fraud', explanation: 'Vendor admitted fraud.', method: 'credit', recoveryStage: 'recovered', rows: [{ ...payload.rows[0], invoiceNumber: 'FAKE' }] })
     expect(ok.status).toBe(200)
     expect(ok.body).toEqual({ subject: 'Re: Sierra Coffee Supply', body: 'Please refund 6800.' })
+    expect(drafts.draft).toHaveBeenLastCalledWith(expect.objectContaining({ vendor: 'Sierra Coffee Supply', method: 'refund', recoveryStage: 'confirmed', findingTitle: 'Duplicate payment of invoice INV-1', explanation: 'The saved payment records show the same invoice paid twice.', rows: expect.arrayContaining([expect.objectContaining({ invoiceNumber: 'INV-1' })]) }))
     expect(drafts.draft).toHaveBeenLastCalledWith(expect.not.objectContaining({ extra: expect.anything() }))
+    const closed = { ...saved.project, environment: { ...saved.project.environment, caseStates: { [saved.findingId]: { ...saved.project.environment.caseStates[saved.findingId], recoveryStage: 'recovered' } } } }
+    expect((await c.put('/api/projects/s1', closed)).status).toBe(200)
+    expect((await c.post('/api/ai/draft', payload)).body.code).toBe('recovery_not_authorized')
+    const alreadySent = { ...saved.project, environment: { ...saved.project.environment, caseStates: { [saved.findingId]: { ...saved.project.environment.caseStates[saved.findingId], recoveryStage: 'requested' } } } }
+    expect((await c.put('/api/projects/s1', alreadySent)).status).toBe(200)
+    expect((await c.post('/api/ai/draft', payload)).body.code).toBe('recovery_not_authorized')
   })
 })
 

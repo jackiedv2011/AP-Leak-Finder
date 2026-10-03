@@ -30,19 +30,19 @@ export const SITE_CHECKS: SiteCheck[] = [
     type: 'exact_duplicate',
     name: 'Exact duplicate payment',
     detail: 'Two payments carrying the same vendor, invoice reference, and amount.',
-    outcome: 'recoverable',
+    outcome: 'review',
   },
   {
     type: 'overpayment',
     name: 'Overpayment vs. invoice',
     detail: 'A payment that lands above the invoice amount recorded against it.',
-    outcome: 'recoverable',
+    outcome: 'review',
   },
   {
     type: 'unclaimed_discount',
     name: 'Unclaimed early-payment discount',
     detail: 'Paid inside the discount window, at full price, with terms on the invoice.',
-    outcome: 'recoverable',
+    outcome: 'opportunity',
   },
   {
     type: 'near_duplicate',
@@ -71,7 +71,7 @@ export const SITE_CHECKS: SiteCheck[] = [
 ]
 
 export const OUTCOME_COPY: Record<FindingClass, { label: string; note: string }> = {
-  recoverable: { label: 'Likely recoverable', note: 'Drafts a recovery request for you to review.' },
+  recoverable: { label: 'Recovery candidate', note: 'Evidence passed. Customer authorization is required before drafting.' },
   review: { label: 'Needs review', note: 'Opens an internal note — no refund is assumed.' },
   opportunity: { label: 'Future savings', note: 'A process change, not money already lost.' },
 }

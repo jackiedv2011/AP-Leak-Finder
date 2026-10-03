@@ -1,3 +1,4 @@
+import { evaluateEligibility } from '@/recovery/eligibility'
 import { useEffect, useState } from 'react'
 import * as DialogPrimitive from '@radix-ui/react-dialog'
 import { X } from 'lucide-react'
@@ -22,7 +23,7 @@ interface DecisionDialogProps {
 }
 
 const OPTIONS: Array<{ value: DecisionValue; title: string; body: string }> = [
-  { value: 'confirmed', title: 'This is real', body: 'The records show money the business should get back. Reclaim will prepare the recovery request next.' },
+  { value: 'confirmed', title: 'Prepare authorization', body: 'The evidence gate passed. Review the requested amount and separately authorize vendor contact next.' },
   { value: 'needs_info', title: 'I need more detail', body: 'Keep it open. Note what you still have to check — a PO, a statement, a word with the vendor.' },
   { value: 'expected', title: 'Not an issue', body: 'This was expected — a split payment, a known arrangement, or a detection mistake. It leaves the open findings.' },
 ]
@@ -32,10 +33,14 @@ const OPTIONS: Array<{ value: DecisionValue; title: string; body: string }> = [
  * with room to say why. Nothing is saved until "Save decision".
  */
 export function DecisionDialog({ finding, open, onOpenChange, onSave, initial = 'confirmed' }: DecisionDialogProps) {
-  const [decision, setDecision] = useState<DecisionValue>(initial)
+  // A recovery candidate that no longer passes the evidence gate cannot be confirmed for vendor outreach.
+  // Review signals may still be confirmed for an internal investigation (see the confirmed option's internal text).
+  const eligible = finding.classification !== 'recovery_candidate' || evaluateEligibility(finding).eligible
+  const start: DecisionValue = initial === 'confirmed' && !eligible ? 'needs_info' : initial
+  const [decision, setDecision] = useState<DecisionValue>(start)
   useEffect(() => {
-    if (open) setDecision(initial)
-  }, [open, initial])
+    if (open) setDecision(start)
+  }, [open, start])
   const [reason, setReason] = useState('')
   const [tag, setTag] = useState<DismissalTag>('intentional')
 
@@ -57,11 +62,11 @@ export function DecisionDialog({ finding, open, onOpenChange, onSave, initial = 
           </header>
 
           <div style={{ padding: '0 24px', display: 'flex', flexDirection: 'column', gap: 10 }} role="radiogroup" aria-label="Decision">
-            {OPTIONS.map((option) => (
+            {OPTIONS.filter(option => option.value !== 'confirmed' || eligible).map((option) => (
               <label key={option.value} className="wk-choice" data-selected={decision === option.value || undefined}>
                 <input type="radio" name="decision" value={option.value} checked={decision === option.value} onChange={() => setDecision(option.value)} />
                 <span>
-                  <b>{option.title}</b>
+                  <b>{option.value === 'confirmed' && finding.class !== 'recoverable' ? 'Open internal review' : option.title}</b>
                   <span className="wk-dim">{option.value === 'confirmed' && finding.class !== 'recoverable' ? 'Keep this finding for an internal investigation. Reclaim will prepare a note for your team; this does not record recoverable money.' : option.body}</span>
                 </span>
               </label>

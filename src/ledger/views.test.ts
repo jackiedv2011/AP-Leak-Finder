@@ -1,3 +1,4 @@
+import { attestDuplicate } from '@/recovery/testEvidence'
 import { describe, expect, it } from 'vitest'
 import { parseCsv } from '@/lib/csv'
 import { mergeImport, setCaseState } from '@/ledger/store'
@@ -18,7 +19,9 @@ function buildSampleEnv() {
     // missed discount -> opportunity
     'Gamma,INV-4,2025-01-01,2025-02-15,100,100,2/10 net 30,,',
   ].join('\n')
-  return mergeImport(null, { sourceLabel: 'sample.csv', mode: 'sample', parsed: parseCsv(csv) })
+  const env = mergeImport(null, { sourceLabel: 'sample.csv', mode: 'sample', parsed: parseCsv(csv) })
+  env.result.findings = env.result.findings.map(f => f.type === 'exact_duplicate' ? attestDuplicate(f) : f)
+  return env
 }
 
 describe('views', () => {
@@ -66,7 +69,7 @@ describe('views', () => {
   it('confirming a case moves it out of Findings and into the confirmed Recovery lane', () => {
     let env = buildSampleEnv()
     const recoverable = env.result.findings.find((f) => f.class === 'recoverable')!
-    env = setCaseState(env, recoverable.id, confirmCase('vendor confirmed'))
+    env = setCaseState(env, recoverable.id, { ...confirmCase('vendor confirmed'), approvedAt: 100, requestedAmount: recoverable.dollarImpact })
 
     const stillInFindings = findingsQueue(env).flatMap((g) => g.cases).some((c) => c.finding.id === recoverable.id)
     expect(stillInFindings).toBe(false)

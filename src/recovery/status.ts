@@ -1,4 +1,5 @@
 import type { CaseState, VendorUpdateStatus } from '@/ledger/caseState'
+import { verifiedReturned } from './financials'
 import { recoveryStatusLabel } from './model'
 import { VENDOR_STATUS, latestVendorPosition } from './vendorStatus'
 
@@ -88,7 +89,7 @@ export function caseStatus(state: CaseState | undefined, now = Date.now(), inter
   }
 
   if (stage === 'requested') {
-    if ((state.recoveredAmount ?? 0) > 0) return { label: 'Partially returned', tone: 'back' }
+    if (verifiedReturned(state) > 0) return { label: 'Partially returned', tone: 'back' }
     const last = latestVendorPosition(state)
     const info = last ? VENDOR_STATUS[last.status] : undefined
     if (last && info?.caseStatus) {
@@ -107,7 +108,7 @@ export function caseStatus(state: CaseState | undefined, now = Date.now(), inter
   }
 
   if (stage === 'recovered') {
-    if ((state.recoveredAmount ?? 0) <= 0) return { label: 'Return amount missing', tone: 'action' }
+    if (verifiedReturned(state) <= 0) return { label: 'Return amount missing', tone: 'action' }
     return { label: state.reconciledAt ? 'Reconciled' : 'Returned, reconcile', tone: 'back' }
   }
 

@@ -1,3 +1,5 @@
+import { evaluateEligibility } from '@/recovery/eligibility'
+import { projectSync } from '@/ledger/projectSync'
 import { useEffect, useMemo, useState } from 'react'
 import { CircleCheck, Copy, Download, Lightbulb, PauseCircle, Sparkles } from 'lucide-react'
 import { formatCurrency } from '@/lib/format'
@@ -36,6 +38,7 @@ function parseMoney(input: string): number {
  */
 export function RecoveryRequestPanel({
   finding,
+  projectId,
   state,
   sender,
   limits,
@@ -46,6 +49,7 @@ export function RecoveryRequestPanel({
   recommendation,
 }: {
   finding: Finding
+  projectId?: string
   state: CaseState
   sender: SenderProfile
   limits: PlanLimits
@@ -55,10 +59,12 @@ export function RecoveryRequestPanel({
   onContactHold: (reason: string | null) => void
   recommendation?: { method: RecoveryMethod; reason: string }
 }) {
+  const gate = evaluateEligibility(finding)
+  const supportedAmount = (gate.potentialAmountMinor ?? 0) / 100
   const [upgrade, setUpgrade] = useState<string | null>(null)
   const canEdit = limits.fullLetters
   const [method, setMethod] = useState<RecoveryMethod>(state.requestedResolution ?? recommendation?.method ?? 'refund')
-  const [amountInput, setAmountInput] = useState(() => (state.requestedAmount ?? finding.dollarImpact).toFixed(2))
+  const [amountInput, setAmountInput] = useState(() => (state.requestedAmount ?? supportedAmount).toFixed(2))
   const generated = useMemo(() => {
     const amount = parseMoney(amountInput)
     // A partial request lowers the ask; the facts the letter states still come from the finding.
@@ -90,9 +96,9 @@ export function RecoveryRequestPanel({
       ? 'Enter the amount to request.'
       : Math.abs(amount * 100 - Math.round(amount * 100)) > 0.000001
         ? 'Enter dollars and cents only.'
-        : Math.round(amount * 100) > Math.round(finding.dollarImpact * 100)
-          ? `The records only support ${formatCurrency(finding.dollarImpact)}.`
-          : null
+      : Math.round(amount * 100) > Math.round(supportedAmount * 100)
+        ? `The records only support ${formatCurrency(supportedAmount)}.`
+        : null
 
   const isVendorLetter = finding.class === 'recoverable'
   const pkg: RequestPackage = { subject, body, requestedAmount: amount, method, recipientEmail: recipientEmail.trim() }
@@ -133,11 +139,13 @@ export function RecoveryRequestPanel({
   }
 
   const draftWithAi = async () => {
-    if (amountError) return
+    if (amountError || !approvedForCurrent || !gate.eligible || !projectId) return
     setDrafting(true)
     setNotice(null)
     try {
-      const draft = await requestAiDraft(buildDraftRequest(finding, state, { amountRequested: amount, method, userContext: context, sender }))
+      await projectSync.flush()
+      if (projectSync.pending) throw new Error('Save this project to the server before drafting.')
+      const draft = await requestAiDraft(buildDraftRequest(finding, state, { amountRequested: amount, method, userContext: context, sender, projectId }))
       setSubject(draft.subject)
       setBody(draft.body)
       setEdited(true)
@@ -188,7 +196,7 @@ export function RecoveryRequestPanel({
               {amountError ? (
                 <span className="wk-field-error" id="request-amount-error" role="alert">{amountError}</span>
               ) : (
-                <span className="wk-field-hint" id="request-amount-hint">The records support up to {formatCurrency(finding.dollarImpact)}.</span>
+                <span className="wk-field-hint" id="request-amount-hint">The evidence supports up to {formatCurrency(supportedAmount)}.</span>
               )}
             </div>
             <div className="wk-field">
@@ -229,7 +237,7 @@ export function RecoveryRequestPanel({
 
         <div className="wk-actions">
           {isVendorLetter ? (
-            <button type="button" className="wk-btn" data-variant="outline" data-size="sm" onClick={limits.aiDrafts ? draftWithAi : () => setUpgrade('AI recovery drafts are part of Growth and Flat.')} disabled={drafting || Boolean(amountError)}>
+            <button type="button" className="wk-btn" data-variant="outline" data-size="sm" onClick={limits.aiDrafts ? draftWithAi : () => setUpgrade('AI recovery drafts are part of Growth and Flat.')} disabled={drafting || Boolean(amountError) || !approvedForCurrent || !gate.eligible || !projectId} title={!gate.eligible ? 'AI drafting opens after the evidence gate passes.' : !approvedForCurrent ? 'Approve the request first; AI drafting follows authorization.' : undefined}>
               <Sparkles aria-hidden="true" />
               {drafting ? 'Drafting…' : limits.aiDrafts ? 'Draft with AI' : 'Draft with AI (paid plans)'}
             </button>

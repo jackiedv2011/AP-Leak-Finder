@@ -26,6 +26,15 @@ const caseFinding: Finding = {
 }
 
 describe('recovery lifecycle', () => {
+  it('ignores an old unverified amount when recording a new partial settlement', () => {
+    const legacy = { ...confirmCase(null), recoveryStage: 'requested' as const, requestedAmount: 1000, recoveredAmount: 400 }
+    const next = verifyRecovery(legacy, { amount: 600, method: 'refund', source: 'bank', reference: 'ACH-verified', settledAt: monday })
+    expect(next.recoveryStage).toBe('requested')
+    expect(next.recoveredAmount).toBe(600)
+    expect(next.legacyRecoveredAmount).toBe(400)
+    expect(next.recoverySettlements).toHaveLength(1)
+    expect(() => verifyRecovery(next, { amount: 401, method: 'refund', source: 'bank', reference: 'ACH-too-much', settledAt: monday })).toThrow(/remaining requested balance/)
+  })
   it('asks for a real return amount before reconciling a legacy recovered case', () => {
     const legacy = { ...confirmCase(null), recoveryStage: 'recovered' as const, requestedAmount: 1000, recoveredAmount: null }
     expect(recoveryStatusLabel(legacy)).toBe('Return amount missing')

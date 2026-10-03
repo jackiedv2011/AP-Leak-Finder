@@ -153,7 +153,7 @@ export function Story() {
       <div className="chapter-panel">
         <div className="chapter-panel-figures">
           <div>
-            <span className="site-eyebrow">Likely recoverable</span>
+            <span className="site-eyebrow">Flagged for review</span>
             <strong className="site-num">{money.format(SAMPLE_RECOVERABLE_TOTAL)}</strong>
             <p className="site-body-sm">Across findings the rules class as recoverable.</p>
           </div>

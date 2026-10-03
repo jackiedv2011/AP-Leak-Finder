@@ -146,7 +146,7 @@ export function FindingCard({ className = '', ...rest }: ArtifactProps) {
   return (
     <article className={`paper finding ${className}`} aria-hidden="true" {...rest}>
       <span className="site-tag" data-outcome="recoverable">
-        Likely recoverable
+        Flagged for review
       </span>
       <h3 className="finding-title">Exact duplicate payment</h3>
       <p className="finding-sub">Sierra Coffee Supply · INV-3305 · 2 source rows</p>
@@ -159,7 +159,7 @@ export function FindingCard({ className = '', ...rest }: ArtifactProps) {
         ))}
       </ul>
       <div className="finding-foot">
-        <span className="paper-label">Potential recovery</span>
+        <span className="paper-label">Flagged amount</span>
         <strong className="site-num">{money.format(CANONICAL_PAIR[0].amountPaid)}</strong>
       </div>
     </article>
@@ -265,7 +265,7 @@ export function FindingsList() {
           </div>
           <span className="site-tag" data-outcome={outcome}>
             {outcome === 'recoverable'
-              ? 'Likely recoverable'
+              ? 'Flagged for review'
               : outcome === 'review'
                 ? 'Needs review'
                 : 'Future savings'}

@@ -22,7 +22,7 @@ describe('computeAuditStats', () => {
 
     // The strongest finding must be a real recoverable finding (the sample has some).
     expect(stats.strongestFinding).not.toBeNull()
-    expect(stats.strongestFinding!.class).toBe('recoverable')
+    expect(stats.strongestFinding!.ruleClass).toBe('recoverable')
     expect(stats.strongestFinding!.dollarImpact).toBe(6800)
   })
 

@@ -6,7 +6,7 @@
  */
 import { describe, expect, it } from 'vitest'
 import { getSampleLedger } from '@/data/sampleLedger'
-import { mergeImport, setCaseState, getCaseState, serializeEnvironment, deserializeEnvironment, type LedgerEnvironment } from '@/ledger/store'
+import { mergeImport, recordEvidence, setCaseState, getCaseState, serializeEnvironment, deserializeEnvironment, type LedgerEnvironment } from '@/ledger/store'
 import { confirmCase, markExpected, markNeedsInfo, reopenDecision, reopenOutcome, withHistory, type CaseState, type RecoveryMethod, type VendorUpdateStatus } from '@/ledger/caseState'
 import {
   approveRecovery,
@@ -20,7 +20,8 @@ import {
   verifyRecovery,
 } from '@/recovery/model'
 import { ladder, vendors } from '@/workspace/selectors'
-import { claimValue } from '@/lib/claims'
+import { authorizedOutstanding, eligiblePotential, verifiedReturned } from '@/recovery/financials'
+import { attestDuplicate } from '@/recovery/testEvidence'
 
 function rng(seed: number) {
   let s = seed >>> 0
@@ -35,6 +36,7 @@ const isCents = (n: number) => Math.abs(n * 100 - Math.round(n * 100)) < 1e-6
 function checkInvariants(env: LedgerEnvironment, where: string) {
   let outstanding = 0
   let recovered = 0
+  let unknownRecovered = 0
   let potential = 0
   for (const f of env.result.findings) {
     const s = getCaseState(env, f.id)
@@ -56,10 +58,15 @@ function checkInvariants(env: LedgerEnvironment, where: string) {
     }
     if (s.recoveryStage === 'not_recovered') expect(cents(s.recoveredAmount), tag).toBe(0)
     if (s.reconciledAt) expect(s.recoveryStage, tag).toBe('recovered')
+    // Verified returns always count; only an open, evidenced candidate carries potential or outstanding money.
+    if ((f.currency ?? f.evidence?.obligation.currency) === 'USD') recovered += cents(verifiedReturned(s))
+    else unknownRecovered += cents(verifiedReturned(s))
     const open = s.decision !== 'expected' && s.recoveryStage !== 'recovered' && s.recoveryStage !== 'not_recovered'
-    if (open) potential += Math.max(0, cents(claimValue(f)) - (claimValue(f) > 0 ? cents(s.recoveredAmount) : 0))
-    if (f.class === 'recoverable' && s.recoveryStage === 'requested') outstanding += Math.max(0, cents(s.requestedAmount ?? f.dollarImpact) - cents(s.recoveredAmount))
-    if (f.class === 'recoverable' && (s.recoveryStage === 'requested' || s.recoveryStage === 'recovered')) recovered += cents(s.recoveredAmount)
+    const supported = eligiblePotential(f, env.result.findings)
+    if (open && supported !== null) {
+      potential += Math.max(0, cents(supported) - cents(verifiedReturned(s)))
+      if (s.approvedAt && (s.recoveryStage === 'confirmed' || s.recoveryStage === 'requested')) outstanding += cents(authorizedOutstanding(s))
+    }
   }
   const l = ladder(env)
   for (const [k, v] of Object.entries({ potential: l.potential, verified: l.verified, inRecovery: l.inRecovery, recovered: l.recovered, atRisk: l.atRisk, awaiting: l.awaitingDecision })) {
@@ -67,6 +74,7 @@ function checkInvariants(env: LedgerEnvironment, where: string) {
   }
   expect(cents(l.inRecovery), `${where} inRecovery`).toBe(outstanding)
   expect(cents(l.recovered), `${where} recovered`).toBe(recovered)
+  expect(cents(l.recoveredByCurrency.Unknown), `${where} unknown-currency returns`).toBe(unknownRecovered)
   expect(cents(l.potential), `${where} potential`).toBe(potential)
   expect(vendors(env).reduce((sum, v) => sum + cents(v.recovered), 0), `${where} vendor recovered`).toBe(recovered)
 }
@@ -104,9 +112,15 @@ function randomStep(state: CaseState, r: () => number, now: number, supported: n
 }
 
 describe('recovery workflow — random walk', () => {
-  const base = mergeImport(null, { sourceLabel: 'sample.csv', mode: 'upload', parsed: getSampleLedger() })
+  // Every sample duplicate carries synthetic customer attestations, so the walk exercises real candidates;
+  // the remaining signals stay review-only and must never gain potential or an authorization.
+  const imported = mergeImport(null, { sourceLabel: 'sample.csv', mode: 'upload', parsed: getSampleLedger() })
+  const base = imported.result.findings
+    .filter((f) => f.type === 'exact_duplicate')
+    .reduce((env, f) => recordEvidence(env, f.id, attestDuplicate(f).evidence!), imported)
 
   it('200 sessions × 60 random actions (valid and invalid) never break the money', () => {
+    expect(ladder(base).potential).toBeGreaterThan(0)
     let applied = 0
     let refused = 0
     for (let seed = 1; seed <= 200; seed++) {
@@ -138,5 +152,5 @@ describe('recovery workflow — random walk', () => {
     // Both kinds of step actually happened in volume.
     expect(applied).toBeGreaterThan(3000)
     expect(refused).toBeGreaterThan(2000)
-  })
+  }, 120_000)
 })

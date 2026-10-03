@@ -1,3 +1,5 @@
+import { ladder } from '@/workspace/selectors'
+import { eligiblePotential, verifiedReturned } from '@/recovery/financials'
 import type { Finding, FindingClass } from '@/types'
 import { computeAuditStats, summarizeFindingClasses } from '@/audit/deriveStats'
 import { assessRecordReadiness, type WeakerCheck } from '@/audit/dataReadiness'
@@ -142,16 +144,14 @@ export function overviewSummary(env: LedgerEnvironment): OverviewSummary {
   const worthInvestigatingTotal = active.reduce((sum, f) => sum + f.dollarImpact, 0)
   const recoveryActive = findings.filter((f) => {
     const state = getCaseState(env, f.id)
-    return f.class === 'recoverable' && (state.recoveryStage === 'confirmed' || state.recoveryStage === 'requested')
+    return eligiblePotential(f, findings) !== null && Boolean(state.approvedAt) && (state.recoveryStage === 'confirmed' || state.recoveryStage === 'requested')
   })
-  const recoveryActiveCount = recoveryActive.length
-  const recoveryActiveValue = recoveryActive.reduce((sum, finding) => sum + finding.dollarImpact, 0)
-  const recovered = findings.filter((finding) => finding.class === 'recoverable' && (getCaseState(env, finding.id).recoveredAmount ?? 0) > 0)
-  const recoveredCount = recovered.length
-  const recoveredValue = recovered.reduce((sum, finding) => {
-    const state = getCaseState(env, finding.id)
-    return sum + (state.recoveredAmount ?? 0)
-  }, 0)
+  const totals = ladder(env)
+  const recoveryActiveCount = totals.counts.inRecovery
+  const recoveryActiveValue = totals.inRecovery
+  const recovered = findings.filter((finding) => verifiedReturned(getCaseState(env, finding.id)) > 0)
+  const recoveredCount = totals.counts.recovered
+  const recoveredValue = totals.recovered
   // What Reclaim originally estimated for the cases that have since closed as
   // recovered. Shown beside the actual figure so the business can judge how
   // close the estimates run — the performance fee is charged on actual only.
@@ -230,7 +230,7 @@ const RECOVERY_STAGE_ORDER: RecoveryStage[] = ['confirmed', 'requested', 'recove
 
 /** Vendor recovery cases grouped by their explicit money outcome. */
 export function recoveryQueue(env: LedgerEnvironment): RecoveryQueueGroup[] {
-  const inRecovery = env.result.findings.filter((f) => f.class === 'recoverable' && isInRecoveryQueue(getCaseState(env, f.id)))
+  const inRecovery = env.result.findings.filter((f) => (eligiblePotential(f, env.result.findings) !== null || verifiedReturned(getCaseState(env, f.id)) > 0 || Boolean(getCaseState(env, f.id).approvedAt)) && isInRecoveryQueue(getCaseState(env, f.id)))
   return RECOVERY_STAGE_ORDER.map((stage) => {
     const cases = inRecovery
       .filter((f) => getCaseState(env, f.id).recoveryStage === stage)

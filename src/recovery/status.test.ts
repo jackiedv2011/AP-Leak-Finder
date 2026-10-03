@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { EMPTY_CASE_STATE, type CaseState, type VendorUpdate, type VendorUpdateStatus } from '@/ledger/caseState'
+import { EMPTY_CASE_STATE, type CaseState, type RecoveryVerification, type VendorUpdate, type VendorUpdateStatus } from '@/ledger/caseState'
 import { recoveryStatusLabel } from './model'
 import { caseStatus, countByTone, dueStatus } from './status'
 
@@ -9,6 +9,10 @@ const fmt = () => 'Oct 9'
 
 function requested(extra: Partial<CaseState> = {}): CaseState {
   return { ...EMPTY_CASE_STATE, decision: 'confirmed', decidedAt: NOW - 20 * DAY, recoveryStage: 'requested', requestedAmount: 1000, approvedAt: NOW - 19 * DAY, recoveryRequestedAt: NOW - 18 * DAY, ...extra }
+}
+/** Money back is a recorded settlement with its proof, not an amount typed on the case. */
+function settled(amount: number): RecoveryVerification[] {
+  return [{ amount, method: 'refund', source: 'bank', reference: 'RF-2041', settledAt: NOW - 2 * DAY }]
 }
 function reply(status: VendorUpdateStatus, extra: Partial<VendorUpdate> = {}): VendorUpdate {
   return { at: NOW - 5 * DAY, status, note: '', ...extra }
@@ -45,16 +49,18 @@ describe('caseStatus', () => {
   })
 
   it('only counts settled money as money back', () => {
-    expect(caseStatus(requested({ recoveredAmount: 200 }), NOW)).toEqual({ label: 'Partially returned', tone: 'back' })
-    const recovered = requested({ recoveryStage: 'recovered', recoveredAmount: 1000 })
+    expect(caseStatus(requested({ recoverySettlements: settled(200) }), NOW)).toEqual({ label: 'Partially returned', tone: 'back' })
+    // an old amount typed on the case, with no settlement behind it, is not money back
+    expect(caseStatus(requested({ recoveredAmount: 200 }), NOW).tone).toBe('waiting')
+    const recovered = requested({ recoveryStage: 'recovered', recoverySettlements: settled(1000) })
     expect(caseStatus(recovered, NOW)).toEqual({ label: 'Returned, reconcile', tone: 'back' })
     expect(caseStatus({ ...recovered, reconciledAt: NOW }, NOW)).toEqual({ label: 'Reconciled', tone: 'back' })
-    expect(caseStatus({ ...recovered, recoveredAmount: 0 }, NOW).tone).toBe('action')
+    expect(caseStatus({ ...recovered, recoverySettlements: [] }, NOW).tone).toBe('action')
     expect(caseStatus(requested({ recoveryStage: 'not_recovered' }), NOW).tone).toBe('neutral')
   })
 
   it('keeps the existing label wherever the old function already had one', () => {
-    const cases = [requested(), requested({ vendorUpdates: [reply('disputed')] }), requested({ vendorUpdates: [reply('credit_issued')] }), requested({ recoveryStage: 'recovered', recoveredAmount: 5 })]
+    const cases = [requested(), requested({ vendorUpdates: [reply('disputed')] }), requested({ vendorUpdates: [reply('credit_issued')] }), requested({ recoveryStage: 'recovered', recoverySettlements: settled(5) }), requested({ recoveryStage: 'recovered', recoveredAmount: 5 })]
     for (const state of cases) expect(caseStatus(state, NOW).label).toBe(recoveryStatusLabel(state))
   })
 })

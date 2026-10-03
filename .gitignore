@@ -41,3 +41,4 @@ data/
 # Standalone preview build of the workspace (see vite.demo.config.ts)
 demo-dist
 demo-onboarding-dist
+.reclaim-test-results.json

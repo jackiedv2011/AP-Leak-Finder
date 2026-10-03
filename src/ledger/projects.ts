@@ -11,7 +11,6 @@ import {
 import { getStorageScope, storageKey } from '@/lib/storageScope'
 import { projectSync } from '@/ledger/projectSync'
 import { ladder } from '@/workspace/selectors'
-import { sumMoney } from '@/lib/claims'
 
 export type { LedgerProjectSummary } from '@/ledger/projectIndex'
 
@@ -44,25 +43,26 @@ function projectId() {
 
 /** The same figures the Dashboard shows for this audit — one definition of "potential recovery" everywhere. */
 function summaryFor(project: LedgerProject): LedgerProjectSummary {
-  const env = project.environment
-  const l = ladder(env)
-  const activeRecovery = env.result.findings.filter((finding) => {
-    const stage = env.caseStates[finding.id]?.recoveryStage
-    return finding.class === 'recoverable' && (stage === 'confirmed' || stage === 'requested')
+  const openFindings = project.environment.result.findings.filter((finding) => {
+    const state = project.environment.caseStates[finding.id]
+    return state?.decision === null || state?.decision === undefined || state.decision === 'needs_info' || state.recoveryStage === 'confirmed' || state.recoveryStage === 'requested'
   })
+  const totals = ladder(project.environment)
 
   return {
+    summaryVersion: 2,
     id: project.id,
     name: project.name,
     sourceLabel: project.sourceLabel,
     mode: project.mode,
     createdAt: project.createdAt,
     updatedAt: project.updatedAt,
-    recordCount: env.records.length,
-    openCaseCount: l.openCount,
-    recoveryValue: l.potential,
-    recoveryActiveCount: activeRecovery.length,
-    recoveryActiveValue: sumMoney(activeRecovery.map((f) => env.caseStates[f.id]?.requestedAmount ?? f.dollarImpact)),
+    recordCount: project.environment.records.length,
+    openCaseCount: openFindings.length,
+    flaggedValue: totals.flagged,
+    potentialRecoveryValue: totals.potential,
+    recoveryActiveCount: totals.counts.inRecovery,
+    recoveryActiveValue: totals.inRecovery,
   }
 }
 
@@ -214,7 +214,7 @@ export function migrateLegacyLedger(loadLegacy: () => LedgerEnvironment | null):
 
 export function listProjects(): LedgerProjectSummary[] {
   migrateCombinedProjects()
-  return readProjectIndex()
+  return readProjectIndex().map((summary) => { const project = readProjectPayload(summary.id); return project ? summaryFor(project) : summary })
 }
 
 export function loadProject(id: string): LedgerProject | null {

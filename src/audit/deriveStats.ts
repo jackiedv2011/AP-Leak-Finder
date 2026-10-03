@@ -1,3 +1,4 @@
+import { eligiblePotential } from '@/recovery/financials'
 import type { APRecord, DetectionResult, Finding, FindingClass } from '@/types'
 import { normalizeVendor, parseTerms, formatDate } from '@/lib/format'
 import type { AuditStats } from '@/audit/types'
@@ -18,10 +19,10 @@ export function summarizeFindingClasses(findings: Finding[]): FindingClassSummar
   return findings.reduce<FindingClassSummary>(
     (summary, finding) => {
       summary.totalFindingCount += 1
-      if (finding.class === 'recoverable') {
+      if (eligiblePotential(finding, findings) !== null) {
         summary.recoverableCount += 1
-        summary.recoverableTotal += finding.dollarImpact
-      } else if (finding.class === 'review') {
+        summary.recoverableTotal += eligiblePotential(finding, findings) ?? 0
+      } else if (finding.classification !== 'future_savings' && finding.class !== 'opportunity') {
         summary.reviewCount += 1
         summary.reviewTotal += finding.dollarImpact
       } else {

@@ -30,8 +30,9 @@ function rec(overrides: Partial<APRecord> & { vendor: string; amountPaid: number
 const d = (y: number, m: number, day: number) => new Date(y, m - 1, day)
 const run = (records: APRecord[]) => detectFindings(records).findings
 const ofType = (findings: Finding[], type: FindingType) => findings.filter((f) => f.type === type)
+/** What the rules flag from ledger rows alone. It is never potential recovery without the evidence gate. */
 const recoverableSum = (findings: Finding[]) =>
-  findings.filter((f) => f.class === 'recoverable').reduce((s, f) => s + f.dollarImpact, 0)
+  findings.filter((f) => f.ruleClass === 'recoverable').reduce((s, f) => s + (f.flaggedAmount ?? f.dollarImpact), 0)
 const cents = (n: number) => Math.round(n * 100)
 
 describe('every finding is a sane money figure', () => {
@@ -81,15 +82,15 @@ describe('every finding is a sane money figure', () => {
 })
 
 describe('Rule 1 — exact duplicates: overlap and refunds', () => {
-  it('POS: the same invoice number with different case and stray spaces is still the same invoice', () => {
+  it('POS: a case or spacing change is a reference variant for review, not an exact raw match', () => {
     const findings = run([
       rec({ vendor: 'Case Co', invoiceNumber: 'INV-100', amountPaid: 500 }),
       rec({ vendor: 'Case Co', invoiceNumber: '  inv-100 ', amountPaid: 500, paymentDate: d(2025, 1, 9) }),
     ])
-    const dup = ofType(findings, 'exact_duplicate')
-    expect(dup).toHaveLength(1)
-    expect(dup[0].class).toBe('recoverable')
-    expect(dup[0].dollarImpact).toBe(500)
+    expect(ofType(findings, 'exact_duplicate')).toHaveLength(0)
+    const variant = findings.filter((f) => f.ruleId === 'invoice_reference_variant_v1')
+    expect(variant).toHaveLength(1)
+    expect(variant[0].classification).toBe('review_needed')
   })
 
   it('FP/over-claim: two repeated-amount clusters never claim more than was overpaid on the invoice', () => {
