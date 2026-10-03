@@ -54,6 +54,15 @@ html[data-surface='workspace'] .wk {
   --kind-prevent-dot: #00a9d6;
   --kind-ink: #0a0a0a;
 
+  /* Case status families (recovery/status.ts). Fixed hues, independent of the
+     viewer's accent; "money back" borrows the accent instead. ink = text,
+     soft = chip fill, dot = marks, bars and chart slices. */
+  --st-action-ink: #9a5800; --st-action-soft: #fff1d6; --st-action-dot: #f59e0b;
+  --st-waiting-ink: #1d4ed8; --st-waiting-soft: #e5edff; --st-waiting-dot: #3b82f6;
+  --st-agreed-ink: #6d28d9; --st-agreed-soft: #f0e7ff; --st-agreed-dot: #8b5cf6;
+  --st-problem-ink: #b3261e; --st-problem-soft: #fde7e4; --st-problem-dot: #e5484d;
+  --st-neutral-ink: #5c5c5c; --st-neutral-soft: #efefef; --st-neutral-dot: #a3a3a3;
+
   --f-display: 'Geist', 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --f-text: 'Geist', 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --f-mono: 'Geist Mono', 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
@@ -105,6 +114,11 @@ html[data-surface='workspace'][data-theme='dark'] .wk {
   --danger: #ff7a6b;
   --danger-soft: rgb(255 106 90 / .13);
   --danger-ring: rgb(255 106 90 / .22);
+  --st-action-ink: #ffc061; --st-action-soft: rgb(245 158 11 / .16); --st-action-dot: #f5a524;
+  --st-waiting-ink: #93b6ff; --st-waiting-soft: rgb(59 130 246 / .18); --st-waiting-dot: #5b9bff;
+  --st-agreed-ink: #c6abff; --st-agreed-soft: rgb(139 92 246 / .2); --st-agreed-dot: #a27bff;
+  --st-problem-ink: #ff8f85; --st-problem-soft: rgb(229 72 77 / .17); --st-problem-dot: #ff6b6b;
+  --st-neutral-ink: #b0b0b0; --st-neutral-soft: rgb(255 255 255 / .08); --st-neutral-dot: #6f6f6f;
   --scrim: rgb(0 0 0 / .72);
   --shadow-pop: 0 24px 70px rgb(0 0 0 / .6);
   --shadow-rest: none;
@@ -279,6 +293,28 @@ html[data-surface='workspace'] .wk-btn[data-state='done'] svg { color: var(--acc
 .wk-chip[data-tone='quiet'] { color: var(--text-muted); }
 .wk-chip[data-tone='quiet']::before { background: transparent; box-shadow: inset 0 0 0 1.5px var(--line-strong); }
 .wk-chip[data-tone='done']::before { background: var(--text); }
+/* Case status: a tinted chip whose family says who holds the ball. Finding
+   kinds stay dot-only chips, so the two never read as the same thing.
+   Any element with data-status-tone gets --tone-ink/soft/dot to paint with. */
+.wk { --st-back-ink: var(--accent-ink); --st-back-soft: var(--accent-soft); --st-back-dot: var(--accent-ink); }
+.wk [data-status-tone] { --tone-ink: var(--st-neutral-ink); --tone-soft: var(--st-neutral-soft); --tone-dot: var(--st-neutral-dot); }
+.wk [data-status-tone='action'] { --tone-ink: var(--st-action-ink); --tone-soft: var(--st-action-soft); --tone-dot: var(--st-action-dot); }
+.wk [data-status-tone='waiting'] { --tone-ink: var(--st-waiting-ink); --tone-soft: var(--st-waiting-soft); --tone-dot: var(--st-waiting-dot); }
+.wk [data-status-tone='agreed'] { --tone-ink: var(--st-agreed-ink); --tone-soft: var(--st-agreed-soft); --tone-dot: var(--st-agreed-dot); }
+.wk [data-status-tone='problem'] { --tone-ink: var(--st-problem-ink); --tone-soft: var(--st-problem-soft); --tone-dot: var(--st-problem-dot); }
+.wk [data-status-tone='back'] { --tone-ink: var(--st-back-ink); --tone-soft: var(--st-back-soft); --tone-dot: var(--st-back-dot); }
+.wk .wk-status { display: inline-flex; flex: 0 1 auto; align-items: center; gap: 6px; min-width: 0; max-width: 100%; height: 22px; padding: 0 8px 0 7px; overflow: hidden; border-radius: var(--r-xs); background: var(--tone-soft); color: var(--tone-ink); font: 500 12.5px/1 var(--f-text); white-space: nowrap; text-overflow: ellipsis; }
+.wk-status::before { content: ''; width: 7px; height: 7px; flex: none; border-radius: 50%; background: var(--tone-dot); }
+.wk-status[data-status-tone='paused']::before { background: transparent; box-shadow: inset 0 0 0 1.5px var(--tone-dot); }
+.wk .wk-status[data-size='lg'] { height: 26px; padding: 0 10px 0 9px; font-size: 13px; }
+.wk .wk-status svg { width: 12px; height: 12px; flex: none; margin-left: -1px; }
+.wk .wk-status:has(svg)::before { display: none; }
+/* A small family mark, for labels and legends. */
+.wk-tone-dot { display: inline-block; width: 8px; height: 8px; flex: none; border-radius: 50%; background: var(--tone-dot); }
+.wk-tone-dot[data-status-tone='paused'] { background: transparent; box-shadow: inset 0 0 0 1.5px var(--tone-dot); }
+/* A proportion bar split by status family. */
+.wk-tonebar { display: flex; height: 6px; gap: 2px; overflow: hidden; border-radius: 3px; background: var(--surface-hi); }
+.wk-tonebar i { display: block; min-width: 4px; height: 100%; background: var(--tone-dot); transition: flex-grow var(--t-slow) var(--ease-out); }
 .wk-dot { width: 8px; height: 8px; flex: none; border-radius: 50%; background: var(--line-strong); }
 .wk-dot[data-kind='recoverable'] { background: var(--kind-claim-dot); }
 .wk-dot[data-kind='review'] { background: var(--kind-review-dot); }
@@ -337,6 +373,14 @@ button.wk-total:hover { background: var(--surface-hi); }
 .wk-total[data-empty] .wk-total-value { color: var(--text-muted); }
 
 .wk-totals-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+/* Recoveries: each total carries a small pie of its share of everything pursued. */
+.wk-totals[data-pies] .wk-total { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-content: start; column-gap: 16px; }
+.wk-totals[data-pies] .wk-total > :not(.wk-total-pie) { grid-column: 1; }
+.wk-total-pie { display: flex; grid-column: 2; grid-row: 1 / span 3; flex-direction: column; align-items: center; align-self: center; gap: 6px; }
+.wk-total-pie small { color: var(--text-muted); font: 500 12px/1 var(--f-text); font-variant-numeric: tabular-nums; }
+.wk-pie { width: 64px; height: 64px; flex: none; }
+.wk-pie-slice { transition: stroke-dasharray var(--t-slow) var(--ease-out); }
+@media (prefers-reduced-motion: reduce) { .wk-pie-slice { transition: none; } }
 .wk-evidence-cards { display: none; }
 .wk-ov-grid { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(300px, 1fr); align-items: start; gap: var(--gap); }
 .wk-ov-col { display: flex; min-width: 0; flex-direction: column; gap: var(--gap); }
@@ -364,9 +408,9 @@ button.wk-total:hover { background: var(--surface-hi); }
 .wk-flow { display: flex; flex-direction: column; gap: 18px; }
 .wk-flow-bar { display: flex; height: 8px; overflow: hidden; border-radius: 4px; background: var(--surface-hi); gap: 2px; }
 .wk-flow-bar i { display: block; min-width: 6px; height: 100%; }
-:is(.wk-flow-bar, .wk-flow-step) i[data-stage='found'] { background: var(--line-strong); }
-:is(.wk-flow-bar, .wk-flow-step) i[data-stage='confirmed'] { background: var(--text-muted); }
-:is(.wk-flow-bar, .wk-flow-step) i[data-stage='requested'] { background: var(--text); }
+:is(.wk-flow-bar, .wk-flow-step) i[data-stage='found'] { background: var(--st-neutral-dot); }
+:is(.wk-flow-bar, .wk-flow-step) i[data-stage='confirmed'] { background: var(--st-action-dot); }
+:is(.wk-flow-bar, .wk-flow-step) i[data-stage='requested'] { background: var(--st-waiting-dot); }
 :is(.wk-flow-bar, .wk-flow-step) i[data-stage='recovered'] { background: var(--accent); }
 .wk-flow-steps { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
 .wk-flow-step { display: flex; min-width: 0; flex-direction: column; gap: 4px; }
@@ -404,7 +448,8 @@ button.wk-bars-row:hover em { text-decoration: underline; text-underline-offset:
 .wk-feed li:first-child { padding-top: 0; border-top: 0; }
 .wk-feed li:last-child { padding-bottom: 0; }
 .wk-feed-icon { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: var(--surface-hi); color: var(--text-dim); }
-.wk-feed-icon[data-tone='accent'] { background: var(--accent); color: var(--on-accent); }
+.wk-feed-icon[data-status-tone]:not([data-status-tone='neutral']) { background: var(--tone-soft); color: var(--tone-ink); }
+.wk-feed-icon[data-status-tone='back'] { background: var(--accent); color: var(--on-accent); }
 .wk-feed-icon svg { width: 14px; height: 14px; }
 .wk-feed-text { min-width: 0; font-size: 13px; }
 .wk-feed-text button { padding: 0; border: 0; background: none; color: var(--text); font: 600 13px var(--f-text); cursor: pointer; }
@@ -894,6 +939,7 @@ html[data-surface='workspace'] .wk-panel[data-state='closed'] { animation: wk-zo
   .wk-head-copy[style] { align-items: flex-start !important; text-align: left !important; }
   .wk-total { padding: 16px; }
   .wk-total-value { font-size: 24px; }
+  .wk-pie { width: 48px; height: 48px; }
   .wk-total-note { font-size: 12px; }
   .wk-panelcard-head { padding: 14px 16px; }
   .wk-panelcard-body { padding: 16px; }

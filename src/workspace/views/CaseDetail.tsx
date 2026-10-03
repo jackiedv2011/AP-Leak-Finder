@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { CalendarClock, CircleCheck, CircleHelp, CircleX, ListChecks, TriangleAlert } from 'lucide-react'
 import { formatCurrency, formatDate } from '@/lib/format'
 import { DECISION_LABEL, type DecisionValue, type DismissalTag, type RecoveryMethod, type RecoveryVerification, type VendorUpdate } from '@/ledger/caseState'
@@ -9,10 +9,11 @@ import type { CaseState } from '@/ledger/caseState'
 import type { SenderProfile } from '@/lib/senderProfile'
 import type { APRecord, Finding } from '@/types'
 import { FINDING_TYPE_LABELS } from '@/lib/labels'
-import { recommendRecoveryMethod, recoveryNextAction, recoveryStatusLabel } from '@/recovery/model'
+import { recommendRecoveryMethod, recoveryNextAction } from '@/recovery/model'
 import { recoveryLedger, RECOVERY_LEDGER_LABEL } from '@/recovery/ledger'
 import { playbookFor } from '@/recovery/playbooks'
 import { evidenceOf, openQuestion, timelineFor } from '../selectors'
+import { StatusChip } from './StatusChip'
 import { InternalReviewPanel, METHOD_LABEL, RecoveryRequestPanel, type RequestPackage } from './RecoveryPanels'
 import { RecoveryAccountingPanel, RecoveryProgressPanel } from './RecoveryJourney'
 import { KIND_LABEL, KindChip } from './KindChip'
@@ -130,8 +131,8 @@ function Evidence({ finding }: { finding: Finding }) {
 /** Only the figures that exist yet. A column of dashes says nothing. */
 function RecoveryFacts({ finding, state }: { finding: Finding; state: CaseState }) {
   const internal = finding.class !== 'recoverable'
-  const status = state.recoveryStage ? recoveryStatusLabel(state, internal) : state.decision ? DECISION_LABEL[state.decision] : 'Not reviewed'
-  const rows: Array<[string, string, boolean?]> = []
+  const status = <StatusChip state={state} internal={internal} />
+  const rows: Array<[string, ReactNode, boolean?]> = []
   if (internal) {
     rows.push(['Flagged value', formatCurrency(finding.dollarImpact)], ['Status', status])
     if (state.recoveryOutcomeNote) rows.push(['Investigation outcome', state.recoveryOutcomeNote])
@@ -267,6 +268,7 @@ export function CaseDetail(props: CaseDetailProps) {
           </div>
           <h1>{finding.vendor}</h1>
           <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 12 }}>
+            <StatusChip state={state} internal={internal} size="lg" />
             <KindChip finding={finding} label={typeLabel} />
             <Strength level={evidence} />
           </div>
@@ -377,7 +379,7 @@ export function CaseDetail(props: CaseDetailProps) {
                 </div>
               ) : (
                 <div className="wk-stack">
-                  <span className="wk-chip" data-tone={state.decision === 'confirmed' ? 'done' : undefined}>{DECISION_LABEL[state.decision]}</span>
+                  <StatusChip status={{ label: DECISION_LABEL[state.decision], tone: state.decision === 'needs_info' ? 'action' : 'neutral' }} />
                   <div className="wk-actions">
                     {canChangeDecision ? <button type="button" className="wk-btn" data-variant="ghost" data-size="sm" onClick={() => onReopen(finding.id)}>Change decision</button> : null}
                     {hasClosedRemainder ? <button type="button" className="wk-btn" data-variant="outline" data-size="sm" onClick={() => onReopenBalance(finding.id)}>Reopen remaining balance</button> : null}
