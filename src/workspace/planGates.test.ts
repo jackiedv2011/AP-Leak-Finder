@@ -44,12 +44,12 @@ describe('plan gates', () => {
     expect(entitlementsFor('growth', 0).limits).toMatchObject({ findingsVisible: null, blocksRepeatUploads: false, aiDrafts: true })
   })
 
-  it('pricing: $19.99 + 15% of what came back on Growth, $100 flat, and the break-even between them', () => {
-    expect(PLAN_PRICE_USD).toEqual({ free: 0, growth: 19.99, flat: 100 })
-    expect(successFee('growth', 1234.56)).toBe(185.18)
+  it('pricing: $15 + 10% of what came back on Growth, $50 flat, and the break-even between them', () => {
+    expect(PLAN_PRICE_USD).toEqual({ free: 0, growth: 15, flat: 50 })
+    expect(successFee('growth', 1234.56)).toBe(123.46)
     expect(successFee('flat', 1234.56)).toBe(0)
     expect(successFee('free', 1234.56)).toBe(0)
-    expect(FLAT_BREAK_EVEN).toBe(533.4)
-    expect(19.99 + successFee('growth', FLAT_BREAK_EVEN)).toBeCloseTo(100, 2)
+    expect(FLAT_BREAK_EVEN).toBe(350)
+    expect(15 + successFee('growth', FLAT_BREAK_EVEN)).toBeCloseTo(50, 2)
   })
 })

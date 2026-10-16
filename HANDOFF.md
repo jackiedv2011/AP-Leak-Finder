@@ -63,7 +63,7 @@ Their commit adds: customer approval before outreach (with contact hold and "alr
 ### New pricing (three tracks) — `server/plans.ts` is the source of truth
 | | Free | Growth | Flat |
 |---|---|---|---|
-| Price | $0 | $19.99/mo + 15% of what's recovered | $100/mo, no fee |
+| Price | $0 | $15/mo + 10% of what's recovered | $50/mo, no fee |
 | Uploads | Unlimited | Unlimited, re-audits allowed | same as Growth |
 | Findings | 3 lowest-value per upload | all | all |
 | Extras | — | AI drafts, full recovery workflow, reports, "Gmail sending — coming soon" | same as Growth |
