@@ -77,6 +77,18 @@ export function openDatabase(path: string): DatabaseSync {
       first_seen INTEGER NOT NULL,
       PRIMARY KEY (user_id, fingerprint)
     );
+    -- One accounting connection per account and provider. The access and
+    -- refresh tokens are sealed (crypto.ts sealSecret); the key is not here.
+    CREATE TABLE IF NOT EXISTS integration_connections (
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      provider TEXT NOT NULL,
+      realm_id TEXT NOT NULL,
+      company_name TEXT NOT NULL DEFAULT '',
+      tokens_sealed TEXT NOT NULL,
+      connected_at INTEGER NOT NULL,
+      last_sync_at INTEGER,
+      PRIMARY KEY (user_id, provider)
+    );
     CREATE INDEX IF NOT EXISTS sessions_user ON sessions(user_id);
     CREATE INDEX IF NOT EXISTS tokens_user ON tokens(user_id, kind);
     CREATE INDEX IF NOT EXISTS audit_starts_user ON audit_starts(user_id, started_at);

@@ -4,6 +4,7 @@ import { AlertCircle, AlertTriangle, Download, FileText, HelpCircle, ShieldCheck
 import { parseCsv } from '@/lib/csv'
 import type { ParseResult } from '@/types'
 import { assessDataReadiness, assessFatalFile } from '@/audit/dataReadiness'
+import { QuickBooksImport } from './QuickBooksSource'
 import '@/workspace/workspace.css'
 import '@/workspace/reclaim.css'
 
@@ -255,6 +256,8 @@ export function ImportPanel({ allowSample, animateEntry = false, autoFocusUpload
           Upload CSV
         </button>
       </div>
+
+      <QuickBooksImport onFile={(file) => void handleFile(file)} />
 
       {shownError && (
         <div className="wk-callout" data-tone="danger" role="alert">
