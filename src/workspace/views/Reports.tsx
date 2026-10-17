@@ -5,6 +5,7 @@ import { EVIDENCE_LABEL, ladder, rootCauses, vendors } from '../selectors'
 import { Locked } from '@/components/plan/Locked'
 import { REDACTED_MONEY, REDACTED_VENDOR } from '../planGates'
 import { useEntitlements } from '@/lib/auth/AuthContext'
+import { currencyLabel, formatCauseValue } from './amounts'
 
 export function Facts({ rows }: { rows: Array<[string, string]> }) {
   return (
@@ -51,9 +52,9 @@ export function Reports({ env }: { env: LedgerEnvironment }) {
       </section>
 
       <section className="wk-section"><Facts rows={[
-        ...Object.entries(l.flaggedByCurrency).map(([currency, amount]): [string, string] => [`Flagged exposure · ${currency}`, amount.toFixed(2)]),
-        ...Object.entries(l.atRiskByCurrency).map(([currency, amount]): [string, string] => [`Payments to verify · ${currency}`, amount.toFixed(2)]),
-        ...Object.entries(l.recoveredByCurrency).map(([currency, amount]): [string, string] => [`Verified returned · ${currency}`, amount.toFixed(2)]),
+        ...Object.entries(l.flaggedByCurrency).map(([currency, amount]): [string, string] => [`Flagged exposure · ${currencyLabel(currency)}`, formatCauseValue(amount, currency, formatCurrency)]),
+        ...Object.entries(l.atRiskByCurrency).map(([currency, amount]): [string, string] => [`Payments to verify · ${currencyLabel(currency)}`, formatCauseValue(amount, currency, formatCurrency)]),
+        ...Object.entries(l.recoveredByCurrency).map(([currency, amount]): [string, string] => [`Verified returned · ${currencyLabel(currency)}`, formatCauseValue(amount, currency, formatCurrency)]),
       ]} /></section>
       <section className="wk-section">
         <div className="wk-section-head">
@@ -78,9 +79,9 @@ export function Reports({ env }: { env: LedgerEnvironment }) {
               <tbody>
                 {causes.map((c) => (
                   <tr key={`${c.type}-${c.currency}`} style={{ cursor: 'default' }}>
-                    <td>{c.label} · {c.currency}</td>
+                    <td>{c.currency === 'USD' || c.currency === 'Unknown' ? c.label : `${c.label} · ${c.currency}`}</td>
                     <td className="wk-num">{c.count}</td>
-                    <td className="wk-right wk-table-money">{c.currency === 'USD' ? formatCurrency(c.value) : `${c.value.toFixed(2)} ${c.currency}`}</td>
+                    <td className="wk-right wk-table-money">{formatCauseValue(c.value, c.currency, formatCurrency)}</td>
                   </tr>
                 ))}
               </tbody>

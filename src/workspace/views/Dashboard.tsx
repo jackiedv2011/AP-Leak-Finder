@@ -12,6 +12,7 @@ import type { WorkspaceMode } from '../WorkspaceShell'
 import { KindChip } from './KindChip'
 import { CountUp } from './CountUp'
 import { findingReference } from './findingText'
+import { formatCauseValue } from './amounts'
 
 interface DashboardProps {
   env: LedgerEnvironment
@@ -72,6 +73,14 @@ export function Dashboard({ env, visible, auditLabel, onOpenCase, onSeeAllFindin
   const openable = undecided.filter((o) => visible.has(o.finding.id) && !top.includes(o)).slice(0, Math.max(0, 2 - top.filter((o) => visible.has(o.finding.id)).length))
   const next = [...top, ...openable]
   const firstOpenable = undecided.find((o) => visible.has(o.finding.id))
+  // Only duplicates can become recovery candidates, once their evidence is confirmed.
+  const duplicates = undecided.filter((o) => o.finding.type === 'exact_duplicate' || o.finding.type === 'near_duplicate')
+  const firstDuplicate = duplicates.find((o) => visible.has(o.finding.id))
+  const candidatesNote = l.counts.verified > 0
+    ? `${l.counts.verified} ${plural(l.counts.verified, 'finding')} with confirmed evidence · USD only`
+    : duplicates.length
+      ? 'Duplicates count here once you confirm their evidence'
+      : 'Nothing with confirmed evidence yet'
   const causes = rootCauses(env)
   const topVendors = vendors(env).filter((v) => v.potential > 0).slice(0, 5)
   const vendorCount = new Set(env.records.map((r) => r.vendor.trim().toLowerCase())).size
@@ -112,15 +121,15 @@ export function Dashboard({ env, visible, auditLabel, onOpenCase, onSeeAllFindin
   const sections: Record<OverviewSectionId, () => React.ReactNode> = {
     totals: () => (
       <section className="wk-totals" aria-label="Totals" key="totals">
-        <button type="button" className="wk-total" data-total="ready" data-amount={l.verified} data-emphasis={l.verified > 0 || undefined} onClick={() => onSeeFindingsKind('recoverable')}>
+        <button type="button" className="wk-total" data-total="ready" data-amount={l.verified} data-emphasis={l.verified > 0 || undefined} onClick={() => (l.verified === 0 && firstDuplicate ? onOpenCase(firstDuplicate.finding.id) : onSeeFindingsKind('recoverable'))}>
           <span className="wk-total-label"><span className="wk-label">Recovery candidates</span><ArrowRight aria-hidden="true" /></span>
           <strong className="wk-total-value"><CountUp value={l.verified} format={money} /></strong>
-          <span className="wk-total-note">{l.counts.verified} passed the evidence gate · USD only</span>
+          <span className="wk-total-note">{candidatesNote}</span>
         </button>
         <button type="button" className="wk-total" data-total="review" data-amount={needsContextValue} onClick={() => onSeeFindingsKind('review')}>
           <span className="wk-total-label"><span className="wk-label">Flagged for review</span><ArrowRight aria-hidden="true" /></span>
           <strong className="wk-total-value"><CountUp value={needsContextValue} format={money} /></strong>
-          <span className="wk-total-note">{needsContext.length} {plural(needsContext.length, 'signal')} · flagged amount, not money owed</span>
+          <span className="wk-total-note">{needsContext.length} {plural(needsContext.length, 'finding')} to check · not money owed until confirmed</span>
         </button>
         <button type="button" className="wk-total" data-total="inRecovery" data-amount={l.inRecovery} data-empty={l.inRecovery === 0 || undefined} onClick={() => onNavigate('recoveries')}>
           <span className="wk-total-label"><span className="wk-label">In recovery</span><ArrowRight aria-hidden="true" /></span>
@@ -189,10 +198,10 @@ export function Dashboard({ env, visible, auditLabel, onOpenCase, onSeeAllFindin
                   <button key={o.finding.id} type="button" className="wk-queue-row" data-amount={locked ? undefined : o.finding.dollarImpact} data-locked={locked || undefined} onClick={() => onOpenCase(o.finding.id)} aria-label={locked ? `${o.typeLabel}, part of Growth and Flat` : `${o.finding.vendor}, ${o.typeLabel}, ${money(o.finding.dollarImpact)}`}>
                     <span className="wk-queue-main">
                       <strong>{locked ? o.typeLabel : o.finding.vendor}</strong>
-                      <span>{locked ? <em>Vendor and invoices shown on Growth and Flat</em> : <><KindChip finding={o.finding} label={o.typeLabel} />{o.state.decision === 'needs_info' ? <span className="wk-chip" data-tone="quiet">Needs information</span> : null}<em>{findingReference(o.finding)}</em></>}</span>
+                      {locked ? null : <span><KindChip finding={o.finding} label={o.typeLabel} />{o.state.decision === 'needs_info' ? <span className="wk-chip" data-tone="quiet">Needs information</span> : null}<em>{findingReference(o.finding)}</em></span>}
                     </span>
                     <span className="wk-queue-amount">{locked ? REDACTED_MONEY : money(o.finding.dollarImpact)}</span>
-                    <span className="wk-queue-go">{locked ? <><Lock aria-hidden="true" />Paid plans</> : <>Review<ArrowRight aria-hidden="true" /></>}</span>
+                    <span className="wk-queue-go">{locked ? <Lock aria-hidden="true" /> : <>Review<ArrowRight aria-hidden="true" /></>}</span>
                   </button>
                 )
               })}
@@ -206,6 +215,7 @@ export function Dashboard({ env, visible, auditLabel, onOpenCase, onSeeAllFindin
           {lockedCount > 0 ? (
             <div className="wk-upsell">
               <p><Lock aria-hidden="true" style={{ display: 'inline', verticalAlign: '-2px', marginRight: 8 }} /><strong>{lockedCount} of {undecided.length}</strong> findings are shown in full on Growth and Flat. Free shows the {entitlements.limits.findingsVisible} lowest-value ones.</p>
+              <button type="button" className="wk-btn" data-variant="primary" data-size="sm" onClick={() => onNavigate('plans')}>See plans</button>
             </div>
           ) : null}
         </section>
@@ -275,21 +285,22 @@ export function Dashboard({ env, visible, auditLabel, onOpenCase, onSeeAllFindin
 
     types: () => {
       if (!causes.length) return null
+      const noCurrency = causes.some((cause) => cause.currency === 'Unknown')
       const biggest = Object.fromEntries(causes.map((cause) => [cause.currency, Math.max(1, ...causes.filter((row) => row.currency === cause.currency).map((row) => row.value))]))
       return (
         <section className="wk-panelcard" aria-labelledby="ov-types" key="types">
           <div className="wk-panelcard-head">
             <div>
               <h2 id="ov-types">By finding type</h2>
-              <p>Which checks caught the money</p>
+              <p>{noCurrency ? 'Which checks caught the money · no currency column in this file' : 'Which checks caught the money'}</p>
             </div>
             <button type="button" className="wk-more" onClick={() => onNavigate('reports')}>Report <ArrowRight aria-hidden="true" /></button>
           </div>
           <div className="wk-panelcard-body wk-bars" data-columns="2">
             {causes.slice(0, 6).map((cause) => (
               <button type="button" className="wk-bars-row" key={`${cause.type}-${cause.currency}`} data-amount={cause.value} onClick={() => onSearchFindings(cause.label)}>
-                <span><em>{cause.label} · {cause.currency}</em></span>
-                <strong>{cause.currency === 'USD' ? money(cause.value) : `${cause.value.toFixed(2)} ${cause.currency}`}</strong>
+                <span><em>{cause.currency === 'USD' || cause.currency === 'Unknown' ? cause.label : `${cause.label} · ${cause.currency}`}</em></span>
+                <strong>{formatCauseValue(cause.value, cause.currency, money)}</strong>
                 <span className="wk-bars-track"><i style={{ width: `${Math.max(2, (cause.value / biggest[cause.currency]) * 100)}%` }} /></span>
                 <small>{cause.count} {plural(cause.count, 'finding')}</small>
               </button>
@@ -390,8 +401,10 @@ export function Dashboard({ env, visible, auditLabel, onOpenCase, onSeeAllFindin
           <h1>Overview</h1>
           <p>
             {l.counts.potential === 0
-              ? `Every check ran against ${auditLabel} and nothing is still open.`
-              : <>{l.counts.potential} recovery {plural(l.counts.potential, 'candidate')} worth {money(l.potential)} in {auditLabel}. {l.verified > 0 ? <>{money(l.verified)} of it passed the evidence gate and awaits your authorization.</> : null}</>}
+              ? undecided.length
+                ? `Every check ran against ${auditLabel}. ${undecided.length} ${plural(undecided.length, 'finding')} ${undecided.length === 1 ? 'is' : 'are'} waiting on your review; none is a confirmed recovery candidate yet.`
+                : `Every check ran against ${auditLabel} and nothing is still open.`
+              : <>{l.counts.potential} recovery {plural(l.counts.potential, 'candidate')} worth {money(l.potential)} in {auditLabel}. {l.verified > 0 ? <>{money(l.verified)} of it has confirmed evidence and is waiting for your approval.</> : null}</>}
           </p>
         </div>
         <div className="wk-head-actions">
