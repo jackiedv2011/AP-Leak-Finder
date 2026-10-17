@@ -6,7 +6,7 @@
  *   EDGE — boundary, precision or malformed input
  */
 import { describe, expect, it } from 'vitest'
-import { detectFindings } from '@/lib/detection'
+import { detectFindings, recurringSeriesOf } from '@/lib/detection'
 import { referenceStrength } from '@/lib/sourceIdentity'
 import type { APRecord, Finding, FindingType } from '@/types'
 
@@ -38,7 +38,7 @@ const cents = (n: number) => Math.round(n * 100)
 
 describe('every finding is a sane money figure', () => {
   it('EDGE: an empty ledger and a one-row ledger produce nothing and zero totals', () => {
-    expect(detectFindings([])).toEqual({ findings: [], recoverableTotal: 0, reviewTotal: 0, opportunityTotal: 0 })
+    expect(detectFindings([])).toEqual({ findings: [], recoverableTotal: 0, reviewTotal: 0, opportunityTotal: 0, recurringSeries: [] })
     const one = detectFindings([rec({ vendor: 'Solo', amountPaid: 100, invoiceNumber: 'S1', invoiceAmount: 100 })])
     expect(one.findings).toHaveLength(0)
   })
@@ -238,6 +238,24 @@ describe('Rule 2 — near duplicates', () => {
       rec({ vendor: 'Squeaky Kleen Car Wash', amountPaid: 19.99, paymentDate: d(2026, 10, 1) }),
     ])
     expect(findings).toHaveLength(0)
+  })
+
+  it('EDGE: a recurring series left out of near-duplicates is reported on the result', () => {
+    const records = [
+      rec({ id: 'cw1', vendor: 'Squeaky Kleen Car Wash', amountPaid: 19.99, paymentDate: d(2026, 9, 10) }),
+      rec({ id: 'cw2', vendor: 'Squeaky Kleen Car Wash', amountPaid: 19.99, paymentDate: d(2026, 9, 17) }),
+      rec({ id: 'cw3', vendor: 'Squeaky Kleen Car Wash', amountPaid: 19.99, paymentDate: d(2026, 9, 24) }),
+      rec({ id: 'cw4', vendor: 'Squeaky Kleen Car Wash', amountPaid: 19.99, paymentDate: d(2026, 10, 1) }),
+      rec({ id: 'extra', vendor: 'Squeaky Kleen Car Wash', amountPaid: 19.99, paymentDate: d(2026, 9, 11) }),
+    ]
+    const result = detectFindings(records)
+    expect(result.recurringSeries).toEqual([
+      { vendor: 'Squeaky Kleen Car Wash', amount: 19.99, currency: null, cadenceDays: 7, paymentCount: 4, firstPaymentDate: '2026-09-10', lastPaymentDate: '2026-10-01', recordIds: ['cw1', 'cw2', 'cw3', 'cw4'] },
+    ])
+    // The off-series charge is still flagged, and is not part of the series.
+    expect(ofType(result.findings, 'near_duplicate').map((f) => f.relatedRecords.map((r) => r.id))).toEqual([['cw1', 'extra']])
+    expect(recurringSeriesOf(result)).toBe(result.recurringSeries)
+    expect(recurringSeriesOf({ findings: [], recoverableTotal: 0, reviewTotal: 0, opportunityTotal: 0 })).toEqual([])
   })
 
   it('POS: a second charge the day after a weekly no-reference charge is still caught', () => {
