@@ -216,6 +216,10 @@ describe('importing and disconnecting', () => {
     const [header, ...rows] = (res.body.csv as string).trim().split('\n')
     expect(header).toBe('vendor,invoice_number,invoice_date,invoice_amount,payment_date,amount_paid,terms,category,currency,transaction_id,company,source_account,transaction_type')
     expect(rows).toHaveLength(3)
+    // Beside the CSV, the links it can't carry: both payments paid Bill 101.
+    expect(res.body.facts.schemaVersion).toBe(1)
+    expect(res.body.facts.payments['qbo:BillPayment:202'].bill).toEqual({ txnType: 'Bill', id: '101', txnDate: '2026-08-01', amountMinor: 125000, docNumber: 'INV-7781' })
+    expect(Object.keys(res.body.facts.payments)).toEqual(['qbo:BillPayment:201', 'qbo:BillPayment:202', 'qbo:Purchase:401'])
     expect((await alice.get('/api/integrations/quickbooks')).body.lastSyncAt).toEqual(expect.any(Number))
   })
 

@@ -5,6 +5,7 @@ import { parseCsv } from '@/lib/csv'
 import type { ParseResult } from '@/types'
 import { assessDataReadiness, assessFatalFile } from '@/audit/dataReadiness'
 import { QuickBooksImport } from './QuickBooksSource'
+import type { QuickBooksFacts } from '../../../server/quickbooksFacts.ts'
 import '@/workspace/workspace.css'
 import '@/workspace/reclaim.css'
 
@@ -13,6 +14,8 @@ export interface ImportInput {
   parsed: ParseResult
   sourceLabel: string
   mode: 'upload'
+  /** Set when the file came from QuickBooks: the source facts behind its rows. */
+  quickbooks?: QuickBooksFacts
 }
 
 interface ImportPanelProps {
@@ -45,6 +48,7 @@ const MAX_UPLOAD_BYTES = 50 * 1024 * 1024
 interface PendingUpload {
   file: File
   parsed: ParseResult
+  quickbooks?: QuickBooksFacts
 }
 
 function formatFileSize(bytes: number): string {
@@ -70,7 +74,7 @@ export function ImportPanel({ allowSample, animateEntry = false, autoFocusUpload
   const [pending, setPending] = useState<PendingUpload | null>(null)
   const [parseError, setParseError] = useState<string | null>(null)
 
-  async function handleFile(file: File) {
+  async function handleFile(file: File, quickbooks?: QuickBooksFacts) {
     setParseError(null)
     if (/\.(xlsx|xlsm|xls|numbers|ods)$/i.test(file.name)) {
       setParseError('Spreadsheet files can’t be read directly yet. In Excel or Sheets, use File → Save As / Download → CSV, then upload that file.')
@@ -107,7 +111,7 @@ export function ImportPanel({ allowSample, animateEntry = false, autoFocusUpload
         }
         return
       }
-      setPending({ file, parsed })
+      setPending({ file, parsed, ...(quickbooks ? { quickbooks } : {}) })
     } catch {
       setParseError('Could not read that file. Please upload a valid CSV.')
     }
@@ -200,7 +204,7 @@ export function ImportPanel({ allowSample, animateEntry = false, autoFocusUpload
             className="wk-btn"
             data-variant="primary"
             onClick={() =>
-              onImport({ file: pending.file, parsed: pending.parsed, sourceLabel: pending.file.name, mode: 'upload' })
+              onImport({ file: pending.file, parsed: pending.parsed, sourceLabel: pending.file.name, mode: 'upload', ...(pending.quickbooks ? { quickbooks: pending.quickbooks } : {}) })
             }
           >
             {confirmLabel}
@@ -257,7 +261,7 @@ export function ImportPanel({ allowSample, animateEntry = false, autoFocusUpload
         </button>
       </div>
 
-      <QuickBooksImport onFile={(file) => void handleFile(file)} />
+      <QuickBooksImport onFile={(file, facts) => void handleFile(file, facts ?? undefined)} />
 
       {shownError && (
         <div className="wk-callout" data-tone="danger" role="alert">

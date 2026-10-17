@@ -11,6 +11,8 @@
  * API host, and only for a query or the company-info record. Nothing in this
  * module can create, change or delete anything in a customer's books.
  */
+import type { QuickBooksFacts, QuickBooksTxnRef } from './quickbooksFacts.ts'
+
 export interface QuickBooksTokens {
   accessToken: string
   refreshToken: string
@@ -141,35 +143,111 @@ const csvCell = (v: unknown) => {
   return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
 }
 const linksOf = (line: QboObject) => (line.LinkedTxn ?? []) as Array<{ TxnId: string; TxnType: string }>
+const cents = (amount: unknown) => Math.round(Number(amount ?? 0) * 100)
+const ref = (txnType: QuickBooksTxnRef['txnType'], t: QboObject | undefined, id: string, amount: unknown = t?.TotalAmt): QuickBooksTxnRef => ({ txnType, id, txnDate: t?.TxnDate ?? null, amountMinor: cents(amount) })
+
+/**
+ * A voided bill payment or purchase stays in QuickBooks with a zero total, its
+ * lines cleared and "Voided" at the start of its private note. (Intuit's void
+ * response; the sandbox company has no voided payment to confirm it against.)
+ * A zero-total payment that still has lines is a credit fully applied, not a void.
+ */
+export const isVoided = (t: QboObject) => cents(t.TotalAmt) === 0 && (/^\s*voided/i.test(String(t.PrivateNote ?? '')) || !(t.Line ?? []).length)
 
 /**
  * One row per payment against a bill, plus direct vendor checks and card
  * charges, in the columns Reclaim's CSV import already reads — so a
  * QuickBooks import runs through exactly the same parser, checks and review
- * as an uploaded file.
+ * as an uploaded file. Alongside, the facts the CSV can't carry, keyed by each
+ * row's transaction_id: which bill it paid, the credits and refunds applied
+ * with it, and each vendor's credits, refunds and voids.
  */
-export function toLedgerCsv(pull: QuickBooksPull): string {
-  const bills = new Map((pull.entities.Bill ?? []).map((b) => [b.Id, b]))
+export function toLedgerImport(pull: QuickBooksPull, pulledAt = Date.now()): { csv: string; facts: QuickBooksFacts } {
+  const entities = pull.entities
+  const bills = new Map((entities.Bill ?? []).map((b) => [b.Id, b]))
+  const credits = new Map((entities.VendorCredit ?? []).map((c) => [c.Id, c]))
+  const deposits = new Map((entities.Deposit ?? []).map((d) => [d.Id, d]))
   const company = pull.company.CompanyName ?? ''
   const header = ['vendor', 'invoice_number', 'invoice_date', 'invoice_amount', 'payment_date', 'amount_paid', 'terms', 'category', 'currency', 'transaction_id', 'company', 'source_account', 'transaction_type']
   const rows: unknown[][] = []
-  for (const bp of pull.entities.BillPayment ?? []) {
-    const billLines = (bp.Line ?? []).filter((l: QboObject) => linksOf(l).some((x) => x.TxnType === 'Bill'))
-    billLines.forEach((line: QboObject, n: number) => {
-      const bill = bills.get(linksOf(line).find((x) => x.TxnType === 'Bill')!.TxnId)
+  const payments: QuickBooksFacts['payments'] = {}
+  const vendors: QuickBooksFacts['vendors'] = {}
+  const vendor = (id: string | undefined) => (id ? (vendors[id] ??= { credits: [], refunds: [], voided: [] }) : null)
+
+  for (const c of entities.VendorCredit ?? []) vendor(c.VendorRef?.value)?.credits.push(ref('VendorCredit', c, c.Id))
+  for (const d of entities.Deposit ?? []) {
+    for (const line of d.Line ?? []) {
+      const entity = line.DepositLineDetail?.Entity
+      if (String(entity?.type ?? '').toLowerCase() === 'vendor') vendor(entity.value)?.refunds.push(ref('Deposit', d, d.Id, line.Amount))
+    }
+  }
+
+  for (const bp of entities.BillPayment ?? []) {
+    if (isVoided(bp)) {
+      vendor(bp.VendorRef?.value)?.voided.push(ref('BillPayment', bp, bp.Id))
+      continue
+    }
+    const lines = (bp.Line ?? []) as QboObject[]
+    const linesOfType = (type: string) => lines.filter((l) => linksOf(l).some((x) => x.TxnType === type))
+    const idOf = (line: QboObject, type: string) => linksOf(line).find((x) => x.TxnType === type)!.TxnId
+    const creditsApplied = linesOfType('VendorCredit').map((l) => ref('VendorCredit', credits.get(idOf(l, 'VendorCredit')), idOf(l, 'VendorCredit'), l.Amount))
+    const refundsApplied = linesOfType('Deposit').map((l) => ref('Deposit', deposits.get(idOf(l, 'Deposit')), idOf(l, 'Deposit'), l.Amount))
+    // A refund applied through a bill payment is a refund from this vendor, wherever its deposit line points.
+    for (const r of refundsApplied) {
+      const activity = vendor(bp.VendorRef?.value)
+      if (activity && !activity.refunds.some((x) => x.txnType === 'Deposit' && x.id === r.id)) activity.refunds.push(r)
+    }
+    const billLines = linesOfType('Bill')
+    billLines.forEach((line, n) => {
+      const billId = idOf(line, 'Bill')
+      const bill = bills.get(billId)
+      const transactionId = billLines.length > 1 ? `qbo:BillPayment:${bp.Id}:${n + 1}` : `qbo:BillPayment:${bp.Id}`
+      const currency = bp.CurrencyRef?.value ?? 'USD'
       rows.push([
         bp.VendorRef?.name, bill?.DocNumber ?? `QBO-Bill-${bill?.Id ?? '?'}`, bill?.TxnDate, bill?.TotalAmt, bp.TxnDate, line.Amount,
-        bill?.SalesTermRef?.name, bill?.Line?.[0]?.AccountBasedExpenseLineDetail?.AccountRef?.name, bp.CurrencyRef?.value ?? 'USD',
-        billLines.length > 1 ? `qbo:BillPayment:${bp.Id}:${n + 1}` : `qbo:BillPayment:${bp.Id}`, company,
-        bp.CheckPayment?.BankAccountRef?.name ?? bp.CreditCardPayment?.CCAccountRef?.name, `Bill Payment (${bp.PayType})`,
+        bill?.SalesTermRef?.name, bill?.Line?.[0]?.AccountBasedExpenseLineDetail?.AccountRef?.name, currency,
+        transactionId, company, bp.CheckPayment?.BankAccountRef?.name ?? bp.CreditCardPayment?.CCAccountRef?.name, `Bill Payment (${bp.PayType})`,
       ])
+      payments[transactionId] = {
+        payment: { ...ref('BillPayment', bp, bp.Id, line.Amount), txnType: 'BillPayment', payType: bp.PayType ?? null },
+        vendorId: bp.VendorRef?.value ?? null,
+        currency,
+        // Only a bill QuickBooks returned counts as the obligation; a dangling link is left for a person.
+        bill: bill ? { ...ref('Bill', bill, billId), txnType: 'Bill', docNumber: bill.DocNumber ?? null } : null,
+        creditsApplied,
+        refundsApplied,
+      }
     })
   }
-  for (const p of pull.entities.Purchase ?? []) {
-    if (p.EntityRef?.type !== 'Vendor' || p.Credit) continue
+
+  for (const p of entities.Purchase ?? []) {
+    if (p.EntityRef?.type !== 'Vendor') continue
+    if (p.Credit) {
+      vendor(p.EntityRef.value)?.refunds.push(ref('Purchase', p, p.Id))
+      continue
+    }
+    if (isVoided(p)) {
+      vendor(p.EntityRef.value)?.voided.push(ref('Purchase', p, p.Id))
+      continue
+    }
+    const transactionId = `qbo:Purchase:${p.Id}`
+    const currency = p.CurrencyRef?.value ?? 'USD'
     // A Purchase's DocNumber is a check number or card reference ("1", "Debit"), not
     // the vendor's invoice number, so it must not feed invoice matching.
-    rows.push([p.EntityRef.name, null, null, null, p.TxnDate, p.TotalAmt, null, p.Line?.[0]?.AccountBasedExpenseLineDetail?.AccountRef?.name, p.CurrencyRef?.value ?? 'USD', `qbo:Purchase:${p.Id}`, company, p.AccountRef?.name, p.PaymentType])
+    rows.push([p.EntityRef.name, null, null, null, p.TxnDate, p.TotalAmt, null, p.Line?.[0]?.AccountBasedExpenseLineDetail?.AccountRef?.name, currency, transactionId, company, p.AccountRef?.name, p.PaymentType])
+    payments[transactionId] = {
+      payment: { ...ref('Purchase', p, p.Id), txnType: 'Purchase', payType: p.PaymentType ?? null },
+      vendorId: p.EntityRef.value ?? null,
+      currency,
+      bill: null,
+      creditsApplied: [],
+      refundsApplied: [],
+    }
   }
-  return [header, ...rows].map((r) => r.map(csvCell).join(',')).join('\n') + '\n'
+
+  const csv = [header, ...rows].map((r) => r.map(csvCell).join(',')).join('\n') + '\n'
+  const searched = { vendorCredits: credits.size, deposits: deposits.size, purchases: (entities.Purchase ?? []).length, billPayments: (entities.BillPayment ?? []).length }
+  return { csv, facts: { schemaVersion: 1, companyName: company, pulledAt, payments, vendors, searched } }
 }
+
+export const toLedgerCsv = (pull: QuickBooksPull) => toLedgerImport(pull).csv
