@@ -8,6 +8,7 @@ import { DecisionDialog } from '@/components/audit/DecisionDialog'
 import { Locked } from '@/components/plan/Locked'
 import { useEntitlements } from '@/lib/auth/AuthContext'
 import type { CaseState } from '@/ledger/caseState'
+import type { ImportBatch } from '@/ledger/store'
 import type { SenderProfile } from '@/lib/senderProfile'
 import type { APRecord, Finding } from '@/types'
 import { FINDING_TYPE_LABELS } from '@/lib/labels'
@@ -29,6 +30,8 @@ interface CaseDetailProps {
   onSaveEvidence?: (findingId: string, evidence: RecoveryEvidence) => void
   state: CaseState
   records: APRecord[]
+  /** The ledger's import batches: a QuickBooks import's credit, refund and void searches pre-fill evidence. */
+  imports?: ImportBatch[]
   discoveredAt: number | null
   sender: SenderProfile
   onDecide: (findingId: string, decision: DecisionValue, reason: string | null, dismissalTag?: DismissalTag | null) => void
@@ -189,7 +192,7 @@ function stepsDone(state: CaseState): boolean[] {
 
 /** §29 — what happened and the work in front of you, the decision and money alongside. */
 export function CaseDetail(props: CaseDetailProps) {
-  const { finding, findings = [], projectId, onSaveEvidence, state, records, discoveredAt, sender, onDecide, onMarkRequested, onRecordOutcome, onReopen, onReopenBalance, onApproveRecovery, onApproveAndSend, onContactHold, onVendorUpdate, onFollowUp, onVerifyRecovery, onCloseRecovery, onReconcileRecovery } = props
+  const { finding, findings = [], imports, projectId, onSaveEvidence, state, records, discoveredAt, sender, onDecide, onMarkRequested, onRecordOutcome, onReopen, onReopenBalance, onApproveRecovery, onApproveAndSend, onContactHold, onVendorUpdate, onFollowUp, onVerifyRecovery, onCloseRecovery, onReconcileRecovery } = props
   const gate = evaluateEligibility(finding, finding.evidence, findings)
   const entitlements = useEntitlements()
   const [deciding, setDeciding] = useState<DecisionValue | null>(null)
@@ -313,7 +316,7 @@ export function CaseDetail(props: CaseDetailProps) {
           {state.requiresRevalidation ? <p className="wk-field-hint" role="status">This existing recovery needs its evidence revalidated before any further outreach. Recorded returns stay preserved.</p> : null}
 
           {/* Only duplicate rules have a recovery gate; savings and security findings never collect recovery evidence. */}
-          {onSaveEvidence && (finding.type === 'exact_duplicate' || finding.type === 'near_duplicate') ? <EvidencePanel key={`evidence-${finding.id}`} finding={finding} findings={findings} onSave={(evidence) => onSaveEvidence(finding.id, evidence)} /> : null}
+          {onSaveEvidence && (finding.type === 'exact_duplicate' || finding.type === 'near_duplicate') ? <EvidencePanel key={`evidence-${finding.id}`} finding={finding} findings={findings} imports={imports} onSave={(evidence) => onSaveEvidence(finding.id, evidence)} /> : null}
 
           <Evidence finding={finding} />
 

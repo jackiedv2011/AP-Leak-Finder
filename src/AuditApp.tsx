@@ -452,7 +452,7 @@ export function AuditApp() {
         }
       }
       setEntryError(null)
-      return runImport({ sourceLabel: input.sourceLabel, mode: input.mode, parsed: input.parsed }, { replaceEnvironment })
+      return runImport({ sourceLabel: input.sourceLabel, mode: input.mode, parsed: input.parsed, ...(input.quickbooks ? { quickbooks: input.quickbooks } : {}) }, { replaceEnvironment })
     },
     [importIntent, route.entry, runImport, entitlements.limits.blocksRepeatUploads]
   )
@@ -654,6 +654,7 @@ export function AuditApp() {
               onSaveEvidence={handleSaveEvidence}
               state={activeCase.state}
               records={environment.records}
+              imports={environment.imports}
               discoveredAt={activeDiscoveredAt}
               sender={sender}
               onDecide={handleDecide}

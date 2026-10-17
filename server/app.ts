@@ -10,7 +10,7 @@ import { createDraftService, DraftError, DraftRequestSchema, unsupportedAmounts,
 import type { ServerConfig } from './config.ts'
 import { HttpError, RateLimiter, empty, json, redirect, serializeCookie, toRequest, writeResponse, type Request, type Response } from './http.ts'
 import { newToken, openSecret, sealSecret } from './crypto.ts'
-import { createQuickBooksClient, pullLedger, toLedgerCsv, QuickBooksReconnectError, QuickBooksUnauthorizedError, type QuickBooksClient, type QuickBooksTokens } from './quickbooks.ts'
+import { createQuickBooksClient, pullLedger, toLedgerImport, QuickBooksReconnectError, QuickBooksUnauthorizedError, type QuickBooksClient, type QuickBooksTokens } from './quickbooks.ts'
 import { entitlementsFor, isPlan, monthStart, planOf, PLAN_LIMITS, type Plan } from './plans.ts'
 import { checkRepeat, repeatMessage, rowFingerprint } from './uploads.ts'
 import { authorizedDraftFacts } from './caseFacts.ts'
@@ -364,7 +364,7 @@ export function createApp(deps: AppDependencies): App {
           pull = await pullLedger(qbo.client, row.realm_id, accessToken)
         }
         db.prepare("UPDATE integration_connections SET last_sync_at = ? WHERE user_id = ? AND provider = 'quickbooks'").run(Date.now(), user.id)
-        return json(200, { companyName: row.company_name, csv: toLedgerCsv(pull) })
+        return json(200, { companyName: row.company_name, ...toLedgerImport(pull) })
       } catch (err) {
         if (err instanceof QuickBooksReconnectError || err instanceof QuickBooksUnauthorizedError) {
           dropQboConnection(user.id)

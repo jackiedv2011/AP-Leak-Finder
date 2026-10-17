@@ -1,3 +1,5 @@
+import type { QuickBooksFacts } from '../../server/quickbooksFacts.ts'
+
 /**
  * The browser side of the QuickBooks connection. The browser never holds a
  * QuickBooks token: connecting is a full-page trip through the server to
@@ -35,16 +37,25 @@ export async function fetchQuickBooksStatus(): Promise<QuickBooksStatus> {
   return { available: false }
 }
 
-export type QuickBooksImportResult = { ok: true; file: File; companyName: string } | { ok: false; message: string; reconnect: boolean }
+export type QuickBooksImportResult = { ok: true; file: File; companyName: string; facts: QuickBooksFacts | null } | { ok: false; message: string; reconnect: boolean }
 
-/** Pulls the connected company's bills and payments as a CSV file for the normal import review. */
+const isFacts = (v: unknown): v is QuickBooksFacts => {
+  const f = v as QuickBooksFacts | null
+  return Boolean(f && typeof f === 'object' && f.schemaVersion === 1 && f.payments && typeof f.payments === 'object' && f.vendors && typeof f.vendors === 'object' && Number.isFinite(f.pulledAt))
+}
+
+/**
+ * Pulls the connected company's bills and payments as a CSV file for the
+ * normal import review, plus the QuickBooks facts the CSV can't carry (which
+ * bill each payment paid, credits, refunds) for pre-filling recovery evidence.
+ */
 export async function importFromQuickBooks(): Promise<QuickBooksImportResult> {
   try {
     const { status, body } = await call('/api/integrations/quickbooks/sync', 'POST')
     if (status === 200 && body && typeof body.csv === 'string') {
       const companyName = typeof body.companyName === 'string' ? body.companyName : 'QuickBooks'
       const slug = companyName.replace(/[^\w-]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase() || 'company'
-      return { ok: true, companyName, file: new File([body.csv], `quickbooks-${slug}.csv`, { type: 'text/csv' }) }
+      return { ok: true, companyName, facts: isFacts(body.facts) ? body.facts : null, file: new File([body.csv], `quickbooks-${slug}.csv`, { type: 'text/csv' }) }
     }
     return { ok: false, message: typeof body?.message === 'string' ? body.message : 'QuickBooks import failed. Try again.', reconnect: body?.code === 'quickbooks_reconnect' }
   } catch {

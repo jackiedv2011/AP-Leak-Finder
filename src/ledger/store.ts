@@ -5,6 +5,7 @@ import { checksum, recordIdentity, sourceSignature, normalizeReference } from '@
 import { normalizeVendor } from '@/lib/format'
 import { reviewMetadata } from '@/lib/findingMetadata'
 import { evaluateEligibility, type RecoveryEvidence } from '@/recovery/eligibility'
+import type { QuickBooksFacts } from '../../server/quickbooksFacts.ts'
 
 export interface ImportBatch {
   schemaVersion?: 2
@@ -20,6 +21,8 @@ export interface ImportBatch {
   detectedColumns?: string[]
   /** Findings first surfaced by this scan, retained independently of the new-badge lifecycle. */
   findingIds?: string[]
+  /** A QuickBooks import's vendor-level searches (credits, refunds, voids); each row keeps its own payment facts. */
+  quickbooks?: Omit<QuickBooksFacts, 'payments'>
 }
 
 /**
@@ -161,6 +164,7 @@ export interface MergeImportInput {
   sourceLabel: string
   mode: 'sample' | 'upload'
   parsed: ParseResult
+  quickbooks?: QuickBooksFacts
 }
 
 export function inspectImport(env: LedgerEnvironment | null, input: MergeImportInput) {
@@ -196,12 +200,17 @@ export function mergeImport(env: LedgerEnvironment | null, input: MergeImportInp
   const batchId = `batch_${inspection.fileChecksum}`
   let seq = base.nextRecordSeq
 
-  const newRecords: APRecord[] = inspection.accepted.map((r) => ({
-    ...r,
-    id: `rec_${seq++}`,
-    importBatchId: batchId,
-    ...(r.source ? {source:{...r.source,filename:input.sourceLabel,batchId}} : {}),
-  }))
+  const qbo = input.quickbooks
+  const newRecords: APRecord[] = inspection.accepted.map((r) => {
+    const fact = qbo && r.externalTransactionId ? qbo.payments[r.externalTransactionId] : undefined
+    return {
+      ...r,
+      id: `rec_${seq++}`,
+      importBatchId: batchId,
+      ...(r.source ? {source:{...r.source,filename:input.sourceLabel,batchId}} : {}),
+      ...(fact ? { quickbooks: fact } : {}),
+    }
+  })
 
   const allRecords = [...base.records, ...newRecords]
   const result = detectFindings(allRecords)
@@ -244,6 +253,7 @@ export function mergeImport(env: LedgerEnvironment | null, input: MergeImportInp
     skippedCount: input.parsed.skippedCount,
     detectedColumns: [...input.parsed.detectedColumns],
     findingIds: newFindingIds,
+    ...(qbo ? { quickbooks: { schemaVersion: qbo.schemaVersion, companyName: qbo.companyName, pulledAt: qbo.pulledAt, vendors: qbo.vendors, searched: qbo.searched } } : {}),
   }
 
   return {

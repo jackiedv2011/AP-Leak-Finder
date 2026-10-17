@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { AlertCircle, CheckCircle2, ShieldCheck } from 'lucide-react'
 import { useOptionalAuth } from '@/lib/auth/AuthContext'
+import type { QuickBooksFacts } from '../../../server/quickbooksFacts.ts'
 import { QUICKBOOKS_CONNECT_URL, connectOutcome, disconnectQuickBooks, fetchQuickBooksStatus, importFromQuickBooks, type QuickBooksStatus } from '@/lib/quickbooksApi'
 
 const READ_ONLY_NOTE = 'Read-only: Reclaim reads bills, bill payments, vendors and credits. It never changes anything in QuickBooks.'
@@ -37,7 +38,7 @@ function initialOutcome() {
  * company's ledger as a CSV that goes through the same review as an upload.
  * Renders nothing for guests or when the server has no QuickBooks keys.
  */
-export function QuickBooksImport({ onFile }: { onFile: (file: File) => void }) {
+export function QuickBooksImport({ onFile }: { onFile: (file: File, facts: QuickBooksFacts | null) => void }) {
   const { status, refresh } = useQuickBooksStatus()
   const [outcome] = useState(initialOutcome)
   const [busy, setBusy] = useState(false)
@@ -51,7 +52,7 @@ export function QuickBooksImport({ onFile }: { onFile: (file: File) => void }) {
     const result = await importFromQuickBooks()
     setBusy(false)
     if (result.ok) {
-      onFile(result.file)
+      onFile(result.file, result.facts)
       void refresh()
     } else {
       setError(result.message)
