@@ -41,8 +41,9 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): ServerConfig {
   const google = env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET ? { clientId: env.GOOGLE_CLIENT_ID, clientSecret: env.GOOGLE_CLIENT_SECRET } : null
   const gmail = env.GMAIL_USER && env.GMAIL_APP_PASSWORD ? { user: env.GMAIL_USER, appPassword: env.GMAIL_APP_PASSWORD } : null
   const resend = env.RESEND_API_KEY && env.EMAIL_FROM ? { apiKey: env.RESEND_API_KEY, from: env.EMAIL_FROM } : null
-  if (production && !env.SESSION_COOKIE_SECURE_OK && !appOrigin.startsWith('https://')) {
-    throw new Error('In production APP_ORIGIN must be https:// (session cookies are marked Secure).')
+  if (production) {
+    const problems = productionProblems(env, appOrigin)
+    if (problems.length) throw new Error(`Refusing to start in production:\n${problems.map((p) => `  - ${p}`).join('\n')}`)
   }
   return {
     port,
@@ -64,6 +65,49 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): ServerConfig {
     // become an account-takeover endpoint; DEV_MAILBOX=true opts in explicitly.
     devMailbox: !production && (env.DEV_MAILBOX === 'true' || (env.DEV_MAILBOX !== 'false' && isLocalOrigin(appOrigin))),
     quickbooks: quickbooksConfig(env),
+  }
+}
+
+/**
+ * Everything that makes a production start unsafe, so one failed boot lists
+ * every fix rather than one per restart. Values are never echoed: some are secrets.
+ */
+function productionProblems(env: NodeJS.ProcessEnv, appOrigin: string): string[] {
+  const problems: string[] = []
+  const set = (name: string) => !!env[name]?.trim()
+
+  // Session cookies are marked Secure, and the Google and Intuit redirect URIs
+  // are built from this. SESSION_COOKIE_SECURE_OK lets a production build run
+  // on this machine over plain http, and nowhere else.
+  if (!set('APP_ORIGIN')) problems.push('APP_ORIGIN is not set. Set it to the public https:// address of the app.')
+  else if (!isHttpsOrigin(appOrigin) && !(env.SESSION_COOKIE_SECURE_OK && isLocalOrigin(appOrigin))) {
+    problems.push('APP_ORIGIN must be an https:// origin with no path (session cookies are marked Secure).')
+  }
+
+  // Without a provider the server falls back to the dev mailbox, which is off
+  // in production, so verification and reset emails would go nowhere.
+  const resend = set('RESEND_API_KEY') && set('EMAIL_FROM')
+  const gmail = set('GMAIL_USER') && set('GMAIL_APP_PASSWORD')
+  if (set('RESEND_API_KEY') !== set('EMAIL_FROM')) problems.push('Set both RESEND_API_KEY and EMAIL_FROM, or neither.')
+  if (set('GMAIL_USER') !== set('GMAIL_APP_PASSWORD')) problems.push('Set both GMAIL_USER and GMAIL_APP_PASSWORD, or neither.')
+  if (!resend && !gmail) problems.push('No email provider. Set RESEND_API_KEY and EMAIL_FROM (or GMAIL_USER and GMAIL_APP_PASSWORD); the dev mailbox is not available in production.')
+
+  // The dev mailbox hands password-reset links to anyone who asks.
+  if (set('DEV_MAILBOX') && env.DEV_MAILBOX !== 'false') problems.push('DEV_MAILBOX must be unset or false in production.')
+
+  const qbo = ['QBO_CLIENT_ID', 'QBO_CLIENT_SECRET', 'QBO_TOKEN_KEY']
+  const missing = qbo.filter((name) => !set(name))
+  if (missing.length && missing.length < qbo.length) problems.push(`QuickBooks is half configured: ${missing.join(', ')} missing. Set all three QBO_* values, or none.`)
+
+  return problems
+}
+
+function isHttpsOrigin(origin: string): boolean {
+  try {
+    const url = new URL(origin)
+    return url.protocol === 'https:' && url.pathname === '/' && !url.search && !url.hash && !url.username
+  } catch {
+    return false
   }
 }
 

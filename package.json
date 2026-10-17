@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "dev:server": "node --env-file-if-exists=.env --env-file-if-exists=.env.local server/index.ts",
-    "start": "NODE_ENV=production node --env-file-if-exists=.env server/index.ts"
+    "start": "NODE_ENV=production node --env-file-if-exists=.env server/index.ts",
+    "backup:db": "node --env-file-if-exists=.env server/backup.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.127.0",

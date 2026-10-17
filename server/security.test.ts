@@ -259,7 +259,8 @@ describe('dev-only endpoints', () => {
   it('it can still be switched on explicitly for a shared dev box', async () => {
     await start()
     expect(loadConfig({ APP_ORIGIN: 'https://dev.example', DEV_MAILBOX: 'true' }).devMailbox).toBe(true)
-    expect(loadConfig({ NODE_ENV: 'production', APP_ORIGIN: 'https://reclaim.example', DEV_MAILBOX: 'true' }).devMailbox).toBe(false)
+    // ...but never in production: the server refuses to start rather than quietly ignore it.
+    expect(() => loadConfig({ NODE_ENV: 'production', APP_ORIGIN: 'https://reclaim.example', RESEND_API_KEY: 're_x', EMAIL_FROM: 'a@b.c', DEV_MAILBOX: 'true' })).toThrow(/DEV_MAILBOX/)
   })
 })
 
