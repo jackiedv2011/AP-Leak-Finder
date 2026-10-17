@@ -23,8 +23,9 @@ npm run dev            # Vite — VITE_PORT=5174, proxies /api to the API
 - The owner's real account (`j…@gmail.com`, Free) is signed in on this Mac. **Don't run test uploads in it** — use a guest session, or an isolated production copy:
   ```bash
   npm run build
-  NODE_ENV=production SESSION_COOKIE_SECURE_OK=1 PORT=8799 APP_ORIGIN=http://localhost:8799 DATABASE_PATH=/tmp/reclaim-qa.sqlite node server/index.ts
+  env -i PATH="$PATH" HOME="$HOME" NODE_ENV=production SESSION_COOKIE_SECURE_OK=1 PORT=8799 APP_ORIGIN=http://localhost:8799 DATABASE_PATH=/tmp/reclaim-qa.sqlite RESEND_API_KEY=re_not_real EMAIL_FROM=qa@localhost node server/index.ts
   ```
+  Production refuses to start without an email provider; the dummy Resend key gets past that check (sends fail). Deploying for real: `docs/deploy.md`.
 
 Checks (all passing at handoff):
 
