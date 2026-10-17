@@ -42,6 +42,22 @@ export function normalizeReference(raw: string | null): { value: string | null; 
   step('remove_spacing_and_punctuation',value.replace(/[\s\-_.:#/]/g,''))
   return {value:value||null,transformations}
 }
+/** Words payment systems put in the reference field when there is no invoice number (QuickBooks writes "Debit" on card purchases). */
+const PLACEHOLDER_REFERENCES = new Set(['debit','credit','cash','check','cheque','card','creditcard','debitcard','visa','mastercard','amex','ach','eft','wire','transfer','payment','pmt','invoice','inv','bill','ref','reference','receipt','na','none','null','nil','tbd','unknown','misc','various'])
+/** Up to this many characters, a reference ("1", "12", a check number) is too common to identify an invoice on its own. */
+const SHORT_REFERENCE_MAX_LENGTH = 2
+
+/**
+ * How far an invoice reference can be trusted to identify one invoice.
+ * - none: missing, blank, all zeros or a placeholder word; treated as no reference.
+ * - short: one or two characters; the same invoice only when the amount matches too.
+ * - strong: everything else.
+ */
+export function referenceStrength(raw: string | null): 'none' | 'short' | 'strong' {
+  const value = normalizeReference(raw).value
+  if (value === null || /^0+$/.test(value) || PLACEHOLDER_REFERENCES.has(value)) return 'none'
+  return value.length <= SHORT_REFERENCE_MAX_LENGTH ? 'short' : 'strong'
+}
 export function vendorTransformations(raw:string):string[] {
   const steps:string[]=[]
   let value=raw
