@@ -356,7 +356,8 @@ button.wk-total:hover { background: var(--surface-hi); }
 .wk-queue-go svg { width: 13px; height: 13px; }
 .wk-queue-row[data-locked] { cursor: pointer; }
 .wk-queue-row[data-locked] .wk-queue-main strong { color: var(--text-muted); }
-.wk-queue-row[data-locked] .wk-queue-go { background: transparent; color: var(--text-muted); }
+.wk-queue-row[data-locked] .wk-queue-go { border-color: transparent; background: transparent; color: var(--text-muted); }
+.wk-queue-row[data-locked]:hover .wk-queue-go { background: transparent; color: var(--text); }
 .wk-queue-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px var(--pad); border-top: 1px solid var(--line-soft); background: var(--surface-sunk); color: var(--text-muted); font-size: 12.5px; }
 .wk-queue-empty { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: var(--pad); }
 .wk-queue-empty p { color: var(--text-dim); }
@@ -435,7 +436,7 @@ button.wk-bars-row:hover em { text-decoration: underline; text-underline-offset:
 .wk-toolbar-spacer { flex: 1; }
 
 .wk-grid-table { overflow: hidden; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface); box-shadow: var(--shadow-rest); }
-.wk-grid-head, .wk-grid-row { display: grid; grid-template-columns: minmax(220px, 2fr) minmax(140px, 1.1fr) minmax(120px, .9fr) minmax(120px, .9fr) minmax(96px, auto) 16px; align-items: center; gap: 16px; width: 100%; padding: 0 var(--pad); }
+.wk-grid-head, .wk-grid-row { display: grid; grid-template-columns: minmax(220px, 2fr) minmax(140px, 1.1fr) minmax(120px, .9fr) minmax(120px, .9fr) 128px 16px; align-items: center; gap: 16px; width: 100%; padding: 0 var(--pad); }
 .wk-grid-head { min-height: 42px; border-bottom: 1px solid var(--line); background: var(--surface-sunk); color: var(--text-muted); font: 500 12.5px/1.4 var(--f-text); }
 .wk-grid-row { min-height: calc(var(--row) + 8px); padding-block: 10px; border: 0; border-bottom: 1px solid var(--line-soft); background: none; color: var(--text-dim); font: var(--fs) var(--f-text); text-align: left; }
 .wk-grid-row:last-child { border-bottom: 0; }
@@ -447,6 +448,10 @@ button.wk-grid-row:hover { background: var(--surface-hi); color: var(--text); }
 .wk-cell-main strong { overflow: hidden; color: var(--text); font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
 .wk-cell-main small { overflow: hidden; color: var(--text-muted); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
 .wk-cell-money { color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; text-align: right; }
+.wk-finding-row > :nth-child(2) .wk-chip { align-items: baseline; overflow: visible; white-space: normal; }
+.wk-finding-state .wk-cell-main small { white-space: normal; }
+.wk-finding-row > :nth-child(2) .wk-chip::before { transform: translateY(-1px); }
+.wk-finding-amount small { display: block; margin-top: 2px; color: var(--text-muted); font-size: 11.5px; font-weight: 400; }
 .wk-cell-trunc { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .wk-grid-empty { padding: 40px var(--pad); color: var(--text-muted); text-align: center; }
 .wk-grid-foot { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 16px; color: var(--text-muted); font-size: 12.5px; }
@@ -467,9 +472,9 @@ button.wk-grid-row:hover { background: var(--surface-hi); color: var(--text); }
 .wk-decide-btn svg { width: 18px; height: 18px; margin-top: 1px; color: var(--text-muted); }
 .wk-decide-btn strong { display: block; font-size: 13.5px; font-weight: 600; }
 .wk-decide-btn small { display: block; margin-top: 2px; color: var(--text-muted); font-size: 12px; line-height: 1.45; }
-.wk-decide-btn[data-primary] { border-color: transparent; background: var(--accent); color: var(--on-accent); }
-.wk-decide-btn[data-primary] svg, .wk-decide-btn[data-primary] small { color: color-mix(in srgb, var(--on-accent) 72%, transparent); }
-.wk-decide-btn[data-primary]:hover { background: var(--accent-hover); }
+.wk-decide-btn[data-primary] { border-color: var(--accent-ink); }
+.wk-decide-btn[data-primary] svg { color: var(--accent-ink); }
+.wk-decide-btn[data-primary]:hover { border-color: var(--accent-ink); background: color-mix(in srgb, var(--accent) 12%, var(--surface)); }
 .wk-kv { display: flex; flex-direction: column; }
 .wk-kv > div { display: flex; justify-content: space-between; gap: 12px; padding: 11px 0; border-top: 1px solid var(--line-soft); font-size: 13px; }
 .wk-kv > div:first-child { padding-top: 0; border-top: 0; }
@@ -485,6 +490,8 @@ html[data-surface='workspace'] .wk-timeline li { grid-template-columns: 70px 14p
 html[data-surface='workspace'] .wk-timeline li::before { left: 88px; }
 html[data-surface='workspace'] .wk-timeline-dot { width: 10px; height: 10px; margin-top: 5px; border: 2px solid var(--line-strong); background: var(--surface); }
 html[data-surface='workspace'] .wk-timeline li[data-done='true'] .wk-timeline-dot { border-color: var(--text); background: var(--text); }
+html[data-surface='workspace'] .wk-timeline li:not([data-done]) .wk-timeline-what { color: var(--text-muted); font-weight: 400; }
+html[data-surface='workspace'] .wk-timeline li:not([data-done]) .wk-timeline-dot { border-style: dashed; }
 html[data-surface='workspace'] .wk-timeline li[data-done='true']:last-child .wk-timeline-dot { border-color: var(--accent-ink); background: var(--accent); }
 html[data-surface='workspace'] .wk-timeline-when { font: 400 12.5px/1.6 var(--f-text); letter-spacing: 0; text-transform: none; }
 html[data-surface='workspace'] .wk-timeline-what { font-size: 13.5px; font-weight: 600; }
