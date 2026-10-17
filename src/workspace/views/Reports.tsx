@@ -36,7 +36,7 @@ export function Reports({ env }: { env: LedgerEnvironment }) {
   return (
     <>
       <section className="wk-section">
-        <h2 className="wk-display wk-h2">This audit</h2><p className="wk-dim">USD totals include only records with a known USD currency. Unknown and other currencies appear separately below. Flagged exposure is not money owed.</p>
+        <h2 className="wk-display wk-h2">This audit</h2><p className="wk-dim">Totals are in USD; a file without a currency column is read as USD. Other currencies, and findings whose rows disagree on currency, appear separately below. Flagged exposure is not money owed.</p>
         <Facts
           rows={[
             ['Payment records', String(s.recordCount)],
@@ -58,7 +58,7 @@ export function Reports({ env }: { env: LedgerEnvironment }) {
       <section className="wk-section">
         <div className="wk-section-head">
           <h2 className="wk-display wk-h2">By check</h2>
-          <p>Flagged exposure by review check; this is not money owed.</p>
+          <p>Every open finding by the check that raised it, including security alerts and discounts; this is not money owed.</p>
         </div>
         {causes.length === 0 ? (
           <div className="wk-empty">

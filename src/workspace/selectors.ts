@@ -78,12 +78,40 @@ export interface Ladder {
   awaitingDecision: number
 }
 
-/** Currency may come from an attested obligation even when the source CSV omitted its column. */
+/**
+ * Currency for money that moves (in recovery, recovered). It may come from an
+ * attested obligation even when the source CSV omitted its column, but is never
+ * assumed: unknown currency keeps unattested money out of the USD totals.
+ */
 function currencyOf(finding: Finding): string {
   const obligation = finding.evidence?.obligation
   if (finding.currency) return finding.currency
   if (obligation?.reference?.trim() && obligation.confirmedBy?.trim() && obligation.currency?.trim()) return obligation.currency.trim().toUpperCase()
   return 'Unknown'
+}
+
+/**
+ * Currency for exposure figures (flagged, payments to verify, by check), which
+ * are never money owed. Reclaim only supports USD, so a payment row with no
+ * currency (a file without a currency column) is read as USD. A finding stays
+ * 'Unknown' only when its rows disagree, e.g. one in EUR and one blank.
+ */
+export function exposureCurrencyOf(finding: Finding): string {
+  const known = currencyOf(finding)
+  if (known !== 'Unknown') return known
+  const currencies = new Set(finding.relatedRecords.map((r) => r.currency?.trim().toUpperCase() || 'USD'))
+  return currencies.size === 1 ? [...currencies][0] : 'Unknown'
+}
+
+/**
+ * The one definition of "flagged for review", used by every screen that shows
+ * it: an open review signal that the evidence gate has not made a recovery
+ * candidate, that is not a security alert or a future saving (those have their
+ * own totals), that has no suppression reason, and that has not started
+ * recovery. Its amount is never money owed.
+ */
+export function isFlaggedForReview(finding: Finding, state: CaseState): boolean {
+  return finding.classification === 'review_needed' && !finding.suppressionReason && isStillInPlay(state) && state.recoveryStage === null
 }
 
 /**
@@ -266,22 +294,23 @@ export function ladder(env: LedgerEnvironment): Ladder {
     }
     // An import can supersede the detector's finding while an authorized request
     // remains open. Keep its proven outstanding balance visible for closeout.
-    if (currencyOf(finding) === 'USD' && state.recoveryStage === 'requested' && eligiblePotential(finding, env.result.findings) === null && state.requestedAmount != null && state.approvedAt) {
+    // Only a superseded finding qualifies: a signal that never passed the gate has
+    // no vendor request to keep open, whatever its currency.
+    const superseded = Boolean(finding.requiresRevalidation || state.requiresRevalidation)
+    if (superseded && currencyOf(finding) === 'USD' && state.recoveryStage === 'requested' && eligiblePotential(finding, env.result.findings) === null && state.requestedAmount != null && state.approvedAt) {
       add('inRecovery', authorizedOutstanding(state))
     }
     if (!isStillInPlay(state)) continue
     openCount += 1
-    // Flagged is every open signal's involved amount. It is never money owed.
-    // A suppressed signal (recurring cadence, installments) stays visible with its reason but adds no flagged value.
-    if (!finding.suppressionReason) {
+    if (isFlaggedForReview(finding, state)) {
       const amount = finding.flaggedAmount ?? finding.dollarImpact
-      const currency = currencyOf(finding)
+      const currency = exposureCurrencyOf(finding)
       flaggedByCurrency[currency] = sumMoney([flaggedByCurrency[currency] ?? 0, amount])
       if (currency === 'USD') flaggedCents += Math.round(amount * 100)
       flaggedCount += 1
     }
     if (isAtRisk(finding)) {
-      const currency = currencyOf(finding)
+      const currency = exposureCurrencyOf(finding)
       atRiskByCurrency[currency] = sumMoney([atRiskByCurrency[currency] ?? 0, finding.dollarImpact])
       if (currency === 'USD') atRiskCents += Math.round(finding.dollarImpact * 100)
     }
@@ -411,7 +440,7 @@ export function rootCauses(env: LedgerEnvironment): RootCause[] {
   const byType = new Map<string, RootCause>()
   for (const finding of env.result.findings) {
     if (getCaseState(env, finding.id).decision === 'expected') continue
-    const currency = currencyOf(finding)
+    const currency = exposureCurrencyOf(finding)
     const key = `${finding.type}|${currency}`
     const row = byType.get(key) ?? {
       type: finding.type,
