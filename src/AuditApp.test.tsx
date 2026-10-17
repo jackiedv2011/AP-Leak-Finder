@@ -277,7 +277,7 @@ describe('AuditApp', () => {
 
     goToMode('Reports')
     await waitFor(() => expect(fact('Open flagged value (USD)')).toBe(expected))
-    expect(fact('Flagged exposure · USD')).toBe(sumFlagged(sampleFindings()).toFixed(2))
+    expect(fact('Flagged exposure · USD')).toBe(expected)
     expect(fact('Flagged exposure · Unknown')).toBe('')
   })
 
