@@ -14,7 +14,16 @@ describe('Plans', () => {
     expect(screen.getByTestId('plans-free')).toHaveTextContent('$0')
     expect(screen.getByTestId('plans-growth')).toHaveTextContent('$15 / month + 10% of what’s recovered')
     expect(screen.getByTestId('plans-flat')).toHaveTextContent('$50 / month, no success fee')
-    expect(screen.getByTestId('plans-growth')).toHaveTextContent('Automatic sending through your Gmail — coming soon')
+    expect(screen.getByTestId('plans-growth')).toHaveTextContent('Send approved requests from your own Gmail')
+    expect(screen.getByTestId('plans-free')).toHaveTextContent('Send approved requests from your own Gmail')
+    expect(document.body).not.toHaveTextContent(/coming soon/i)
+  })
+
+  it('compares Gmail sending and editable letters as part of every plan', () => {
+    render(<Plans onStartAudit={() => {}} />)
+    const row = screen.getByRole('row', { name: /Send approved requests from your own Gmail/ })
+    expect(within(row).getAllByLabelText(/^Included/)).toHaveLength(3)
+    expect(within(screen.getByRole('row', { name: /Recovery letters/ })).getAllByText('Edit and download')).toHaveLength(3)
   })
 
   it('Free confirms in place and leads straight to an upload', () => {

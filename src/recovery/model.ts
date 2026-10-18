@@ -1,4 +1,4 @@
-import { markRecoveryRequested, recordRecoveryOutcome, type CaseState, type RecoveryMethod, type RecoveryVerification, type VendorUpdate } from '@/ledger/caseState'
+import { markRecoveryRequested, recordRecoveryOutcome, type CaseState, type RecoveryMethod, type RecoveryVerification, type SentEmail, type VendorUpdate } from '@/ledger/caseState'
 import { normalizeVendor } from '@/lib/format'
 import type { APRecord, Finding } from '@/types'
 import { latestVendorPosition, VENDOR_STATUS } from './vendorStatus'
@@ -46,6 +46,26 @@ export function startRecoveryRequest(state: CaseState, amount: number, at = Date
     recoveryRequestedAt: at,
     recoveredAmount: null,
     nextFollowUpAt: addBusinessDays(at, 5),
+  }
+}
+
+/**
+ * Gmail accepted the request: record it as sent, at Gmail's time, with its
+ * message id. This records a fact that already happened, so unlike
+ * `startRecoveryRequest` it does not re-ask for approval (the server checked
+ * that before sending); it only refuses a case that isn't waiting to be sent.
+ */
+export function recordEmailSent(state: CaseState, sent: SentEmail, amount: number): CaseState {
+  if (state.recoveryStage !== 'confirmed') throw new Error('Only a request waiting to be sent can be recorded as sent.')
+  if (!sent.messageId || !Number.isFinite(sent.sentAt)) throw new Error('A sent email needs Gmail’s message id and time.')
+  if (!Number.isFinite(amount) || amount <= 0) throw new Error('The requested amount must be greater than zero.')
+  return {
+    ...markRecoveryRequested(state, amount),
+    recoveryRequestedAt: sent.sentAt,
+    recoveryRecipientEmail: sent.to,
+    recoverySentEmail: sent,
+    recoveredAmount: null,
+    nextFollowUpAt: addBusinessDays(sent.sentAt, 5),
   }
 }
 

@@ -18,6 +18,15 @@ export interface VendorUpdate {
   method?: RecoveryMethod
   expectedAt?: number
 }
+/** A request that Gmail accepted, sent from the customer's own address. */
+export interface SentEmail {
+  channel: 'gmail'
+  messageId: string
+  from: string
+  to: string
+  cc: string[]
+  sentAt: number
+}
 export interface RecoveryVerification {
   amount: number
   method: RecoveryMethod
@@ -88,6 +97,8 @@ export interface CaseState {
   recoveryRecipientEmail?: string | null
   requestedResolution?: RecoveryMethod | null
   recoveryRequestedAt?: number | null
+  /** Set only from Gmail's own acceptance of the message; a request sent by hand has none. */
+  recoverySentEmail?: SentEmail | null
   recoveryResolvedAt?: number | null
   recoveredAmount?: number | null
   /** Preserved from old cases when a later verified settlement replaces an unproved total. */
@@ -203,6 +214,11 @@ export function recordRecoveryOutcome(
   }
 }
 
+/** How a Gmail send reads in the case history: who sent it, to whom, and Gmail's id for it. */
+export function sentEmailNote(sent: SentEmail): string {
+  return `From ${sent.from} to ${sent.to}${sent.cc.length ? `, cc ${sent.cc.join(', ')}` : ''}. Gmail message ID ${sent.messageId}`
+}
+
 /**
  * Compare two states and, if anything that matters changed, append an audit
  * event describing it. Called by the one place that persists case state, so
@@ -246,7 +262,7 @@ export function withHistory(previous: CaseState, next: CaseState, actor: string 
     summary = 'Closed without recovery'
   } else if (stageChanged && next.recoveryStage === 'requested') {
     action = 'stage:requested'
-    summary = 'Recovery request sent'
+    summary = next.recoverySentEmail ? 'Recovery request sent from Gmail' : 'Recovery request sent'
   } else if ((approvalChanged || attributionChanged) && next.approvedAt) {
     action = 'recovery:approved'
     summary = 'Customer approved recovery outreach'
@@ -307,6 +323,7 @@ export function withHistory(previous: CaseState, next: CaseState, actor: string 
   else if (action.startsWith('accounting:')) eventNote = next.reconciliationNote ?? null
   else if (action.startsWith('vendor:')) eventNote = lastVendorUpdate?.note ?? null
   else if (action === 'recovery:contact_held') eventNote = next.contactHold ?? null
+  else if (action === 'stage:requested' && next.recoverySentEmail) eventNote = sentEmailNote(next.recoverySentEmail)
   else if (action === 'recovery:followup_changed' && next.nextFollowUpAt) eventNote = new Date(next.nextFollowUpAt).toLocaleDateString()
   else if (action === 'recovery:approved') eventNote = next.knownBeforeReclaim ? `Known before Reclaim: ${next.knownBeforeNote ?? 'No explanation recorded'}` : 'Newly identified by Reclaim'
   else if (action === 'recovery:remainder_closed' || action === 'outcome:not_recovered' || action === 'outcome:recovered' || action === 'review:closed') eventNote = next.recoveryOutcomeNote ?? null

@@ -9,6 +9,7 @@ import { UpgradeDialog } from '@/components/plan/UpgradeDialog'
 import { PLANS, PLAN_LABEL, PLAN_PITCH, PLAN_SUCCESS_FEE, planOf, successFee } from '@/lib/plans'
 import { QuickBooksSettings } from '@/components/audit/QuickBooksSource'
 import { AccountData } from './AccountData'
+import { GmailSettings } from '@/components/gmail/Gmail'
 import { formatCurrency } from '@/lib/format'
 import { ladder } from '../selectors'
 import type { ResolvedTheme, ThemeChoice } from '@/workspace/theme'
@@ -136,7 +137,15 @@ export function SettingsView({ env, onClear, onShowTour, theme, resolvedTheme, o
         <UpgradeDialog open={upgradeOpen} onOpenChange={setUpgradeOpen} />
       </section>
 
-      <QuickBooksSettings />
+      {user && !user.isGuest ? (
+        <section className="wk-section" data-testid="connected-accounts">
+          <h2 className="wk-display wk-h2">Connected accounts</h2>
+          <div className="wk-stack">
+            <QuickBooksSettings bare />
+            <GmailSettings />
+          </div>
+        </section>
+      ) : null}
 
       <section className="wk-section">
         <h2 className="wk-display wk-h2">Appearance</h2>
