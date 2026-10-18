@@ -13,6 +13,8 @@ const tokenKey = randomBytes(32)
 const config = loadConfig({
   NODE_ENV: 'test', DATABASE_PATH: ':memory:', APP_ORIGIN: 'http://localhost:0', SESSION_DAYS: '1', REMEMBER_ME_DAYS: '30',
   GOOGLE_CLIENT_ID: 'test-client', GOOGLE_CLIENT_SECRET: 'test-secret', GMAIL_TOKEN_KEY: tokenKey.toString('base64'),
+  // As in production: saved audits are sealed, so every send reads the case through the project store.
+  DATA_KEY: randomBytes(32).toString('base64'),
 })
 
 /** A stand-in for Google that records every call. It never touches the network. */
@@ -371,5 +373,28 @@ describe('sending a recovery request from Gmail', () => {
     const retried = await alice.post('/api/integrations/gmail/send', { ...payload, retryUncertain: true })
     expect(retried.status).toBe(200)
     expect(gmail.state.sent).toHaveLength(1)
+  })
+})
+
+describe('with stored audits encrypted (DATA_KEY)', () => {
+  it('reads the approved case through the project store: the stored payload is sealed', async () => {
+    const alice = await signedIn('Alice', 'alice@example.com')
+    await connect(alice)
+    const { payload } = await saveApprovedCase(alice)
+    expect((app.db.prepare('SELECT payload FROM projects').get() as { payload: string }).payload.startsWith('v1.')).toBe(true)
+    expect((await alice.post('/api/integrations/gmail/send', payload)).status).toBe(200)
+  })
+})
+
+describe('deleting the account', () => {
+  it('revokes the Gmail grant with Google first, then removes the connection and the send log', async () => {
+    const alice = await signedIn('Alice', 'alice@example.com')
+    await connect(alice)
+    const { payload } = await saveApprovedCase(alice)
+    expect((await alice.post('/api/integrations/gmail/send', payload)).status).toBe(200)
+    expect((await alice.post('/api/account/delete', { confirmEmail: 'alice@example.com' })).status).toBe(200)
+    expect(gmail.state.revoked).toEqual(['refresh-1-SECRET'])
+    expect(app.db.prepare("SELECT COUNT(*) AS n FROM integration_connections WHERE provider = 'gmail'").get()).toEqual({ n: 0 })
+    expect(app.db.prepare('SELECT COUNT(*) AS n FROM gmail_sends').get()).toEqual({ n: 0 })
   })
 })

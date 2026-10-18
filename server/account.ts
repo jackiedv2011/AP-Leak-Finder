@@ -2,8 +2,11 @@ import type { DatabaseSync } from 'node:sqlite'
 import { TERMS_VERSION } from '../src/legal/terms.ts'
 import { normalizeEmail, type PublicUser } from './auth.ts'
 import type { UserRow } from './db.ts'
-import { HttpError, json, type Request, type Response } from './http.ts'
+import { HttpError, RateLimiter, json, type Request, type Response } from './http.ts'
 import { checkpointWal, type ProjectStore } from './projectStore.ts'
+
+/** An export decrypts every audit on the account: plenty for a person, not a loop. */
+const exportLimiter = new RateLimiter(10, 60 * 60 * 1000)
 
 /** What the account routes need from the app; app.ts builds it once. */
 export interface AccountContext {
@@ -12,8 +15,8 @@ export interface AccountContext {
   requireUser(req: Request): UserRow
   publicUser(row: UserRow): PublicUser
   clearSessionCookie(): string
-  /** Cancels the QuickBooks connection with Intuit, if there is one. Never throws. */
-  revokeQuickBooks(userId: string): Promise<void>
+  /** Cancels the account's QuickBooks and Gmail grants with Intuit and Google, if any. Never throws. */
+  revokeIntegrations(userId: string): Promise<void>
   /** Ends a paid subscription (billing.ts closeAccount). Throws when it can't, which stops the deletion. */
   endSubscription(userId: string): Promise<void>
 }
@@ -28,6 +31,7 @@ export async function accountRoutes(req: Request, ctx: AccountContext): Promise<
 
   if (path === '/api/account/export' && method === 'GET') {
     const user = ctx.requireUser(req)
+    if (!exportLimiter.check(user.id)) throw new HttpError(429, 'Too many exports. Try again in an hour.', 'rate_limited')
     const day = new Date().toISOString().slice(0, 10)
     return json(200, exportAccount(ctx.db, ctx.projects, user), { 'Content-Disposition': `attachment; filename="reclaim-export-${day}.json"` })
   }
@@ -41,8 +45,8 @@ export async function accountRoutes(req: Request, ctx: AccountContext): Promise<
     }
     // Stripe first: an account that can't stop its subscription isn't deleted.
     await ctx.endSubscription(user.id)
-    // Intuit next, while the sealed tokens still exist to name the connection.
-    await ctx.revokeQuickBooks(user.id)
+    // Intuit and Google next, while the sealed tokens still exist to name the grants.
+    await ctx.revokeIntegrations(user.id)
     deleteAccount(ctx.db, user)
     return json(200, { ok: true }, { 'Set-Cookie': ctx.clearSessionCookie() })
   }

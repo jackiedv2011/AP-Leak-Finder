@@ -69,8 +69,16 @@ describe('production startup checks', () => {
   it('refuses to start without DATA_KEY, or with the QuickBooks key reused as it', () => {
     const { DATA_KEY: _key, ...rest } = prod
     expect(() => loadConfig(rest)).toThrow(/DATA_KEY is not set/)
-    expect(() => loadConfig({ ...prod, QBO_CLIENT_ID: 'id', QBO_CLIENT_SECRET: 'secret', QBO_TOKEN_KEY: dataKey })).toThrow(/DATA_KEY must be different/)
+    expect(() => loadConfig({ ...prod, QBO_CLIENT_ID: 'id', QBO_CLIENT_SECRET: 'secret', QBO_TOKEN_KEY: dataKey })).toThrow(/DATA_KEY and QBO_TOKEN_KEY are the same key/)
     expect(loadConfig(prod).dataKeys?.current.equals(Buffer.from(dataKey, 'base64'))).toBe(true)
+  })
+
+  it('accepts Gmail sending with its own key, and refuses a key shared with another purpose', () => {
+    const google = { GOOGLE_CLIENT_ID: 'id.apps.googleusercontent.com', GOOGLE_CLIENT_SECRET: 'secret' }
+    expect(loadConfig({ ...prod, ...google, GMAIL_TOKEN_KEY: tokenKey }).gmailSend?.tokenKey.length).toBe(32)
+    expect(() => loadConfig({ ...prod, ...google, GMAIL_TOKEN_KEY: dataKey })).toThrow(/DATA_KEY and GMAIL_TOKEN_KEY are the same key/)
+    expect(() => loadConfig({ ...prod, GMAIL_TOKEN_KEY: tokenKey })).toThrow(/GMAIL_TOKEN_KEY is set but GOOGLE_CLIENT_ID/)
+    expect(() => loadConfig({ ...prod, ...google, GMAIL_TOKEN_KEY: 'c2hvcnQ=' })).toThrow(/GMAIL_TOKEN_KEY must be 32 random bytes/)
   })
 
   it('lists every problem at once, without echoing any value', () => {
