@@ -289,10 +289,10 @@ describe('Rule 7 — payment amount outlier', () => {
 })
 
 describe('Rule 8 — invoice number shared across vendors', () => {
-  it('flags an invoice number that appears under more than one vendor', () => {
+  it('flags a distinctive invoice number that appears under more than one vendor', () => {
     const records = [
-      makeRecord({ vendor: 'Northwind Traders', invoiceNumber: 'INV-9001', amountPaid: 450, paymentDate: d(2025, 1, 1) }),
-      makeRecord({ vendor: 'Contoso Supply', invoiceNumber: 'INV-9001', amountPaid: 275, paymentDate: d(2025, 1, 12) }),
+      makeRecord({ vendor: 'Northwind Traders', invoiceNumber: 'NW-2025-9001', amountPaid: 450, paymentDate: d(2025, 1, 1) }),
+      makeRecord({ vendor: 'Contoso Supply', invoiceNumber: 'NW-2025-9001', amountPaid: 275, paymentDate: d(2025, 1, 12) }),
     ]
     const result = detectFindings(records)
     const finding = result.findings.find((f) => f.type === 'shared_invoice_number')
@@ -301,6 +301,20 @@ describe('Rule 8 — invoice number shared across vendors', () => {
     expect(finding!.severity).toBe('high')
     expect(finding!.dollarImpact).toBe(725)
     expect(finding!.relatedRecords).toHaveLength(2)
+  })
+
+  it('flags a short sequential number shared by two vendors only when an amount matches too', () => {
+    // Small vendors that number invoices from 1001 share numbers all the time.
+    const coincidence = [
+      makeRecord({ vendor: 'Ortiz Plumbing', invoiceNumber: 'INV-1007', amountPaid: 2600.98, paymentDate: d(2025, 4, 5) }),
+      makeRecord({ vendor: 'Brightline Electric', invoiceNumber: '1007', amountPaid: 3582.22, paymentDate: d(2025, 4, 28) }),
+    ]
+    expect(detectFindings(coincidence).findings.find((f) => f.type === 'shared_invoice_number')).toBeUndefined()
+    const samePayment = [
+      makeRecord({ vendor: 'Ortiz Plumbing', invoiceNumber: '1007', amountPaid: 2600.98, paymentDate: d(2025, 4, 5) }),
+      makeRecord({ vendor: 'Ortiz Plumbing & Heating', invoiceNumber: '1007', amountPaid: 2600.98, paymentDate: d(2025, 4, 28) }),
+    ]
+    expect(detectFindings(samePayment).findings.filter((f) => f.type === 'shared_invoice_number')).toHaveLength(1)
   })
 
   it('does not flag an invoice number reused by the same vendor', () => {

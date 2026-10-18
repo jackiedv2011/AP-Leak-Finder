@@ -18,12 +18,32 @@ const EPSILON = 0.01
  * Rule 2 treats three or more identically priced payments to one vendor on a
  * steady cadence (weekly standing orders, rent, subscriptions, retainers) as a
  * recurring charge rather than a run of duplicates. The cadence is the median
- * gap; it must be at least a few days (daily deliveries are indistinguishable
- * from a burst of duplicates), and a payment that lands well inside the cadence
- * is off-series and still assessed as a possible duplicate.
+ * gap; it must be at least a few days (without invoice numbers, daily payments
+ * are indistinguishable from a burst of duplicates), and a payment that lands
+ * well inside the cadence is off-series and still assessed as a possible
+ * duplicate. When every payment carries its own invoice number, each one was
+ * billed separately, so a twice-weekly or daily standing order is a series too.
  */
 const RECURRING_MIN_CADENCE_DAYS = 5
+const INVOICED_RECURRING_MIN_CADENCE_DAYS = 1
 const RECURRING_MAX_TOLERANCE_DAYS = 10
+const RECURRING_ON_CADENCE_SHARE = 3 / 4
+/**
+ * A price paid to a vendor this many times or more with no reference and no
+ * steady cadence (fuel fill-ups, postage, a usual coffee order) is routine:
+ * two such payments within the window are expected, not a sign of a double
+ * charge. A recurring series that explains most of the price's payments is
+ * different: there, an extra off-schedule payment is still assessed.
+ */
+const ROUTINE_PRICE_MIN_PAYMENTS = 4
+const ROUTINE_RECURRING_SHARE = 0.75
+/**
+ * Rule 8: references this short after normalization ("1007", "INV-9001")
+ * come from simple sequential numbering, so two vendors share them by chance.
+ * Such a shared number is only flagged when the vendors were also paid the
+ * same amount on it.
+ */
+const DISTINCTIVE_REFERENCE_MIN_LENGTH = 6
 /** A one-cent difference is rounding, not an overpayment. */
 const OVERPAYMENT_MIN_CENTS = 2
 /**
@@ -259,7 +279,8 @@ function recurringRuns(sortedByDate: APRecord[]): APRecord[][] {
     const gaps: number[] = []
     for (let i = 1; i < series.length; i++) gaps.push(daysBetween(series[i - 1].paymentDate, series[i].paymentDate))
     const cadence = median(gaps)
-    if (cadence < RECURRING_MIN_CADENCE_DAYS) continue
+    const everyRowInvoiced = series.every((r) => referenceStrength(r.invoiceNumber) === 'strong')
+    if (cadence < (everyRowInvoiced ? INVOICED_RECURRING_MIN_CADENCE_DAYS : RECURRING_MIN_CADENCE_DAYS)) continue
     const tolerance = Math.min(RECURRING_MAX_TOLERANCE_DAYS, Math.max(2, Math.floor(cadence * 0.35)))
 
     const onCadence = [series[0]]
@@ -268,6 +289,11 @@ function recurringRuns(sortedByDate: APRecord[]): APRecord[][] {
       if (gap >= cadence - tolerance) onCadence.push(r)
     }
     if (onCadence.length < 3 || onCadence.length < Math.ceil(series.length * 0.6)) continue
+    // Most steps must actually land on the cadence. Frequent irregular payments of one
+    // price (fuel fill-ups) clear the "not early" test above by chance, but their gaps
+    // scatter; a real schedule's gaps cluster, with only the odd skipped week.
+    const steps = onCadence.slice(1).map((r, i) => daysBetween(onCadence[i].paymentDate, r.paymentDate))
+    if (steps.filter((gap) => Math.abs(gap - cadence) <= tolerance).length < Math.ceil(steps.length * RECURRING_ON_CADENCE_SHARE)) continue
     runs.push(onCadence)
   }
   return runs
@@ -330,6 +356,19 @@ function incompatible(a: APRecord, b: APRecord): boolean {
   return Boolean(a.currency && b.currency && a.currency !== b.currency)
 }
 
+/** Amounts (in cents) this vendor is routinely paid with no reference and no steady cadence. */
+function routinePrices(sortedByDate: APRecord[], recurring: Set<string>): Set<number> {
+  const routine = new Set<number>()
+  const unreferenced = groupBy(sortedByDate.filter((r) => !hasReference(r)), (r) => toCents(r.amountPaid).toString())
+  for (const [cents, rows] of unreferenced) {
+    if (rows.length < ROUTINE_PRICE_MIN_PAYMENTS) continue
+    const onSchedule = rows.filter((r) => recurring.has(r.id)).length
+    if (onSchedule >= rows.length * ROUTINE_RECURRING_SHARE) continue
+    routine.add(Number(cents))
+  }
+  return routine
+}
+
 function pairWindow(a: APRecord, b: APRecord, windowDays: number): number {
   return hasReference(a) || hasReference(b) ? windowDays : Math.min(windowDays, NO_REFERENCE_WINDOW_DAYS)
 }
@@ -351,6 +390,7 @@ function detectNearDuplicates(
     const runs = recurringRuns(sorted)
     recurringSeries.push(...runs.map(toRecurringSeries))
     const recurring = new Set(runs.flatMap((rows) => rows.map((r) => r.id)))
+    const routine = routinePrices(sorted, recurring)
 
     for (let i = 1; i < sorted.length; i++) {
       const later = sorted[i]
@@ -369,6 +409,7 @@ function detectNearDuplicates(
         const earlier = sorted[j]
         if (toCents(earlier.amountPaid) !== toCents(later.amountPaid) || incompatible(earlier, later)) continue
         if (hasReference(earlier) && earlier.invoiceNumber === later.invoiceNumber) continue
+        if (!hasReference(earlier) && !hasReference(later) && routine.has(toCents(later.amountPaid))) continue
         const gap = Math.abs(daysBetween(earlier.paymentDate, later.paymentDate))
         if (gap > pairWindow(earlier, later, windowDays)) continue
         const isVariant =
@@ -634,6 +675,12 @@ function detectSharedInvoiceNumbers(records: APRecord[]): Finding[] {
   for (const group of groups.values()) {
     const vendorsInGroup = groupBy(group, (r) => normalizeVendor(r.vendor))
     if (vendorsInGroup.size < 2) continue
+    const distinctive = (normalizeReference(group[0].invoiceNumber).value ?? '').length >= DISTINCTIVE_REFERENCE_MIN_LENGTH
+    if (!distinctive) {
+      const vendorsByAmount = groupBy(group, (r) => toCents(r.amountPaid).toString())
+      const sharedAmount = [...vendorsByAmount.values()].some((rows) => new Set(rows.map((r) => normalizeVendor(r.vendor))).size > 1)
+      if (!sharedAmount) continue
+    }
 
     const sorted = [...group].sort((a, b) => a.paymentDate.getTime() - b.paymentDate.getTime())
     const vendorNames = Array.from(new Set(sorted.map((r) => r.vendor))).join(', ')
