@@ -316,9 +316,9 @@ export function CaseDetail(props: CaseDetailProps) {
           {state.requiresRevalidation ? <p className="wk-field-hint" role="status">This existing recovery needs its evidence revalidated before any further outreach. Recorded returns stay preserved.</p> : null}
 
           {/* Only duplicate rules have a recovery gate; savings and security findings never collect recovery evidence. */}
-          {onSaveEvidence && (finding.type === 'exact_duplicate' || finding.type === 'near_duplicate') ? <EvidencePanel key={`evidence-${finding.id}`} finding={finding} findings={findings} imports={imports} onSave={(evidence) => onSaveEvidence(finding.id, evidence)} /> : null}
-
           <Evidence finding={finding} />
+
+          {onSaveEvidence && (finding.type === 'exact_duplicate' || finding.type === 'near_duplicate') ? <EvidencePanel key={`evidence-${finding.id}`} finding={finding} findings={findings} imports={imports} onSave={(evidence) => onSaveEvidence(finding.id, evidence)} /> : null}
 
           {!internal ? <RecoveryAccountingPanel finding={finding} state={state} onReconcile={onReconcileRecovery} /> : null}
 
@@ -386,14 +386,14 @@ export function CaseDetail(props: CaseDetailProps) {
             <div className="wk-panelcard-head">
               <div>
                 <h2 id="case-decision">{state.decision === null ? 'Your decision' : 'Decision'}</h2>
-                <p>{state.decision === null ? <>Next: <strong>{nextActionLabel(finding, gate.eligible)}</strong>. {internal ? 'This signal is reviewed inside your business; it is not money owed until the evidence gate passes.' : 'Nothing is sent to a vendor until you authorize it.'}</> : 'Recorded on this finding.'}</p>
+                <p>{state.decision === null ? <>Next: <strong>{nextActionLabel(finding, gate.eligible)}</strong>. {!internal ? 'Nothing is sent to a vendor until you authorize it.' : finding.type === 'exact_duplicate' || finding.type === 'near_duplicate' ? 'It counts as money to claim once you confirm its evidence.' : 'This is checked inside your business. It is not money owed by a vendor.'}</> : 'Recorded on this finding.'}</p>
               </div>
             </div>
             <div className="wk-panelcard-body">
               {state.decision === null ? (
                 <div className="wk-decide" role="group" aria-label="Review this finding">
                   {CHOICES.map(({ value, title, detail, internal: internalDetail, icon: Icon }) => (
-                    <button key={value} type="button" className="wk-decide-btn" data-primary={value === 'confirmed' || undefined} onClick={() => setDeciding(value)}>
+                    <button key={value} type="button" className="wk-decide-btn" onClick={() => setDeciding(value)}>
                       <Icon aria-hidden="true" />
                       <span><strong>{title}</strong><small>{internal ? internalDetail : detail}</small></span>
                     </button>

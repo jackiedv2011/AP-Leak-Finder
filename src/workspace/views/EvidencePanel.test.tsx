@@ -4,8 +4,9 @@ import { parseCsv } from '@/lib/csv'
 import { mergeImport } from '@/ledger/store'
 import { toLedgerImport } from '../../../server/quickbooks.ts'
 import { autofillKey } from '@/recovery/quickbooksEvidence'
-import type { RecoveryEvidence } from '@/recovery/eligibility'
+import { EVIDENCE_CHECKS, evaluateEligibility, type RecoveryEvidence } from '@/recovery/eligibility'
 import { EvidencePanel } from './EvidencePanel'
+import { dollarsToCents } from './amounts'
 
 const payment = (Id: string, TxnDate: string) => ({ Id, TxnDate, TotalAmt: 1250, PayType: 'Check', VendorRef: { value: '56', name: 'Acme Supply' }, Line: [{ Amount: 1250, LinkedTxn: [{ TxnId: '101', TxnType: 'Bill' }] }] })
 const { csv, facts } = toLedgerImport({
@@ -42,5 +43,53 @@ describe('Evidence review for a QuickBooks finding', () => {
     expect(saved.autofilled?.[autofillKey.obligationId]?.source).toBe('quickbooks')
     expect(saved.obligation.confirmedBy).toBe('Jagan')
     expect(saved.payments.every((p) => !p.settled)).toBe(true)
+  })
+})
+
+describe('Evidence review in plain words', () => {
+  it('asks every check the gate needs exactly once, plus settlement for each payment', () => {
+    render(<EvidencePanel finding={finding} findings={env.result.findings} imports={env.imports} onSave={() => {}} />)
+    expect(screen.getAllByRole('checkbox')).toHaveLength(EVIDENCE_CHECKS.length + finding.relatedRecords.length)
+  })
+
+  it('keeps internal terms out of the questions; rule and record IDs live under Details', () => {
+    const { container } = render(<EvidencePanel finding={finding} findings={env.result.findings} imports={env.imports} onSave={() => {}} />)
+    const form = container.querySelector('form')!
+    for (const term of ['evidence gate', 'minor units', 'obligation', 'eligibility', finding.relatedRecords[0].id]) expect(form.textContent!.toLowerCase()).not.toContain(term.toLowerCase())
+    expect(container.querySelector('details')!.textContent).toContain(finding.ruleId ?? finding.type)
+  })
+
+  it('takes the bill amount in dollars and saves it in cents', () => {
+    const onSave = vi.fn<(evidence: RecoveryEvidence) => void>()
+    render(<EvidencePanel finding={finding} findings={env.result.findings} imports={env.imports} onSave={onSave} />)
+    fireEvent.change(screen.getByRole('textbox', { name: /Bill amount, in dollars/ }), { target: { value: '$1,250.5' } })
+    fireEvent.change(screen.getByRole('textbox', { name: 'Person confirming these facts' }), { target: { value: 'Jagan' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Save evidence' }))
+    expect(onSave.mock.calls[0][0].obligation.amountMinor).toBe(125050)
+  })
+
+  it('reaches "Ready to claim" only once every answer is in, under the unchanged gate', () => {
+    const onSave = vi.fn<(evidence: RecoveryEvidence) => void>()
+    render(<EvidencePanel finding={finding} findings={env.result.findings} imports={env.imports} onSave={onSave} />)
+    for (const box of screen.getAllByRole('checkbox')) if (!(box as HTMLInputElement).checked) fireEvent.click(box)
+    for (const input of screen.getAllByRole('textbox', { name: /Where you checked|How you know/ })) if (!(input as HTMLInputElement).value) fireEvent.change(input, { target: { value: 'Searched, none found' } })
+    for (const input of screen.getAllByRole('textbox', { name: /Bank reference showing it cleared/ })) if (!(input as HTMLInputElement).value) fireEvent.change(input, { target: { value: 'Statement line' } })
+    // Answers count once a named person saves them.
+    expect(screen.queryByText(/Ready to claim/)).toBeNull()
+    fireEvent.change(screen.getByRole('textbox', { name: 'Person confirming these facts' }), { target: { value: 'Jagan' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Save evidence' }))
+    expect(evaluateEligibility(finding, onSave.mock.calls[0][0], env.result.findings).eligible).toBe(true)
+    expect(screen.getAllByText(/Ready to claim/).length).toBeGreaterThan(0)
+  })
+})
+
+describe('dollarsToCents', () => {
+  it('reads what people type without floating-point drift', () => {
+    expect(dollarsToCents('6800')).toBe(680000)
+    expect(dollarsToCents('$6,800.5')).toBe(680050)
+    expect(dollarsToCents('0.29')).toBe(29)
+    expect(dollarsToCents('1.005')).toBe(0)
+    expect(dollarsToCents('-5')).toBe(0)
+    expect(dollarsToCents('abc')).toBe(0)
   })
 })

@@ -36,6 +36,20 @@ The coordinating session approved P2, P4, P5, P6 and P7 for these files: Dashboa
 
 "Evidence gate" no longer appears in any user-facing text in Dashboard, Findings or Reports. It is still in `CaseDetail.tsx`, `DecisionDialog.tsx` and `RecoveryPanels.tsx`, which aren't my files.
 
+## Third pass: evidence panel and case detail (2026-10-17)
+
+This pass came after main was merged in, including the detector's shared flagged total and the QuickBooks evidence pre-fill.
+
+| # | What changed | Screenshot |
+|---|---|---|
+| P1 follow-up | Overview's **Flagged for review** card now reads the same ladder total (`isFlaggedForReview`) as Findings and Reports. On the sample, both screens show $18,174. | — |
+| P3 | **The evidence panel is rewritten as "Confirm the evidence"** (`EvidencePanel.tsx`). The ledger rows come first. Four plain questions follow: "Is this one bill?", "Did both payments clear?", "Any refund, credit or void?" and "Is it really a duplicate?". Every check the gate needs is still asked, each with its own example answer. The bill amount is entered in dollars and converted to cents without floating point (`dollarsToCents`). Payments are named by amount and date, not record ID. Rule ID, engine state, record IDs and the gate's own messages are under **Details**. The status line reads "Not ready to claim yet", "Some answers don't line up yet" or "Ready to claim $X". QuickBooks pre-fill and its "From QuickBooks" marks are unchanged, and `eligibility.ts` is untouched. | [desktop](dashboard-review/after-p3-case-desktop.jpg), [phone](dashboard-review/after-p3-evidence-phone-light.jpg), [phone dark](dashboard-review/after-p3-evidence-phone-dark.jpg) |
+| P7 | **Case detail copy:** discount and security cases say "This is checked inside your business. It is not money owed by a vendor." Duplicates say "It counts as money to claim once you confirm its evidence." No decision is pre-selected. Upcoming history steps stay muted. | [discount case](dashboard-review/after-p7-discount-case.jpg) |
+
+New tests in `EvidencePanel.test.tsx` check four things: every gate check is asked exactly once; no internal terms appear outside Details; dollars are saved as cents; and filling in the panel reaches "Ready to claim" under the unchanged gate, but only after a named person saves.
+
+`server/health.test.ts` failed once during a full parallel run and passed on its own and on the next full run. It looks timing-sensitive and isn't related to these files.
+
 ## Prioritized problems, with proposals for Aditya
 
 ### P0: The two Appearance controls in Settings disagree (a bug)
@@ -58,7 +72,7 @@ The coordinating session approved P2, P4, P5, P6 and P7 for these files: Dashboa
 - Nothing explains that a finding only becomes a candidate after the owner completes the evidence checklist.
 - **Proposal:** when the figure is $0 and findings are open, replace the card's note with "Confirm the evidence on a finding to count it here", plus a link to the first one. Retire "evidence gate" from user copy; it also appears in CaseDetail, DecisionDialog and RecoveryPanels.
 
-### P3 (waits for the QuickBooks evidence merge): The evidence panel reads like an internal tool (case detail, `EvidencePanel.tsx`)
+### P3 (done in the third pass): The evidence panel reads like an internal tool (case detail, `EvidencePanel.tsx`)
 - It shows the raw rule ID and states: `exact_repeated_payment_v1 · version 1 · review_needed · contradicted`.
 - It shows messages like "Payment identities are not distinct." and "Payment rec_2: currencies must match."
 - Its fields include "Obligation amount in minor units (for example 10000 cents)" and "Ledger record rec_2 · 680000 minor units".
@@ -88,7 +102,7 @@ The coordinating session approved P2, P4, P5, P6 and P7 for these files: Dashboa
 - The " · Unknown" suffix is what clips the labels.
 - P1 resolves most of this. Until then, leave out the currency suffix when it is Unknown, and format the amount with thousands separators.
 
-### P7 (CSS parts done; copy waits on CaseDetail): Discount findings show recovery language that can't apply (case detail)
+### P7 (done in the second and third passes): Discount findings show recovery language that can't apply (case detail)
 - Screenshot: [case-discount](dashboard-review/case-discount.jpg).
 - An unclaimed discount says "Next: View savings opportunity… it is not money owed until the evidence gate passes."
 - Discount rules have no evidence gate, so that gate can never pass.
