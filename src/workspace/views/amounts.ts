@@ -13,3 +13,11 @@ export function formatCauseValue(value: number, currency: string, money: (value:
 export function currencyLabel(currency: string): string {
   return currency === 'Unknown' ? 'no currency in file' : currency
 }
+
+/** Dollars as typed ("6,800" or "$6800.50") to whole cents, without floating point. 0 when it isn't an amount. */
+export function dollarsToCents(text: string): number {
+  const match = /^(\d+)(?:\.(\d{1,2}))?$/.exec(text.replace(/[$,\s]/g, ''))
+  if (!match) return 0
+  const cents = Number(match[1]) * 100 + Number((match[2] ?? '').padEnd(2, '0'))
+  return Number.isSafeInteger(cents) ? cents : 0
+}
