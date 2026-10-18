@@ -36,8 +36,8 @@ The Intuit sample company has no real duplicates, overpayments or discounts to f
 
 ## Other follow-ups
 
-- `src/lib/duplicateSignals.ts` is a second duplicate engine that nothing imports, not even tests. It has its own recurring rule and doesn't know about reference strength. Delete it or bring it in line with `detection.ts`.
-- `detection.ts` is the only place that knows reference strength. Labels or explanations in the UI don't say "looks recurring"; recurring series are left out silently, the same way invoiced series already were.
+- `src/lib/duplicateSignals.ts`, an unused second duplicate engine, has been removed.
+- Recurring series left out of near-duplicate checks are listed on the detection result as `recurringSeries` (read with `recurringSeriesOf(result)`), ready for the UI to show as "N recurring charges not flagged".
 
 ## How it was measured
 
