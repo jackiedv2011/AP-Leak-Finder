@@ -7,7 +7,8 @@ Chrome/Firefox/Edge, plus an H.264 MP4 with the section colour baked in for Safa
 | file | what |
 |---|---|
 | `looklib.py` | shared look: stock (`ream`/`paper`/`ruled`, `STOCKS` colours), accents, sun + fill, render settings |
-| `hero.py` | hero column, 240 frames (8 s); ring blocks with index tabs, and one block that comes home late |
+| `hero.py` | the old hero column (8 s); still the app's login screen (`src/pages/AuthSplit.tsx`), no longer on the site |
+| `hero_stack.py` | the site hero, 1355 frames (22.6 s, square): a stack of record slabs that pulls out each of its four coloured sheets in turn and files it back |
 | `solutions.py` | `scene=find\|build\|recover`, 150 frames (5 s) each |
 | `encode.py` | PNG frames -> `.webm` (alpha) or, with `bg=RRGGBB`, `.mp4` |
 | `montage.py` | frames side by side at the size the page shows them, over the section colour |
@@ -18,6 +19,8 @@ Chrome/Firefox/Edge, plus an H.264 MP4 with the section colour baked in for Safa
 | `poster.py` | first frame as a transparent WebP (`<video poster>`, reduced motion) |
 | `grid.py` | contact sheet of frames at any aspect, for reviewing a batch at once |
 | `render_tests.sh` | half-size preview frames of named onboarding scenes (`scene:1,40,80`) |
+| `macbook.py` | the home page walkthrough: a laptop opening over 120 frames, plus `corners.json` (where the screen lands in every frame) |
+| `macbook_encode.py` | those frames -> opaque WebP flattened onto the section's ink (`media/macbook/`: desktop, phone and the open-pose stills) |
 
 ## What these are of
 
@@ -120,3 +123,119 @@ everything — check the real size before spending a full render:
 "$B" -b --factory-startup --python encode.py -- src=out/hero_v2 prefix=hero out=../media/hero.mp4 crf=20 bg=e5e5e5
 # solutions: crf=31 for webm, bg=000000 for the mp4
 ```
+
+## The home page laptop (walkthrough)
+
+The "See the money and the proof" section is a laptop that opens as you scroll, then a dashboard
+walkthrough on its screen. This is not a loop: it is a frame sequence the page scrubs (`walkthrough.js`)
+and draws on a canvas, with the live HTML dashboard mapped onto the screen corners of each frame, so
+the screen stays sharp when the page zooms in. The screen renders as dark glass for that reason.
+
+The model is not in the repo (its licence is unconfirmed): it lives in `out/models/macbook/` (ignored).
+Open it with `-Y` so its scripts do not run. Its logo is hidden, and nothing from its texture folder
+(Apple reference photos, wallpapers) is used or shipped.
+
+```bash
+"$B" -b -Y out/models/macbook/macbookpro.blend --python macbook.py -- out=out/macbook spp=48 frames=all
+"$B" -b -Y out/models/macbook/macbookpro.blend --python macbook.py -- out=out/macbook still=1 stillres=3840 stillh=0.88 spp=64
+"$B" -b --factory-startup --python macbook_encode.py -- src=out/macbook dst=../media/macbook
+# review a few frames first: spp=32 frames=0,60,90,119 overwrite=1 into another out=
+```
+
+About 8.5 s a frame on OptiX at 1280 (the default `res`). The page fetches every frame, decodes a few
+either side of the scroll position and blends neighbours, so the frame width is what keeps the scrub
+smooth: the zoomed steps sit on the 4K still, not the frames.
+Composition knobs: `el0` `d0` `d1` `shift0` (the closed laptop sits low, under the heading; the open one
+is square to the screen). Light: `alu` `rough` `top` `topy` `light` `world`. The front fill is kept
+under the screen's mirror angle, or the glass picks it up as a grey strip; the shadow catcher reflects
+as the page's ink for the same reason.
+Reflections are kept low on purpose: `gspec` `grough` (the cover glass: a faint gloss over a clear
+layer, not refracting glass), `sspec` `srough` (the panel), `bspec` `brough` (the bezel). The glass
+reflection fades to nothing over t .62-.80, before the page wakes the screen, so nothing sits over the
+dashboard; the still has none.
+The still is taller than a frame (`stillh`, a fraction of its width): the same view with room added
+below for the whole deck, which the frames crop. It writes `still.json` (its own screen corners); the
+encoder folds that into `corners.json`, and the page lays the still on the last frame by those corners.
+The screen corners run past the model's panel to the bottom of the black glass (`YB` in `macbook.py`),
+so the dashboard fills the screen to a bezel as thin as the sides.
+The encoder flattens the frames onto `bg=08100c` (`--cl-black` in styles.css): change both together.
+If the corners change, re-encode: the page reads `corners.json` from `media/macbook/`.
+
+## The home page exhibits (What Reclaim finds)
+
+Four mistakes, each an object on a floor of its own colour, shown wrong and then put right. They are
+built from nothing (`--factory-startup`, no model files) and share a set in `exhibit_common.py`. The page
+shows each one's resting pose, put right, as a still (`still.webp`, `still-m.webp` for phones): the four
+tiles under the passage in `src/pages/index.html` (`.finds`, `finds.js`), and the recovery summary's icons.
+The scenes still render as short films too; the page no longer uses those.
+
+The look is the loops' own, taken from `looklib` unchanged: one sun with a low warm fill, the 100 mm lens,
+Cycles with motion blur, the satin `plain` materials, one-segment angle-limited bevels, the bright accent
+stocks (a face square to the sun renders as the site's colour). The floor is a shadow catcher, so the film
+is transparent but for the sun's shadow; a shadowless sun linked to the floor alone sets how dark that
+shadow is (`shade=`, 0..1, .32 in the shipped films). The motion is the apple-style-motion skill's, ported
+to Python in `exhibit_common.py`: cubic-bezier eases by role (`out`, `inOut`, `swoop`), SwiftUI springs,
+arcs, staggers, a slow camera push; every moving thing is keyed on every frame, at 60 fps.
+
+| script | mistake | the object | palette |
+| --- | --- | --- | --- |
+| `exhibit_echo.py` | paid twice | a stack of coins slides out of itself, then back | mint |
+| `exhibit_overflow.py` | overpaid | spheres pour past a cup's rim, the spill stacks into a pyramid beside it | apricot |
+| `exhibit_piece.py` | credit never used | a tray of eight with one piece lying out, which drops home | lilac |
+| `exhibit_shadow.py` | billed twice | a cube and a tower of the same six plates; from overhead they are one square | sky |
+
+```bash
+for e in echo overflow piece shadow; do
+  "$B" -b --factory-startup --python exhibit_$e.py -- out=out/ex/$e spp=48 still=1 stillres=2560 shade=.32
+done
+"$B" -b --factory-startup --python exhibit_encode.py -- src=out/ex dst=../media/exhibits
+# review a few frames first: frames=1,40,80,120 spp=32 out=out/<name>_t
+```
+
+Each film is short (1.9 to 2.65 s); a script renders every frame of it (`f_0001.png`..) and `meta.json`
+(its floor colour, fps, frame count), and with `still=1` the resting pose at `stillres`. Echo, piece and
+shadow take a few seconds a frame on OptiX; overflow first runs its pour as a rigid-body simulation (rolled
+on off camera until the cup is nearly full), so it takes longest.
+The encoder lays each frame over its floor colour (into `flat/`), puts them through Blender's sequencer into
+an H.264 film, `d.mp4` (1280) and `m.mp4` (960), and writes `first.webp` (the opening frame, the film's
+poster), `still.webp` and `still-m.webp`. Only the stills are published (`media/exhibits/<name>/`); a re-encode
+writes the films and posters there too, so delete them again. Each tile sits on its still's floor colour,
+written into styles.css (`.fd-tile[data-ex]`, sampled from the stills): a palette change means changing those.
+
+## The closing coin stack
+
+The closing section above the footer (`src/partials/closing.html`, on every page that ends with a call to
+action) shows the echo exhibit's single stack at rest, cut out so it sits straight on the page with its own
+soft shadow. It is the film's last frame, rendered large with a lighter shadow for the white page, then
+cropped by `cutout.py` into WebP with alpha:
+
+```bash
+"$B" -b --factory-startup --python exhibit_echo.py -- out=out/closing frames=139 res=2560 spp=128 shade=.22
+"$B" -b --factory-startup --python cutout.py -- src=out/closing/echo_139.png dst=../media/closing/coins widths=1200,720
+```
+
+## The hero record stack
+
+The home hero (`src/pages/index.html`, `.hero-film`) is `hero_stack.py`, built to the approved concept frames:
+a lid printed as a record, neutral slabs, and four coloured sheets in the "What Reclaim finds" tiles' colours
+and order (mint, peach, lavender, blue). Four times over, the lid lifts, a parting runs down the stack to a
+sheet, the sheet slides out a third of its length, holds, slides home, and the layers settle back, the lid
+last. The camera never moves, and the loop starts and ends on the closed stack at rest (also the poster).
+
+The camera is fitted, not placed: `box` is where the resting stack sits in the hero square in the concept
+frame, and the script solves the distance and lens shift to fill it at a fixed angle (`el`, `az`, a 250 mm
+lens). `wire=0` writes the stack's edges as frame fractions instead of rendering, for laying over a concept
+frame. The light is a soft key high behind on the right; the floor's bounce is taken by a card only diffuse
+rays see, so the shadow's depth (`shade`) and the faces' brightness can be set apart. The shadow's last tail
+is faded out at the frame's left and bottom edges, so the square never cuts it off. A full render copies any
+frame whose pose has not moved since the last one (the rests and holds), instead of rendering it again. It renders on the hero's floor (`#ebe7de`); `exhibit_encode.py` flattens it
+into MP4s (`d.mp4` 1280, `m.mp4` 960 for phones) and a poster (`first.webp`), and the page samples the film's
+corner into `--cl-bg1`, so the floor and the section never show a seam. The page links all three with a `?v=`
+tag: bump it in `src/pages/index.html` whenever the films are re-encoded, so cached copies are dropped.
+
+```bash
+"$B" -b --factory-startup --python hero_stack.py -- review=1 out=out/hero_review res=1280 spp=64
+"$B" -b --factory-startup --python hero_stack.py -- out=out/hero_final/hero res=1280 spp=64
+"$B" -b --factory-startup --python exhibit_encode.py -- src=out/hero_final dst=../media only=hero stills=0
+```
+
