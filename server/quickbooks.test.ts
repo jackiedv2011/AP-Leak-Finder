@@ -116,11 +116,11 @@ async function signedIn(first: string, email: string) {
 }
 
 /** Runs the whole connect round trip the way a browser would. */
-async function connect(c: Client, code = 'good-code') {
+async function connect(c: Client, code = 'good-code', realmId = REALM) {
   const start = await c.get('/api/integrations/quickbooks/connect')
   expect(start.status).toBe(302)
   const state = new URL(start.headers.get('location')!).searchParams.get('state')!
-  return c.get(`/api/integrations/quickbooks/callback?code=${code}&state=${state}&realmId=${REALM}`)
+  return c.get(`/api/integrations/quickbooks/callback?code=${code}&state=${state}&realmId=${realmId}`)
 }
 
 const outcome = (res: { headers: Headers }) => new URL(res.headers.get('location')!, 'http://x').searchParams.get('quickbooks')
@@ -208,6 +208,40 @@ describe('connecting QuickBooks', () => {
     await alice.get('/api/integrations/quickbooks/connect')
     expect(outcome(await alice.get('/api/integrations/quickbooks/callback?error=access_denied'))).toBe('cancelled')
     expect(app.db.prepare('SELECT COUNT(*) AS n FROM integration_connections').get()).toEqual({ n: 0 })
+  })
+})
+
+describe('the audit a connection keeps up to date', () => {
+  const status = async (c: Client) => (await c.get('/api/integrations/quickbooks')).body
+
+  it('is stored with the connection, kept on reconnecting the same company, and cleared for another company or on disconnect', async () => {
+    const alice = await signedIn('Alice', 'alice@example.com')
+    expect((await alice.post('/api/integrations/quickbooks/link', { auditId: 'project_1' })).status).toBe(409)
+    await connect(alice)
+    expect((await status(alice)).linkedAuditId).toBeNull()
+    expect((await alice.post('/api/integrations/quickbooks/link', { auditId: 'project_1' })).body).toEqual({ ok: true, linkedAuditId: 'project_1' })
+    expect((await status(alice)).linkedAuditId).toBe('project_1')
+
+    await connect(alice)
+    expect((await status(alice)).linkedAuditId).toBe('project_1')
+    await connect(alice, 'good-code', '1234567890')
+    expect((await status(alice)).linkedAuditId).toBeNull()
+
+    await alice.post('/api/integrations/quickbooks/link', { auditId: 'project_2' })
+    await alice.post('/api/integrations/quickbooks/disconnect')
+    await connect(alice, 'good-code', '1234567890')
+    expect((await status(alice)).linkedAuditId).toBeNull()
+  })
+
+  it('accepts only an audit id, and only from its own account', async () => {
+    const alice = await signedIn('Alice', 'alice@example.com')
+    await connect(alice)
+    expect((await alice.post('/api/integrations/quickbooks/link', { auditId: '../x' })).status).toBe(400)
+    expect((await alice.post('/api/integrations/quickbooks/link', {})).status).toBe(400)
+    expect((await new Client().post('/api/integrations/quickbooks/link', { auditId: 'project_1' })).status).toBe(401)
+    const bob = await signedIn('Bob', 'bob@example.com')
+    expect((await bob.post('/api/integrations/quickbooks/link', { auditId: 'project_9' })).status).toBe(409)
+    expect((await status(alice)).linkedAuditId).toBeNull()
   })
 })
 

@@ -10,7 +10,7 @@ import { createDraftService, DraftError, DraftRequestSchema, unsupportedAmounts,
 import type { ServerConfig } from './config.ts'
 import { HttpError, RateLimiter, empty, json, redirect, serializeCookie, toRequest, writeResponse, type Request, type Response } from './http.ts'
 import { newToken, openSecret, sealSecret } from './crypto.ts'
-import { createQuickBooksClient, syncLedger, QuickBooksReconnectError, QuickBooksUnauthorizedError, type QuickBooksClient, type QuickBooksTokens } from './quickbooks.ts'
+import { createQuickBooksClient, migrateQuickBooksLink, syncLedger, QuickBooksReconnectError, QuickBooksUnauthorizedError, type QuickBooksClient, type QuickBooksTokens } from './quickbooks.ts'
 import { entitlementsFor, isPlan, monthStart, planOf, PLAN_LIMITS, type Plan } from './plans.ts'
 import { checkRepeat, repeatMessage, rowFingerprint } from './uploads.ts'
 import { authorizedDraftFacts } from './caseFacts.ts'
@@ -131,10 +131,11 @@ export function createApp(deps: AppDependencies): App {
   // key from the environment; they are never logged and never sent to the browser.
   const qbo = quickbooks && config.quickbooks ? { client: quickbooks, key: config.quickbooks.tokenKey } : null
   const qboRedirectUri = `${config.appOrigin}${QBO_PATH}/callback`
-  type ConnectionRow = { realm_id: string; company_name: string; tokens_sealed: string; connected_at: number; last_sync_at: number | null }
+  migrateQuickBooksLink(db)
+  type ConnectionRow = { realm_id: string; company_name: string; tokens_sealed: string; connected_at: number; last_sync_at: number | null; linked_project_id: string | null }
   const sealContext = (userId: string, realmId: string) => `quickbooks:${userId}:${realmId}`
   const qboConnection = (userId: string) =>
-    db.prepare("SELECT realm_id, company_name, tokens_sealed, connected_at, last_sync_at FROM integration_connections WHERE user_id = ? AND provider = 'quickbooks'").get(userId) as ConnectionRow | undefined
+    db.prepare("SELECT realm_id, company_name, tokens_sealed, connected_at, last_sync_at, linked_project_id FROM integration_connections WHERE user_id = ? AND provider = 'quickbooks'").get(userId) as ConnectionRow | undefined
   const dropQboConnection = (userId: string) => db.prepare("DELETE FROM integration_connections WHERE user_id = ? AND provider = 'quickbooks'").run(userId)
   const qboTokens = (userId: string, row: ConnectionRow): QuickBooksTokens => {
     try {
@@ -304,7 +305,7 @@ export function createApp(deps: AppDependencies): App {
       const user = requireUser(req)
       if (!qbo) return json(200, { available: false })
       const row = qboConnection(user.id)
-      return json(200, { available: true, environment: qbo.client.environment, connected: Boolean(row), companyName: row?.company_name ?? null, connectedAt: row?.connected_at ?? null, lastSyncAt: row?.last_sync_at ?? null })
+      return json(200, { available: true, environment: qbo.client.environment, connected: Boolean(row), companyName: row?.company_name ?? null, connectedAt: row?.connected_at ?? null, lastSyncAt: row?.last_sync_at ?? null, linkedAuditId: row?.linked_project_id ?? null })
     }
 
     if (path === `${QBO_PATH}/connect` && method === 'GET') {
@@ -337,7 +338,10 @@ export function createApp(deps: AppDependencies): App {
         const companyName = typeof company.CompanyName === 'string' ? company.CompanyName.slice(0, 200) : ''
         db.prepare(`INSERT INTO integration_connections (user_id, provider, realm_id, company_name, tokens_sealed, connected_at, last_sync_at)
           VALUES (?, 'quickbooks', ?, ?, ?, ?, NULL)
-          ON CONFLICT(user_id, provider) DO UPDATE SET realm_id = excluded.realm_id, company_name = excluded.company_name,
+          ON CONFLICT(user_id, provider) DO UPDATE SET
+            -- Reconnecting the same company keeps its audit; a different company starts unlinked.
+            linked_project_id = CASE WHEN integration_connections.realm_id = excluded.realm_id THEN integration_connections.linked_project_id ELSE NULL END,
+            realm_id = excluded.realm_id, company_name = excluded.company_name,
             tokens_sealed = excluded.tokens_sealed, connected_at = excluded.connected_at, last_sync_at = NULL`)
           .run(user.id, realmId, companyName, sealSecret(JSON.stringify(tokens), qbo.key, sealContext(user.id, realmId)), Date.now())
         return back('connected')
@@ -378,6 +382,17 @@ export function createApp(deps: AppDependencies): App {
         console.error('quickbooks sync failed:', err instanceof Error ? err.message : 'unknown error')
         throw new HttpError(502, 'QuickBooks didn’t respond as expected. Try again in a minute.', 'quickbooks_failed')
       }
+    }
+
+    // Which audit this connection keeps up to date when the user signs in.
+    if (path === `${QBO_PATH}/link` && method === 'POST') {
+      const user = requireUser(req)
+      requireJson(req)
+      const { auditId } = await req.json<{ auditId?: unknown }>()
+      if (typeof auditId !== 'string' || !/^[\w-]{1,100}$/.test(auditId)) throw new HttpError(400, 'Send the audit to link.')
+      if (!qboConnection(user.id)) throw new HttpError(409, 'Connect QuickBooks first.', 'quickbooks_not_connected')
+      db.prepare("UPDATE integration_connections SET linked_project_id = ? WHERE user_id = ? AND provider = 'quickbooks'").run(auditId, user.id)
+      return json(200, { ok: true, linkedAuditId: auditId })
     }
 
     if (path === `${QBO_PATH}/disconnect` && method === 'POST') {

@@ -13,6 +13,8 @@ export interface QuickBooksStatus {
   companyName?: string | null
   connectedAt?: number | null
   lastSyncAt?: number | null
+  /** The audit this connection keeps up to date on sign-in. */
+  linkedAuditId?: string | null
 }
 
 export const QUICKBOOKS_CONNECT_URL = '/api/integrations/quickbooks/connect'
@@ -61,6 +63,15 @@ export async function importFromQuickBooks(since: number | null = null): Promise
     return { ok: false, message: typeof body?.message === 'string' ? body.message : 'QuickBooks import failed. Try again.', reconnect: body?.code === 'quickbooks_reconnect' }
   } catch {
     return { ok: false, message: 'Couldn’t reach Reclaim’s server. Check your connection and try again.', reconnect: false }
+  }
+}
+
+/** Ties an audit to the connected QuickBooks company, so signing in keeps that audit current. */
+export async function linkQuickBooksAudit(auditId: string): Promise<boolean> {
+  try {
+    return (await call('/api/integrations/quickbooks/link', 'POST', { auditId })).status === 200
+  } catch {
+    return false
   }
 }
 

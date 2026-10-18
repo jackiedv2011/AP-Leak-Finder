@@ -11,6 +11,7 @@
  * API host, and only for a query or the company-info record. Nothing in this
  * module can create, change or delete anything in a customer's books.
  */
+import type { DatabaseSync } from 'node:sqlite'
 import type { QuickBooksFacts, QuickBooksSyncInfo, QuickBooksTxnRef } from './quickbooksFacts.ts'
 
 export interface QuickBooksTokens {
@@ -329,4 +330,14 @@ export async function syncLedger(client: QuickBooksClient, realmId: string, acce
     return { csv, facts: { ...facts, searched: changes.created } }
   }
   return toLedgerImport(await pullLedger(client, realmId, accessToken), now, { realmId, mode: 'full', since: null, touched: [], removed: [] })
+}
+
+/**
+ * The audit a QuickBooks connection keeps up to date, stored with the
+ * connection itself: disconnecting, or connecting a different company, ends
+ * the link. Additive and idempotent, like the other migrations.
+ */
+export function migrateQuickBooksLink(db: DatabaseSync): void {
+  const columns = new Set((db.prepare('PRAGMA table_info(integration_connections)').all() as Array<{ name: string }>).map((c) => c.name))
+  if (!columns.has('linked_project_id')) db.exec('ALTER TABLE integration_connections ADD COLUMN linked_project_id TEXT')
 }

@@ -74,6 +74,9 @@ import { overviewSummary, findCaseView } from '@/ledger/views'
 import { getSampleLedger } from '@/data/sampleLedger'
 import type { ImportInput, QuickBooksImportContext } from '@/components/audit/ImportPanel'
 import { describeQuickBooksSync, lastQuickBooksPull, mergeQuickBooksSync, planQuickBooksSync } from '@/ledger/quickbooksSync'
+import { QuickBooksSyncStatus } from '@/components/audit/QuickBooksSource'
+import { useQuickBooksAutoSync } from '@/components/audit/useQuickBooksAutoSync'
+import { linkQuickBooksAudit } from '@/lib/quickbooksApi'
 
 const TITLES: Record<RouteMode, string> = {
   dashboard: 'Overview',
@@ -132,6 +135,8 @@ export function AuditApp() {
   const environmentRef = useRef(environment)
   const projectRef = useRef(project)
   const runActiveRef = useRef(false)
+  /** Set once the QuickBooks auto-sync hook exists (it is declared after runImport). */
+  const quickBooksRecheck = useRef<(() => void) | null>(null)
   environmentRef.current = environment
   projectRef.current = project
   const caseOriginRef = useRef<{ mode: RouteMode; y: number }>({ mode: route.mode, y: 0 })
@@ -212,6 +217,8 @@ export function AuditApp() {
           projectRef.current = saved
           setProject(saved)
           if (input.mode === 'upload') rememberUpload(input.parsed.records, saved.id)
+          // This audit is now the one signing in keeps current with that QuickBooks company.
+          if (input.quickbooks && account) void linkQuickBooksAudit(saved.id).then(() => quickBooksRecheck.current?.())
           refreshProjects()
           // A new audit counts against the plan once the server has it.
           if (!current || options.replaceEnvironment) void projectSync.flush().then(() => auth?.refreshEntitlements())
@@ -230,7 +237,7 @@ export function AuditApp() {
         setRunning(false)
       }
     },
-    [navigate, refreshProjects, auth]
+    [navigate, refreshProjects, auth, account]
   )
 
   const runSampleAudit = useCallback(() => {
@@ -489,6 +496,18 @@ export function AuditApp() {
     [importIntent, route.entry]
   )
 
+  // Signed-in accounts only: guests and the sample never reach QuickBooks.
+  const quickBooksAutoSync = useQuickBooksAutoSync(Boolean(account) && !sampleSession, (synced) => {
+    refreshProjects()
+    if (synced.id !== projectRef.current?.id || runActiveRef.current) return
+    projectRef.current = synced
+    environmentRef.current = synced.environment
+    setProject(synced)
+    setEnvironment(synced.environment)
+  })
+
+  quickBooksRecheck.current = quickBooksAutoSync.recheck
+
   const quickBooksContext = useMemo<QuickBooksImportContext>(
     () => ({
       sinceFor: (companyName) => lastQuickBooksPull(quickBooksTarget(companyName)?.environment ?? null, companyName),
@@ -687,6 +706,7 @@ export function AuditApp() {
           )
         }
       >
+        {route.mode === 'dashboard' && !activeFinding ? <QuickBooksSyncStatus state={quickBooksAutoSync.state} onSyncNow={quickBooksAutoSync.syncNow} /> : null}
         {importNotice ? (
           <div className="wk-callout" data-tone="done" role="status" data-testid="import-notice" style={{ marginBottom: 20 }}>
             <CheckCircle2 aria-hidden="true" />
