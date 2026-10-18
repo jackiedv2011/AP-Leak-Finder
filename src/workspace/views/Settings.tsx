@@ -7,6 +7,7 @@ import { CustomizeControls } from '../Customize'
 import { useState } from 'react'
 import { UpgradeDialog } from '@/components/plan/UpgradeDialog'
 import { PLANS, PLAN_LABEL, PLAN_PITCH, PLAN_SUCCESS_FEE, planOf, successFee } from '@/lib/plans'
+import { QuickBooksSettings } from '@/components/audit/QuickBooksSource'
 import { formatCurrency } from '@/lib/format'
 import { ladder } from '../selectors'
 import type { ResolvedTheme, ThemeChoice } from '@/workspace/theme'
@@ -134,6 +135,8 @@ export function SettingsView({ env, onClear, onEditOnboarding, theme, resolvedTh
         </div>
         <UpgradeDialog open={upgradeOpen} onOpenChange={setUpgradeOpen} />
       </section>
+
+      <QuickBooksSettings />
 
       <section className="wk-section">
         <h2 className="wk-display wk-h2">Appearance</h2>

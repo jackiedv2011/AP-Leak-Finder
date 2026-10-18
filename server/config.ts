@@ -26,6 +26,12 @@ export interface ServerConfig {
   contactEmail: string
   /** Exposes /api/dev/mailbox and /api/dev/plan. Never true in production; on by default only for a localhost origin. */
   devMailbox: boolean
+  /**
+   * QuickBooks Online, sandbox only. Client secret and token key are secrets.
+   * The token key (32 random bytes, base64) seals stored access tokens; losing
+   * it only means customers reconnect.
+   */
+  quickbooks: { clientId: string; clientSecret: string; tokenKey: Buffer } | null
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): ServerConfig {
@@ -57,7 +63,15 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): ServerConfig {
     // origin. A staging box started without NODE_ENV=production must not
     // become an account-takeover endpoint; DEV_MAILBOX=true opts in explicitly.
     devMailbox: !production && (env.DEV_MAILBOX === 'true' || (env.DEV_MAILBOX !== 'false' && isLocalOrigin(appOrigin))),
+    quickbooks: quickbooksConfig(env),
   }
+}
+
+function quickbooksConfig(env: NodeJS.ProcessEnv): ServerConfig['quickbooks'] {
+  if (!env.QBO_CLIENT_ID || !env.QBO_CLIENT_SECRET || !env.QBO_TOKEN_KEY) return null
+  const tokenKey = Buffer.from(env.QBO_TOKEN_KEY, 'base64')
+  if (tokenKey.length !== 32) throw new Error('QBO_TOKEN_KEY must be 32 random bytes, base64-encoded (openssl rand -base64 32).')
+  return { clientId: env.QBO_CLIENT_ID, clientSecret: env.QBO_CLIENT_SECRET, tokenKey }
 }
 
 function isLocalOrigin(origin: string): boolean {

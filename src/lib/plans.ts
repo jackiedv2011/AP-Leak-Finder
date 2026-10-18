@@ -12,12 +12,12 @@ export type { Entitlements, Plan, PlanLimits } from '../../server/plans.ts'
 
 export const PLAN_LABEL: Record<Plan, string> = { free: 'Free', growth: 'Growth', flat: 'Flat' }
 
-/** Monthly recoveries above which Flat costs less than Growth: 19.99 + 15% × R = 100. */
+/** Monthly recoveries above which Flat costs less than Growth: 15 + 10% × R = 50. */
 export const FLAT_BREAK_EVEN = Math.round(((PLAN_PRICE_USD.flat - PLAN_PRICE_USD.growth) / PLAN_SUCCESS_FEE.growth) * 100) / 100
 
 export interface PlanPitch {
   tagline: string
-  /** The price as a person reads it: "$19.99 / month + 15% of what's recovered". */
+  /** The price as a person reads it: "$15 / month + 10% of what's recovered". */
   price: string
   summary: string
   features: string[]

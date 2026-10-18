@@ -12,8 +12,8 @@ describe('Plans', () => {
   it('shows the three tracks with their prices', () => {
     render(<Plans onStartAudit={() => {}} />)
     expect(screen.getByTestId('plans-free')).toHaveTextContent('$0')
-    expect(screen.getByTestId('plans-growth')).toHaveTextContent('$19.99 / month + 15% of what’s recovered')
-    expect(screen.getByTestId('plans-flat')).toHaveTextContent('$100 / month, no success fee')
+    expect(screen.getByTestId('plans-growth')).toHaveTextContent('$15 / month + 10% of what’s recovered')
+    expect(screen.getByTestId('plans-flat')).toHaveTextContent('$50 / month, no success fee')
     expect(screen.getByTestId('plans-growth')).toHaveTextContent('Automatic sending through your Gmail — coming soon')
   })
 

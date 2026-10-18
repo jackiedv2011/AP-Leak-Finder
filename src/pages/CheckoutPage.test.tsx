@@ -19,12 +19,12 @@ afterEach(() => {
 })
 
 describe('checkout', () => {
-  it('summarises Growth honestly: $19.99 due today, 15% only on money recovered, test mode stated', async () => {
+  it('summarises Growth honestly: $15 due today, 10% only on money recovered, test mode stated', async () => {
     mountAt('?plan=growth')
     expect(await screen.findByRole('heading', { name: 'Start Reclaim Growth' })).toBeInTheDocument()
     const summary = screen.getByRole('complementary', { name: 'Order summary' })
-    expect(summary).toHaveTextContent('Due today$19.99')
-    expect(summary).toHaveTextContent('15% of money recovered')
+    expect(summary).toHaveTextContent('Due today$15.00')
+    expect(summary).toHaveTextContent('10% of money recovered')
     expect(summary).toHaveTextContent('never on findings, promises or unused credits')
     expect(screen.getByTestId('checkout-test-mode')).toHaveTextContent('no card will be charged')
   })
@@ -32,7 +32,7 @@ describe('checkout', () => {
   it('Flat has no success fee', async () => {
     mountAt('?plan=flat')
     const summary = await screen.findByRole('complementary', { name: 'Order summary' })
-    expect(summary).toHaveTextContent('Due today$100.00')
+    expect(summary).toHaveTextContent('Due today$50.00')
     expect(summary).toHaveTextContent('Success feeNone')
   })
 

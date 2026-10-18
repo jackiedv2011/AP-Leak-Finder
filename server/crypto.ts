@@ -1,4 +1,4 @@
-import { createHash, randomBytes, scrypt as scryptCb, timingSafeEqual, type ScryptOptions } from 'node:crypto'
+import { createCipheriv, createDecipheriv, createHash, randomBytes, scrypt as scryptCb, timingSafeEqual, type ScryptOptions } from 'node:crypto'
 
 function scrypt(password: string, salt: Buffer, keylen: number, options: ScryptOptions): Promise<Buffer> {
   return new Promise((resolve, reject) => scryptCb(password, salt, keylen, options, (err, key) => (err ? reject(err) : resolve(key))))
@@ -36,4 +36,33 @@ export function hashToken(token: string): string {
 
 export function newId(prefix: string): string {
   return `${prefix}_${Date.now().toString(36)}_${randomBytes(6).toString('base64url')}`
+}
+
+/**
+ * Secrets stored at rest (third-party access tokens) are sealed with
+ * AES-256-GCM under a key that lives only in the environment, never in the
+ * database. `context` is bound in as associated data — the owning user and
+ * connection — so a sealed value copied onto another account's row fails to
+ * open instead of granting that account access.
+ *
+ * Format: `v1.<iv>.<tag>.<ciphertext>`, each part base64url.
+ */
+export function sealSecret(plaintext: string, key: Buffer, context: string): string {
+  if (key.length !== 32) throw new Error('Secret key must be 32 bytes.')
+  const iv = randomBytes(12)
+  const cipher = createCipheriv('aes-256-gcm', key, iv)
+  cipher.setAAD(Buffer.from(context, 'utf8'))
+  const ciphertext = Buffer.concat([cipher.update(plaintext, 'utf8'), cipher.final()])
+  return ['v1', iv.toString('base64url'), cipher.getAuthTag().toString('base64url'), ciphertext.toString('base64url')].join('.')
+}
+
+/** Throws if the value was altered, sealed under another key, or sealed for another context. */
+export function openSecret(sealed: string, key: Buffer, context: string): string {
+  const [version, iv, tag, ciphertext] = sealed.split('.')
+  if (version !== 'v1' || !iv || !tag || ciphertext === undefined) throw new Error('Unrecognized sealed secret.')
+  // A fixed 16-byte tag: GCM would otherwise accept a truncated tag, which is easier to forge.
+  const decipher = createDecipheriv('aes-256-gcm', key, Buffer.from(iv, 'base64url'), { authTagLength: 16 })
+  decipher.setAAD(Buffer.from(context, 'utf8'))
+  decipher.setAuthTag(Buffer.from(tag, 'base64url'))
+  return Buffer.concat([decipher.update(Buffer.from(ciphertext, 'base64url')), decipher.final()]).toString('utf8')
 }

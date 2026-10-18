@@ -5,7 +5,7 @@ export function TermsPage() {
   return (
     <LegalLayout
       title="Terms of Service"
-      summary="The agreement between you and Reclaim when you create an account, upload payment records, and use the findings Reclaim produces."
+      summary="The agreement between you and Reclaim when you create an account, upload or import payment records, and use the findings Reclaim produces."
     >
       <section>
         <h2>1. Use of Reclaim</h2>
@@ -28,9 +28,9 @@ export function TermsPage() {
       </section>
 
       <section>
-        <h2>3. Uploaded data</h2>
+        <h2>3. Your data</h2>
         <p>
-          You keep ownership of everything you upload. You grant Reclaim permission to process it only as needed to
+          You keep ownership of everything you upload or import. You grant Reclaim permission to process it only as needed to
           provide the service to you, as described in the <a href="/privacy">Privacy Policy</a>. You confirm that you
           have the right to upload the records you provide and that doing so does not breach any agreement or law that
           applies to you.
@@ -38,7 +38,18 @@ export function TermsPage() {
       </section>
 
       <section>
-        <h2>4. Acceptable use</h2>
+        <h2>4. Connecting QuickBooks Online</h2>
+        <ul>
+          <li>Only connect a QuickBooks company you are authorised to share. Connecting confirms you have that authority.</li>
+          <li>The connection is read-only: Reclaim reads the records listed in the <a href="/privacy">Privacy Policy</a> and never creates, changes or deletes anything in your books.</li>
+          <li>You can disconnect at any time from Settings → Connected accounts, or from your QuickBooks account. Disconnecting stops future imports; audits already imported stay until you delete them.</li>
+          <li>Your use of QuickBooks remains governed by your agreement with Intuit. Reclaim is not affiliated with or endorsed by Intuit, and is not responsible for QuickBooks being available or for errors in the records it provides.</li>
+          <li>During testing the connection works only with Intuit's sandbox (test) companies.</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>5. Acceptable use</h2>
         <p>You agree not to:</p>
         <ul>
           <li>Upload data you are not authorised to share</li>
@@ -50,16 +61,16 @@ export function TermsPage() {
       </section>
 
       <section>
-        <h2>5. Findings are not advice</h2>
+        <h2>6. Findings are not advice</h2>
         <p>
-          Reclaim's findings are produced by rules applied to the records you upload. They are a starting point for your
+          Reclaim's findings are produced by rules applied to the records you upload or import. They are a starting point for your
           own review, not a determination that money is owed. You decide whether a finding is real and whether to
           contact a vendor. Reclaim does not provide accounting, legal, or financial advice.
         </p>
       </section>
 
       <section>
-        <h2>6. Subscription and billing</h2>
+        <h2>7. Subscription and billing</h2>
         <p>
           <Placeholder>
             Pricing, billing frequency, free-tier limits, refund terms, and the payment processor are still being
@@ -70,7 +81,7 @@ export function TermsPage() {
       </section>
 
       <section>
-        <h2>7. Intellectual property</h2>
+        <h2>8. Intellectual property</h2>
         <p>
           Reclaim, its software, design, and documentation belong to Reclaim and its licensors. These terms give you a
           limited, non-exclusive, non-transferable right to use the service for your own business purposes. They do not
@@ -79,7 +90,7 @@ export function TermsPage() {
       </section>
 
       <section>
-        <h2>8. Service availability and changes</h2>
+        <h2>9. Service availability and changes</h2>
         <p>
           Reclaim is under active development. Features may change, be added, or be removed, and the service may be
           unavailable from time to time for maintenance or for reasons outside our control. We will try to give notice
@@ -88,7 +99,7 @@ export function TermsPage() {
       </section>
 
       <section>
-        <h2>9. Disclaimers</h2>
+        <h2>10. Disclaimers</h2>
         <p>
           The service is provided "as is" and "as available". To the extent permitted by law, Reclaim makes no
           warranties, express or implied, including that the service will be error-free, that every duplicate or
@@ -97,7 +108,7 @@ export function TermsPage() {
       </section>
 
       <section>
-        <h2>10. Limitation of liability</h2>
+        <h2>11. Limitation of liability</h2>
         <p>
           To the extent permitted by law, Reclaim will not be liable for any indirect, incidental, special or
           consequential loss, or for any loss of profit, revenue, data or goodwill, arising from your use of the
@@ -110,23 +121,23 @@ export function TermsPage() {
       </section>
 
       <section>
-        <h2>11. Termination</h2>
+        <h2>12. Termination</h2>
         <p>
-          You can stop using Reclaim and delete your audits at any time. We may suspend or close an account that
+          You can stop using Reclaim, disconnect QuickBooks and delete your audits at any time. We may suspend or close an account that
           breaches these terms or that we reasonably believe is being used to cause harm. Sections that by their nature
           should survive (ownership, disclaimers, limitation of liability) continue after termination.
         </p>
       </section>
 
       <section>
-        <h2>12. Governing law</h2>
+        <h2>13. Governing law</h2>
         <p>
           <Placeholder>Governing law and venue to be confirmed based on the legal entity's jurisdiction.</Placeholder>
         </p>
       </section>
 
       <section>
-        <h2>13. Changes to these terms</h2>
+        <h2>14. Changes to these terms</h2>
         <p>
           When these terms change materially, the version and effective date at the top will change and account holders
           will be asked to accept the new version the next time they log in. Continued use after that is agreement to
@@ -135,7 +146,7 @@ export function TermsPage() {
       </section>
 
       <section>
-        <h2>14. Contact</h2>
+        <h2>15. Contact</h2>
         <p>
           Questions about these terms: <a href={`mailto:${LEGAL_CONTACT_EMAIL}`}>{LEGAL_CONTACT_EMAIL}</a>.{' '}
           <Placeholder>Legal entity name and postal address to be added.</Placeholder>

@@ -7,8 +7,8 @@
  *   Free    — unlimited uploads; the 3 lowest-value findings of each upload in
  *             full. The same file (or a trimmed copy of one) cannot be uploaded
  *             again to see different findings.
- *   Growth  — $19.99 a month plus 15% of what is actually recovered.
- *   Flat    — $100 a month, no success fee. Same features as Growth.
+ *   Growth  — $15 a month plus 10% of what is actually recovered.
+ *   Flat    — $50 a month, no success fee. Same features as Growth.
  *
  * No payments exist yet: every account is `free` until an operator (or, later,
  * a billing webhook) sets `users.plan`.
@@ -59,10 +59,10 @@ export const PLAN_LIMITS: Record<Plan, PlanLimits> = {
 }
 
 /** Monthly subscription, in US dollars. */
-export const PLAN_PRICE_USD: Record<Plan, number> = { free: 0, growth: 19.99, flat: 100 }
+export const PLAN_PRICE_USD: Record<Plan, number> = { free: 0, growth: 15, flat: 50 }
 
 /** Share of money actually recovered that the plan charges on top of the subscription. */
-export const PLAN_SUCCESS_FEE: Record<Plan, number> = { free: 0, growth: 0.15, flat: 0 }
+export const PLAN_SUCCESS_FEE: Record<Plan, number> = { free: 0, growth: 0.1, flat: 0 }
 
 export function isPlan(value: unknown): value is Plan {
   return value === 'free' || value === 'growth' || value === 'flat'

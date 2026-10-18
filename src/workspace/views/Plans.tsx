@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import * as DialogPrimitive from '@radix-ui/react-dialog'
 import { ArrowRight, BadgeCheck, Check, Minus, X } from 'lucide-react'
-import { PLANS, PLAN_LABEL, PLAN_PITCH, planOf, type Plan } from '@/lib/plans'
+import { PLANS, PLAN_LABEL, PLAN_PITCH, PLAN_SUCCESS_FEE, planOf, type Plan } from '@/lib/plans'
 import { useOptionalAuth } from '@/lib/auth/AuthContext'
 
 /** One row per capability, and which tracks include it. */
@@ -16,7 +16,7 @@ const COMPARISON: Array<{ label: string; plans: Record<Plan, boolean | string> }
   { label: 'Approvals, follow-ups and partial returns', plans: { free: false, growth: true, flat: true } },
   { label: 'Full case history and accounting closeout', plans: { free: false, growth: true, flat: true } },
   { label: 'Every-vendor report', plans: { free: false, growth: true, flat: true } },
-  { label: 'Success fee on money recovered', plans: { free: 'None', growth: '15%', flat: 'None' } },
+  { label: 'Success fee on money recovered', plans: { free: 'None', growth: `${PLAN_SUCCESS_FEE.growth * 100}%`, flat: 'None' } },
 ]
 
 export function checkoutUrl(plan: Plan): string {
@@ -131,7 +131,7 @@ export function Plans({ onStartAudit }: { onStartAudit: () => void }) {
           </table>
         </div>
         <p className="wk-table-sub" style={{ marginTop: 10 }}>
-          Paid plans renew monthly and can be cancelled any time. Growth’s 15% applies only to money recorded as actually returned.
+          Paid plans renew monthly and can be cancelled any time. Growth’s {PLAN_SUCCESS_FEE.growth * 100}% applies only to money recorded as actually returned.
         </p>
       </section>
 

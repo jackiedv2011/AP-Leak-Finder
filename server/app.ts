@@ -9,7 +9,8 @@ import { createGoogleClient, type GoogleClient } from './google.ts'
 import { createDraftService, DraftError, DraftRequestSchema, unsupportedAmounts, type DraftService } from './ai.ts'
 import type { ServerConfig } from './config.ts'
 import { HttpError, RateLimiter, empty, json, redirect, serializeCookie, toRequest, writeResponse, type Request, type Response } from './http.ts'
-import { newToken } from './crypto.ts'
+import { newToken, openSecret, sealSecret } from './crypto.ts'
+import { createQuickBooksClient, pullLedger, toLedgerCsv, QuickBooksReconnectError, QuickBooksUnauthorizedError, type QuickBooksClient, type QuickBooksTokens } from './quickbooks.ts'
 import { entitlementsFor, isPlan, monthStart, planOf, PLAN_LIMITS, type Plan } from './plans.ts'
 import { checkRepeat, repeatMessage, rowFingerprint } from './uploads.ts'
 import { authorizedDraftFacts } from './caseFacts.ts'
@@ -17,6 +18,8 @@ import { OnboardingProfileSchema } from './onboarding.ts'
 
 const SESSION_COOKIE = 'reclaim_session'
 const OAUTH_STATE_COOKIE = 'reclaim_oauth_state'
+const QBO_STATE_COOKIE = 'reclaim_qbo_state'
+const QBO_PATH = '/api/integrations/quickbooks'
 
 export interface AppDependencies {
   config: ServerConfig
@@ -24,6 +27,7 @@ export interface AppDependencies {
   mailer?: Mailer
   google?: GoogleClient | null
   drafts?: DraftService | null
+  quickbooks?: QuickBooksClient | null
   /** Directory of built static files to serve alongside the API (production). */
   staticDir?: string | null
 }
@@ -66,6 +70,7 @@ export function createApp(deps: AppDependencies): App {
   const mailer = deps.mailer ?? (config.resend ? new ResendMailer(config.resend.apiKey, config.resend.from) : config.gmail ? new GmailMailer(config.gmail.user, config.gmail.appPassword) : new DevMailer(db))
   const google = deps.google !== undefined ? deps.google : config.google ? createGoogleClient(config.google.clientId, config.google.clientSecret) : null
   const drafts = deps.drafts !== undefined ? deps.drafts : config.anthropicApiKey ? createDraftService(config.anthropicApiKey, config.anthropicModel) : null
+  const quickbooks = deps.quickbooks !== undefined ? deps.quickbooks : config.quickbooks ? createQuickBooksClient(config.quickbooks.clientId, config.quickbooks.clientSecret) : null
   const auth = new AuthService(db, mailer, {
     appOrigin: config.appOrigin,
     requireEmailVerification: config.requireEmailVerification,
@@ -75,6 +80,7 @@ export function createApp(deps: AppDependencies): App {
   const credentialLimiter = new RateLimiter(20, 60 * 1000)
   const draftLimiter = new RateLimiter(30, 60 * 60 * 1000)
   const contactLimiter = new RateLimiter(5, 60 * 60 * 1000)
+  const quickbooksSyncLimiter = new RateLimiter(20, 60 * 60 * 1000)
 
   const sessionCookie = (token: string, maxAge: number) => serializeCookie(SESSION_COOKIE, token, { maxAge, secure: config.production })
   const clearSessionCookie = () => serializeCookie(SESSION_COOKIE, '', { maxAge: 0, secure: config.production })
@@ -120,6 +126,33 @@ export function createApp(deps: AppDependencies): App {
   }
   const limit = (limiter: RateLimiter, key: string) => {
     if (!limiter.check(key)) throw new HttpError(429, 'Too many attempts. Wait a minute and try again.', 'rate_limited')
+  }
+
+  // QuickBooks Online (sandbox, read-only). Tokens are sealed at rest under a
+  // key from the environment; they are never logged and never sent to the browser.
+  const qbo = quickbooks && config.quickbooks ? { client: quickbooks, key: config.quickbooks.tokenKey } : null
+  const qboRedirectUri = `${config.appOrigin}${QBO_PATH}/callback`
+  type ConnectionRow = { realm_id: string; company_name: string; tokens_sealed: string; connected_at: number; last_sync_at: number | null }
+  const sealContext = (userId: string, realmId: string) => `quickbooks:${userId}:${realmId}`
+  const qboConnection = (userId: string) =>
+    db.prepare("SELECT realm_id, company_name, tokens_sealed, connected_at, last_sync_at FROM integration_connections WHERE user_id = ? AND provider = 'quickbooks'").get(userId) as ConnectionRow | undefined
+  const dropQboConnection = (userId: string) => db.prepare("DELETE FROM integration_connections WHERE user_id = ? AND provider = 'quickbooks'").run(userId)
+  const qboTokens = (userId: string, row: ConnectionRow): QuickBooksTokens => {
+    try {
+      return JSON.parse(openSecret(row.tokens_sealed, qbo!.key, sealContext(userId, row.realm_id))) as QuickBooksTokens
+    } catch {
+      // Wrong key, altered row, or a row moved between accounts: never usable.
+      throw new QuickBooksReconnectError('Stored QuickBooks tokens could not be opened.')
+    }
+  }
+  /** A usable access token, refreshed and re-sealed when it is about to expire (or when `force`d after a 401). */
+  async function qboAccessToken(userId: string, row: ConnectionRow, force = false): Promise<string> {
+    const tokens = qboTokens(userId, row)
+    if (!force && tokens.accessExpiresAt - Date.now() > 60_000) return tokens.accessToken
+    const fresh = await qbo!.client.refresh(tokens.refreshToken)
+    db.prepare("UPDATE integration_connections SET tokens_sealed = ? WHERE user_id = ? AND provider = 'quickbooks'")
+      .run(sealSecret(JSON.stringify(fresh), qbo!.key, sealContext(userId, row.realm_id)), userId)
+    return fresh.accessToken
   }
 
   async function route(req: Request): Promise<Response> {
@@ -265,6 +298,97 @@ export function createApp(deps: AppDependencies): App {
         console.error('google sign-in failed:', err instanceof Error ? err.message : err)
         return back('google_failed')
       }
+    }
+
+    // ---------- QuickBooks Online (sandbox, read-only) ----------
+    if (path === QBO_PATH && method === 'GET') {
+      const user = requireUser(req)
+      if (!qbo) return json(200, { available: false })
+      const row = qboConnection(user.id)
+      return json(200, { available: true, environment: qbo.client.environment, connected: Boolean(row), companyName: row?.company_name ?? null, connectedAt: row?.connected_at ?? null, lastSyncAt: row?.last_sync_at ?? null })
+    }
+
+    if (path === `${QBO_PATH}/connect` && method === 'GET') {
+      const user = auth.userForSession(req.cookies[SESSION_COOKIE])
+      if (!user) return redirect('/login?next=%2Faudit%3Fentry%3Dupload')
+      if (!qbo) return redirect('/audit?entry=upload&quickbooks=unavailable')
+      const { token: state } = newToken()
+      const url = qbo.client.authorizationUrl({ redirectUri: qboRedirectUri, state })
+      // The state names the account that started, so a callback can only finish its own user's connection.
+      return redirect(url, { 'Set-Cookie': serializeCookie(QBO_STATE_COOKIE, `${state}.${user.id}`, { maxAge: 600, secure: config.production, path: QBO_PATH }) })
+    }
+
+    if (path === `${QBO_PATH}/callback` && method === 'GET') {
+      const clearState = serializeCookie(QBO_STATE_COOKIE, '', { maxAge: 0, secure: config.production, path: QBO_PATH })
+      const back = (status: string) => redirect(`/audit?entry=upload&quickbooks=${status}`, { 'Set-Cookie': clearState })
+      if (!qbo) return back('unavailable')
+      const user = auth.userForSession(req.cookies[SESSION_COOKIE])
+      if (!user) return back('signed_out')
+      const params = req.url.searchParams
+      if (params.get('error') === 'access_denied') return back('cancelled')
+      if (params.get('error')) return back('failed')
+      const code = params.get('code')
+      const state = params.get('state')
+      const realmId = params.get('realmId')
+      const expected = req.cookies[QBO_STATE_COOKIE]
+      if (!code || !state || !realmId || !/^\d+$/.test(realmId) || !expected || expected !== `${state}.${user.id}`) return back('state')
+      try {
+        const tokens = await qbo.client.exchangeCode({ code, redirectUri: qboRedirectUri })
+        const company = await qbo.client.companyInfo(realmId, tokens.accessToken)
+        const companyName = typeof company.CompanyName === 'string' ? company.CompanyName.slice(0, 200) : ''
+        db.prepare(`INSERT INTO integration_connections (user_id, provider, realm_id, company_name, tokens_sealed, connected_at, last_sync_at)
+          VALUES (?, 'quickbooks', ?, ?, ?, ?, NULL)
+          ON CONFLICT(user_id, provider) DO UPDATE SET realm_id = excluded.realm_id, company_name = excluded.company_name,
+            tokens_sealed = excluded.tokens_sealed, connected_at = excluded.connected_at, last_sync_at = NULL`)
+          .run(user.id, realmId, companyName, sealSecret(JSON.stringify(tokens), qbo.key, sealContext(user.id, realmId)), Date.now())
+        return back('connected')
+      } catch (err) {
+        console.error('quickbooks connect failed:', err instanceof Error ? err.message : 'unknown error')
+        return back('failed')
+      }
+    }
+
+    if (path === `${QBO_PATH}/sync` && method === 'POST') {
+      const user = requireUser(req)
+      if (!qbo) throw new HttpError(503, 'QuickBooks is not set up on this server.', 'quickbooks_unavailable')
+      limit(quickbooksSyncLimiter, user.id)
+      const row = qboConnection(user.id)
+      if (!row) throw new HttpError(409, 'Connect QuickBooks first.', 'quickbooks_not_connected')
+      try {
+        let accessToken = await qboAccessToken(user.id, row)
+        let pull
+        try {
+          pull = await pullLedger(qbo.client, row.realm_id, accessToken)
+        } catch (err) {
+          if (!(err instanceof QuickBooksUnauthorizedError)) throw err
+          accessToken = await qboAccessToken(user.id, qboConnection(user.id)!, true)
+          pull = await pullLedger(qbo.client, row.realm_id, accessToken)
+        }
+        db.prepare("UPDATE integration_connections SET last_sync_at = ? WHERE user_id = ? AND provider = 'quickbooks'").run(Date.now(), user.id)
+        return json(200, { companyName: row.company_name, csv: toLedgerCsv(pull) })
+      } catch (err) {
+        if (err instanceof QuickBooksReconnectError || err instanceof QuickBooksUnauthorizedError) {
+          dropQboConnection(user.id)
+          throw new HttpError(409, 'QuickBooks needs to be connected again.', 'quickbooks_reconnect')
+        }
+        console.error('quickbooks sync failed:', err instanceof Error ? err.message : 'unknown error')
+        throw new HttpError(502, 'QuickBooks didn’t respond as expected. Try again in a minute.', 'quickbooks_failed')
+      }
+    }
+
+    if (path === `${QBO_PATH}/disconnect` && method === 'POST') {
+      const user = requireUser(req)
+      const row = qboConnection(user.id)
+      if (row && qbo) {
+        try {
+          await qbo.client.revoke(qboTokens(user.id, row).refreshToken)
+        } catch (err) {
+          // Deleting the sealed tokens below still ends Reclaim's access.
+          console.error('quickbooks revoke failed:', err instanceof Error ? err.message : 'unknown error')
+        }
+      }
+      dropQboConnection(user.id)
+      return json(200, { ok: true })
     }
 
     // ---------- plan / entitlements ----------

@@ -373,7 +373,7 @@ describe('onboarding and plans', () => {
     expect(await screen.findByTestId('plan-panel')).toHaveTextContent('Free')
     expect(screen.getByTestId('plan-panel')).toHaveTextContent('three smallest findings')
     fireEvent.click(screen.getByRole('button', { name: 'Dev: switch to Growth' }))
-    await waitFor(() => expect(screen.getByTestId('plan-panel')).toHaveTextContent('Growth · $19.99 / month + 15% of what’s recovered'))
+    await waitFor(() => expect(screen.getByTestId('plan-panel')).toHaveTextContent('Growth · $15 / month + 10% of what’s recovered'))
     fireEvent.click(within(nav).getByRole('button', { name: /^Findings/ }))
     await screen.findByRole('heading', { name: 'Findings', level: 1 })
     // The plan label and the entitlements that unlock findings arrive separately; wait for the unlock itself.
@@ -400,8 +400,8 @@ describe('onboarding and plans', () => {
     fireEvent.click(within(nav).getByRole('button', { name: /^Settings/ }))
     fireEvent.click(await screen.findByRole('button', { name: 'See Growth and Flat' }))
     const dialog = await screen.findByTestId('upgrade-dialog')
-    expect(within(dialog).getByTestId('plan-growth')).toHaveTextContent('$19.99 / month + 15% of what’s recovered')
-    expect(within(dialog).getByTestId('plan-flat')).toHaveTextContent('$100 / month, no success fee')
+    expect(within(dialog).getByTestId('plan-growth')).toHaveTextContent('$15 / month + 10% of what’s recovered')
+    expect(within(dialog).getByTestId('plan-flat')).toHaveTextContent('$50 / month, no success fee')
     // Choosing a paid plan goes to checkout; nothing changes on the account until billing is live.
     expect(within(dialog).getByRole('link', { name: 'Continue with Growth' })).toHaveAttribute('href', '/checkout?plan=growth')
     expect(within(dialog).getByRole('link', { name: 'Continue with Flat' })).toHaveAttribute('href', '/checkout?plan=flat')
