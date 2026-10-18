@@ -162,3 +162,20 @@ export async function setDevPlan(plan: Plan): Promise<AuthUser | null> {
   const { status, body } = await call<{ user: ServerUser }>('/api/dev/plan', { method: 'POST', json: { plan } })
   return status === 200 ? toAuthUser(body.user) : null
 }
+
+/** Same-origin download of everything the account holds, as JSON (the server sets the filename). */
+export const ACCOUNT_EXPORT_URL = '/api/account/export'
+
+/** Deletes the account and all its data. The server checks the typed email; the session ends with it. */
+export async function deleteAccount(confirmEmail: string): Promise<{ ok: true } | AuthError> {
+  const { status, body } = await call<Failure>('/api/account/delete', { method: 'POST', json: { confirmEmail } })
+  if (status !== 200) return failure(body, 'Could not delete the account. Nothing was deleted.')
+  return { ok: true }
+}
+
+/** Records acceptance of the Terms and Privacy Policy version shown to the person. */
+export async function acceptTerms(termsVersion: string): Promise<AuthOutcome> {
+  const { status, body } = await call<{ user: ServerUser } & Failure>('/api/account/accept-terms', { method: 'POST', json: { termsVersion } })
+  if (status !== 200) return failure(body, 'Could not record your acceptance. Try again.')
+  return { ok: true, user: toAuthUser(body.user) }
+}

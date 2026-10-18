@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import * as api from '@/lib/auth/apiAuthService'
 import * as guest from '@/lib/auth/localAuthService'
-import type { AuthOutcome, AuthUser } from '@/lib/auth/types'
+import type { AuthError, AuthOutcome, AuthUser } from '@/lib/auth/types'
 import { TERMS_VERSION } from '@/legal/terms'
 import { clearStorageScope, setStorageScope } from '@/lib/storageScope'
 import { fromStorable, replaceLocalProjects } from '@/ledger/projects'
@@ -30,6 +30,12 @@ interface AuthContextValue {
   logOut: () => Promise<void>
   requestPasswordReset: (email: string) => Promise<void>
   resetPassword: (token: string, newPassword: string, confirmPassword: string) => Promise<AuthOutcome>
+  /** Downloads everything the account holds, after any unsaved changes reach the server. */
+  exportAccountData: () => Promise<void>
+  /** Deletes the account on the server, then everything cached for it in this browser. */
+  deleteAccount: (confirmEmail: string) => Promise<{ ok: true } | AuthError>
+  /** Accepts the current Terms and Privacy Policy (shown when they changed since the account accepted). */
+  acceptTerms: () => Promise<AuthOutcome>
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -179,6 +185,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [adopt]
   )
 
+  const exportAccountData = useCallback(async () => {
+    await projectSync.flush()
+    window.location.assign(api.ACCOUNT_EXPORT_URL)
+  }, [])
+
+  const deleteAccount = useCallback<AuthContextValue['deleteAccount']>(
+    async (confirmEmail) => {
+      const leaving = user
+      if (!leaving || leaving.isGuest) return { ok: false, message: 'Only a signed-in account can be deleted.' }
+      // Pending saves are dropped, not flushed: nothing should be written back after this.
+      projectSync.reset()
+      const result = await api.deleteAccount(confirmEmail)
+      if (!result.ok) return result
+      clearStorageScope(leaving.id)
+      guest.logOut()
+      setStorageScope(null)
+      setEntitlements(null)
+      setUser(null)
+      return result
+    },
+    [user]
+  )
+
+  const acceptTerms = useCallback<AuthContextValue['acceptTerms']>(async () => {
+    const result = await api.acceptTerms(TERMS_VERSION)
+    if (result.ok) setUser(result.user)
+    return result
+  }, [])
+
   const value = useMemo<AuthContextValue>(
     () => ({
       user,
@@ -197,8 +232,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       logOut,
       requestPasswordReset: api.requestPasswordReset,
       resetPassword,
+      exportAccountData,
+      deleteAccount,
+      acceptTerms,
     }),
-    [user, status, providers, entitlements, refreshEntitlements, markOnboardingSeen, setDevPlan, signUp, verifyEmail, logIn, continueAsGuest, logOut, resetPassword]
+    [user, status, providers, entitlements, refreshEntitlements, markOnboardingSeen, setDevPlan, signUp, verifyEmail, logIn, continueAsGuest, logOut, resetPassword, exportAccountData, deleteAccount, acceptTerms]
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
