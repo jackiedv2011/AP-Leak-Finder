@@ -1,5 +1,7 @@
 /**
- * QuickBooks Online, read-only, against Intuit's sandbox only.
+ * QuickBooks Online, read-only. Sandbox by default; production only when the
+ * server is configured for it (QBO_ENVIRONMENT=production, which also needs
+ * NODE_ENV=production and its startup checks — see config.ts).
  *
  * The customer approves on Intuit's own page; Intuit redirects back to the
  * server with a one-time code, and this module exchanges it (with the client
@@ -7,8 +9,9 @@
  *
  * Intuit's only accounting permission (`com.intuit.quickbooks.accounting`)
  * also allows writes, so read-only is enforced here, in code: every data call
- * goes through `apiGet`, which only issues GET requests, only to the sandbox
- * API host, and only for a query or the company-info record. Nothing in this
+ * goes through `apiGet`, which only issues GET requests, only to the API host
+ * of the configured environment, and only for a query, change data capture or
+ * the company-info record. Nothing in this
  * module can create, change or delete anything in a customer's books.
  */
 import type { DatabaseSync } from 'node:sqlite'
@@ -29,7 +32,7 @@ export interface QuickBooksPull {
 }
 
 export interface QuickBooksClient {
-  readonly environment: 'sandbox'
+  readonly environment: QuickBooksEnvironment
   authorizationUrl(params: { redirectUri: string; state: string }): string
   exchangeCode(params: { code: string; redirectUri: string }): Promise<QuickBooksTokens>
   refresh(refreshToken: string): Promise<QuickBooksTokens>
@@ -41,6 +44,15 @@ export interface QuickBooksClient {
   changes(realmId: string, accessToken: string, entities: readonly string[], since: Date): Promise<QboObject>
 }
 
+/**
+ * Intuit's transaction id for a response, for its support team to trace a
+ * failed call. An opaque id, never a secret, so it is safe in logs and errors.
+ */
+const trace = (res: Response) => {
+  const tid = res.headers.get('intuit_tid')
+  return tid && /^[\w-]{1,100}$/.test(tid) ? `, intuit_tid ${tid}` : ''
+}
+
 /** A refresh token Intuit no longer accepts: the customer has to connect again. */
 export class QuickBooksReconnectError extends Error {}
 /** The access token was refused; refresh and retry once. */
@@ -49,15 +61,19 @@ export class QuickBooksUnauthorizedError extends Error {}
 const AUTHORIZE_URL = 'https://appcenter.intuit.com/connect/oauth2'
 const TOKEN_URL = 'https://oauth.platform.intuit.com/oauth2/v1/tokens/bearer'
 const REVOKE_URL = 'https://developer.api.intuit.com/v2/oauth2/tokens/revoke'
-/** Sandbox only. Production access is a separate, later decision (REC-21, REC-20). */
+export type QuickBooksEnvironment = 'sandbox' | 'production'
 export const SANDBOX_API_BASE = 'https://sandbox-quickbooks.api.intuit.com'
+export const PRODUCTION_API_BASE = 'https://quickbooks.api.intuit.com'
+/** Intuit's sign-in, token and revoke endpoints are the same for both; only the data host differs. */
+export const API_BASE: Record<QuickBooksEnvironment, string> = { sandbox: SANDBOX_API_BASE, production: PRODUCTION_API_BASE }
 const MINOR_VERSION = '75'
 export const QUICKBOOKS_SCOPE = 'com.intuit.quickbooks.accounting'
 
 /** The entities a case needs, and nothing else: no customers, invoices, payroll or attachments. */
 export const LEDGER_ENTITIES = ['Vendor', 'Bill', 'BillPayment', 'VendorCredit', 'Deposit', 'Purchase'] as const
 
-export function createQuickBooksClient(clientId: string, clientSecret: string, fetchImpl: typeof fetch = fetch): QuickBooksClient {
+export function createQuickBooksClient(clientId: string, clientSecret: string, fetchImpl: typeof fetch = fetch, environment: QuickBooksEnvironment = 'sandbox'): QuickBooksClient {
+  const apiBase = API_BASE[environment]
   const basic = Buffer.from(`${clientId}:${clientSecret}`).toString('base64')
 
   async function tokenRequest(body: Record<string, string>): Promise<QuickBooksTokens> {
@@ -67,8 +83,8 @@ export function createQuickBooksClient(clientId: string, clientSecret: string, f
       body: new URLSearchParams(body),
     })
     // Never include the response body in errors: it can echo token material.
-    if (res.status === 400 || res.status === 401) throw new QuickBooksReconnectError(`QuickBooks refused the token request (${res.status}).`)
-    if (!res.ok) throw new Error(`QuickBooks token request failed (${res.status}).`)
+    if (res.status === 400 || res.status === 401) throw new QuickBooksReconnectError(`QuickBooks refused the token request (${res.status}${trace(res)}).`)
+    if (!res.ok) throw new Error(`QuickBooks token request failed (${res.status}${trace(res)}).`)
     const json = (await res.json()) as { access_token?: string; refresh_token?: string; expires_in?: number; x_refresh_token_expires_in?: number }
     if (!json.access_token || !json.refresh_token) throw new Error('QuickBooks returned no tokens.')
     const now = Date.now()
@@ -80,20 +96,21 @@ export function createQuickBooksClient(clientId: string, clientSecret: string, f
     }
   }
 
-  /** The only way this module reads company data. GET, sandbox host, fixed paths. */
+  /** The only way this module reads company data. GET, this environment's API host, fixed paths. */
   async function apiGet(realmId: string, accessToken: string, resource: string, params: Record<string, string> = {}): Promise<QboObject> {
     if (!/^\d+$/.test(realmId)) throw new Error('Invalid QuickBooks company id.')
-    const url = new URL(`/v3/company/${realmId}/${resource}`, SANDBOX_API_BASE)
-    if (url.origin !== SANDBOX_API_BASE) throw new Error('QuickBooks reads are limited to the sandbox API.')
+    const url = new URL(`/v3/company/${realmId}/${resource}`, apiBase)
+    if (url.origin !== apiBase) throw new Error(`QuickBooks reads are limited to the ${environment} API.`)
     for (const [k, v] of Object.entries({ ...params, minorversion: MINOR_VERSION })) url.searchParams.set(k, v)
     const res = await fetchImpl(url, { method: 'GET', headers: { Authorization: `Bearer ${accessToken}`, Accept: 'application/json' } })
-    if (res.status === 401) throw new QuickBooksUnauthorizedError('QuickBooks refused the access token.')
-    if (!res.ok) throw new Error(`QuickBooks read failed (${res.status}).`)
+    if (res.status === 401) throw new QuickBooksUnauthorizedError(`QuickBooks refused the access token (401${trace(res)}).`)
+    if (res.status === 429) throw new Error(`QuickBooks is limiting requests for this company (429${trace(res)}).`)
+    if (!res.ok) throw new Error(`QuickBooks read failed (${res.status}${trace(res)}).`)
     return res.json() as Promise<QboObject>
   }
 
   return {
-    environment: 'sandbox',
+    environment,
     authorizationUrl({ redirectUri, state }) {
       const url = new URL(AUTHORIZE_URL)
       url.searchParams.set('client_id', clientId)
@@ -111,7 +128,7 @@ export function createQuickBooksClient(clientId: string, clientSecret: string, f
         headers: { Authorization: `Basic ${basic}`, Accept: 'application/json', 'Content-Type': 'application/json' },
         body: JSON.stringify({ token: refreshToken }),
       })
-      if (!res.ok) throw new Error(`QuickBooks revoke failed (${res.status}).`)
+      if (!res.ok) throw new Error(`QuickBooks revoke failed (${res.status}${trace(res)}).`)
     },
     async companyInfo(realmId, accessToken) {
       return ((await apiGet(realmId, accessToken, `companyinfo/${realmId}`)).CompanyInfo ?? {}) as QboObject
@@ -119,6 +136,9 @@ export function createQuickBooksClient(clientId: string, clientSecret: string, f
     async query(realmId, accessToken, statement) {
       // The query endpoint is read-only on Intuit's side too; still, only SELECT statements are sent.
       if (!/^select\s/i.test(statement)) throw new Error('Only SELECT queries are allowed.')
+      // …and only of the ledger entities: nothing about customers, invoices, payroll or attachments.
+      const entity = statement.match(/^select\s+\*\s+from\s+(\w+)\b/i)?.[1]
+      if (!entity || !(LEDGER_ENTITIES as readonly string[]).includes(entity)) throw new Error('Queries are limited to the ledger entities.')
       return apiGet(realmId, accessToken, 'query', { query: statement })
     },
     async changes(realmId, accessToken, entities, since) {
@@ -214,12 +234,17 @@ const cents = (amount: unknown) => Math.round(Number(amount ?? 0) * 100)
 const ref = (txnType: QuickBooksTxnRef['txnType'], t: QboObject | undefined, id: string, amount: unknown = t?.TotalAmt): QuickBooksTxnRef => ({ txnType, id, txnDate: t?.TxnDate ?? null, amountMinor: cents(amount) })
 
 /**
- * A voided bill payment or purchase stays in QuickBooks with a zero total, its
- * lines cleared and "Voided" at the start of its private note. (Intuit's void
- * response; the sandbox company has no voided payment to confirm it against.)
- * A zero-total payment that still has lines is a credit fully applied, not a void.
+ * Intuit voids a transaction with a sparse update (`include=void`): it stays in
+ * QuickBooks, its amounts go to zero, and "Voided" is put at the start of its
+ * private note (before any existing text). Lines may be cleared or kept at
+ * zero. A change-data-capture row may also carry `status: "Voided"`.
+ * A zero-total payment whose lines still carry amounts is a credit fully
+ * applied, not a void. (Documented for Payment; the sandbox company has no
+ * voided bill payment to confirm the same shape against.)
  */
-export const isVoided = (t: QboObject) => cents(t.TotalAmt) === 0 && (/^\s*voided/i.test(String(t.PrivateNote ?? '')) || !(t.Line ?? []).length)
+export const isVoided = (t: QboObject) =>
+  String(t.status ?? '').toLowerCase() === 'voided' ||
+  (cents(t.TotalAmt) === 0 && (/^\s*voided/i.test(String(t.PrivateNote ?? '')) || !((t.Line ?? []) as QboObject[]).some((l) => cents(l.Amount) !== 0)))
 
 /**
  * One row per payment against a bill, plus direct vendor checks and card

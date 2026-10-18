@@ -8,7 +8,8 @@ import type { QuickBooksFacts } from '../../server/quickbooksFacts.ts'
 export interface QuickBooksStatus {
   /** False for guests, when the server is unreachable, or when it has no QuickBooks keys. */
   available: boolean
-  environment?: 'sandbox'
+  /** Which Intuit API the server reads: test companies, or real ones. */
+  environment?: 'sandbox' | 'production'
   connected?: boolean
   companyName?: string | null
   connectedAt?: number | null

@@ -32,6 +32,14 @@ describe('QuickBooks in the import panel', () => {
     expect(screen.getByTestId('quickbooks-source')).toHaveTextContent('Sandbox')
   })
 
+  it('labels the connection "Sandbox" only while the server reads Intuit\'s test companies', async () => {
+    stubServer({ available: true, environment: 'production', connected: false })
+    render(<QuickBooksImport onFile={() => {}} />)
+    await screen.findByRole('link', { name: 'Connect QuickBooks' })
+    expect(screen.queryByTestId('quickbooks-environment')).toBeNull()
+    expect(screen.getByTestId('quickbooks-source')).toHaveTextContent('never changes anything in QuickBooks')
+  })
+
   it('imports the connected company as a CSV file for the normal review', async () => {
     const calls = stubServer({ available: true, environment: 'sandbox', connected: true, companyName: 'Sandbox Co', lastSyncAt: null }, { status: 200, body: { companyName: 'Sandbox Co', csv: 'vendor,payment_date,amount_paid\nAcme,2026-08-20,1250\n' } })
     const onFile = vi.fn()
