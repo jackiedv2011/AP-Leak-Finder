@@ -321,7 +321,7 @@ describe('recording a Gmail send', () => {
     const approved = approveRecovery(confirmCase(null), { knownBeforeReclaim: false })
     const next = recordEmailSent(approved, sent, 500)
     expect(next).toMatchObject({ recoveryStage: 'requested', requestedAmount: 500, recoveryRequestedAt: sent.sentAt, recoveryRecipientEmail: 'ap@vendor.test', recoverySentEmail: sent })
-    expect(next.nextFollowUpAt).toBe(addBusinessDays(sent.sentAt, 5))
+    expect(next.nextFollowUpAt).toBe(sent.sentAt + 7 * 86_400_000)
     const event = withHistory(approved, next, 'Alice').history!.at(-1)!
     expect(event).toMatchObject({ action: 'stage:requested', summary: 'Recovery request sent from Gmail', at: sent.sentAt, amount: 500 })
     expect(event.note).toBe('From owner@gmail.com to ap@vendor.test. Gmail message ID msg-9')

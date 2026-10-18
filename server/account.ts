@@ -4,6 +4,7 @@ import { normalizeEmail, type PublicUser } from './auth.ts'
 import type { UserRow } from './db.ts'
 import { HttpError, json, type Request, type Response } from './http.ts'
 import { checkpointWal, type ProjectStore } from './projectStore.ts'
+import { exportGmail } from './gmail.ts'
 
 /** What the account routes need from the app; app.ts builds it once. */
 export interface AccountContext {
@@ -14,6 +15,8 @@ export interface AccountContext {
   clearSessionCookie(): string
   /** Cancels the QuickBooks connection with Intuit, if there is one. Never throws. */
   revokeQuickBooks(userId: string): Promise<void>
+  /** Cancels the Gmail connection with Google, if there is one. Never throws. */
+  revokeGmail(userId: string): Promise<void>
 }
 
 /**
@@ -39,6 +42,7 @@ export async function accountRoutes(req: Request, ctx: AccountContext): Promise<
     }
     // Intuit first, while the sealed tokens still exist to name the connection.
     await ctx.revokeQuickBooks(user.id)
+    await ctx.revokeGmail(user.id)
     deleteAccount(ctx.db, user)
     return json(200, { ok: true }, { 'Set-Cookie': ctx.clearSessionCookie() })
   }
@@ -80,6 +84,7 @@ export function exportAccount(db: DatabaseSync, projects: ProjectStore, user: Us
     quickbooks: qbo
       ? { companyName: qbo.company_name, connectedAt: new Date(qbo.connected_at).toISOString(), lastSyncAt: qbo.last_sync_at ? new Date(qbo.last_sync_at).toISOString() : null }
       : null,
+    gmail: exportGmail(db, user.id),
     audits: projects.list(user.id),
   }
 }
