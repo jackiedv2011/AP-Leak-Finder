@@ -27,6 +27,7 @@ const quickbooks: QuickBooksClient = {
   },
   companyInfo: async () => ({ CompanyName: 'Sandbox Co' }),
   query: async () => ({ QueryResponse: {} }),
+  changes: async () => ({ CDCResponse: [] }),
 }
 
 let app: App
