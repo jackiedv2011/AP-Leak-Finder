@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
-import { AlertCircle, CheckCircle2, ShieldCheck } from 'lucide-react'
+import { AlertCircle, CheckCircle2, RefreshCw, ShieldCheck } from 'lucide-react'
 import { useOptionalAuth } from '@/lib/auth/AuthContext'
 import type { QuickBooksFacts } from '../../../server/quickbooksFacts.ts'
+import { autoSyncLabel, relativeTime, type QuickBooksAutoSyncState } from '@/ledger/quickbooksAutoSync'
 import { QUICKBOOKS_CONNECT_URL, connectOutcome, disconnectQuickBooks, fetchQuickBooksStatus, importFromQuickBooks, type QuickBooksStatus } from '@/lib/quickbooksApi'
 
 const READ_ONLY_NOTE = 'Read-only: Reclaim reads bills, bill payments, vendors and credits. It never changes anything in QuickBooks.'
@@ -38,7 +39,7 @@ function initialOutcome() {
  * company's ledger as a CSV that goes through the same review as an upload.
  * Renders nothing for guests or when the server has no QuickBooks keys.
  */
-export function QuickBooksImport({ onFile }: { onFile: (file: File, facts: QuickBooksFacts | null) => void }) {
+export function QuickBooksImport({ onFile, sinceFor }: { onFile: (file: File, facts: QuickBooksFacts | null) => void; sinceFor?: (companyName: string) => number | null }) {
   const { status, refresh } = useQuickBooksStatus()
   const [outcome] = useState(initialOutcome)
   const [busy, setBusy] = useState(false)
@@ -49,7 +50,7 @@ export function QuickBooksImport({ onFile }: { onFile: (file: File, facts: Quick
   async function runImport() {
     setBusy(true)
     setError(null)
-    const result = await importFromQuickBooks()
+    const result = await importFromQuickBooks(status?.companyName && sinceFor ? sinceFor(status.companyName) : null)
     setBusy(false)
     if (result.ok) {
       onFile(result.file, result.facts)
@@ -156,5 +157,36 @@ export function QuickBooksSettings() {
         ) : null}
       </div>
     </section>
+  )
+}
+
+/** One quiet line: "Checked 3 new QuickBooks payments · just now  Sync now". Never blocks anything around it. */
+export function QuickBooksSyncStatus({ state, onSyncNow }: { state: QuickBooksAutoSyncState; onSyncNow: () => void }) {
+  // Re-render every 30 s so "2 min ago" keeps up; the time itself is read fresh on each render.
+  const [, tick] = useState(0)
+  useEffect(() => {
+    const timer = window.setInterval(() => tick((n) => n + 1), 30_000)
+    return () => window.clearInterval(timer)
+  }, [])
+  const label = autoSyncLabel(state)
+  if (!label) return null
+  const when = state.kind === 'synced' || state.kind === 'up_to_date' ? ` · ${relativeTime(state.at)}` : ''
+  return (
+    <p className="wk-table-sub" role="status" data-testid="quickbooks-sync-status" data-state={state.kind} style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
+      {state.kind === 'error' || state.kind === 'reconnect' ? <AlertCircle aria-hidden="true" style={{ width: 14, height: 14 }} /> : <RefreshCw aria-hidden="true" style={{ width: 14, height: 14 }} />}
+      <span>
+        {label}
+        {when}
+      </span>
+      {state.kind === 'reconnect' ? (
+        <a className="wk-linklike" href={QUICKBOOKS_CONNECT_URL}>
+          Reconnect QuickBooks
+        </a>
+      ) : state.kind !== 'checking' ? (
+        <button type="button" className="wk-linklike" onClick={onSyncNow}>
+          {state.kind === 'error' ? 'Retry' : 'Sync now'}
+        </button>
+      ) : null}
+    </p>
   )
 }

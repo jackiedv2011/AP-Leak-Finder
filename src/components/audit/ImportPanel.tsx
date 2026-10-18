@@ -1,11 +1,18 @@
 import { useRef, useState } from 'react'
 import * as DialogPrimitive from '@radix-ui/react-dialog'
-import { AlertCircle, AlertTriangle, Download, FileText, HelpCircle, ShieldCheck, Sparkles, Upload, X } from 'lucide-react'
+import { AlertCircle, AlertTriangle, CheckCircle2, Download, FileText, HelpCircle, ShieldCheck, Sparkles, Upload, X } from 'lucide-react'
 import { parseCsv } from '@/lib/csv'
 import type { ParseResult } from '@/types'
 import { assessDataReadiness, assessFatalFile } from '@/audit/dataReadiness'
 import { QuickBooksImport } from './QuickBooksSource'
 import type { QuickBooksFacts } from '../../../server/quickbooksFacts.ts'
+import { describeQuickBooksSync, type QuickBooksSyncSummary } from '@/ledger/quickbooksSync'
+
+/** What the app knows about QuickBooks imports: when a company was last pulled, and what an import would change. */
+export interface QuickBooksImportContext {
+  sinceFor: (companyName: string) => number | null
+  preview: (parsed: ParseResult, facts: QuickBooksFacts) => { summary: QuickBooksSyncSummary; targetName: string | null; targetId: string | null }
+}
 import '@/workspace/workspace.css'
 import '@/workspace/reclaim.css'
 
@@ -28,6 +35,7 @@ interface ImportPanelProps {
   onRunSample?: () => void
   intro: string
   confirmLabel: string
+  quickbooks?: QuickBooksImportContext
 }
 
 const REQUIRED_COLUMNS: { name: string; description: string }[] = [
@@ -49,6 +57,7 @@ interface PendingUpload {
   file: File
   parsed: ParseResult
   quickbooks?: QuickBooksFacts
+  quickbooksPreview?: ReturnType<QuickBooksImportContext['preview']>
 }
 
 function formatFileSize(bytes: number): string {
@@ -67,7 +76,7 @@ function formatFileSize(bytes: number): string {
  * section): it carries `wk` so it holds the tokens wherever it is mounted,
  * including inside a portalled `.wk-panel`, which is outside `.wk` in the DOM.
  */
-export function ImportPanel({ allowSample, animateEntry = false, autoFocusUpload, error, onImport, onRunSample, intro, confirmLabel }: ImportPanelProps) {
+export function ImportPanel({ allowSample, animateEntry = false, autoFocusUpload, error, onImport, onRunSample, intro, confirmLabel, quickbooks: quickbooksContext }: ImportPanelProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [formatOpen, setFormatOpen] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
@@ -92,7 +101,8 @@ export function ImportPanel({ allowSample, animateEntry = false, autoFocusUpload
         return
       }
       const parsed = parseCsv(text)
-      if (parsed.records.length === 0) {
+      // A QuickBooks change pull can carry no payment rows (nothing changed, or only voids); that is still an answer.
+      if (parsed.records.length === 0 && !(quickbooks && parsed.skippedCount === 0)) {
         const guidance = assessFatalFile(parsed)
         if (guidance.missingRequiredColumns.length > 0) {
           setParseError(
@@ -111,7 +121,7 @@ export function ImportPanel({ allowSample, animateEntry = false, autoFocusUpload
         }
         return
       }
-      setPending({ file, parsed, ...(quickbooks ? { quickbooks } : {}) })
+      setPending({ file, parsed, ...(quickbooks ? { quickbooks, ...(quickbooksContext ? { quickbooksPreview: quickbooksContext.preview(parsed, quickbooks) } : {}) } : {}) })
     } catch {
       setParseError('Could not read that file. Please upload a valid CSV.')
     }
@@ -168,6 +178,20 @@ export function ImportPanel({ allowSample, animateEntry = false, autoFocusUpload
           ) : null}
         </dl>
 
+        {pending.quickbooksPreview ? (
+          <div className="wk-callout" data-tone="done" role="status" data-testid="quickbooks-sync-preview">
+            <CheckCircle2 aria-hidden="true" />
+            <div className="wk-callout-body">
+              <p>
+                <strong>From QuickBooks:</strong> {describeQuickBooksSync(pending.quickbooksPreview.summary)}.
+              </p>
+              {pending.quickbooksPreview.targetName && pending.quickbooksPreview.summary.mode !== 'first' ? (
+                <p className="wk-table-sub">Updates “{pending.quickbooksPreview.targetName}”, the audit that already has this company. Payments already reviewed keep their findings and cases.</p>
+              ) : null}
+            </div>
+          </div>
+        ) : null}
+
         {skipped > 0 && (
           <div className="wk-callout" data-tone="warn">
             <AlertTriangle aria-hidden="true" />
@@ -207,7 +231,7 @@ export function ImportPanel({ allowSample, animateEntry = false, autoFocusUpload
               onImport({ file: pending.file, parsed: pending.parsed, sourceLabel: pending.file.name, mode: 'upload', ...(pending.quickbooks ? { quickbooks: pending.quickbooks } : {}) })
             }
           >
-            {confirmLabel}
+            {pending.quickbooksPreview?.targetId && pending.quickbooksPreview.summary.mode !== 'first' ? 'Update the audit' : confirmLabel}
           </button>
         </div>
       </div>
@@ -261,7 +285,7 @@ export function ImportPanel({ allowSample, animateEntry = false, autoFocusUpload
         </button>
       </div>
 
-      <QuickBooksImport onFile={(file, facts) => void handleFile(file, facts ?? undefined)} />
+      <QuickBooksImport onFile={(file, facts) => void handleFile(file, facts ?? undefined)} sinceFor={quickbooksContext?.sinceFor} />
 
       {shownError && (
         <div className="wk-callout" data-tone="danger" role="alert">

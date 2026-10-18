@@ -45,6 +45,20 @@ export interface QuickBooksFacts {
   payments: Record<string, QuickBooksPaymentFact>
   /** Keyed by QuickBooks vendor id. */
   vendors: Record<string, QuickBooksVendorActivity>
-  /** How many of each entity the searches covered. */
+  /** How many of each entity the searches covered. For a change pull: how many were created since the last pull. */
   searched: { vendorCredits: number; deposits: number; purchases: number; billPayments: number }
+  /** Which QuickBooks company, and whether this is the whole ledger or only what changed. Absent on imports before re-import support. */
+  sync?: QuickBooksSyncInfo
+}
+
+export interface QuickBooksSyncInfo {
+  realmId: string
+  /** `full`: every transaction; anything not here is gone. `changes`: only what changed since `since`. */
+  mode: 'full' | 'changes'
+  /** Epoch ms of the pull the changes are relative to; null for a full pull. */
+  since: number | null
+  /** For `changes`: every transaction the change set mentions, as "Type:Id". */
+  touched: string[]
+  /** For `changes`: transactions deleted in QuickBooks. */
+  removed: Array<{ txnType: string; id: string }>
 }

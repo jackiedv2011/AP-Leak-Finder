@@ -13,12 +13,14 @@ export interface QuickBooksStatus {
   companyName?: string | null
   connectedAt?: number | null
   lastSyncAt?: number | null
+  /** The audit this connection keeps up to date on sign-in. */
+  linkedAuditId?: string | null
 }
 
 export const QUICKBOOKS_CONNECT_URL = '/api/integrations/quickbooks/connect'
 
-async function call(path: string, method: 'GET' | 'POST' = 'GET'): Promise<{ status: number; body: Record<string, unknown> | null }> {
-  const res = await fetch(path, { method, credentials: 'same-origin', headers: method === 'POST' ? { 'Content-Type': 'application/json' } : undefined, body: method === 'POST' ? '{}' : undefined })
+async function call(path: string, method: 'GET' | 'POST' = 'GET', payload: Record<string, unknown> = {}): Promise<{ status: number; body: Record<string, unknown> | null }> {
+  const res = await fetch(path, { method, credentials: 'same-origin', headers: method === 'POST' ? { 'Content-Type': 'application/json' } : undefined, body: method === 'POST' ? JSON.stringify(payload) : undefined })
   const text = await res.text()
   try {
     return { status: res.status, body: text ? (JSON.parse(text) as Record<string, unknown>) : null }
@@ -49,9 +51,10 @@ const isFacts = (v: unknown): v is QuickBooksFacts => {
  * normal import review, plus the QuickBooks facts the CSV can't carry (which
  * bill each payment paid, credits, refunds) for pre-filling recovery evidence.
  */
-export async function importFromQuickBooks(): Promise<QuickBooksImportResult> {
+export async function importFromQuickBooks(since: number | null = null): Promise<QuickBooksImportResult> {
   try {
-    const { status, body } = await call('/api/integrations/quickbooks/sync', 'POST')
+    // `since`: when the target audit last pulled this company; recent enough, and the server reads only what changed.
+    const { status, body } = await call('/api/integrations/quickbooks/sync', 'POST', since !== null ? { since } : {})
     if (status === 200 && body && typeof body.csv === 'string') {
       const companyName = typeof body.companyName === 'string' ? body.companyName : 'QuickBooks'
       const slug = companyName.replace(/[^\w-]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase() || 'company'
@@ -60,6 +63,15 @@ export async function importFromQuickBooks(): Promise<QuickBooksImportResult> {
     return { ok: false, message: typeof body?.message === 'string' ? body.message : 'QuickBooks import failed. Try again.', reconnect: body?.code === 'quickbooks_reconnect' }
   } catch {
     return { ok: false, message: 'Couldn’t reach Reclaim’s server. Check your connection and try again.', reconnect: false }
+  }
+}
+
+/** Ties an audit to the connected QuickBooks company, so signing in keeps that audit current. */
+export async function linkQuickBooksAudit(auditId: string): Promise<boolean> {
+  try {
+    return (await call('/api/integrations/quickbooks/link', 'POST', { auditId })).status === 200
+  } catch {
+    return false
   }
 }
 
