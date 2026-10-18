@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#090b0c" />
+    <meta name="color-scheme" content="dark light" />
+    <style>
+      /* Reclaim is dark-themed end to end (landing through the audit product).
+         Setting this before hydration avoids a white flash on full navigations
+         such as the "Start a review" CTA. */
+      html, body { background: #090b0c; }
+    </style>
+    <meta name="description" content="Reclaim reviews your payment ledger and shows the records behind every payment that needs attention." />
+    <meta property="og:title" content="Reclaim. | Evidence-first payment review" />
+    <meta property="og:description" content="Find the payments worth a second look, with the source records and human decisions kept in view." />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="/reclaim-logo.svg" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="Reclaim. | Evidence-first payment review" />
+    <meta name="twitter:description" content="Find the payments worth a second look, with the source records and human decisions kept in view." />
+    <meta name="twitter:image" content="/reclaim-logo.svg" />
+    <title>Reclaim. | Evidence-first payment review</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

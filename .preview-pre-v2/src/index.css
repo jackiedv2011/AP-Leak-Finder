@@ -1,0 +1,131 @@
+@import "@fontsource-variable/manrope/index.css";
+@import "@fontsource-variable/newsreader/wght.css";
+@import "@fontsource-variable/newsreader/wght-italic.css";
+@import "./motion/motion.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 45 27% 96%;
+    --foreground: 222 47% 15%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 15%;
+    --primary: 222 47% 15%;
+    --primary-foreground: 45 27% 96%;
+    --secondary: 45 15% 92%;
+    --secondary-foreground: 222 47% 15%;
+    --muted: 45 15% 92%;
+    --muted-foreground: 222 15% 40%;
+    --accent: 45 15% 90%;
+    --accent-foreground: 222 47% 15%;
+    --destructive: 0 72% 45%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 40 20% 87%;
+    --input: 40 20% 87%;
+    --ring: 222 47% 15%;
+    --radius: 0.5rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-paper text-foreground antialiased;
+    min-width: 0;
+    margin: 0;
+    font-family: "Manrope Variable", "Segoe UI Variable", ui-sans-serif, system-ui, sans-serif;
+    font-optical-sizing: auto;
+  }
+}
+
+html {
+  scroll-behavior: smooth;
+  color-scheme: light;
+}
+
+html:has(.reclaim-page),
+html:has(.route-dark),
+html:has(.reclaim-theme) {
+  color-scheme: dark;
+  background: #090b0c;
+}
+
+html:has(.reclaim-page) body,
+html:has(.route-dark) body,
+html:has(.reclaim-theme) body {
+  background: #090b0c;
+}
+
+/* The workspace runs on the same paper surface as the landing page. */
+html:has(.reclaim-audit) {
+  color-scheme: light;
+  background: #f3efe7;
+}
+
+html:has(.reclaim-audit) body {
+  background: #f3efe7;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+.reclaim-mark {
+  color: var(--text, hsl(var(--foreground)));
+  overflow: visible;
+}
+
+.reclaim-wordmark {
+  color: var(--text, hsl(var(--foreground)));
+  cursor: default;
+  transition: color 440ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.reclaim-wordmark-period {
+  color: #8bc34a;
+  transition: color 440ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.reclaim-wordmark[data-active='true'],
+.reclaim-wordmark[data-active='true'] .reclaim-wordmark-period {
+  color: #8bc34a;
+}
+
+.reclaim-recovery {
+  transition: filter 240ms ease;
+}
+
+.reclaim-spread {
+  transform-box: fill-box;
+  transform-origin: center;
+  transform: scale(1);
+  transition: transform 440ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.reclaim-mark[data-active='true'] .reclaim-spread {
+  transform: scale(1.04);
+}
+
+.reclaim-mark[data-active='true'] .reclaim-recovery {
+  filter: brightness(1.08);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reclaim-recovery,
+  .reclaim-spread,
+  .reclaim-wordmark,
+  .reclaim-wordmark-period {
+    transition: none;
+  }
+}

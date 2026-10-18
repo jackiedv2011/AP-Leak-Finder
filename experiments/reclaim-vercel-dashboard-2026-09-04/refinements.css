@@ -1,0 +1,24 @@
+/* Refinements from desktop/mobile computer-use review. */
+html{scrollbar-gutter:stable}
+body:has(#detail[open],#command[open]){overflow:hidden}
+body:has(.sidebar.mobile-open){overflow:hidden}
+.mobile-vendor{display:none}
+.tabs{scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.section-foot>span:first-child>svg{vertical-align:-3px;margin-right:4px}
+main{view-transition-name:page-content}
+::view-transition-group(*){animation:none}
+::view-transition-old(root),::view-transition-new(root){animation:none}
+::view-transition-old(page-content){animation:content-out 80ms ease-out both}
+::view-transition-new(page-content){animation:fade-in 120ms ease-out both}
+@keyframes content-out{to{opacity:0}}
+@media(prefers-reduced-motion:reduce){::view-transition-old(*),::view-transition-new(*){animation:none!important}}
+@media(max-width:720px){
+ .row-type{display:none}.mobile-vendor{display:inline;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+ .finding-row .row-sub{font-size:11px;gap:6px;min-width:0}.finding-row .row-main{min-width:0}
+ .finding-row .title{font-size:13px}.finding-row .status{font-size:11px}
+ .toolbar{flex-wrap:nowrap;align-items:flex-start}.toolbar-start{width:auto;flex-basis:auto;min-width:0}.input-wrap{min-width:0}.sort-label{display:none}.toolbar>.btn{width:34px;padding:0;margin:0}
+ .page-head:has(.actions a+a){flex-wrap:wrap}.page-head:has(.actions a+a) .actions{width:100%}.page-head:has(.actions a+a) .actions a{flex:1}
+ .detail-money{gap:12px}.detail-money .pill{white-space:normal;text-align:right;max-width:45%}
+ .run-meta>div:nth-child(n+3){display:none}.run-meta{gap:12px;padding-top:14px}.run-grid{gap:14px}.run-description{font-size:12px;line-height:1.55}.run-title{margin-top:6px}.section:has(.run-grid) .section-foot>span{display:none}
+}

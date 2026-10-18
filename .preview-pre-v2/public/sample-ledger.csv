@@ -1,0 +1,81 @@
+vendor,invoice_number,invoice_date,payment_date,invoice_amount,amount_paid,terms,bank_account_last4,category
+Sierra Coffee Supply,INV-3301,2025-01-05,2025-02-02,5200.00,5200.00,net 30,4410,COGS-Coffee
+Sierra Coffee Supply,INV-3303,2025-01-19,2025-02-14,4850.00,4850.00,net 30,4410,COGS-Coffee
+Sierra Coffee Supply,INV-3305,2025-02-02,2025-02-28,6800.00,6800.00,net 30,4410,COGS-Coffee
+Sierra Coffee Supply,INV-3305,2025-02-02,2025-03-15,6800.00,6800.00,net 30,4410,COGS-Coffee
+Sierra Coffee Supply,INV-3308,2025-03-01,2025-03-07,6000.00,6000.00,2/10 net 30,4410,COGS-Coffee
+Sierra Coffee Supply,INV-3311,2025-04-01,2025-04-23,4200.00,4200.00,1/10 net 30,4410,COGS-Coffee
+Sierra Coffee Supply,INV-3314,2025-05-03,2025-05-30,5100.00,5100.00,net 30,4410,COGS-Coffee
+Sierra Coffee Supply,INV-3317,2025-06-05,2025-06-30,4950.00,4950.00,net 30,4410,COGS-Coffee
+Golden Bean Exports,INV-9010,2025-01-10,2025-02-05,5600.00,5600.00,net 30,6650,COGS-Coffee
+Golden Bean Exports,INV-9013,2025-02-01,2025-02-26,6100.00,6100.00,net 30,6650,COGS-Coffee
+Golden Bean Exports,INV-9016,2025-03-01,2025-03-25,7400.00,8200.00,net 30,6650,COGS-Coffee
+Golden Bean Exports,INV-9019,2025-04-02,2025-04-24,5000.00,5000.00,2/10 net 30,6650,COGS-Coffee
+Golden Bean Exports,INV-9022,2025-05-01,2025-05-27,5800.00,5800.00,net 30,6650,COGS-Coffee
+Golden Bean Exports,INV-9025,2025-06-02,2025-06-28,6000.00,6000.00,net 30,6650,COGS-Coffee
+Golden Bean Exports,INV-9028,2025-06-20,2025-07-15,5950.00,5950.00,net 30,6650,COGS-Coffee
+Blue Bag Packaging,INV-4460,2025-01-08,2025-01-30,1100.00,1100.00,net 30,,Packaging
+Blue Bag Packaging,INV-4465,2025-02-10,2025-03-02,980.00,980.00,net 30,,Packaging
+Blue Bag Packaging,INV-4471,2025-03-05,2025-03-20,1450.00,1450.00,net 30,,Packaging
+Blue Bag Packaging,INV-4471-R,2025-03-05,2025-04-07,1450.00,1450.00,net 30,,Packaging
+Blue Bag Packaging,INV-4478,2025-04-15,2025-05-05,1020.00,1020.00,net 30,,Packaging
+Blue Bag Packaging,INV-4483,2025-05-20,2025-06-10,1150.00,1150.00,net 30,,Packaging
+Milk & Honey Dairy,INV-2201,2025-01-06,2025-01-20,620.00,620.00,net 15,,Dairy
+Milk & Honey Dairy,INV-2204,2025-01-20,2025-02-03,640.00,640.00,net 15,,Dairy
+Milk & Honey Dairy,INV-2210,2025-02-17,2025-03-03,1120.00,1120.00,net 15,,Dairy
+Milk & Honey Dairy,INV-2210B,2025-02-17,2025-03-12,1120.00,1120.00,net 15,,Dairy
+Milk & Honey Dairy,INV-2216,2025-03-24,2025-04-07,655.00,655.00,net 15,,Dairy
+Milk & Honey Dairy,INV-2222,2025-04-21,2025-05-05,670.00,670.00,net 15,,Dairy
+Milk & Honey Dairy,INV-2228,2025-05-19,2025-06-02,690.00,690.00,net 15,,Dairy
+Riverside Linens & Supply,INV-550,2025-01-12,2025-02-01,480.00,480.00,net 20,,Supplies
+Riverside Linens & Supply,INV-555,2025-02-15,2025-03-07,510.00,510.00,net 20,,Supplies
+Riverside Linens & Supply,INV-559,2025-03-20,2025-04-01,640.00,640.00,net 20,,Supplies
+Riverside Linens & Supply,INV-560,2025-03-22,2025-04-26,640.00,640.00,net 20,,Supplies
+Riverside Linens & Supply,INV-566,2025-05-01,2025-05-21,495.00,495.00,net 20,,Supplies
+Riverside Linens & Supply,INV-572,2025-06-03,2025-06-23,520.00,520.00,net 20,,Supplies
+Harbor Point Roasting Equipment,INV-7701,2025-01-15,2025-02-10,2900.00,2900.00,net 30,,Equipment
+Harbor Point Roasting Equipment,INV-7710,2025-03-01,2025-03-28,3600.00,3600.00,net 30,,Equipment
+Harbor Point Roasting Equipment,INV-7710,2025-03-01,2025-04-18,3600.00,3600.00,net 30,,Equipment
+Harbor Point Roasting Equipment,INV-7718,2025-05-05,2025-05-30,3150.00,3150.00,net 30,,Equipment
+Harbor Point Roasting Equipment,INV-7725,2025-06-10,2025-07-05,2800.00,2800.00,net 30,,Equipment
+Evergreen Cleaning Services,INV-EC-101,2025-01-03,2025-01-25,900.00,900.00,net 20,,Services
+Evergreen Cleaning Services,INV-EC-102,2025-02-03,2025-02-24,905.00,905.00,net 20,,Services
+Evergreen Cleaning Services,INV-EC-103,2025-03-03,2025-03-25,960.00,1260.00,net 20,,Services
+Evergreen Cleaning Services,INV-EC-104,2025-04-03,2025-04-24,910.00,910.00,net 20,,Services
+Evergreen Cleaning Services,INV-EC-105,2025-05-03,2025-05-24,920.00,920.00,net 20,,Services
+CloudPOS Software,INV-CP-01,2025-01-01,2025-01-08,3200.00,3200.00,2/15 net 45,5521,Software
+CloudPOS Software,INV-CP-02,2025-02-01,2025-02-10,3215.00,3215.00,net 30,5521,Software
+CloudPOS Software,INV-CP-03,2025-03-01,2025-03-31,2900.00,2900.00,2/15 net 45,5521,Software
+CloudPOS Software,INV-CP-04,2025-04-01,2025-04-10,3100.00,3100.00,net 30,8890,Software
+CloudPOS Software,INV-CP-05,2025-05-01,2025-05-10,3050.00,3050.00,net 30,8890,Software
+CloudPOS Software,INV-CP-06,2025-06-01,2025-06-10,3000.00,3000.00,net 30,8890,Software
+Metro Electric Utility,INV-ME-01,2025-01-05,2025-01-20,340.00,340.00,net 15,2290,Utilities
+Metro Electric Utility,INV-ME-02,2025-02-05,2025-02-19,355.00,355.00,net 15,2290,Utilities
+Metro Electric Utility,INV-ME-03,2025-03-05,2025-03-20,330.00,330.00,net 15,2290,Utilities
+Metro Electric Utility,INV-ME-04,2025-04-05,2025-04-19,365.00,365.00,net 15,7734,Utilities
+Metro Electric Utility,INV-ME-05,2025-05-05,2025-05-20,348.00,348.00,net 15,7734,Utilities
+Metro Electric Utility,INV-ME-06,2025-06-05,2025-06-19,352.00,352.00,net 15,7734,Utilities
+Crestline Insurance Group,INV-CR-01,2025-01-01,2025-01-15,1200.00,1200.00,net 15,,Insurance
+Crestline Insurance Group,INV-CR-02,2025-02-01,2025-02-14,1215.00,1215.00,net 15,,Insurance
+Crestline Insurance Group,INV-CR-03,2025-03-01,2025-03-16,1230.00,1230.00,net 15,,Insurance
+Crestline Insurance Group,INV-CR-04,2025-04-01,2025-04-15,1195.00,1195.00,net 15,,Insurance
+Northwest Pastry Co,INV-NP-01,2025-01-06,2025-01-13,375.00,375.00,net 7,,COGS-Pastry
+Northwest Pastry Co,INV-NP-02,2025-01-13,2025-01-20,378.00,378.00,net 7,,COGS-Pastry
+Northwest Pastry Co,INV-NP-03,2025-01-20,2025-01-27,381.00,381.00,net 7,,COGS-Pastry
+Northwest Pastry Co,INV-NP-04,2025-01-27,2025-02-03,384.00,384.00,net 7,,COGS-Pastry
+Northwest Pastry Co,INV-NP-05,2025-02-03,2025-02-10,387.00,387.00,net 7,,COGS-Pastry
+Northwest Pastry Co,INV-NP-06,2025-02-10,2025-02-17,373.00,373.00,net 7,,COGS-Pastry
+Northwest Pastry Co,INV-NP-07,2025-02-17,2025-02-24,389.00,389.00,net 7,,COGS-Pastry
+Northwest Pastry Co,INV-NP-08,2025-02-24,2025-03-03,376.00,376.00,net 7,,COGS-Pastry
+Northwest Pastry Co,INV-NP-09,2025-03-03,2025-03-10,391.00,391.00,net 7,,COGS-Pastry
+Northwest Pastry Co,INV-NP-10,2025-03-10,2025-03-17,2850.00,2850.00,net 7,,COGS-Pastry
+Cascade Ice & Produce Co,INV-CI-01,2025-01-08,2025-01-10,146.00,146.00,net 7,,Supplies
+Cascade Ice & Produce Co,INV-CI-02,2025-01-15,2025-01-17,149.00,149.00,net 7,,Supplies
+Cascade Ice & Produce Co,INV-CI-03,2025-01-22,2025-01-24,152.00,152.00,net 7,,Supplies
+Cascade Ice & Produce Co,INV-CI-04,2025-01-29,2025-01-31,155.00,155.00,net 7,,Supplies
+Cascade Ice & Produce Co,INV-CI-05,2025-02-05,2025-02-07,158.00,158.00,net 7,,Supplies
+Cascade Ice & Produce Co,INV-CI-06,2025-02-12,2025-02-14,144.00,144.00,net 7,,Supplies
+Cascade Ice & Produce Co,INV-CI-07,2025-02-19,2025-02-21,160.00,160.00,net 7,,Supplies
+Cascade Ice & Produce Co,INV-CI-08,2025-02-26,2025-02-28,147.00,147.00,net 7,,Supplies
+Cascade Ice & Produce Co,INV-CI-09,2025-03-05,2025-03-07,161.00,161.00,net 7,,Supplies
+Cascade Ice & Produce Co,INV-CI-10,2025-03-12,2025-03-14,1150.00,1150.00,net 7,,Supplies

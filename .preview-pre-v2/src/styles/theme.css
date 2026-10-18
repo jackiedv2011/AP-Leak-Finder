@@ -1,0 +1,70 @@
+/**
+ * Shared design tokens for every page built after the Foundable-style
+ * relaunch (auth, history, settings, profile, app shell/nav, tutorial).
+ * `landing.css` and `audit-shell.css` define the same token values inline
+ * on `.reclaim-page` / `.reclaim-audit` for historical reasons — keep all
+ * three in sync if the palette changes.
+ */
+.reclaim-theme {
+  --bg: #090b0c;
+  --bg-soft: #0d100f;
+  --surface: #121715;
+  --surface-raised: #181d1a;
+  --paper: #eef0eb;
+  --paper-ink: #151a17;
+  --text: #eef1ec;
+  --text-soft: #b7bdb6;
+  --text-faint: #878f88;
+  --line: rgb(238 241 236 / 0.1);
+  --line-strong: rgb(238 241 236 / 0.18);
+  --recovery: #79d99b;
+  --recovery-strong: #8bdca8;
+  --review: #d1a15e;
+  --future: #a8ad91;
+  --danger: #e08585;
+  --accent: #79d99b;
+  --accent-strong: #8be5ac;
+  --accent-soft: rgb(121 217 155 / 0.14);
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --control-edge: rgb(255 255 255 / 0.14);
+  --control-shadow: 0 0.7rem 1.4rem rgb(0 0 0 / 0.14), inset 0 1px 0 rgb(255 255 255 / 0.82), inset 0 -1px 0 rgb(0 0 0 / 0.14);
+  --control-shadow-hover: 0 0.95rem 2rem rgb(0 0 0 / 0.2), inset 0 1px 0 rgb(255 255 255 / 0.92), inset 0 -1px 0 rgb(0 0 0 / 0.12);
+  --control-shadow-accent: 0 0.7rem 1.6rem rgb(20 56 34 / 0.34), inset 0 1px 0 rgb(255 255 255 / 0.22), inset 0 -1px 0 rgb(0 0 0 / 0.18);
+  --control-shadow-accent-hover: 0 0.95rem 2.2rem rgb(20 56 34 / 0.42), inset 0 1px 0 rgb(255 255 255 / 0.3), inset 0 -1px 0 rgb(0 0 0 / 0.16);
+  --radius-sm: 0.6rem;
+  --radius-md: 0.85rem;
+  --radius-lg: 1.1rem;
+  --radius-xl: 1.4rem;
+  min-width: 0;
+  min-height: 100dvh;
+  overflow-x: clip;
+  color: var(--text);
+  color-scheme: dark;
+  background: linear-gradient(180deg, #090b0c 0%, #0d100f 48%, #080a09 100%);
+}
+
+.reclaim-theme *,
+.reclaim-theme *::before,
+.reclaim-theme *::after {
+  box-sizing: border-box;
+}
+
+.reclaim-theme h1,
+.reclaim-theme h2,
+.reclaim-theme h3 {
+  text-wrap: balance;
+}
+
+.reclaim-theme p {
+  text-wrap: pretty;
+}
+
+.reclaim-theme a:focus-visible,
+.reclaim-theme button:focus-visible,
+.reclaim-theme input:focus-visible,
+.reclaim-theme textarea:focus-visible,
+.reclaim-theme [tabindex]:focus-visible {
+  outline: 2px solid var(--recovery);
+  outline-offset: 3px;
+}

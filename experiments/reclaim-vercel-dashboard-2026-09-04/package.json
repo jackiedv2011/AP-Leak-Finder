@@ -1,0 +1,1 @@
+{"name":"reclaim-dashboard-v2","private":true,"type":"module","version":"0.1.0","scripts":{"start":"node server.mjs","test":"node --test model.test.mjs"},"engines":{"node":">=20"}}

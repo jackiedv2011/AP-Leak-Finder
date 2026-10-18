@@ -1,0 +1,911 @@
+/*
+ * Section composition — reconstructed from the reference's measured geometry
+ * at a 1425px viewport (1024px content column), settled state.
+ *
+ * Reference silhouette (top / height):
+ *   nav              0    /   80   pill 1072x56 at top 24
+ *   hero             0    / 1130   copy 200-538, visual band 600-1130
+ *   quote panel      1370 /  467   #fafafa panel 1024x371, radius 32
+ *   card grid        1837 /  636   head 136 + 48 + rows of 325x166, gap 24
+ *   three columns    2473 /  604   H 96 + 64 + (text 104 + tinted card 156)
+ *   feature list     3077 /  796   head 168 + 48 + rows of 325x154 + CTA
+ *   chapter          3873 / 4608   head 96 + 4 blocks + panel 1024x416
+ *   dark strip       8481 /  348   two 500x348 cards, gap 24
+ *   closing          8829 / 1104   head 296 + visual 1024x600
+ *   FAQ              9933 / 1064   head 56 + 48 + list
+ *
+ * The chapter's repeating unit is the spine of the page and is strict:
+ *   heading 96  +36  visual 1024x600 radius 32  +36  quote block 480 wide,
+ *   with 80px between blocks.
+ */
+
+/* ------------------------------------------------------------------- nav */
+
+.site-nav-shell {
+  position: fixed;
+  inset-inline: 0;
+  top: 0;
+  z-index: 40;
+  height: 80px;
+  padding: 24px var(--gutter) 0;
+  pointer-events: none;
+}
+
+.site-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: min(1072px, 100%);
+  height: 56px;
+  margin-inline: auto;
+  padding: 8px 8px 8px 20px;
+  border-radius: var(--radius-pill);
+  background: rgb(255 255 255 / 0.88);
+  backdrop-filter: blur(14px);
+  box-shadow:
+    0 0 0 1px rgb(30 45 82 / 0.06),
+    0 2px 8px -2px rgb(10 13 20 / 0.08);
+  pointer-events: auto;
+}
+
+.site-nav-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.site-nav-links {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-inline: auto;
+}
+
+.site-nav-links a {
+  padding: 8px 12px;
+  border-radius: var(--radius-pill);
+  font-size: 14px;
+  line-height: 20px;
+  letter-spacing: -0.28px;
+  font-weight: 600;
+  color: var(--smoke);
+  text-decoration: none;
+  transition: color 200ms var(--ease), background 200ms var(--ease);
+}
+
+.site-nav-links a:hover,
+.site-nav-links a[data-active='true'] {
+  color: var(--ink);
+  background: var(--snow);
+}
+
+.site-nav-end {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.site-nav-context {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--recover-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ------------------------------------------------------------------ hero */
+
+/* Reference: eyebrow at 200, headline under it, sub in a 600px column,
+   action row, signal row at 514, visual band 600 -> 1130. */
+.hero {
+  position: relative;
+  padding: 200px var(--gutter) 0;
+  background: var(--canvas);
+  overflow: clip;
+}
+
+.hero::after {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  height: 1px;
+  background: var(--hairline-soft);
+}
+
+.hero-copy {
+  position: relative;
+  z-index: 2;
+  width: min(var(--content), 100%);
+  margin-inline: auto;
+  text-align: center;
+}
+
+.hero-copy h1 {
+  max-width: var(--measure);
+  margin: 30px auto 0;
+}
+
+.hero-copy h1 span { display: block; }
+.hero-copy h1 em { font-style: normal; color: var(--recover-ink); }
+
+.hero-sub {
+  width: 600px;
+  max-width: 100%;
+  margin: 20px auto 0;
+}
+
+.hero-copy .site-actions { margin-top: 20px; justify-content: center; }
+
+/* The reference's inline rate row: three short claims, evenly spaced. */
+.hero-signals {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 32px;
+  margin-top: 40px;
+  flex-wrap: wrap;
+}
+
+.hero-signal {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  line-height: 24px;
+  letter-spacing: -0.32px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.hero-signal span:last-child { color: var(--smoke); font-weight: 500; }
+
+/* 530px visual band, matching the reference's 600 -> 1130. */
+.hero-stage {
+  position: relative;
+  height: 530px;
+  margin-top: 62px;
+}
+
+.hero-object {
+  position: absolute;
+  left: 50%;
+  z-index: 1;
+}
+
+/* A small object sits up beside the headline, as the reference does. */
+.hero-object[data-name='csv'] {
+  top: -420px;
+  margin-left: 470px;
+  transform: rotate(-7deg);
+  z-index: 0;
+}
+
+.hero-object[data-name='ledger'] {
+  top: 8px;
+  margin-left: -1000px;
+  transform: rotate(5deg);
+}
+
+.hero-object[data-name='slip-a'] {
+  top: 62px;
+  margin-left: -382px;
+  transform: rotate(-3.5deg);
+}
+
+.hero-object[data-name='slip-b'] {
+  top: 148px;
+  margin-left: -146px;
+  transform: rotate(2.5deg);
+  z-index: 2;
+}
+
+.hero-object[data-name='finding'] {
+  top: 30px;
+  margin-left: 214px;
+  transform: rotate(-1.5deg);
+  box-shadow: var(--shadow-lift), 0 24px 48px -28px rgb(10 13 20 / 0.32);
+}
+
+.hero-note {
+  position: absolute;
+  left: 50%;
+  top: 402px;
+  margin-left: -566px;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transform: rotate(-2deg);
+}
+
+.hero-note svg { flex: none; color: var(--recover-ink); }
+
+/* ----------------------------------------------------- quote panel (467) */
+
+/* The reference gives this slot a #fafafa panel, not a bare band, and holds
+   240px of plain white between the hero and it. */
+.quote-band { margin-top: 240px; padding: 0 var(--gutter) 96px; }
+
+.quote-panel {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 24px;
+  width: min(var(--content), 100% - (var(--gutter) * 2));
+  min-height: 371px;
+  margin-inline: auto;
+  padding: 48px;
+  border-radius: var(--radius-panel);
+  background: var(--snow);
+  text-align: center;
+}
+
+.quote-panel blockquote {
+  max-width: var(--measure);
+  margin: 0;
+}
+
+.quote-panel blockquote p {
+  font-size: 32px;
+  line-height: 40px;
+  letter-spacing: -0.96px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+/* --------------------------------------------------- section head blocks */
+
+.section-head { display: grid; gap: 16px; }
+.section-head[data-align='center'] { justify-items: center; text-align: center; }
+.section-head h2 { max-width: var(--measure); }
+.section-head p { max-width: 640px; }
+
+/* ------------------------------------------------------- card grid (636) */
+
+/* Reference: 325x166 cards, radius 16, #fafafa, 24px gap. */
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  margin-top: 48px;
+}
+
+.grid-card {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  min-height: 166px;
+  padding: 24px;
+  border-radius: var(--radius-card);
+  background: var(--snow);
+}
+
+.grid-card-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  line-height: 18px;
+  letter-spacing: 0.22px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--fog);
+}
+
+.grid-card-tag[data-outcome='recoverable'] { color: var(--recover-ink); }
+.grid-card-tag[data-outcome='review'] { color: var(--review-ink); }
+.grid-card-tag[data-outcome='opportunity'] { color: var(--opportunity-ink); }
+
+.grid-card h3 {
+  font-size: 20px;
+  line-height: 26px;
+  letter-spacing: -0.6px;
+}
+
+/* --------------------------------------------------- three columns (604) */
+
+/* Reference: a 104px text block over a 156px tinted card, per column. */
+.trio {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  margin-top: 64px;
+}
+
+.trio-col { display: grid; align-content: start; gap: 24px; }
+
+.trio-copy { display: grid; align-content: start; gap: 8px; min-height: 104px; }
+
+.trio-copy h3 {
+  font-size: 24px;
+  line-height: 32px;
+  letter-spacing: -0.72px;
+}
+
+.trio-card {
+  display: grid;
+  align-content: center;
+  gap: 8px;
+  min-height: 156px;
+  padding: 24px;
+  border-radius: var(--radius-card);
+}
+
+.trio-card[data-tint='recoverable'] { background: var(--recover-wash); }
+.trio-card[data-tint='review'] { background: rgb(183 121 31 / 0.12); }
+.trio-card[data-tint='opportunity'] { background: rgb(37 99 166 / 0.1); }
+
+.trio-card strong {
+  font-size: 16px;
+  line-height: 24px;
+  letter-spacing: -0.32px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.trio-card span {
+  font-size: 13px;
+  line-height: 20px;
+  letter-spacing: -0.26px;
+  font-weight: 500;
+  color: var(--smoke);
+}
+
+.trio-card code {
+  font-family: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, monospace;
+  font-size: 12px;
+  color: var(--ink);
+}
+
+/* ---------------------------------------------------- feature list (796) */
+
+/* Reference: 325x154 cards, two rows, then a CTA row. */
+.feature-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  margin-top: 48px;
+}
+
+.feature-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-height: 154px;
+  padding: 24px;
+  border-radius: var(--radius-card);
+  background: var(--snow);
+}
+
+.feature-card p {
+  font-size: 16px;
+  line-height: 24px;
+  letter-spacing: -0.32px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.feature-card p span { display: block; margin-top: 4px; font-weight: 500; color: var(--smoke); }
+
+.feature-cta { margin-top: 48px; }
+
+/* -------------------------------------------------------- chapter (4608) */
+
+.chapter { padding: 96px 0; }
+
+.chapter-head { margin-bottom: 48px; }
+
+/* The repeating unit. Every block is identical in shape. */
+.chapter-block { margin-top: 80px; }
+.chapter-block:first-of-type { margin-top: 0; }
+
+.chapter-block h3 {
+  max-width: 620px;
+  min-height: 96px;
+  font-size: 40px;
+  line-height: 48px;
+  letter-spacing: -1.2px;
+}
+
+/* 1024x600, radius 32 — the reference's visual slot, exact. */
+.chapter-visual {
+  position: relative;
+  height: 600px;
+  margin-top: 36px;
+  border-radius: var(--radius-panel);
+  background: var(--snow);
+  overflow: hidden;
+}
+
+.chapter-quote {
+  width: 480px;
+  max-width: 100%;
+  min-height: 110px;
+  margin-top: 36px;
+}
+
+.chapter-quote p {
+  font-size: 20px;
+  line-height: 30px;
+  letter-spacing: -0.6px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.chapter-quote cite {
+  display: block;
+  margin-top: 8px;
+  font-style: normal;
+}
+
+/* The visual's own layout: body copy at left, evidence staged at right. */
+.scene-copy {
+  position: absolute;
+  left: 48px;
+  top: 48px;
+  width: 340px;
+  z-index: 3;
+}
+
+.scene-object { position: absolute; }
+
+/* Objects are cropped by the panel's rounded edge — that is where the
+   reference lets its artifacts run out of frame. */
+.scene[data-scene='intake'] .scene-object[data-slot='csv'] {
+  left: 470px;
+  top: 40px;
+  transform: rotate(-4deg);
+}
+.scene[data-scene='intake'] .scene-object[data-slot='receipt'] {
+  left: 420px;
+  top: 372px;
+  transform: rotate(3deg);
+  z-index: 2;
+}
+.scene[data-scene='intake'] .scene-object[data-slot='ledger'] {
+  left: 820px;
+  top: 210px;
+  transform: rotate(2deg);
+}
+
+.scene[data-scene='match'] .scene-object[data-slot='a'] {
+  left: 450px;
+  top: 96px;
+  transform: rotate(-3deg);
+}
+.scene[data-scene='match'] .scene-object[data-slot='b'] {
+  left: 655px;
+  top: 268px;
+  transform: rotate(2.5deg);
+  z-index: 2;
+}
+
+.scene-annotation {
+  position: absolute;
+  left: 452px;
+  top: 452px;
+  z-index: 3;
+  transform: rotate(-2deg);
+}
+
+.scene[data-scene='explain'] .scene-object[data-slot='finding'] {
+  left: 580px;
+  top: 96px;
+  transform: rotate(-1.5deg);
+}
+
+.scene-conditions {
+  position: absolute;
+  left: 48px;
+  top: 236px;
+  display: grid;
+  gap: 18px;
+  width: 360px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.scene-conditions li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 16px;
+  line-height: 24px;
+  letter-spacing: -0.32px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.scene[data-scene='case'] .scene-object[data-slot='letter'] {
+  left: 440px;
+  top: 132px;
+  transform: rotate(-2deg);
+}
+
+.scene-lifecycle {
+  position: absolute;
+  left: 60px;
+  top: 300px;
+  display: grid;
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.scene-lifecycle li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 15px;
+  line-height: 22px;
+  letter-spacing: -0.3px;
+  font-weight: 600;
+  color: var(--fog);
+}
+
+.scene-lifecycle li::before {
+  content: '';
+  width: 10px;
+  height: 10px;
+  border-radius: 888px;
+  border: 1.5px solid var(--hairline);
+  flex: none;
+}
+
+.scene-lifecycle li[data-active='true'] { color: var(--ink); }
+.scene-lifecycle li[data-active='true']::before {
+  background: var(--recover-ink);
+  border-color: var(--recover-ink);
+}
+
+/* Closing panel of the chapter: 1024x416, radius 32. */
+.chapter-panel {
+  display: grid;
+  align-content: center;
+  gap: 32px;
+  min-height: 416px;
+  margin-top: 80px;
+  padding: 64px 48px;
+  border-radius: var(--radius-panel);
+  background: var(--snow);
+}
+
+.chapter-panel-figures {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+
+.chapter-panel-figures > div { display: grid; gap: 6px; }
+
+.chapter-panel-figures strong {
+  font-size: 40px;
+  line-height: 48px;
+  letter-spacing: -1.2px;
+  font-weight: 700;
+}
+
+.chapter-panel-figures div:first-child strong { color: var(--recover-ink); }
+
+/* ------------------------------------------------------ dark strip (348) */
+
+/* Reference: two 500px cards inside the 1024 column, not a full-bleed band. */
+.strip { padding-inline: var(--gutter); }
+
+.strip-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  width: min(var(--content), 100% - (var(--gutter) * 2));
+  margin-inline: auto;
+}
+
+.strip-grid > div {
+  display: grid;
+  align-content: center;
+  gap: 10px;
+  min-height: 348px;
+  padding: 48px;
+  border-radius: var(--radius-panel);
+  background: var(--carbon);
+  color: #ffffff;
+}
+
+.strip-grid h3 {
+  font-size: 32px;
+  line-height: 40px;
+  letter-spacing: -0.96px;
+}
+
+.strip-grid p { color: rgb(255 255 255 / 0.62); max-width: 34ch; }
+
+.strip-mark {
+  font-size: 32px;
+  line-height: 40px;
+  letter-spacing: -0.96px;
+  font-weight: 700;
+  color: rgb(255 255 255 / 0.28);
+}
+
+/* -------------------------------------------------------- closing (1104) */
+
+/* Reference: a 296px head block over a 1024x600 visual. */
+.closing { padding: 64px var(--gutter) 104px; }
+
+.closing-head {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 20px;
+  min-height: 296px;
+  text-align: center;
+}
+
+.closing-head h2 { max-width: var(--measure); }
+.closing-head p { max-width: 560px; }
+
+.closing-visual {
+  display: grid;
+  align-content: center;
+  gap: 48px;
+  min-height: 600px;
+  padding: 64px 48px;
+  border-radius: var(--radius-panel);
+  background: var(--snow);
+}
+
+.pricing-steps {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pricing-steps li {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  padding-top: 20px;
+  border-top: 1px solid var(--hairline);
+}
+
+.pricing-steps strong {
+  font-size: 20px;
+  line-height: 28px;
+  letter-spacing: -0.6px;
+  font-weight: 700;
+}
+
+.pricing-steps li:last-child strong { color: var(--recover-ink); }
+
+.pricing-note {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-size: 16px;
+  line-height: 24px;
+  letter-spacing: -0.32px;
+  font-weight: 700;
+  color: var(--recover-ink);
+}
+
+/* ------------------------------------------------------------ FAQ (1064) */
+
+.faq { padding: 0 var(--gutter) 96px; }
+.faq-head { margin-bottom: 48px; }
+.faq-list { display: grid; gap: 12px; }
+.faq-item { border-bottom: 1px solid var(--hairline); }
+.faq-item h3 { margin: 0; }
+
+.faq-item button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  width: 100%;
+  padding: 16px 0;
+  border: 0;
+  background: none;
+  font-family: inherit;
+  font-size: 16px;
+  line-height: 24px;
+  letter-spacing: -0.32px;
+  font-weight: 600;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+
+.faq-item button i {
+  position: relative;
+  flex: none;
+  width: 16px;
+  height: 16px;
+}
+
+.faq-item button i::before,
+.faq-item button i::after {
+  content: '';
+  position: absolute;
+  inset: 50% 0 auto;
+  height: 1.5px;
+  background: var(--ink);
+  transform: translateY(-50%);
+  transition: transform 260ms var(--ease), opacity 260ms var(--ease);
+}
+
+.faq-item button i::after { transform: translateY(-50%) rotate(90deg); }
+.faq-item[data-open='true'] button i::after { transform: translateY(-50%) rotate(0deg); opacity: 0; }
+
+.faq-answer {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 320ms var(--ease);
+}
+
+.faq-item[data-open='true'] .faq-answer { grid-template-rows: 1fr; }
+.faq-answer > div { overflow: hidden; }
+.faq-answer p { padding-bottom: 20px; max-width: 72ch; }
+
+/* ---------------------------------------------------------------- footer */
+
+/* Reference: 100px of lead-in, then a grid whose narrow left column carries
+   the closing call to action and whose right side holds the link lists. */
+.site-footer {
+  padding: 100px var(--gutter) 80px;
+  border-top: 1px solid var(--hairline);
+  background: var(--snow);
+}
+
+.site-footer-grid {
+  display: grid;
+  grid-template-columns: 256px 1fr;
+  gap: 48px;
+  align-items: start;
+}
+
+.site-footer-lead { display: grid; justify-items: start; gap: 24px; }
+
+.site-footer-lead h2 {
+  font-size: 32px;
+  line-height: 40px;
+  letter-spacing: -0.96px;
+}
+
+.site-footer-menus {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 48px;
+  justify-self: end;
+  width: 720px;
+  max-width: 100%;
+}
+
+.site-footer h4 {
+  margin-bottom: 16px;
+  font-size: 11px;
+  letter-spacing: 0.22px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--fog);
+}
+
+.site-footer ul { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+
+.site-footer li {
+  font-size: 14px;
+  line-height: 20px;
+  letter-spacing: -0.28px;
+  font-weight: 500;
+  color: var(--smoke);
+}
+
+.site-footer a { color: inherit; text-decoration: none; }
+.site-footer-menus a:hover { color: var(--ink); }
+
+.site-footer-base {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  margin-top: 96px;
+  padding-top: 32px;
+  border-top: 1px solid var(--hairline);
+  flex-wrap: wrap;
+}
+
+.site-footer-base small:last-child { margin-left: auto; }
+
+.site-footer-brand { display: inline-flex; color: var(--ink); }
+
+/* ------------------------------------------------------------ responsive */
+
+@media (max-width: 1100px) {
+  .hero-object[data-name='csv'] { margin-left: 330px; }
+  .hero-object[data-name='ledger'] { margin-left: -840px; }
+  .scene-conditions { left: 780px; }
+}
+
+@media (max-width: 1023px) {
+  .site { --content: 720px; }
+
+  .site-display { font-size: 48px; line-height: 56px; letter-spacing: -1.44px; }
+  .site-heading-lg { font-size: 40px; line-height: 48px; letter-spacing: -1.2px; }
+  .site-heading { font-size: 32px; line-height: 40px; letter-spacing: -0.96px; }
+  .chapter-block h3 { font-size: 32px; line-height: 40px; letter-spacing: -0.96px; }
+  .site-lead { font-size: 18px; line-height: 28px; }
+
+  .site-nav-links { display: none; }
+  .site-nav-end { margin-left: auto; }
+
+  .hero { padding-top: 150px; }
+  .hero-stage { height: 440px; }
+  .hero-object[data-name='csv'] { display: none; }
+  .hero-object[data-name='ledger'] { margin-left: -700px; top: 0; }
+  .hero-object[data-name='slip-a'] { margin-left: -330px; top: 40px; }
+  .hero-object[data-name='slip-b'] { margin-left: -120px; top: 130px; }
+  .hero-object[data-name='finding'] { margin-left: 180px; top: 10px; }
+  .hero-note { display: none; }
+
+  .card-grid,
+  .trio,
+  .feature-grid,
+  .chapter-panel-figures { grid-template-columns: repeat(2, 1fr); }
+
+  /* Scenes stack: copy on top, evidence below, still cropped by the panel. */
+  .chapter-visual { height: 620px; }
+  .scene-copy { position: static; width: auto; padding: 40px 32px 0; }
+  .scene-object { left: auto !important; }
+  .scene[data-scene='intake'] .scene-object[data-slot='csv'] { left: 40px !important; top: 250px; }
+  .scene[data-scene='intake'] .scene-object[data-slot='receipt'] { left: 380px !important; top: 430px; }
+  .scene[data-scene='intake'] .scene-object[data-slot='ledger'] { display: none; }
+  .scene[data-scene='match'] .scene-object[data-slot='a'] { left: 40px !important; top: 250px; }
+  .scene[data-scene='match'] .scene-object[data-slot='b'] { left: 250px !important; top: 400px; }
+  .scene-annotation { left: 40px; top: 560px; }
+  .scene[data-scene='explain'] .scene-object[data-slot='finding'] { left: 40px !important; top: 240px; }
+  .scene-conditions { left: 40px !important; top: 470px; width: 320px; }
+  .scene[data-scene='case'] .scene-object[data-slot='letter'] { left: 40px !important; top: 250px; }
+  .scene-lifecycle { left: 40px; top: 500px; }
+
+  .strip-grid { grid-template-columns: 1fr; }
+  .pricing-steps { grid-template-columns: repeat(2, 1fr); }
+  .site-footer-grid { grid-template-columns: 1fr; }
+  .site-footer-menus { width: 100%; justify-self: start; }
+}
+
+@media (max-width: 719px) {
+  .site { --gutter: 20px; }
+
+  .site-display { font-size: 38px; line-height: 44px; letter-spacing: -1.14px; }
+  .site-heading-lg { font-size: 32px; line-height: 40px; letter-spacing: -0.96px; }
+  .site-heading,
+  .chapter-block h3 { font-size: 28px; line-height: 36px; letter-spacing: -0.84px; }
+
+  .hero { padding-top: 120px; }
+  .hero-stage { height: 360px; }
+  .hero-object[data-name='ledger'] { display: none; }
+  .hero-object[data-name='slip-a'] { margin-left: -290px; top: 0; }
+  .hero-object[data-name='slip-b'] { margin-left: -140px; top: 90px; }
+  .hero-object[data-name='finding'] { margin-left: -200px; top: 190px; }
+  .hero-sub { width: auto; }
+
+  .card-grid,
+  .trio,
+  .feature-grid,
+  .chapter-panel-figures,
+  .pricing-steps { grid-template-columns: 1fr; }
+  .site-footer-menus { grid-template-columns: 1fr; gap: 32px; }
+
+  .chapter { padding-block: 64px; }
+  .chapter-block { margin-top: 64px; }
+  .quote-panel,
+  .chapter-panel,
+  .closing-visual { padding: 32px 24px; }
+  .strip-grid > div { min-height: 260px; padding: 32px 24px; }
+}
