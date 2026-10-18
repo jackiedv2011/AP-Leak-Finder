@@ -27,11 +27,11 @@ export interface ServerConfig {
   /** Exposes /api/dev/mailbox and /api/dev/plan. Never true in production; on by default only for a localhost origin. */
   devMailbox: boolean
   /**
-   * QuickBooks Online, sandbox only. Client secret and token key are secrets.
+   * QuickBooks Online, read-only. `environment` picks Intuit's sandbox or production API (QBO_ENVIRONMENT, default sandbox). Client secret and token key are secrets.
    * The token key (32 random bytes, base64) seals stored access tokens; losing
    * it only means customers reconnect.
    */
-  quickbooks: { clientId: string; clientSecret: string; tokenKey: Buffer } | null
+  quickbooks: { clientId: string; clientSecret: string; tokenKey: Buffer; environment: 'sandbox' | 'production' } | null
   /**
    * Seals every stored audit (projectStore.ts). Secret, and unlike the
    * QuickBooks key it cannot be lost: without it the audits can't be read.
@@ -54,6 +54,10 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): ServerConfig {
   const google = env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET ? { clientId: env.GOOGLE_CLIENT_ID, clientSecret: env.GOOGLE_CLIENT_SECRET } : null
   const gmail = env.GMAIL_USER && env.GMAIL_APP_PASSWORD ? { user: env.GMAIL_USER, appPassword: env.GMAIL_APP_PASSWORD } : null
   const resend = env.RESEND_API_KEY && env.EMAIL_FROM ? { apiKey: env.RESEND_API_KEY, from: env.EMAIL_FROM } : null
+  // Real companies' books are only ever read by a server that passed the production checks.
+  if (quickbooksEnvironment(env) === 'production' && !production) {
+    throw new Error('QBO_ENVIRONMENT=production reads real companies\' books; it needs NODE_ENV=production so the production startup checks run.')
+  }
   if (production) {
     const problems = productionProblems(env, appOrigin)
     if (problems.length) throw new Error(`Refusing to start in production:\n${problems.map((p) => `  - ${p}`).join('\n')}`)
@@ -131,6 +135,11 @@ function productionProblems(env: NodeJS.ProcessEnv, appOrigin: string): string[]
   const qbo = ['QBO_CLIENT_ID', 'QBO_CLIENT_SECRET', 'QBO_TOKEN_KEY']
   const missing = qbo.filter((name) => !set(name))
   if (missing.length && missing.length < qbo.length) problems.push(`QuickBooks is half configured: ${missing.join(', ')} missing. Set all three QBO_* values, or none.`)
+  if (quickbooksEnvironment(env) === 'production') {
+    if (missing.length === qbo.length) problems.push('QBO_ENVIRONMENT=production but QBO_CLIENT_ID, QBO_CLIENT_SECRET and QBO_TOKEN_KEY are not set. Use the production keys from the Intuit developer portal.')
+    // Intuit accepts only https redirect URIs on a real domain for production apps; the local-check exception does not apply.
+    if (!isHttpsOrigin(appOrigin) || isLocalOrigin(appOrigin)) problems.push('QBO_ENVIRONMENT=production needs APP_ORIGIN to be the public https:// address: Intuit refuses http and localhost redirect URIs for production apps.')
+  }
 
   if (set('GMAIL_TOKEN_KEY') && !(set('GOOGLE_CLIENT_ID') && set('GOOGLE_CLIENT_SECRET'))) problems.push('GMAIL_TOKEN_KEY is set but GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET are not; Gmail sending uses the same Google client.')
 
@@ -146,11 +155,18 @@ function isHttpsOrigin(origin: string): boolean {
   }
 }
 
+/** QBO_ENVIRONMENT: `sandbox` (the default) or `production`. Anything else is a typo that must not silently mean sandbox. */
+function quickbooksEnvironment(env: NodeJS.ProcessEnv): 'sandbox' | 'production' {
+  const value = env.QBO_ENVIRONMENT?.trim().toLowerCase() || 'sandbox'
+  if (value !== 'sandbox' && value !== 'production') throw new Error('QBO_ENVIRONMENT must be "sandbox" or "production".')
+  return value
+}
+
 function quickbooksConfig(env: NodeJS.ProcessEnv): ServerConfig['quickbooks'] {
   if (!env.QBO_CLIENT_ID || !env.QBO_CLIENT_SECRET || !env.QBO_TOKEN_KEY) return null
   const tokenKey = Buffer.from(env.QBO_TOKEN_KEY, 'base64')
   if (tokenKey.length !== 32) throw new Error('QBO_TOKEN_KEY must be 32 random bytes, base64-encoded (openssl rand -base64 32).')
-  return { clientId: env.QBO_CLIENT_ID, clientSecret: env.QBO_CLIENT_SECRET, tokenKey }
+  return { clientId: env.QBO_CLIENT_ID, clientSecret: env.QBO_CLIENT_SECRET, tokenKey, environment: quickbooksEnvironment(env) }
 }
 
 function gmailSendConfig(env: NodeJS.ProcessEnv, google: ServerConfig['google']): ServerConfig['gmailSend'] {

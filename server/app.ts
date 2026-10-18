@@ -77,7 +77,7 @@ export function createApp(deps: AppDependencies): App {
   const mailer = deps.mailer ?? (config.resend ? new ResendMailer(config.resend.apiKey, config.resend.from) : config.gmail ? new GmailMailer(config.gmail.user, config.gmail.appPassword) : new DevMailer(db))
   const google = deps.google !== undefined ? deps.google : config.google ? createGoogleClient(config.google.clientId, config.google.clientSecret) : null
   const drafts = deps.drafts !== undefined ? deps.drafts : config.anthropicApiKey ? createDraftService(config.anthropicApiKey, config.anthropicModel) : null
-  const quickbooks = deps.quickbooks !== undefined ? deps.quickbooks : config.quickbooks ? createQuickBooksClient(config.quickbooks.clientId, config.quickbooks.clientSecret) : null
+  const quickbooks = deps.quickbooks !== undefined ? deps.quickbooks : config.quickbooks ? createQuickBooksClient(config.quickbooks.clientId, config.quickbooks.clientSecret, fetch, config.quickbooks.environment) : null
   const auth = new AuthService(db, mailer, {
     appOrigin: config.appOrigin,
     requireEmailVerification: config.requireEmailVerification,
@@ -138,7 +138,7 @@ export function createApp(deps: AppDependencies): App {
     if (!limiter.check(key)) throw new HttpError(429, 'Too many attempts. Wait a minute and try again.', 'rate_limited')
   }
 
-  // QuickBooks Online (sandbox, read-only). Tokens are sealed at rest under a
+  // QuickBooks Online (read-only; sandbox or production per QBO_ENVIRONMENT). Tokens are sealed at rest under a
   // key from the environment; they are never logged and never sent to the browser.
   const qbo = quickbooks && config.quickbooks ? { client: quickbooks, key: config.quickbooks.tokenKey } : null
   const qboRedirectUri = `${config.appOrigin}${QBO_PATH}/callback`
@@ -322,7 +322,7 @@ export function createApp(deps: AppDependencies): App {
       }
     }
 
-    // ---------- QuickBooks Online (sandbox, read-only) ----------
+    // ---------- QuickBooks Online (read-only) ----------
     if (path === QBO_PATH && method === 'GET') {
       const user = requireUser(req)
       if (!qbo) return json(200, { available: false })

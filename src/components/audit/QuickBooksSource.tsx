@@ -28,6 +28,15 @@ function useQuickBooksStatus() {
   return { status: guest ? null : status, refresh }
 }
 
+/** "Sandbox" while the server reads Intuit's test companies; nothing once it reads real ones. */
+function EnvironmentChip({ environment }: { environment?: QuickBooksStatus['environment'] }) {
+  return environment === 'production' ? null : (
+    <span className="wk-chip" data-tone="quiet" data-testid="quickbooks-environment">
+      Sandbox
+    </span>
+  )
+}
+
 /** Read once, on first render: the import dialog opens before the router tidies the URL. */
 function initialOutcome() {
   if (typeof window === 'undefined') return null
@@ -75,7 +84,7 @@ export function QuickBooksImport({ onFile, sinceFor }: { onFile: (file: File, fa
         <div style={{ minWidth: 0 }}>
           <p style={{ fontWeight: 500 }}>
             {status.connected ? `QuickBooks Online · ${status.companyName || 'connected company'}` : 'Or connect QuickBooks Online'}{' '}
-            <span className="wk-chip" data-tone="quiet">Sandbox</span>
+            <EnvironmentChip environment={status.environment} />
           </p>
           <p className="wk-table-sub" style={{ marginTop: 4 }}>
             {status.connected && status.lastSyncAt ? `Last imported ${dateTime.format(status.lastSyncAt)}. ` : ''}
@@ -127,7 +136,7 @@ export function QuickBooksSettings({ bare = false }: { bare?: boolean } = {}) {
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 24, flexWrap: 'wrap', alignItems: 'flex-start' }}>
         <div style={{ maxWidth: 560 }}>
           <p style={{ fontSize: 15, fontWeight: 500 }}>
-            QuickBooks Online <span className="wk-chip" data-tone="quiet">Sandbox</span>
+            QuickBooks Online <EnvironmentChip environment={status.environment} />
           </p>
           <p className="wk-dim" style={{ marginTop: 4, fontSize: 13 }}>
             {status.connected

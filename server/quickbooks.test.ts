@@ -6,7 +6,7 @@ import { loadConfig } from './config.ts'
 import { openDatabase } from './db.ts'
 import { DevMailer } from './mailer.ts'
 import { openSecret, sealSecret } from './crypto.ts'
-import { createQuickBooksClient, pullLedger, QuickBooksReconnectError, SANDBOX_API_BASE, type QuickBooksClient, type QuickBooksTokens } from './quickbooks.ts'
+import { createQuickBooksClient, pullLedger, QuickBooksReconnectError, PRODUCTION_API_BASE, SANDBOX_API_BASE, type QuickBooksClient, type QuickBooksTokens } from './quickbooks.ts'
 
 const tokenKey = randomBytes(32)
 const config = loadConfig({
@@ -365,8 +365,11 @@ describe('importing and disconnecting', () => {
   })
 })
 
-describe('the QuickBooks client is read-only', () => {
-  it('reads company data only with GET, only from the sandbox API, only with SELECT', async () => {
+describe.each([
+  ['sandbox', SANDBOX_API_BASE],
+  ['production', PRODUCTION_API_BASE],
+] as const)('the QuickBooks client is read-only (%s)', (environment, API_HOST) => {
+  it(`reads company data only with GET, only from ${API_HOST}, only with SELECT`, async () => {
     const seen: Array<{ method: string; url: URL }> = []
     const fakeFetch = (async (input: string | URL | Request, init?: RequestInit) => {
       const url = new URL(String(input))
@@ -377,11 +380,14 @@ describe('the QuickBooks client is read-only', () => {
       const entity = url.searchParams.get('query')!.match(/from (\w+)/)![1] as keyof typeof SAMPLE.entities
       return Response.json({ QueryResponse: { [entity]: SAMPLE.entities[entity] } })
     }) as typeof fetch
-    const client = createQuickBooksClient('id', 'secret', fakeFetch)
+    const client = createQuickBooksClient('id', 'secret', fakeFetch, environment)
+    expect(client.environment).toBe(environment)
     const tokens = await client.exchangeCode({ code: 'c', redirectUri: 'http://localhost/cb' })
     await pullLedger(client, REALM, tokens.accessToken)
 
-    const data = seen.filter((s) => s.url.origin === SANDBOX_API_BASE)
+    // Every company-data request went to this environment's host, and nowhere else.
+    expect(seen.filter((s) => s.url.hostname.includes('quickbooks.api.intuit.com')).every((s) => s.url.origin === API_HOST)).toBe(true)
+    const data = seen.filter((s) => s.url.origin === API_HOST)
     expect(data.length).toBeGreaterThan(5)
     expect(data.every((s) => s.method === 'GET')).toBe(true)
     // Anything sent with another method went to Intuit's sign-in service, never to company data.
@@ -392,12 +398,20 @@ describe('the QuickBooks client is read-only', () => {
     await client.changes(REALM, tokens.accessToken, ['BillPayment', 'Purchase'], new Date('2026-10-01T00:00:00Z'))
     expect(seen).toHaveLength(1)
     expect(seen[0].method).toBe('GET')
-    expect(seen[0].url.origin + seen[0].url.pathname).toBe(`${SANDBOX_API_BASE}/v3/company/${REALM}/cdc`)
+    expect(seen[0].url.origin + seen[0].url.pathname).toBe(`${API_HOST}/v3/company/${REALM}/cdc`)
     expect(seen[0].url.searchParams.get('entities')).toBe('BillPayment,Purchase')
     expect(seen[0].url.searchParams.get('changedSince')).toBe('2026-10-01T00:00:00.000Z')
     await expect(client.changes(REALM, 'a', ['Invoice'], new Date())).rejects.toThrow(/ledger entities/)
 
     await expect(client.query(REALM, 'a', 'delete from Bill where Id = 1')).rejects.toThrow(/Only SELECT/)
+    await expect(client.query(REALM, 'a', 'select * from Customer')).rejects.toThrow(/ledger entities/)
+    await expect(client.query(REALM, 'a', 'select * from Invoice where Id = 1')).rejects.toThrow(/ledger entities/)
+    await expect(client.query(REALM, 'a', 'select count(*) from Employee')).rejects.toThrow(/ledger entities/)
+
+    // A failed read names Intuit's trace id, for their support, and never the response body.
+    const failing = createQuickBooksClient('id', 'secret', (async () => new Response('{"Fault":"access-SECRET"}', { status: 500, headers: { intuit_tid: '1-abc-123' } })) as typeof fetch, environment)
+    const err = await failing.query(REALM, 'a', 'select * from Bill').catch((e: Error) => e)
+    expect(err.message).toBe('QuickBooks read failed (500, intuit_tid 1-abc-123).')
     await expect(client.companyInfo('../../v3/company/1/bill', 'a')).rejects.toThrow(/company id/)
   })
 })

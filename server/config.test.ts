@@ -103,3 +103,31 @@ describe('production startup checks', () => {
     expect(config.quickbooks).toBeNull()
   })
 })
+
+describe('QuickBooks environment', () => {
+  const qbo = { QBO_CLIENT_ID: 'id', QBO_CLIENT_SECRET: 'secret', QBO_TOKEN_KEY: tokenKey }
+  const dev = { NODE_ENV: 'development', APP_ORIGIN: 'http://localhost:5174' }
+
+  it('defaults to the sandbox', () => {
+    expect(loadConfig({ ...dev, ...qbo }).quickbooks?.environment).toBe('sandbox')
+    expect(loadConfig({ ...dev, ...qbo, QBO_ENVIRONMENT: 'sandbox' }).quickbooks?.environment).toBe('sandbox')
+  })
+
+  it('refuses a misspelt environment rather than guessing', () => {
+    expect(() => loadConfig({ ...dev, ...qbo, QBO_ENVIRONMENT: 'prod' })).toThrow(/sandbox" or "production/)
+  })
+
+  it('reads real companies only from a server that passed the production checks', () => {
+    expect(() => loadConfig({ ...dev, ...qbo, QBO_ENVIRONMENT: 'production' })).toThrow(/needs NODE_ENV=production/)
+    expect(loadConfig({ ...prod, ...qbo, QBO_ENVIRONMENT: 'production' }).quickbooks?.environment).toBe('production')
+  })
+
+  it('in production, needs the keys and a public https origin', () => {
+    expect(() => loadConfig({ ...prod, QBO_ENVIRONMENT: 'production' })).toThrow(/QBO_ENVIRONMENT=production but QBO_CLIENT_ID/)
+    expect(() => loadConfig({ ...prod, ...qbo, QBO_ENVIRONMENT: 'production', APP_ORIGIN: 'http://localhost:8799', SESSION_COOKIE_SECURE_OK: '1' })).toThrow(/Intuit refuses http and localhost/)
+  })
+
+  it('a production server may still read the sandbox (a staging box)', () => {
+    expect(loadConfig({ ...prod, ...qbo }).quickbooks?.environment).toBe('sandbox')
+  })
+})
