@@ -68,7 +68,7 @@ export function AccountData({ onDeleted = () => window.location.assign('/?accoun
               <div>
                 <DialogPrimitive.Title className="wk-display wk-h2">Delete your account?</DialogPrimitive.Title>
                 <DialogPrimitive.Description className="wk-dim">
-                  This permanently deletes your account, every audit, finding and recovery note, and your sign-in. QuickBooks is disconnected. Download your data first if you want a copy.
+                  This permanently deletes your account, every audit, finding and recovery note, and your sign-in. QuickBooks and Gmail are disconnected. Download your data first if you want a copy.
                 </DialogPrimitive.Description>
               </div>
               <DialogPrimitive.Close className="wk-panel-close" aria-label="Close">
