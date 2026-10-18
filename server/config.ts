@@ -32,6 +32,13 @@ export interface ServerConfig {
    * it only means customers reconnect.
    */
   quickbooks: { clientId: string; clientSecret: string; tokenKey: Buffer } | null
+  /**
+   * Seals every stored audit (projectStore.ts). Secret, and unlike the
+   * QuickBooks key it cannot be lost: without it the audits can't be read.
+   * `previous` is only set while rotating, so rows sealed under it are re-sealed.
+   * Required in production; without it (development) audits are stored as plain JSON.
+   */
+  dataKeys: { current: Buffer; previous: Buffer | null } | null
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): ServerConfig {
@@ -65,7 +72,21 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): ServerConfig {
     // become an account-takeover endpoint; DEV_MAILBOX=true opts in explicitly.
     devMailbox: !production && (env.DEV_MAILBOX === 'true' || (env.DEV_MAILBOX !== 'false' && isLocalOrigin(appOrigin))),
     quickbooks: quickbooksConfig(env),
+    dataKeys: dataKeysConfig(env),
   }
+}
+
+function dataKeysConfig(env: NodeJS.ProcessEnv): ServerConfig['dataKeys'] {
+  const parse = (name: string) => {
+    const key = Buffer.from(env[name]!, 'base64')
+    if (key.length !== 32) throw new Error(`${name} must be 32 random bytes, base64-encoded (openssl rand -base64 32).`)
+    return key
+  }
+  if (env.DATA_KEY_PREVIOUS?.trim() && !env.DATA_KEY?.trim()) throw new Error('DATA_KEY_PREVIOUS is set without DATA_KEY.')
+  if (!env.DATA_KEY?.trim()) return null
+  const current = parse('DATA_KEY')
+  const previous = env.DATA_KEY_PREVIOUS?.trim() ? parse('DATA_KEY_PREVIOUS') : null
+  return { current, previous: previous && !previous.equals(current) ? previous : null }
 }
 
 /**
@@ -94,6 +115,11 @@ function productionProblems(env: NodeJS.ProcessEnv, appOrigin: string): string[]
 
   // The dev mailbox hands password-reset links to anyone who asks.
   if (set('DEV_MAILBOX') && env.DEV_MAILBOX !== 'false') problems.push('DEV_MAILBOX must be unset or false in production.')
+
+  // Every stored audit is sealed under this key. Reusing the QuickBooks key
+  // would mean rotating one forces rotating the other.
+  if (!set('DATA_KEY')) problems.push('DATA_KEY is not set. Stored audits are encrypted with it: openssl rand -base64 32, and keep a copy apart from the database backups.')
+  else if (set('QBO_TOKEN_KEY') && env.DATA_KEY!.trim() === env.QBO_TOKEN_KEY!.trim()) problems.push('DATA_KEY must be different from QBO_TOKEN_KEY.')
 
   const qbo = ['QBO_CLIENT_ID', 'QBO_CLIENT_SECRET', 'QBO_TOKEN_KEY']
   const missing = qbo.filter((name) => !set(name))

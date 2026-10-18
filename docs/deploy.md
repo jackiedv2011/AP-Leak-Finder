@@ -34,9 +34,11 @@ files entirely (`.dockerignore`), so a container only sees what the host gives i
 | `GOOGLE_CLIENT_SECRET` | **secret** | with the id | |
 | `ANTHROPIC_API_KEY` | **secret** | no | Without it, "Draft with AI" reports itself unavailable. |
 | `ANTHROPIC_MODEL` | no | no | Default `claude-opus-5`. |
+| `DATA_KEY` | **secret** | **yes** | 32 random bytes, base64: `openssl rand -base64 32`. Encrypts every stored audit (AES-256-GCM). **Losing it loses every audit**, so keep a copy somewhere other than the server and the backups (§6). Must differ from `QBO_TOKEN_KEY`. |
+| `DATA_KEY_PREVIOUS` | **secret** | only while rotating | The old `DATA_KEY` during a rotation (§6). Remove it once the rotation is done. |
 | `QBO_CLIENT_ID` | no (public id) | no | QuickBooks Online, **sandbox only**, read-only. All three `QBO_*` or none: the server refuses a partial set. |
 | `QBO_CLIENT_SECRET` | **secret** | with the id | |
-| `QBO_TOKEN_KEY` | **secret** | with the id | 32 random bytes, base64: `openssl rand -base64 32`. Seals stored QuickBooks tokens (AES-256-GCM). See §6. |
+| `QBO_TOKEN_KEY` | **secret** | with the id | 32 random bytes, base64: `openssl rand -base64 32`. Seals stored QuickBooks tokens (AES-256-GCM). See §7. |
 | `VITE_STRIPE_PUBLISHABLE_KEY` | no (public by design) | no | **Build argument**, not a runtime variable: it is compiled into the browser bundle. Without it checkout runs on Stripe's demo test key. No real billing exists yet. |
 | `DEV_MAILBOX` | — | **must be unset** | Exposes reset links to anyone. The server refuses to start in production unless it is unset or `false`. |
 | `SESSION_COOKIE_SECURE_OK` | — | never on a server | Lets a production build run over plain http, and only on a `localhost` origin, for local checks. |
@@ -138,8 +140,11 @@ docker exec reclaim rm /data/backups/reclaim-2026-10-17T09-30-00-123Z.sqlite
 ```
 
 - Schedule it at least daily (host cron, or the platform's scheduled job), and keep 30 days.
-- The file holds every account, audit and sealed QuickBooks token. Store
-  backups encrypted at rest, with access limited to the founders.
+- Audits in a backup stay sealed under the `DATA_KEY` of the day it was taken.
+  **A backup is useless without that key**, and a backup together with its key
+  is all the data. Keep the key and the backups in separate places.
+- Account details (emails, names, company names, password hashes) and the
+  QuickBooks company name are not sealed. Store backups encrypted at rest, with access limited to the founders.
 - Test a restore once before the pilot starts and once a month.
 - A volume snapshot from the host is a good second layer, but take it after a
   `server/backup.ts` run or with the container stopped. A snapshot of a live
@@ -151,11 +156,52 @@ docker exec reclaim rm /data/backups/reclaim-2026-10-17T09-30-00-123Z.sqlite
 2. Keep the current file in case you need it back: `docker run --rm -v reclaim-data:/data alpine mv /data/reclaim.sqlite /data/reclaim.sqlite.before-restore`
 3. Remove any leftover `/data/reclaim.sqlite-wal` and `/data/reclaim.sqlite-shm`. They belong to the old file and must not be replayed onto the restored one.
 4. Copy the backup in as `/data/reclaim.sqlite`, owned by uid 1000 (`docker cp` then `chown 1000:1000`, or a helper container).
-5. `docker start reclaim` and check `curl -s <APP_ORIGIN>/healthz`, then sign in with a known account.
+5. Make sure `DATA_KEY` is the key that was current when the backup was taken.
+   If it has been rotated since, set the old one as `DATA_KEY_PREVIOUS` and the
+   server re-seals the restored audits under the current key at startup.
+6. `docker start reclaim` and check `curl -s <APP_ORIGIN>/healthz`, then sign in with a known account.
 
 Anything written after the backup was taken is lost. Tell affected pilot customers.
 
-## 6. Rotating `QBO_TOKEN_KEY`
+## 6. `DATA_KEY`: encryption at rest, and rotating it
+
+Each stored audit (every record, finding, decision and recovery note in it) is
+sealed with AES-256-GCM under `DATA_KEY`, bound to its account and audit IDs
+(`server/projectStore.ts`). The audit's name and file name live only inside the
+sealed payload. The key is never in the database.
+
+**First start with `DATA_KEY`** (an existing database with plain audits): the
+server seals every plain row in one transaction, then runs `VACUUM` and
+`PRAGMA wal_checkpoint(TRUNCATE)`. That rebuilds the file without free pages
+and empties the WAL, so no plaintext copy stays in `reclaim.sqlite` or
+`reclaim.sqlite-wal`. The log says `encrypted N stored audits at rest`.
+`VACUUM` needs free disk about the size of the database, and can take a while on a big one.
+From then on `secure_delete` is on, so deleted audits and deleted accounts are
+zeroed in the file instead of left in free pages.
+
+What that does **not** clean up, so plan for it:
+- Backups and volume snapshots taken before the first encrypted start still hold
+  plaintext. Delete them once a fresh backup exists, or keep them under the same access as the live data.
+- Disk blocks SQLite gave back to the filesystem (the old file VACUUM replaced,
+  the truncated WAL) are not overwritten. Use a host volume that is itself encrypted at rest.
+- The browser's working copy (localStorage) is plain JSON while someone is signed
+  in, and is removed when they log out or delete their account.
+
+**Rotating `DATA_KEY`** (if it may have leaked, or someone who had it leaves).
+Nobody is signed out, and nothing needs reconnecting.
+
+1. Generate a new key: `openssl rand -base64 32`.
+2. Set `DATA_KEY` to the new key and `DATA_KEY_PREVIOUS` to the old one. Restart.
+   At startup every audit is re-sealed under the new key, then the file is vacuumed and the WAL truncated.
+3. Check the log for `encrypted N stored audits at rest`, and that `/healthz` and sign-in work.
+4. Remove `DATA_KEY_PREVIOUS` and restart.
+5. Take a fresh backup. Keep the old key, stored as carefully as the new one,
+   for as long as you keep backups taken under it (30 days), then destroy it.
+
+**Never just replace `DATA_KEY` without step 2.** Audits sealed under a key the
+server doesn't have can't be read, and the app returns errors for those accounts until the key is restored.
+
+## 7. Rotating `QBO_TOKEN_KEY`
 
 The key seals each customer's QuickBooks tokens. There's no re-encryption
 step: tokens sealed with the old key can't be opened with the new one.
@@ -174,7 +220,7 @@ leaked, or someone who had it leaves.
 `QBO_CLIENT_SECRET` and the other secrets rotate in their own consoles: issue
 the new value, update the host, restart, then revoke the old one.
 
-## 7. Pre-launch checklist
+## 8. Pre-launch checklist
 
 - [ ] `docker build` succeeds from a clean checkout. The image has no `.env` or `data/`: `docker run --rm reclaim ls -a /app` shows no `.env`.
 - [ ] Domain resolves, HTTPS works, `http://` redirects to `https://`.
@@ -185,11 +231,14 @@ the new value, update the host, restart, then revoke the old one.
 - [ ] `DEV_MAILBOX` is unset. `GET /api/dev/mailbox?to=x` returns 404.
 - [ ] Google sign-in works on the real domain (origin and redirect URI set, consent screen published).
 - [ ] QuickBooks: either all three `QBO_*` set with the redirect URI registered at Intuit, or none set.
-- [ ] Daily backup scheduled and copied off the server. One restore tested.
+- [ ] `DATA_KEY` set, different from `QBO_TOKEN_KEY`, and a copy kept apart from the server and the backups. The first-start log says audits were encrypted (or there were none).
+- [ ] Any backups or snapshots from before encryption deleted, or held under the same access as live data. The host volume is encrypted at rest.
+- [ ] Daily backup scheduled and copied off the server. One restore tested, with the key.
 - [ ] Secrets live only in the host's secret store. Nobody has pasted them in chat, tickets or the repo.
 - [ ] One container per volume. No autoscaling to more than one instance.
 - [ ] Pilot customers know it's supervised: billing is test-mode only, and QuickBooks is sandbox only.
 - [ ] Rate limiting behind the proxy (§3): accepted for this pilot, or fixed.
+- [ ] Data policy (`docs/pilot-data-policy.md`) reviewed by the founders, and the Privacy Policy updated to match.
 
 ## Running a production build locally
 
@@ -197,7 +246,8 @@ To check the production build on this Mac without real email or the main checkou
 
 ```bash
 npm run build
-env -i PATH="$PATH" HOME="$HOME" NODE_ENV=production SESSION_COOKIE_SECURE_OK=1 PORT=8799 APP_ORIGIN=http://localhost:8799 DATABASE_PATH=/tmp/reclaim-qa.sqlite RESEND_API_KEY=re_not_real EMAIL_FROM=qa@localhost node server/index.ts
+env -i PATH="$PATH" HOME="$HOME" NODE_ENV=production SESSION_COOKIE_SECURE_OK=1 PORT=8799 APP_ORIGIN=http://localhost:8799 DATABASE_PATH=/tmp/reclaim-qa.sqlite RESEND_API_KEY=re_not_real EMAIL_FROM=qa@localhost DATA_KEY="$(openssl rand -base64 32)" node server/index.ts
 ```
 
 The dummy Resend key gets past the startup check. Any email the server tries to send fails, which is fine for browsing.
+A fresh `DATA_KEY` each run means audits saved in an earlier run can't be read; use a fresh `DATABASE_PATH` too, or keep the key.
