@@ -10,7 +10,7 @@ import { createDraftService, DraftError, DraftRequestSchema, unsupportedAmounts,
 import type { ServerConfig } from './config.ts'
 import { HttpError, RateLimiter, empty, json, redirect, serializeCookie, toRequest, writeResponse, type Request, type Response } from './http.ts'
 import { newToken, openSecret, sealSecret } from './crypto.ts'
-import { createQuickBooksClient, pullLedger, toLedgerImport, QuickBooksReconnectError, QuickBooksUnauthorizedError, type QuickBooksClient, type QuickBooksTokens } from './quickbooks.ts'
+import { createQuickBooksClient, syncLedger, QuickBooksReconnectError, QuickBooksUnauthorizedError, type QuickBooksClient, type QuickBooksTokens } from './quickbooks.ts'
 import { entitlementsFor, isPlan, monthStart, planOf, PLAN_LIMITS, type Plan } from './plans.ts'
 import { checkRepeat, repeatMessage, rowFingerprint } from './uploads.ts'
 import { authorizedDraftFacts } from './caseFacts.ts'
@@ -353,18 +353,23 @@ export function createApp(deps: AppDependencies): App {
       limit(quickbooksSyncLimiter, user.id)
       const row = qboConnection(user.id)
       if (!row) throw new HttpError(409, 'Connect QuickBooks first.', 'quickbooks_not_connected')
+      // The client says when it last pulled this company into the audit it is importing into; recent enough means only changes.
+      const body = await req.json<{ since?: unknown }>().catch(() => ({}) as { since?: unknown })
+      const since = typeof body.since === 'number' && Number.isFinite(body.since) ? body.since : null
+      // Taken before reading, so anything changed during the pull is picked up next time.
+      const pulledAt = Date.now()
       try {
         let accessToken = await qboAccessToken(user.id, row)
-        let pull
+        let result
         try {
-          pull = await pullLedger(qbo.client, row.realm_id, accessToken)
+          result = await syncLedger(qbo.client, row.realm_id, accessToken, since, pulledAt)
         } catch (err) {
           if (!(err instanceof QuickBooksUnauthorizedError)) throw err
           accessToken = await qboAccessToken(user.id, qboConnection(user.id)!, true)
-          pull = await pullLedger(qbo.client, row.realm_id, accessToken)
+          result = await syncLedger(qbo.client, row.realm_id, accessToken, since, pulledAt)
         }
         db.prepare("UPDATE integration_connections SET last_sync_at = ? WHERE user_id = ? AND provider = 'quickbooks'").run(Date.now(), user.id)
-        return json(200, { companyName: row.company_name, ...toLedgerImport(pull) })
+        return json(200, { companyName: row.company_name, ...result })
       } catch (err) {
         if (err instanceof QuickBooksReconnectError || err instanceof QuickBooksUnauthorizedError) {
           dropQboConnection(user.id)

@@ -5,6 +5,7 @@ import { overviewSummary } from '@/ledger/views'
 import { ladder } from '../selectors'
 import { assessRecordReadiness } from '@/audit/dataReadiness'
 import type { LedgerEnvironment } from '@/ledger/store'
+import { describeQuickBooksSync } from '@/ledger/quickbooksSync'
 import type { LedgerProjectSummary } from '@/ledger/projects'
 import { Facts } from './Reports'
 
@@ -206,7 +207,9 @@ export function Audits({
                 <div>
                   <div style={{ fontWeight: 500 }}>{batch.sourceLabel}</div>
                   <div className="wk-table-sub">
-                    {batch.mode === 'sample' ? 'Sample data' : 'Uploaded CSV'} · {batch.recordCount} newly imported · {batch.skippedCount} rejected · {(batch.rowResults ?? []).filter((row) => row.status === 'exact_duplicate' || row.status === 'possible_overlap').length} overlapping
+                    {batch.quickbooksSync
+                      ? `QuickBooks · ${describeQuickBooksSync(batch.quickbooksSync)}`
+                      : `${batch.mode === 'sample' ? 'Sample data' : 'Uploaded CSV'} · ${batch.recordCount} newly imported · ${batch.skippedCount} rejected · ${(batch.rowResults ?? []).filter((row) => row.status === 'exact_duplicate' || row.status === 'possible_overlap').length} overlapping`}
                   </div>
                   {batch.rowResults?.some((row) => row.status !== 'newly_imported') ? (
                     <details className="wk-table-sub" style={{ marginTop: 6 }}>

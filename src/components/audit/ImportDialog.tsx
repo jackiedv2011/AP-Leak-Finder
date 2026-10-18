@@ -1,6 +1,6 @@
 import * as DialogPrimitive from '@radix-ui/react-dialog'
 import { X } from 'lucide-react'
-import { ImportPanel, type ImportInput } from '@/components/audit/ImportPanel'
+import { ImportPanel, type ImportInput, type QuickBooksImportContext } from '@/components/audit/ImportPanel'
 import '@/workspace/workspace.css'
 import '@/workspace/reclaim.css'
 
@@ -13,6 +13,7 @@ interface ImportDialogProps {
   error: string | null
   /** `new` starts a separate audit; `add` merges records into the open one. */
   intent: ImportIntent
+  quickbooks?: QuickBooksImportContext
 }
 
 const COPY: Record<ImportIntent, { title: string; description: string; intro: string; confirm: string }> = {
@@ -34,7 +35,7 @@ const COPY: Record<ImportIntent, { title: string; description: string; intro: st
  * Radix owns the portal, the focus trap and escape; the workspace owns every
  * pixel of it, through `.wk-overlay` / `.wk-panel` in workspace.css and reclaim.css.
  */
-export function ImportDialog({ open, onOpenChange, onImport, error, intent }: ImportDialogProps) {
+export function ImportDialog({ open, onOpenChange, onImport, error, intent, quickbooks }: ImportDialogProps) {
   const copy = COPY[intent]
   return (
     <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
@@ -51,7 +52,7 @@ export function ImportDialog({ open, onOpenChange, onImport, error, intent }: Im
             </DialogPrimitive.Close>
           </header>
 
-          <ImportPanel allowSample={false} error={error} onImport={onImport} intro={copy.intro} confirmLabel={copy.confirm} />
+          <ImportPanel allowSample={false} error={error} onImport={onImport} intro={copy.intro} confirmLabel={copy.confirm} quickbooks={quickbooks} />
         </DialogPrimitive.Content>
       </DialogPrimitive.Portal>
     </DialogPrimitive.Root>

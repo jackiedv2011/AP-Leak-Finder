@@ -38,7 +38,7 @@ function initialOutcome() {
  * company's ledger as a CSV that goes through the same review as an upload.
  * Renders nothing for guests or when the server has no QuickBooks keys.
  */
-export function QuickBooksImport({ onFile }: { onFile: (file: File, facts: QuickBooksFacts | null) => void }) {
+export function QuickBooksImport({ onFile, sinceFor }: { onFile: (file: File, facts: QuickBooksFacts | null) => void; sinceFor?: (companyName: string) => number | null }) {
   const { status, refresh } = useQuickBooksStatus()
   const [outcome] = useState(initialOutcome)
   const [busy, setBusy] = useState(false)
@@ -49,7 +49,7 @@ export function QuickBooksImport({ onFile }: { onFile: (file: File, facts: Quick
   async function runImport() {
     setBusy(true)
     setError(null)
-    const result = await importFromQuickBooks()
+    const result = await importFromQuickBooks(status?.companyName && sinceFor ? sinceFor(status.companyName) : null)
     setBusy(false)
     if (result.ok) {
       onFile(result.file, result.facts)

@@ -38,7 +38,7 @@ function fakeQuickBooks() {
     issued += 1
     return { accessToken: `access-${issued}-SECRET`, refreshToken: `refresh-${issued}-SECRET`, accessExpiresAt: Date.now() + (expired ? -1 : 3_600_000), refreshExpiresAt: Date.now() + 8_640_000_000 }
   }
-  const state = { expireFirst: false, refused: false, revoked: [] as string[] }
+  const state = { expireFirst: false, refused: false, revoked: [] as string[], cdc: { CDCResponse: [{ QueryResponse: [] }] } as Record<string, unknown> }
   const client: QuickBooksClient = {
     environment: 'sandbox',
     authorizationUrl: ({ redirectUri, state: s }) => `https://appcenter.intuit.test/connect?redirect_uri=${encodeURIComponent(redirectUri)}&state=${s}`,
@@ -63,7 +63,12 @@ function fakeQuickBooks() {
     query: async (_realmId, accessToken, statement) => {
       calls.push(`query:${accessToken}`)
       const entity = statement.match(/from (\w+)/)![1] as keyof typeof SAMPLE.entities
-      return { QueryResponse: { [entity]: SAMPLE.entities[entity] } }
+      const ids = statement.match(/where Id in \(([^)]*)\)/)?.[1].replace(/'/g, '').split(',')
+      return { QueryResponse: { [entity]: (SAMPLE.entities[entity] as Array<{ Id: string }>).filter((row) => !ids || ids.includes(row.Id)) } }
+    },
+    changes: async (_realmId, _accessToken, entities, since) => {
+      calls.push(`cdc:${entities.join(',')}:${since.toISOString()}`)
+      return state.cdc
     },
   }
   return { client, calls, state }
@@ -223,6 +228,45 @@ describe('importing and disconnecting', () => {
     expect((await alice.get('/api/integrations/quickbooks')).body.lastSyncAt).toEqual(expect.any(Number))
   })
 
+  it('after a recent import, reads only what changed, and fetches the bills changed payments link to', async () => {
+    const alice = await signedIn('Alice', 'alice@example.com')
+    await connect(alice)
+    qbo.state.cdc = { CDCResponse: [{ QueryResponse: [
+      { BillPayment: [
+        { Id: '202', TxnDate: '2026-08-23', TotalAmt: 1200, PayType: 'Check', VendorRef: { value: '56', name: 'Acme Supply' }, MetaData: { CreateTime: '2026-08-23T10:00:00Z' }, Line: [{ Amount: 1200, LinkedTxn: [{ TxnId: '101', TxnType: 'Bill' }] }] },
+        { Id: '203', status: 'Deleted', MetaData: { LastUpdatedTime: '2026-10-10T10:00:00Z' } },
+      ] },
+      { Purchase: [{ Id: '402', TxnDate: '2026-10-12', TotalAmt: 45, PaymentType: 'Cash', EntityRef: { type: 'Vendor', value: '56', name: 'Acme Supply' }, MetaData: { CreateTime: new Date().toISOString() } }] },
+    ] }] }
+    const since = Date.now() - 3 * 86_400_000
+    const res = await alice.call('/api/integrations/quickbooks/sync', { method: 'POST', json: { since } })
+    expect(res.status).toBe(200)
+    expect(qbo.calls).toContain(`cdc:Vendor,Bill,BillPayment,VendorCredit,Deposit,Purchase:${new Date(since).toISOString()}`)
+    expect(res.body.facts.sync).toEqual({ realmId: REALM, mode: 'changes', since, touched: ['BillPayment:202', 'BillPayment:203', 'Purchase:402'], removed: [{ txnType: 'BillPayment', id: '203' }] })
+    const rows = (res.body.csv as string).trim().split('\n').slice(1)
+    // Bill 101 didn't change, but was fetched by id so the payment still names its invoice.
+    expect(rows).toEqual([expect.stringMatching(/^Acme Supply,INV-7781,2026-08-01,1250,2026-08-23,1200,.*qbo:BillPayment:202,/), expect.stringContaining('qbo:Purchase:402')])
+    expect(res.body.facts.searched).toEqual({ vendorCredits: 0, deposits: 0, purchases: 1, billPayments: 0 })
+  })
+
+  it('pulls the whole ledger when the last import is older than QuickBooks keeps changes', async () => {
+    const alice = await signedIn('Alice', 'alice@example.com')
+    await connect(alice)
+    const res = await alice.call('/api/integrations/quickbooks/sync', { method: 'POST', json: { since: Date.now() - 31 * 86_400_000 } })
+    expect(res.body.facts.sync.mode).toBe('full')
+    expect(qbo.calls.some((c) => c.startsWith('cdc:'))).toBe(false)
+    expect((res.body.csv as string).trim().split('\n')).toHaveLength(4)
+  })
+
+  it('pulls the whole ledger when a change set is too large to be complete', async () => {
+    const alice = await signedIn('Alice', 'alice@example.com')
+    await connect(alice)
+    qbo.state.cdc = { CDCResponse: [{ QueryResponse: [{ Purchase: Array.from({ length: 1000 }, (_, i) => ({ Id: String(i + 1) })) }] }] }
+    const res = await alice.call('/api/integrations/quickbooks/sync', { method: 'POST', json: { since: Date.now() - 86_400_000 } })
+    expect(res.body.facts.sync.mode).toBe('full')
+    expect(qbo.calls.some((c) => c.startsWith('cdc:'))).toBe(true)
+  })
+
   it('refreshes an expired access token and re-seals the new one', async () => {
     qbo.state.expireFirst = true
     const alice = await signedIn('Alice', 'alice@example.com')
@@ -295,6 +339,7 @@ describe('the QuickBooks client is read-only', () => {
       seen.push({ method: init?.method ?? 'GET', url })
       if (url.pathname.endsWith('/tokens/bearer')) return Response.json({ access_token: 'a', refresh_token: 'r', expires_in: 3600, x_refresh_token_expires_in: 8_640_000 })
       if (url.pathname.includes('/companyinfo/')) return Response.json({ CompanyInfo: SAMPLE.company })
+      if (url.pathname.endsWith('/cdc')) return Response.json({ CDCResponse: [{ QueryResponse: [] }] })
       const entity = url.searchParams.get('query')!.match(/from (\w+)/)![1] as keyof typeof SAMPLE.entities
       return Response.json({ QueryResponse: { [entity]: SAMPLE.entities[entity] } })
     }) as typeof fetch
@@ -308,6 +353,15 @@ describe('the QuickBooks client is read-only', () => {
     // Anything sent with another method went to Intuit's sign-in service, never to company data.
     expect(seen.filter((s) => s.method !== 'GET').every((s) => s.url.hostname === 'oauth.platform.intuit.com')).toBe(true)
     expect(data.map((s) => s.url.searchParams.get('query')).filter(Boolean).every((q) => /^select \* from (Vendor|Bill|BillPayment|VendorCredit|Deposit|Purchase) /.test(q!))).toBe(true)
+
+    seen.length = 0
+    await client.changes(REALM, tokens.accessToken, ['BillPayment', 'Purchase'], new Date('2026-10-01T00:00:00Z'))
+    expect(seen).toHaveLength(1)
+    expect(seen[0].method).toBe('GET')
+    expect(seen[0].url.origin + seen[0].url.pathname).toBe(`${SANDBOX_API_BASE}/v3/company/${REALM}/cdc`)
+    expect(seen[0].url.searchParams.get('entities')).toBe('BillPayment,Purchase')
+    expect(seen[0].url.searchParams.get('changedSince')).toBe('2026-10-01T00:00:00.000Z')
+    await expect(client.changes(REALM, 'a', ['Invoice'], new Date())).rejects.toThrow(/ledger entities/)
 
     await expect(client.query(REALM, 'a', 'delete from Bill where Id = 1')).rejects.toThrow(/Only SELECT/)
     await expect(client.companyInfo('../../v3/company/1/bill', 'a')).rejects.toThrow(/company id/)

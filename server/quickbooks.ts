@@ -11,7 +11,7 @@
  * API host, and only for a query or the company-info record. Nothing in this
  * module can create, change or delete anything in a customer's books.
  */
-import type { QuickBooksFacts, QuickBooksTxnRef } from './quickbooksFacts.ts'
+import type { QuickBooksFacts, QuickBooksSyncInfo, QuickBooksTxnRef } from './quickbooksFacts.ts'
 
 export interface QuickBooksTokens {
   accessToken: string
@@ -36,6 +36,8 @@ export interface QuickBooksClient {
   revoke(refreshToken: string): Promise<void>
   companyInfo(realmId: string, accessToken: string): Promise<QboObject>
   query(realmId: string, accessToken: string, statement: string): Promise<QboObject>
+  /** Change data capture: what changed in these entities since a moment in the last 30 days. */
+  changes(realmId: string, accessToken: string, entities: readonly string[], since: Date): Promise<QboObject>
 }
 
 /** A refresh token Intuit no longer accepts: the customer has to connect again. */
@@ -118,7 +120,71 @@ export function createQuickBooksClient(clientId: string, clientSecret: string, f
       if (!/^select\s/i.test(statement)) throw new Error('Only SELECT queries are allowed.')
       return apiGet(realmId, accessToken, 'query', { query: statement })
     },
+    async changes(realmId, accessToken, entities, since) {
+      if (!entities.length || entities.some((e) => !(LEDGER_ENTITIES as readonly string[]).includes(e))) throw new Error('Change requests are limited to the ledger entities.')
+      if (Number.isNaN(since.getTime())) throw new Error('Invalid change date.')
+      return apiGet(realmId, accessToken, 'cdc', { entities: entities.join(','), changedSince: since.toISOString() })
+    },
   }
+}
+
+/**
+ * Intuit keeps changes for 30 days. A day short of that leaves room for clock
+ * skew and a slow request; anything older gets a full pull.
+ */
+export const CHANGE_WINDOW_MS = 29 * 24 * 60 * 60 * 1000
+/** Intuit returns at most 1,000 changed objects per entity; at that size, pull everything instead. */
+const CHANGE_PAGE_LIMIT = 1000
+
+export interface QuickBooksChanges extends QuickBooksPull {
+  /** Every transaction the change set mentions, as "Type:Id", including deleted ones. */
+  touched: string[]
+  /** Transactions deleted in QuickBooks since the last pull. */
+  removed: Array<{ txnType: string; id: string }>
+  /** Entities created since the last pull, per kind, so the client can extend its search counts. */
+  created: { vendorCredits: number; deposits: number; purchases: number; billPayments: number }
+}
+
+/**
+ * What changed since `since`, or null when a full pull is needed instead (the
+ * window has passed, or the change set hit Intuit's per-entity cap). Bills that
+ * changed payments link to, but that didn't change themselves, are fetched by
+ * id so each payment row still names its invoice.
+ */
+export async function pullChanges(client: QuickBooksClient, realmId: string, accessToken: string, since: number, now = Date.now()): Promise<QuickBooksChanges | null> {
+  if (!Number.isFinite(since) || since > now || now - since > CHANGE_WINDOW_MS) return null
+  const company = await client.companyInfo(realmId, accessToken)
+  const json = await client.changes(realmId, accessToken, LEDGER_ENTITIES, new Date(since))
+  const entities: Record<string, QboObject[]> = Object.fromEntries(LEDGER_ENTITIES.map((e) => [e, []]))
+  const removed: QuickBooksChanges['removed'] = []
+  const touched = new Set<string>()
+  for (const block of (json.CDCResponse?.[0]?.QueryResponse ?? []) as QboObject[]) {
+    for (const entity of LEDGER_ENTITIES) {
+      const rows = block[entity] as QboObject[] | undefined
+      if (!rows) continue
+      if (rows.length >= CHANGE_PAGE_LIMIT) return null
+      for (const row of rows) {
+        touched.add(`${entity}:${row.Id}`)
+        if (String(row.status ?? '').toLowerCase() === 'deleted') removed.push({ txnType: entity, id: String(row.Id) })
+        else entities[entity].push(row)
+      }
+    }
+  }
+  const createdSince = (entity: string) => entities[entity].filter((r) => Date.parse(r.MetaData?.CreateTime ?? '') >= since).length
+  const created = { vendorCredits: createdSince('VendorCredit'), deposits: createdSince('Deposit'), purchases: createdSince('Purchase'), billPayments: createdSince('BillPayment') }
+
+  const haveBills = new Set(entities.Bill.map((b) => String(b.Id)))
+  const missing = [...new Set(entities.BillPayment.flatMap((bp) => (bp.Line ?? []).flatMap((l: QboObject) => linksOf(l).filter((x) => x.TxnType === 'Bill').map((x) => String(x.TxnId)))))]
+    .filter((id) => !haveBills.has(id) && /^\d+$/.test(id))
+  const linkedBills: QboObject[] = []
+  for (let i = 0; i < missing.length; i += 100) {
+    const ids = missing.slice(i, i + 100).map((id) => `'${id}'`).join(',')
+    const page = await client.query(realmId, accessToken, `select * from Bill where Id in (${ids}) maxresults 1000`)
+    linkedBills.push(...((page.QueryResponse?.Bill ?? []) as QboObject[]))
+  }
+  // Linked bills only name invoices; they were not changed, so they are not "touched".
+  entities.Bill.push(...linkedBills)
+  return { company, entities, touched: [...touched], removed, created }
 }
 
 /** Every ledger entity, paged 1,000 at a time (Intuit's maximum per query). */
@@ -162,7 +228,7 @@ export const isVoided = (t: QboObject) => cents(t.TotalAmt) === 0 && (/^\s*voide
  * row's transaction_id: which bill it paid, the credits and refunds applied
  * with it, and each vendor's credits, refunds and voids.
  */
-export function toLedgerImport(pull: QuickBooksPull, pulledAt = Date.now()): { csv: string; facts: QuickBooksFacts } {
+export function toLedgerImport(pull: QuickBooksPull, pulledAt = Date.now(), sync?: QuickBooksSyncInfo): { csv: string; facts: QuickBooksFacts } {
   const entities = pull.entities
   const bills = new Map((entities.Bill ?? []).map((b) => [b.Id, b]))
   const credits = new Map((entities.VendorCredit ?? []).map((c) => [c.Id, c]))
@@ -247,7 +313,20 @@ export function toLedgerImport(pull: QuickBooksPull, pulledAt = Date.now()): { c
 
   const csv = [header, ...rows].map((r) => r.map(csvCell).join(',')).join('\n') + '\n'
   const searched = { vendorCredits: credits.size, deposits: deposits.size, purchases: (entities.Purchase ?? []).length, billPayments: (entities.BillPayment ?? []).length }
-  return { csv, facts: { schemaVersion: 1, companyName: company, pulledAt, payments, vendors, searched } }
+  return { csv, facts: { schemaVersion: 1, companyName: company, pulledAt, payments, vendors, searched, ...(sync ? { sync } : {}) } }
 }
 
 export const toLedgerCsv = (pull: QuickBooksPull) => toLedgerImport(pull).csv
+
+/**
+ * The /sync answer: a change pull when the client's last pull of this company
+ * is recent enough, otherwise the whole ledger.
+ */
+export async function syncLedger(client: QuickBooksClient, realmId: string, accessToken: string, since: number | null, now = Date.now()) {
+  const changes = since !== null ? await pullChanges(client, realmId, accessToken, since, now) : null
+  if (changes) {
+    const { csv, facts } = toLedgerImport(changes, now, { realmId, mode: 'changes', since, touched: changes.touched, removed: changes.removed })
+    return { csv, facts: { ...facts, searched: changes.created } }
+  }
+  return toLedgerImport(await pullLedger(client, realmId, accessToken), now, { realmId, mode: 'full', since: null, touched: [], removed: [] })
+}
