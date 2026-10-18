@@ -7,6 +7,8 @@ export interface Request {
   cookies: Record<string, string>
   ip: string
   json<T = unknown>(): Promise<T>
+  /** The body exactly as sent (webhook signatures are computed over these bytes). */
+  text(): Promise<string>
 }
 
 export interface Response {
@@ -70,6 +72,23 @@ const MAX_BODY = 25 * 1024 * 1024 // a ledger with tens of thousands of rows ser
 
 export async function toRequest(req: IncomingMessage): Promise<Request> {
   const url = new URL(req.url ?? '/', 'http://localhost')
+  let raw: Promise<string> | null = null
+  const text = () =>
+    (raw ??= new Promise<string>((resolve, reject) => {
+      const chunks: Buffer[] = []
+      let size = 0
+      req.on('data', (chunk: Buffer) => {
+        size += chunk.length
+        if (size > MAX_BODY) {
+          reject(new HttpError(413, 'Request too large'))
+          req.destroy()
+          return
+        }
+        chunks.push(chunk)
+      })
+      req.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')))
+      req.on('error', reject)
+    }))
   let cached: Promise<unknown> | null = null
   return {
     method: req.method ?? 'GET',
@@ -77,29 +96,15 @@ export async function toRequest(req: IncomingMessage): Promise<Request> {
     headers: req.headers,
     cookies: parseCookies(req.headers.cookie),
     ip: req.socket.remoteAddress ?? 'unknown',
+    text,
     json<T>() {
-      cached ??= new Promise<unknown>((resolve, reject) => {
-        const chunks: Buffer[] = []
-        let size = 0
-        req.on('data', (chunk: Buffer) => {
-          size += chunk.length
-          if (size > MAX_BODY) {
-            reject(new HttpError(413, 'Request too large'))
-            req.destroy()
-            return
-          }
-          chunks.push(chunk)
-        })
-        req.on('end', () => {
-          const text = Buffer.concat(chunks).toString('utf8')
-          if (!text) return resolve({})
-          try {
-            resolve(JSON.parse(text))
-          } catch {
-            reject(new HttpError(400, 'Body must be JSON'))
-          }
-        })
-        req.on('error', reject)
+      cached ??= text().then((body) => {
+        if (!body) return {}
+        try {
+          return JSON.parse(body)
+        } catch {
+          throw new HttpError(400, 'Body must be JSON')
+        }
       })
       return cached as Promise<T>
     },

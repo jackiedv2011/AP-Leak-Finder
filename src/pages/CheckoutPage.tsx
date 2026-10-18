@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { CardElement, Elements, useElements, useStripe } from '@stripe/react-stripe-js'
 import type { StripeCardElementChangeEvent, StripeCardElementOptions } from '@stripe/stripe-js'
 import { ArrowLeft, BadgeCheck, Check, CreditCard, Lock, ShieldCheck } from 'lucide-react'
 import { useAuth } from '@/lib/auth/AuthContext'
 import { PLAN_LABEL, PLAN_PITCH, PLAN_PRICE_USD, PLAN_SUCCESS_FEE, FLAT_BREAK_EVEN, planOf, type Plan } from '@/lib/plans'
 import { getStripe, STRIPE_IS_TEST_MODE } from '@/billing/stripe'
+import { changePlan, confirmSubscription, subscribe, type BillingResult } from '@/billing/api'
 import { ReclaimLogo } from '@/components/ReclaimLogo'
 import { useTheme } from '@/workspace/theme'
 import '@/workspace/workspace.css'
@@ -38,7 +39,8 @@ interface Receipt {
   last4: string
 }
 
-function PaymentForm({ plan, email, defaultName, onDone }: { plan: PaidPlan; email: string; defaultName: string; onDone: (r: Receipt) => void }) {
+function PaymentForm({ plan, email, defaultName, theme, onDone }: { plan: PaidPlan; email: string; defaultName: string; theme: string; onDone: (r: Receipt) => void }) {
+  const { refreshAccount } = useAuth()
   const stripe = useStripe()
   const elements = useElements()
   const [name, setName] = useState(defaultName)
@@ -50,7 +52,10 @@ function PaymentForm({ plan, email, defaultName, onDone }: { plan: PaidPlan; ema
   const [submitted, setSubmitted] = useState(false)
   const [busy, setBusy] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
-  const options = useMemo(cardOptions, [])
+  // Read after mount (and on a theme change): before that the themed wrapper isn't in the page,
+  // and the card field would get the light theme's text colour on a dark page.
+  const [options, setOptions] = useState<StripeCardElementOptions>(cardOptions)
+  useEffect(() => setOptions(cardOptions()), [theme])
 
   const errors = {
     name: !name.trim() ? 'Enter the name on the card.' : null,
@@ -75,9 +80,22 @@ function PaymentForm({ plan, email, defaultName, onDone }: { plan: PaidPlan; ema
       card,
       billing_details: { name: name.trim(), email, address: { postal_code: postal.trim() } },
     })
-    setBusy(false)
     if (result.error || !result.paymentMethod.card) {
+      setBusy(false)
       setFormError(result.error?.message ?? 'That card could not be verified. Check the details and try again.')
+      return
+    }
+    // The server starts the subscription with Stripe and reads it back; the plan only changes if Stripe says it's paid.
+    let outcome: BillingResult = await subscribe(plan, result.paymentMethod.id)
+    if (outcome.ok && 'requiresAction' in outcome) {
+      const { subscriptionId } = outcome
+      const challenge = await stripe.confirmCardPayment(outcome.clientSecret)
+      outcome = challenge.error ? { ok: false, message: `${challenge.error.message ?? 'Your bank didn’t approve the payment.'} Nothing was charged, and your plan hasn’t changed.` } : await confirmSubscription(subscriptionId)
+    }
+    await refreshAccount()
+    setBusy(false)
+    if (!outcome.ok) {
+      setFormError(outcome.message)
       return
     }
     onDone({ brand: result.paymentMethod.card.brand, last4: result.paymentMethod.card.last4 })
@@ -149,13 +167,48 @@ function PaymentForm({ plan, email, defaultName, onDone }: { plan: PaidPlan; ema
 
       <button type="submit" className="wk-btn wk-checkout-pay" data-variant="primary" disabled={busy || !stripe}>
         <Lock aria-hidden="true" />
-        {busy ? 'Verifying card…' : `Subscribe · ${money(PLAN_PRICE_USD[plan])}/month`}
+        {busy ? 'Starting your plan…' : `Subscribe · ${money(PLAN_PRICE_USD[plan])}/month`}
       </button>
       <p className="wk-checkout-secure">
         <ShieldCheck aria-hidden="true" />
         Card details go straight to Stripe over an encrypted connection. Reclaim never sees or stores your card number.
       </p>
     </form>
+  )
+}
+
+/** Already on the other paid plan: no card needed, the subscription changes price (prorated). */
+function SwitchPlan({ plan, current, onDone }: { plan: PaidPlan; current: PaidPlan; onDone: () => void }) {
+  const { refreshAccount } = useAuth()
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const go = async () => {
+    setBusy(true)
+    setError(null)
+    const outcome = await changePlan(plan)
+    await refreshAccount()
+    setBusy(false)
+    if (outcome.ok) onDone()
+    else setError(outcome.message)
+  }
+  return (
+    <div className="wk-card" data-testid="checkout-switch">
+      <p style={{ fontWeight: 500 }}>
+        Switch from {PLAN_LABEL[current]} to {PLAN_LABEL[plan]}?
+      </p>
+      <p className="wk-dim" style={{ marginTop: 6, fontSize: 13.5 }}>
+        The card on file is charged (or credited) the prorated difference for the rest of this billing period, and {money(PLAN_PRICE_USD[plan])} a month after that.
+        {plan === 'flat' ? ' No success fee applies to money recorded from now on.' : ` ${PLAN_SUCCESS_FEE.growth * 100}% applies to money recorded as returned from now on.`}
+      </p>
+      {error ? (
+        <div className="wk-alert" role="alert" style={{ marginTop: 12 }}>
+          <p>{error}</p>
+        </div>
+      ) : null}
+      <button type="button" className="wk-btn" data-variant="primary" style={{ marginTop: 14 }} disabled={busy} onClick={() => void go()}>
+        {busy ? 'Switching…' : `Switch to ${PLAN_LABEL[plan]}`}
+      </button>
+    </div>
   )
 }
 
@@ -207,16 +260,19 @@ function Summary({ plan }: { plan: PaidPlan }) {
 }
 
 /**
- * Checkout for Growth and Flat. Card entry is Stripe's own hosted field. Until
- * Reclaim's billing is connected on the server, a verified card starts no
- * subscription and nothing is charged — and the page says exactly that.
+ * Checkout for Growth and Flat. Card entry is Stripe's own hosted field; the
+ * browser sends the server only Stripe's `pm_…` id. The server starts the
+ * subscription (server/billing.ts) and the account switches as soon as Stripe
+ * reports it paid. A paid account choosing the other paid plan switches
+ * without re-entering a card.
  */
 export function CheckoutPage() {
   const { user, status } = useAuth()
-  useTheme()
+  const { resolved: theme } = useTheme()
   const plan = planFromUrl()
   const [stripePromise] = useState(getStripe)
   const [receipt, setReceipt] = useState<Receipt | null>(null)
+  const [switched, setSwitched] = useState(false)
 
   useEffect(() => {
     if (!plan) window.location.replace('/audit?mode=plans')
@@ -249,8 +305,7 @@ export function CheckoutPage() {
 
       {STRIPE_IS_TEST_MODE ? (
         <div className="wk-checkout-test" role="note" data-testid="checkout-test-mode">
-          <strong>Test mode.</strong> Reclaim’s billing isn’t live yet — no card will be charged. Stripe’s test card 4242 4242 4242 4242 works with any future
-          date and CVC.
+          <strong>Test mode.</strong> No real card is charged. Stripe’s test card 4242 4242 4242 4242 works with any future date and CVC.
         </div>
       ) : null}
 
@@ -270,6 +325,23 @@ export function CheckoutPage() {
                 </a>
               </div>
             </div>
+          ) : receipt || switched ? (
+            <div className="wk-card wk-checkout-done" data-testid="checkout-done" role="status">
+              <BadgeCheck aria-hidden="true" className="wk-plans-badge" />
+              <h2 className="wk-display wk-h2">You’re on {PLAN_LABEL[plan]}</h2>
+              {receipt ? (
+                <p style={{ marginTop: 6 }}>
+                  <CreditCard aria-hidden="true" style={{ width: 16, height: 16, verticalAlign: '-3px', marginRight: 6 }} />
+                  {receipt.brand.toUpperCase()} ending {receipt.last4}
+                </p>
+              ) : null}
+              <p className="wk-dim" style={{ marginTop: 10, fontSize: 13.5 }}>
+                Every finding, AI drafts, full letters and the every-vendor report are unlocked now. Your plan, next bill date and cancellation are in Settings.
+              </p>
+              <a className="wk-btn" data-variant="primary" href="/audit" style={{ marginTop: 16 }}>
+                Back to your workspace
+              </a>
+            </div>
           ) : current === plan ? (
             <div className="wk-card">
               <p style={{ fontWeight: 500 }}>You’re already on {PLAN_LABEL[plan]}.</p>
@@ -277,25 +349,11 @@ export function CheckoutPage() {
                 Back to your workspace
               </a>
             </div>
-          ) : receipt ? (
-            <div className="wk-card wk-checkout-done" data-testid="checkout-done" role="status">
-              <BadgeCheck aria-hidden="true" className="wk-plans-badge" />
-              <h2 className="wk-display wk-h2">Card verified</h2>
-              <p style={{ marginTop: 6 }}>
-                <CreditCard aria-hidden="true" style={{ width: 16, height: 16, verticalAlign: '-3px', marginRight: 6 }} />
-                {receipt.brand.toUpperCase()} ending {receipt.last4}
-              </p>
-              <p className="wk-dim" style={{ marginTop: 10, fontSize: 13.5 }}>
-                Reclaim’s billing isn’t connected yet, so nothing was charged and your plan is still {PLAN_LABEL[current ?? 'free']}. As soon as billing goes live,
-                this step starts your {PLAN_LABEL[plan]} subscription.
-              </p>
-              <a className="wk-btn" data-variant="primary" href="/audit" style={{ marginTop: 16 }}>
-                Back to your workspace
-              </a>
-            </div>
+          ) : current && current !== 'free' ? (
+            <SwitchPlan plan={plan} current={current} onDone={() => setSwitched(true)} />
           ) : (
             <Elements stripe={stripePromise}>
-              <PaymentForm plan={plan} email={user.email} defaultName={user.name} onDone={setReceipt} />
+              <PaymentForm plan={plan} email={user.email} defaultName={user.name} theme={theme} onDone={setReceipt} />
             </Elements>
           )}
         </section>

@@ -19,6 +19,7 @@ console.log(`Reclaim API listening on http://localhost:${port}`)
 console.log(`  email delivery: ${app.mailer.kind}${config.devMailbox ? ' (dev mailbox at /api/dev/mailbox)' : ''}`)
 console.log(`  google sign-in: ${config.google ? 'configured' : 'not configured'}`)
 console.log(`  ai drafting:    ${config.anthropicApiKey ? config.anthropicModel : 'not configured'}`)
+console.log(`  billing:        ${config.stripe ? `Stripe ${config.stripe.secretKey.includes('_live_') ? 'LIVE' : 'test mode'}${config.stripe.webhookSecret ? '' : ' (no STRIPE_WEBHOOK_SECRET: events refused)'}` : 'not configured'}`)
 console.log(`  stored audits:  ${config.dataKeys ? 'encrypted (AES-256-GCM, DATA_KEY)' : 'plain JSON (set DATA_KEY to encrypt)'}`)
 console.log(`  quickbooks:     ${config.quickbooks ? `${config.quickbooks.environment}, read-only (redirect URI ${config.appOrigin}/api/integrations/quickbooks/callback)` : 'not configured'}`)
 

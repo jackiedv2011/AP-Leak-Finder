@@ -16,6 +16,8 @@ import { createQuickBooksClient, migrateQuickBooksLink, syncLedger, QuickBooksRe
 import { entitlementsFor, isPlan, monthStart, planOf, PLAN_LIMITS, type Plan } from './plans.ts'
 import { checkRepeat, repeatMessage, rowFingerprint } from './uploads.ts'
 import { authorizedDraftFacts } from './caseFacts.ts'
+import { createBilling } from './billing.ts'
+import { createStripeClient, type StripeApi } from './stripe.ts'
 import { createGmailClient, createGmailRoutes, type GmailClient } from './gmail.ts'
 import { OnboardingProfileSchema } from './onboarding.ts'
 
@@ -31,6 +33,8 @@ export interface AppDependencies {
   google?: GoogleClient | null
   drafts?: DraftService | null
   quickbooks?: QuickBooksClient | null
+  /** Stripe (tests pass FakeStripe). Defaults to the REST client when STRIPE_SECRET_KEY is set. */
+  stripe?: StripeApi | null
   gmail?: GmailClient | null
   /** Directory of built static files to serve alongside the API (production). */
   staticDir?: string | null
@@ -41,6 +45,8 @@ export interface App {
   db: DatabaseSync
   auth: AuthService
   mailer: Mailer
+  /** Resolves when background success-fee billing has caught up (tests). */
+  billingIdle(): Promise<void>
   listen(port?: number): Promise<number>
   close(): Promise<void>
 }
@@ -166,7 +172,8 @@ export function createApp(deps: AppDependencies): App {
       console.error('quickbooks revoke failed:', err instanceof Error ? err.message : 'unknown error')
     }
   }
-  const accountContext = { db, projects, requireUser, publicUser, clearSessionCookie, revokeQuickBooks }
+  const billing = createBilling({ db, auth, requireUser, stripe: deps.stripe !== undefined ? deps.stripe : config.stripe ? createStripeClient(config.stripe.secretKey) : null, webhookSecret: config.stripe?.webhookSecret ?? null })
+  const accountContext = { db, projects, requireUser, publicUser, clearSessionCookie, revokeQuickBooks, endSubscription: billing.closeAccount }
   /** A usable access token, refreshed and re-sealed when it is about to expire (or when `force`d after a 401). */
   async function qboAccessToken(userId: string, row: ConnectionRow, force = false): Promise<string> {
     const tokens = qboTokens(userId, row)
@@ -424,6 +431,10 @@ export function createApp(deps: AppDependencies): App {
       return json(200, { ok: true })
     }
 
+    // ---------- billing (server/billing.ts) ----------
+    const billed = await billing.route(req)
+    if (billed) return billed
+
     // ---------- data rights: export, delete account, accept changed terms (account.ts) ----------
     const accountResponse = await accountRoutes(req, accountContext)
     if (accountResponse) return accountResponse
@@ -491,6 +502,7 @@ export function createApp(deps: AppDependencies): App {
       if (isNew) recordAuditStart(user.id, project.id as string)
       projects.upsert(user.id, project)
       rememberUpload(user.id, project.id as string, fingerprints)
+      billing.recordRecoveries(user.id, project)
       return json(200, { ok: true })
     }
     if (projectMatch && method === 'DELETE') {
@@ -533,6 +545,7 @@ export function createApp(deps: AppDependencies): App {
         recordAuditStart(user.id, id)
         projects.upsert(user.id, project)
         rememberUpload(user.id, id, fingerprints)
+        billing.recordRecoveries(user.id, project, { imported: true })
         imported.push(id)
       }
       return json(200, { imported, skipped, blocked })
@@ -607,6 +620,7 @@ export function createApp(deps: AppDependencies): App {
     db,
     auth,
     mailer,
+    billingIdle: () => billing.idle(),
     listen(port = config.port) {
       return new Promise((resolve) => server.listen(port, () => resolve((server.address() as { port: number }).port)))
     },

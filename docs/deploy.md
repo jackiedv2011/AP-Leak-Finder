@@ -40,7 +40,9 @@ files entirely (`.dockerignore`), so a container only sees what the host gives i
 | `QBO_CLIENT_ID` | no (public id) | no | QuickBooks Online, **sandbox only**, read-only. All three `QBO_*` or none: the server refuses a partial set. |
 | `QBO_CLIENT_SECRET` | **secret** | with the id | |
 | `QBO_TOKEN_KEY` | **secret** | with the id | 32 random bytes, base64: `openssl rand -base64 32`. Seals stored QuickBooks tokens (AES-256-GCM). See §7. |
-| `VITE_STRIPE_PUBLISHABLE_KEY` | no (public by design) | no | **Build argument**, not a runtime variable: it is compiled into the browser bundle. Without it checkout runs on Stripe's demo test key. No real billing exists yet. |
+| `VITE_STRIPE_PUBLISHABLE_KEY` | no (public by design) | no | **Build argument**, not a runtime variable: it is compiled into the browser bundle. Must come from the **same Stripe account** as `STRIPE_SECRET_KEY` (card ids from another account are refused). Without it checkout runs on Stripe's demo test key and can't subscribe against a real account. |
+| `STRIPE_SECRET_KEY` | **secret** | no | `sk_test_…` for pilots. Turns on paid plans (§7a). Without it, subscribing answers "paid plans aren't switched on" and nothing is charged. |
+| `STRIPE_WEBHOOK_SECRET` | **secret** | with the key | `whsec_…` of the webhook endpoint (§7a). The server refuses to start with only one of the two. |
 | `DEV_MAILBOX` | — | **must be unset** | Exposes reset links to anyone. The server refuses to start in production unless it is unset or `false`. |
 | `SESSION_COOKIE_SECURE_OK` | — | never on a server | Lets a production build run over plain http, and only on a `localhost` origin, for local checks. |
 | `BACKUP_DIR` | no | no | Where `server/backup.ts` writes. Default `/data/backups`. |
@@ -257,6 +259,30 @@ leaked, or someone who had it leaves.
 `QBO_CLIENT_SECRET` and the other secrets rotate in their own consoles: issue
 the new value, update the host, restart, then revoke the old one.
 
+## 7a. Paid plans (Stripe)
+
+Billing lives in `server/billing.ts`; the REST client is `server/stripe.ts` (no SDK).
+
+- **Prices:** two monthly USD prices found by lookup key, `reclaim_growth_monthly` ($15) and `reclaim_flat_monthly` ($50). Create them once per Stripe account (test and live are separate) with `npm run stripe:setup` (reads `STRIPE_SECRET_KEY` from `.env`; safe to re-run; a live key needs `--live`). The server refuses to sell a plan whose price isn't exactly what the site says.
+- **Source of truth:** `users.plan` is only set from a subscription read back from Stripe. Checkout and Settings read it right after a change so the app switches at once; the webhook keeps it right afterwards (renewals, failed payments, the end of a cancelled period). Webhook payloads are treated as pointers: the subscription is re-fetched with the pinned API version (`2024-06-20`).
+- **Transitions:** Free → Growth/Flat (card, 3-D Secure supported); Growth ↔ Flat (prorated, charged now; if that charge fails the plan doesn't change); Cancel (paid features stay on until the period ends, then Free); Keep plan (undo a cancel). `past_due` keeps access while Stripe retries; when retries run out Stripe cancels and the account returns to Free. Configure retries in Stripe → Settings → Billing → Subscriptions and emails → "Manage failed payments" (recommended: cancel the subscription after the last retry).
+- **Stored:** only Stripe's customer and subscription ids (`billing_accounts`). Card data never reaches the server.
+- **Growth's 10% success fee:** each settlement the recovery workflow records (settled refund, or a credit/offset applied to a named bill) gets one row in `recovery_fees` the first time the server sees it, with the plan at that moment. Only rows recorded on Growth carry a fee; each becomes one Stripe invoice item on the next subscription invoice (or a final invoice when a cancelled plan ends). Findings, vendor promises and unapplied credits are never settlements. A settlement removed later is voided: the pending item is deleted, or credited back if it was already invoiced. Money recorded on Free or Flat, or in imported guest audits, is never billed. Fees only cover USD findings; other currencies are recorded with reason `not_usd` and not billed.
+
+**Webhook endpoint.** Stripe Dashboard → Developers → Webhooks → Add endpoint:
+URL `https://<APP_ORIGIN host>/api/billing/webhook`, events `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.paid`, `invoice.payment_failed`. Copy its signing secret into `STRIPE_WEBHOOK_SECRET`.
+
+**Locally,** with the [Stripe CLI](https://docs.stripe.com/stripe-cli):
+
+```bash
+stripe login
+stripe listen --forward-to localhost:8790/api/billing/webhook
+```
+
+`stripe listen` prints a `whsec_…` for this session: put it in `.env` as `STRIPE_WEBHOOK_SECRET` and restart the API.
+
+**Without keys,** `node server/devFakeBilling.ts` runs the API against an in-memory fake Stripe (same as the tests) with its events delivered to the webhook; see the header of that file. Test cards: 4242 4242 4242 4242 succeeds, 4000 0000 0000 9995 declines, 4000 0025 0000 3155 asks for 3-D Secure.
+
 ## 8. Pre-launch checklist
 
 - [ ] `docker build` succeeds from a clean checkout. The image has no `.env` or `data/`: `docker run --rm reclaim ls -a /app` shows no `.env`.
@@ -275,6 +301,7 @@ the new value, update the host, restart, then revoke the old one.
 - [ ] Secrets live only in the host's secret store. Nobody has pasted them in chat, tickets or the repo.
 - [ ] One container per volume. No autoscaling to more than one instance.
 - [ ] Pilot customers know it's supervised: billing is test-mode only, and QuickBooks is sandbox only.
+- [ ] Stripe: prices created (`npm run stripe:setup`), webhook endpoint added with the five events, both `STRIPE_*` secrets set, `VITE_STRIPE_PUBLISHABLE_KEY` from the same account baked into the build. One test subscription started, switched, cancelled.
 - [ ] Rate limiting behind the proxy (§3): accepted for this pilot, or fixed.
 - [ ] Data policy (`docs/pilot-data-policy.md`) reviewed by the founders, and the Privacy Policy updated to match.
 

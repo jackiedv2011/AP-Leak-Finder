@@ -14,6 +14,8 @@ export interface AccountContext {
   clearSessionCookie(): string
   /** Cancels the QuickBooks connection with Intuit, if there is one. Never throws. */
   revokeQuickBooks(userId: string): Promise<void>
+  /** Ends a paid subscription (billing.ts closeAccount). Throws when it can't, which stops the deletion. */
+  endSubscription(userId: string): Promise<void>
 }
 
 /**
@@ -37,7 +39,9 @@ export async function accountRoutes(req: Request, ctx: AccountContext): Promise<
     if (typeof confirmEmail !== 'string' || normalizeEmail(confirmEmail) !== normalizeEmail(user.email)) {
       throw new HttpError(400, 'Type the email address on this account to confirm.', 'validation', { confirmEmail: 'This doesn’t match the email on this account.' })
     }
-    // Intuit first, while the sealed tokens still exist to name the connection.
+    // Stripe first: an account that can't stop its subscription isn't deleted.
+    await ctx.endSubscription(user.id)
+    // Intuit next, while the sealed tokens still exist to name the connection.
     await ctx.revokeQuickBooks(user.id)
     deleteAccount(ctx.db, user)
     return json(200, { ok: true }, { 'Set-Cookie': ctx.clearSessionCookie() })

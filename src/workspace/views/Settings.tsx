@@ -4,13 +4,10 @@ import { useOptionalAuth } from '@/lib/auth/AuthContext'
 import { TERMS_VERSION } from '@/legal/terms'
 import { Facts } from './Reports'
 import { CustomizeControls } from '../Customize'
-import { useState } from 'react'
-import { UpgradeDialog } from '@/components/plan/UpgradeDialog'
-import { PLANS, PLAN_LABEL, PLAN_PITCH, PLAN_SUCCESS_FEE, planOf, successFee } from '@/lib/plans'
+import { PlanBilling } from '@/components/plan/PlanBilling'
 import { QuickBooksSettings } from '@/components/audit/QuickBooksSource'
 import { AccountData } from './AccountData'
 import { GmailSettings } from '@/components/gmail/Gmail'
-import { formatCurrency } from '@/lib/format'
 import { ladder } from '../selectors'
 import type { ResolvedTheme, ThemeChoice } from '@/workspace/theme'
 
@@ -40,10 +37,7 @@ export function SettingsView({ env, onClear, onEditOnboarding, theme, resolvedTh
   const s = overviewSummary(env)
   const auth = useOptionalAuth()
   const user = auth?.user ?? null
-  const plan = user && !user.isGuest ? planOf(user.plan) : 'free'
   const recovered = ladder(env).recovered
-  const [upgradeOpen, setUpgradeOpen] = useState(false)
-  const devPlanSwitch = auth?.providers?.devMailbox && user && !user.isGuest
 
   return (
     <>
@@ -81,62 +75,7 @@ export function SettingsView({ env, onClear, onEditOnboarding, theme, resolvedTh
         </div>
       </section>
 
-      <section className="wk-section" data-testid="plan-panel">
-        <div className="wk-section-head">
-          <h2 className="wk-display wk-h2">Your plan</h2>
-          <span className="wk-plan-pill">{PLAN_LABEL[plan]}</span>
-        </div>
-        <div className="wk-card">
-          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 24, flexWrap: 'wrap', alignItems: 'flex-start' }}>
-            <div style={{ maxWidth: 560 }}>
-              <p style={{ fontSize: 15, fontWeight: 500 }}>
-                {PLAN_LABEL[plan]} · {PLAN_PITCH[plan].price}
-              </p>
-              <p className="wk-dim" style={{ marginTop: 4, fontSize: 13 }}>{PLAN_PITCH[plan].summary}</p>
-              <p className="wk-table-sub" style={{ marginTop: 8 }}>{PLAN_PITCH[plan].note}</p>
-              {PLAN_SUCCESS_FEE[plan] > 0 ? (
-                <p style={{ marginTop: 10, fontSize: 13.5 }} data-testid="success-fee">
-                  Success fee on this audit so far: <span className="wk-num">{formatCurrency(successFee(plan, recovered))}</span>{' '}
-                  <span className="wk-dim">({PLAN_SUCCESS_FEE[plan] * 100}% of {formatCurrency(recovered)} recorded as returned)</span>
-                </p>
-              ) : null}
-              {plan === 'free' ? (
-                <ul className="wk-plan-features" style={{ marginTop: 12 }}>
-                  {PLAN_PITCH.growth.features.slice(0, 4).map((f) => (
-                    <li key={f}>
-                      <span aria-hidden="true" style={{ color: 'var(--accent-ink)' }}>
-                        +
-                      </span>
-                      {f}
-                    </li>
-                  ))}
-                </ul>
-              ) : null}
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'flex-start' }}>
-              <button type="button" className="wk-btn" data-variant={plan === 'free' ? 'primary' : 'outline'} onClick={() => setUpgradeOpen(true)}>
-                {plan === 'free' ? 'See Growth and Flat' : 'Compare plans'}
-              </button>
-              {devPlanSwitch ? (
-                <button
-                  type="button"
-                  className="wk-btn"
-                  data-variant="ghost"
-                  data-size="sm"
-                  onClick={() => void auth?.setDevPlan(PLANS[(PLANS.indexOf(plan) + 1) % PLANS.length])}
-                  title="Development only"
-                >
-                  Dev: switch to {PLAN_LABEL[PLANS[(PLANS.indexOf(plan) + 1) % PLANS.length]]}
-                </button>
-              ) : null}
-            </div>
-          </div>
-          <p className="wk-dim" style={{ marginTop: 14, fontSize: 12.5 }}>
-            Payments aren&apos;t open yet — paid plans are coming soon, and nothing is charged today.
-          </p>
-        </div>
-        <UpgradeDialog open={upgradeOpen} onOpenChange={setUpgradeOpen} />
-      </section>
+      <PlanBilling recovered={recovered} />
 
       {user && !user.isGuest ? (
         <section className="wk-section" data-testid="connected-accounts">

@@ -77,7 +77,7 @@ Their commit adds: customer approval before outreach (with contact hold and "alr
 ### Plans section and checkout
 - Sidebar → **Plans** (`src/workspace/views/Plans.tsx`): three cards + comparison table; works even before a first audit. Free → "You're all set on Free" confirmation; Growth/Flat → `/checkout?plan=…` (guests go via sign-up with `next=`).
 - **`/checkout`** (`src/pages/CheckoutPage.tsx`): order summary, contact, card (Stripe's hosted field — the card number never touches Reclaim), country/ZIP, consent, Subscribe. Test-mode banner. A verified card shows "nothing was charged, your plan hasn't changed". Invalid plan → back to Plans.
-- **No real billing exists.** To go live: set `VITE_STRIPE_PUBLISHABLE_KEY`, then build a server endpoint holding `STRIPE_SECRET_KEY` that creates the subscription, plus a webhook that sets `users.plan` from Stripe events (never from the client). Growth's 15% fee is calculated and shown (Settings) but not billed. `src/billing/*` and `src/components/billing/*` are older unused prototypes.
+- **Billing (Stripe, test mode):** `server/billing.ts` — subscribe, 3-D Secure confirm, Growth ↔ Flat, cancel at period end, signature-checked webhook as the source of truth for `users.plan`, and Growth's 10% billed as one invoice item per recorded settlement. Settings → Your plan shows plan, next bill date, Change plan / Cancel. Setup: docs/deploy.md §7a. `src/billing/entitlement.ts`, `useEntitlement.ts` and `src/components/billing/*` are older unused prototypes.
 
 ### Testing done
 456 automated tests (from 279), including adversarial suites for the engine, parser, letters and server, and a seeded random walk over the recovery workflow (12k actions per run; also run once at 60k). A browser stress run of 130 rounds (127 generated messy uploads, 313 cases, 1,125 recovery actions) produced zero JS errors and zero inconsistent cases. Account email: `reclaimbusiness1@gmail.com` is now the public contact (footer, Terms/Privacy).
@@ -85,7 +85,7 @@ Their commit adds: customer approval before outreach (with contact hold and "alr
 ## 4. Open items, in priority order
 
 1. **Owner decision: commit & push** this work (see §0).
-2. **Before real users:** configure Resend with a domain; build real Stripe billing (§3); decide deployment (none exists yet — the production server path is `npm start`, which needs `NODE_ENV=production` and an `https` `APP_ORIGIN`).
+2. **Before real users:** configure Resend with a domain; add Stripe keys and prices (docs/deploy.md §7a); decide deployment (none exists yet — the production server path is `npm start`, which needs `NODE_ENV=production` and an `https` `APP_ORIGIN`).
 3. Test "Draft with AI" once with a real `ANTHROPIC_API_KEY`.
 4. Gmail sending is built; it needs the Google Cloud steps in `docs/deploy.md` §4a and Google's verification of `gmail.send` before public use.
 5. Pro-only (now Growth/Flat) UI flows were tested by automated tests, not by clicking — a manual pass on a paid dev account (Settings → "Dev: switch to Growth") is worthwhile.

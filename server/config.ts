@@ -45,6 +45,12 @@ export interface ServerConfig {
    * seals stored refresh tokens; losing it only means customers reconnect.
    */
   gmailSend: { clientId: string; clientSecret: string; tokenKey: Buffer } | null
+  /**
+   * Stripe billing (server/billing.ts). Both are secrets. The webhook secret
+   * (whsec_…) comes from the dashboard endpoint or `stripe listen`; without it
+   * the webhook refuses every event.
+   */
+  stripe: { secretKey: string; webhookSecret: string | null } | null
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): ServerConfig {
@@ -82,6 +88,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): ServerConfig {
     // become an account-takeover endpoint; DEV_MAILBOX=true opts in explicitly.
     devMailbox: !production && (env.DEV_MAILBOX === 'true' || (env.DEV_MAILBOX !== 'false' && isLocalOrigin(appOrigin))),
     quickbooks: quickbooksConfig(env),
+    stripe: env.STRIPE_SECRET_KEY?.trim() ? { secretKey: env.STRIPE_SECRET_KEY.trim(), webhookSecret: env.STRIPE_WEBHOOK_SECRET?.trim() || null } : null,
     dataKeys: dataKeysConfig(env),
     gmailSend: gmailSendConfig(env, google),
   }
@@ -141,6 +148,10 @@ function productionProblems(env: NodeJS.ProcessEnv, appOrigin: string): string[]
     if (!isHttpsOrigin(appOrigin) || isLocalOrigin(appOrigin)) problems.push('QBO_ENVIRONMENT=production needs APP_ORIGIN to be the public https:// address: Intuit refuses http and localhost redirect URIs for production apps.')
   }
 
+  // Without the webhook secret Stripe's events are refused, so renewals,
+  // failed payments and cancellations would never reach users.plan.
+  if (set('STRIPE_SECRET_KEY') !== set('STRIPE_WEBHOOK_SECRET')) problems.push('Set both STRIPE_SECRET_KEY and STRIPE_WEBHOOK_SECRET, or neither.')
+  if (set('STRIPE_SECRET_KEY') && !/^(sk|rk)_(test|live)_/.test(env.STRIPE_SECRET_KEY!.trim())) problems.push('STRIPE_SECRET_KEY must be a Stripe secret key (sk_test_… or sk_live_…), never the publishable key.')
   if (set('GMAIL_TOKEN_KEY') && !(set('GOOGLE_CLIENT_ID') && set('GOOGLE_CLIENT_SECRET'))) problems.push('GMAIL_TOKEN_KEY is set but GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET are not; Gmail sending uses the same Google client.')
 
   return problems
