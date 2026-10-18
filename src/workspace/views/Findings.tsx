@@ -11,6 +11,7 @@ import { useEntitlements } from '@/lib/auth/AuthContext'
 import { UpgradeDialog } from '@/components/plan/UpgradeDialog'
 import { EVIDENCE_LABEL, ladder, opportunities, type Opportunity } from '../selectors'
 import { KindChip } from './KindChip'
+import { StatusChip } from './StatusChip'
 import { Strength } from './Strength'
 import { findingReference } from './findingText'
 
@@ -98,12 +99,7 @@ function EvidenceCell({ finding, findings }: { finding: Opportunity['finding']; 
 }
 
 function decisionChip(o: Opportunity) {
-  if (o.state.recoveryStage) {
-    const returned = o.state.recoveryStage === 'recovered' && o.finding.class === 'recoverable' && (o.state.recoveredAmount ?? 0) > 0
-    return <span className="wk-chip" data-tone={returned ? 'accent' : o.state.recoveryStage === 'not_recovered' ? 'quiet' : 'done'}>{recoveryStatusLabel(o.state, o.finding.class !== 'recoverable')}</span>
-  }
-  if (!o.state.decision) return <span className="wk-chip" data-tone="quiet">Not reviewed</span>
-  return <span className="wk-chip" data-tone={o.state.decision === 'confirmed' ? 'done' : undefined}>{DECISION_LABEL[o.state.decision]}</span>
+  return <StatusChip state={o.state} internal={o.finding.class !== 'recoverable'} />
 }
 
 export function Findings({ env, visible, onOpenCase }: FindingsProps) {

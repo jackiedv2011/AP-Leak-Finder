@@ -1,5 +1,6 @@
 import type { AuthError, AuthOutcome, AuthUser } from '@/lib/auth/types'
 import type { Entitlements, Plan } from '@/lib/plans'
+import type { OnboardingProfile } from '../../../server/onboarding.ts'
 
 /**
  * The browser side of the account system. Every call goes to the Reclaim
@@ -29,6 +30,7 @@ export interface ServerUser {
   methods: Array<'password' | 'google'>
   plan: Plan
   onboardingSeenAt: number | null
+  onboardingProfile: OnboardingProfile | null
 }
 
 export type SignUpResult = { ok: true; requiresVerification: true; email: string } | { ok: true; requiresVerification: false; user: AuthUser } | AuthError
@@ -148,6 +150,12 @@ export async function fetchEntitlements(): Promise<Entitlements | null> {
 
 export async function markOnboardingSeen(): Promise<AuthUser | null> {
   const { status, body } = await call<{ user: ServerUser }>('/api/account/onboarding-seen', { method: 'POST' })
+  return status === 200 ? toAuthUser(body.user) : null
+}
+
+/** Saves onboarding's answers on the account; also marks onboarding as done. */
+export async function saveOnboarding(profile: OnboardingProfile): Promise<AuthUser | null> {
+  const { status, body } = await call<{ user: ServerUser }>('/api/account/onboarding', { method: 'POST', json: profile })
   return status === 200 ? toAuthUser(body.user) : null
 }
 

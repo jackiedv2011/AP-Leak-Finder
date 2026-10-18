@@ -44,6 +44,9 @@ template: platform        for page-specific motion
 ---
 ```
 
+A library tag in the layout marked `data-only-with="NAME"` is kept only on pages that use the class `NAME`
+(Swiper loads only where there is a carousel).
+
 Output paths: `src/pages/index.html` → `index.html`, `src/pages/a/b.html` → `a/b/index.html`,
 `src/pages/a/index.html` → `a/index.html`. **Never edit the built files** — they carry a generated
 banner and are overwritten on the next build.
@@ -71,7 +74,7 @@ dead links in the footer. Careers was left out.
 | `serve.cjs` | dependency-free static server with byte-range support for the videos |
 | `styles.css` | the shared design system: tokens, type scale, grid, nav, footer, buttons |
 | `pages.css` | everything specific to a page family (articles, research, guides, security, company) |
-| `main.js` | motion and interaction: nav clones, split headings, smooth scroll, the popup, carousels, library filters, guide contents, accordions |
+| `main.js` | motion and interaction: the floating nav, split headings, smooth scroll, the popup, carousels, library filters, guide contents, accordions |
 | `reels.js` | plays the 3D loops while they are on screen; swaps WebM for MP4 on Safari |
 | `media/` | the 3D loops: transparent VP9 WebM plus H.264 MP4 fallbacks |
 | `assets/` | card and thumbnail images |
@@ -91,7 +94,7 @@ Render frames (`blender/out/`, about 900MB) are not committed. Re-render them wi
   Modules position themselves with `grid-column`.
 - **Headings split into lines.** Anything with `data-split` is measured and rebuilt as masked lines
   for the reveal animation; a `<br>` always forces a break. Re-splits on font load and on resize.
-- **The nav is cloned per section.** Each section carries a `.nav-slot`; `main.js` clones the nav
-  template into it so the bar re-themes at section edges. Section word counts include those clones.
+- **One floating nav.** `main.js` puts a single copy of the nav template on the page. Each section's
+  `.nav-slot` only names the theme the nav takes while that section is under it; the slot itself is removed.
 - **Density.** Each page is built to sit within about 90–105% of the corresponding reference page's
   height and word count at 1440px, so the site reads at the same weight throughout.

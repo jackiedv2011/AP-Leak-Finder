@@ -18,7 +18,8 @@ sc.view_settings.look = 'None'
 probe = bpy.data.images.load(os.path.join(src, files[0]))
 w, h = probe.size
 size = int(A.get('size', w))
-sc.render.resolution_x = sc.render.resolution_y = size
+sc.render.resolution_x = size
+sc.render.resolution_y = round(h * size / w / 2) * 2   # keeps a wide frame wide (and even, for H.264)
 sc.render.resolution_percentage = 100
 sc.render.fps = int(A.get('fps', 30))
 sc.frame_start, sc.frame_end = 1, len(files)

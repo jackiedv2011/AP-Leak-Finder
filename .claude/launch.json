@@ -27,6 +27,31 @@
       ],
       "port": 5520,
       "autoPort": true
+    },
+    {
+      "name": "onboarding-preview",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "vite",
+        "--port",
+        "5181",
+        "--strictPort"
+      ],
+      "port": 5181
+    },
+    {
+      "name": "onboarding-review",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "vite",
+        "preview",
+        "--config",
+        "vite.onboarding-demo.config.ts",
+        "--port",
+        "5182",
+        "--strictPort"
+      ],
+      "port": 5182
     }
   ]
 }

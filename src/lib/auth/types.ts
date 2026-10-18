@@ -18,6 +18,8 @@ export interface AuthUser {
   /** Server accounts only. Guests and legacy sessions are treated as Free. */
   plan?: import('../plans').Plan
   onboardingSeenAt?: number | null
+  /** What onboarding learned (server/onboarding.ts). Null when skipped or never answered. */
+  onboardingProfile?: import('../../../server/onboarding.ts').OnboardingProfile | null
 }
 
 export interface AuthResult {

@@ -13,7 +13,11 @@
   }, { rootMargin: '120px' });
 
   for (const v of reels) {
-    if (safari) v.src = v.getAttribute('src').replace(/\.webm$/, '.mp4');
+    const webm = /\.webm$/.test(v.getAttribute('src') || '');   // (the hero is MP4 already, from <source>s)
+    if (safari && webm) {
+      v.src = v.getAttribute('src').replace(/\.webm$/, '.mp4');
+      v.dataset.baked = 'dark';   // the twins are baked over black; styles.css blends that away
+    }
     v.muted = true;
     v.playsInline = true;
     io.observe(v);

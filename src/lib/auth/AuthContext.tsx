@@ -7,6 +7,21 @@ import { clearStorageScope, setStorageScope } from '@/lib/storageScope'
 import { fromStorable, replaceLocalProjects } from '@/ledger/projects'
 import { projectSync } from '@/ledger/projectSync'
 import { entitlementsFor, type Entitlements, type Plan } from '@/lib/plans'
+import { readProfile, type OnboardingProfile } from '../../../server/onboarding.ts'
+
+// A guest lives for the tab, so its onboarding does too.
+const GUEST_SEEN_KEY = 'reclaim.tour.seen'
+const GUEST_PROFILE_KEY = 'reclaim.onboarding.v1'
+
+function withGuestOnboarding(user: AuthUser): AuthUser {
+  try {
+    const seen = window.sessionStorage.getItem(GUEST_SEEN_KEY) === '1'
+    const profile = readProfile(window.sessionStorage.getItem(GUEST_PROFILE_KEY))
+    return seen ? { ...user, onboardingSeenAt: user.onboardingSeenAt ?? Date.now(), onboardingProfile: profile } : user
+  } catch {
+    return user
+  }
+}
 
 export type AuthStatus = 'loading' | 'ready'
 
@@ -20,6 +35,8 @@ interface AuthContextValue {
   entitlements: Entitlements | null
   refreshEntitlements: () => Promise<Entitlements | null>
   markOnboardingSeen: () => Promise<void>
+  /** Stores onboarding's answers (on the account, or in the tab for a guest) and marks it done. */
+  saveOnboarding: (profile: OnboardingProfile) => Promise<void>
   /** Development only: flip the account's plan. */
   setDevPlan: (plan: Plan) => Promise<void>
   signUp: (input: Omit<Parameters<typeof api.signUp>[0], 'termsVersion'>) => Promise<api.SignUpResult>
@@ -78,7 +95,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setStorageScope('guest')
         if (mounted.current) {
           setEntitlements(entitlementsFor('free', 0))
-          setUser(guestUser)
+          setUser(withGuestOnboarding(guestUser))
         }
       } else {
         const serverUser = await api.getSession()
@@ -106,13 +123,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const markOnboardingSeen = useCallback(async () => {
     if (user?.isGuest) {
-      window.sessionStorage.setItem('reclaim.tour.seen', '1')
+      window.sessionStorage.setItem(GUEST_SEEN_KEY, '1')
       setUser({ ...user, onboardingSeenAt: Date.now() })
       return
     }
     const next = await api.markOnboardingSeen()
     if (next) setUser(next)
   }, [user])
+
+  const saveOnboarding = useCallback(
+    async (profile: OnboardingProfile) => {
+      if (!user) return
+      if (user.isGuest) {
+        try {
+          window.sessionStorage.setItem(GUEST_SEEN_KEY, '1')
+          window.sessionStorage.setItem(GUEST_PROFILE_KEY, JSON.stringify(profile))
+        } catch {
+          /* storage refused: the answers still hold for this render */
+        }
+        setUser({ ...user, onboardingSeenAt: Date.now(), onboardingProfile: profile })
+        return
+      }
+      const next = await api.saveOnboarding(profile)
+      // If the save failed, onboarding still ends: nobody is held on step 8 by a network error.
+      setUser(next ?? { ...user, onboardingSeenAt: Date.now(), onboardingProfile: profile })
+    },
+    [user]
+  )
 
   const setDevPlan = useCallback(
     async (plan: Plan) => {
@@ -156,7 +193,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setStorageScope('guest')
     setEntitlements(entitlementsFor('free', 0))
     const g = guest.continueAsGuest()
-    setUser(window.sessionStorage.getItem('reclaim.tour.seen') === '1' ? { ...g, onboardingSeenAt: Date.now() } : g)
+    setUser(withGuestOnboarding(g))
   }, [])
 
   const logOut = useCallback(async () => {
@@ -223,6 +260,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       entitlements,
       refreshEntitlements,
       markOnboardingSeen,
+      saveOnboarding,
       setDevPlan,
       signUp,
       verifyEmail,
@@ -236,7 +274,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       deleteAccount,
       acceptTerms,
     }),
-    [user, status, providers, entitlements, refreshEntitlements, markOnboardingSeen, setDevPlan, signUp, verifyEmail, logIn, continueAsGuest, logOut, resetPassword, exportAccountData, deleteAccount, acceptTerms]
+    [user, status, providers, entitlements, refreshEntitlements, markOnboardingSeen, saveOnboarding, setDevPlan, signUp, verifyEmail, logIn, continueAsGuest, logOut, resetPassword, exportAccountData, deleteAccount, acceptTerms]
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

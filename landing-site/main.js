@@ -6,6 +6,10 @@
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const rem = () => parseFloat(getComputedStyle(document.documentElement).fontSize);
+  // where an element's top meets a line a fraction f down the screen, by layout offsets: the rounded sections are
+  // scaled while they arrive, and a trigger measured on the scaled box fires hundreds of pixels early
+  const docTop = el => { let y = 0; for (let n = el; n; n = n.offsetParent) y += n.offsetTop; return y; };
+  const at = (el, f) => () => docTop(el) - innerHeight * f;
   const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const html = document.documentElement;
   const folder = document.body.dataset.folder || '';
@@ -19,26 +23,56 @@
   setScrollbar();
   addEventListener('resize', setScrollbar);
 
-  // ---------- nav clones (one per section, clipped by the section) ----------
+  // ---------- nav ----------
   const tpl = $('#nav-tpl');
   const tplNav = tpl.content.firstElementChild;
-  // the current page: its nav group stays lit, its submenu item stays at full strength
+  // the current page: its nav group stays lit
   const isHere = a => { const h = a.getAttribute('href'); return !!h && h.startsWith('/') && h === here; };
   if (folder) {
     $('.nav-bar', tplNav).classList.add('inFolder');
     $$('.nav-bar > .group', tplNav).forEach(g => g.classList.toggle('current', g.dataset.folder === folder));
-    $$('.nav-bar-submenu', tplNav).forEach(s => s.classList.add('inFolder'));
-    $$('.nav-bar-submenu .item', tplNav).forEach(a => { if (isHere(a)) { a.classList.add('current'); a.setAttribute('aria-current', 'page'); } });
   }
-  $$('.nav-slot').forEach(slot => {
-    const nav = tplNav.cloneNode(true);
-    const theme = slot.dataset.theme;
-    nav.setAttribute('theme', theme);
-    $('.right .cta-button', nav).setAttribute('theme', theme === 'black' ? 'green' : 'black');
-    slot.replaceWith(nav);
+  // one nav for the page, floating over everything (so its glass can blur whatever passes under it). Each
+  // section's nav-slot only says which theme the nav takes while that section is under the pill's middle;
+  // a rounded card counts from its visible (scaled) edge, not its box, and a card drawn in by a clip from its clipped
+  // edges (its script keeps them in el.navCut)
+  const nav = tplNav.cloneNode(true);
+  const navZones = $$('.nav-slot').map(slot => {
+    const host = slot.parentElement;
+    const zone = { el: $(':scope > .rs-scale', host) || host, theme: slot.dataset.theme };
+    slot.remove();
+    return zone;
   });
+  document.body.prepend(nav);
+  const navCta = $('.right .cta-button', nav);
+  const syncNav = () => {
+    const mid = rem() * (innerWidth > 1023 ? 4.4 : 4);
+    let theme = navZones[0]?.theme || 'white';
+    for (const z of navZones) {
+      const r = z.el.getBoundingClientRect(), cut = z.el.navCut;
+      if (r.top + (cut?.top || 0) <= mid && r.bottom - (cut?.bottom || 0) > mid) theme = z.theme;
+    }
+    if (nav.getAttribute('theme') !== theme) {
+      nav.setAttribute('theme', theme);
+      navCta.setAttribute('theme', theme === 'black' ? 'green' : 'black');
+    }
+    nav.classList.toggle('is-floating', scrollY > 40);
+    // reading on (scrolling down) it steps back to 90%; a pause or a scroll up brings it back to full size
+    const dy = scrollY - navY;
+    navY = scrollY;
+    clearTimeout(navRest);
+    // (not over the walkthrough while it holds the screen: there the scroll steps through it, not reading)
+    if (dy > 0 && scrollY > 40 && !document.querySelector('.walkthrough.is-pinned')) {
+      nav.classList.add('is-compact');
+      navRest = setTimeout(() => nav.classList.remove('is-compact'), 260);
+    } else if (dy < 0 || document.querySelector('.walkthrough.is-pinned')) nav.classList.remove('is-compact');
+  };
+  let navY = scrollY, navRest;
+  syncNav();
+  addEventListener('scroll', syncNav, { passive: true });
+  addEventListener('resize', syncNav);
 
-  // ---------- mobile menu (≤1023px): one sheet for every nav clone, built from the nav template ----------
+  // ---------- mobile menu (≤1023px): one sheet, built from the nav template ----------
   const mq = matchMedia('(max-width: 1023px)');
   const mm = document.createElement('div');
   mm.className = 'mobile-menu';
@@ -49,14 +83,8 @@
   mm.setAttribute('aria-label', 'Menu');
   mm.setAttribute('data-lenis-prevent', '');
   const attrs = a => ' href="' + (a.getAttribute('href') || '#') + '"' + (a.dataset.modal ? ' data-modal="' + a.dataset.modal + '"' : '') + (isHere(a) ? ' class="current" aria-current="page"' : '');
-  const mmRowsHtml = $$('.nav-bar > .group', tplNav).map((g, i) => {
-    const label = $('.label', g).textContent.trim();
-    const items = $$('.nav-bar-submenu .item', g);
-    if (!items.length) return '<li class="mm-item"><a class="mm-row"' + attrs($('a.link', g)).replace(' class="current"', '') + '>' + label + '</a></li>';
-    const links = items.map(a => '<a' + attrs(a) + '>' + a.textContent.trim() + '</a>').join('');
-    return '<li class="mm-item"><button type="button" class="mm-row" aria-expanded="false" aria-controls="mm-sub-' + i + '">' + label + '<span class="mm-plus" aria-hidden="true"></span></button>'
-      + '<div class="mm-sub" id="mm-sub-' + i + '" inert><div class="inner">' + links + '</div></div></li>';
-  }).join('');
+  const mmRowsHtml = $$('.nav-bar > .group', tplNav).map(g =>
+    '<li class="mm-item"><a class="mm-row"' + attrs($('a.link', g)).replace(' class="current"', '') + '>' + $('.label', g).textContent.trim() + '</a></li>').join('');
   mm.innerHTML = '<div class="mm-top">' + $('.left', tplNav).innerHTML
     + '<button type="button" class="menu-toggle mm-close" aria-label="Close menu"><span class="bar"></span><span class="bar"></span></button></div>'
     + '<ul class="mm-list">' + mmRowsHtml + '</ul>'
@@ -72,6 +100,10 @@
     const keep = !old || !old._gsap ? null
       : gsap.isTweening(old) ? { x: 0, y: 0, xPercent: 0, yPercent: 0, opacity: 1 }   // mid-reveal: finish it
       : ['x', 'y', 'xPercent', 'yPercent', 'opacity'].reduce((o, p) => (o[p] = gsap.getProperty(old, p), o), {});
+    const oldWrap = $('.line-wrap', el);   // centred headings move their masks instead (see the section headings)
+    const keepWrap = !oldWrap || !oldWrap._gsap ? null
+      : gsap.isTweening(oldWrap) ? { y: 0, opacity: 1, filter: 'none' }
+      : { y: gsap.getProperty(oldWrap, 'y'), opacity: gsap.getProperty(oldWrap, 'opacity'), filter: oldWrap.style.filter || 'none' };
     el.innerHTML = src.split(/<br\s*\/?>/i).map(p => p.trim()).map(p => /</.test(p)
       ? `<span class="split-part" data-raw>${p}</span>`
       : `<span class="split-part">${p.split(/\s+/).map(w => `<span class="split-w">${w}</span>`).join(' ')}</span>`).join('<br>');
@@ -88,6 +120,7 @@
     });
     el.innerHTML = lines.map(l => `<span class="line-wrap"><span class="line">${l}</span></span>`).join('');
     if (keep) gsap.set($$('.line', el), keep);
+    if (keepWrap) gsap.set($$('.line-wrap', el), keepWrap);
   };
   const splitAll = () => $$('[data-split]').forEach(splitLines);
   splitAll();
@@ -100,44 +133,37 @@
   });
 
   // ---------- button hover state (colour only: labels and icons stay where they are) ----------
+  // a mouse only: a tap sends a hover too, and it would stay on the button until the next tap elsewhere
+  const byMouse = e => e.pointerType === 'mouse';
   $$('.cta-button, .cta-button-square').forEach(btn => {
-    const host = btn.closest('a, button, [data-hover-host]') || btn;
-    host.addEventListener('mouseenter', () => btn.classList.add('hovering'));
-    host.addEventListener('mouseleave', () => btn.classList.remove('hovering'));
+    const host = btn.closest('a, button') || btn;
+    host.addEventListener('pointerenter', e => { if (byMouse(e)) btn.classList.add('hovering'); });
+    host.addEventListener('pointerleave', () => btn.classList.remove('hovering'));
   });
 
-  // ---------- nav: hover state + submenus ----------
-  const closeAllSubmenus = () => $$('.the-nav .group.open').forEach(g => g.classList.remove('active', 'open'));
-  $$('.the-nav').forEach(nav => {
-    const bar = $('.nav-bar', nav);
-    $$('.group', bar).forEach(group => {
-      group.addEventListener('mouseenter', () => {
-        bar.classList.add('hovering');
-        group.classList.add('active');
-        if ($('.nav-bar-submenu', group)) group.classList.add('open');
-      });
-      group.addEventListener('mouseleave', () => group.classList.remove('active', 'open'));
-    });
-    bar.addEventListener('mouseleave', () => bar.classList.remove('hovering'));
+  // ---------- nav: the link under the pointer lights, the others dim ----------
+  const navBar = $('.nav-bar', nav);
+  $$('.group', navBar).forEach(group => {
+    group.addEventListener('mouseenter', () => { navBar.classList.add('hovering'); group.classList.add('active'); });
+    group.addEventListener('mouseleave', () => group.classList.remove('active'));
   });
-  // scrolling with a submenu open leaves it stuck (only mouseleave closes it above, and the
-  // pointer can stay put on a wheel scroll) — a scroll of any size should always close it
-  addEventListener('scroll', closeAllSubmenus, { passive: true });
+  navBar.addEventListener('mouseleave', () => navBar.classList.remove('hovering'));
 
   // ---------- smooth scroll ----------
-  const lenis = new Lenis({ lerp: .1 });
+  // smooth, but close behind the wheel: more lag than this reads as the page being slow (reduced motion: the wheel's own scroll)
+  const lenis = new Lenis({ lerp: .15, smoothWheel: !calm });
   window.lenis = lenis;
   lenis.on('scroll', ScrollTrigger.update);
   gsap.ticker.add(t => lenis.raf(t * 1000));
   gsap.ticker.lagSmoothing(0);
   lenis.stop();
 
-  $$('.cta-scroll').forEach(a => a.addEventListener('click', e => { e.preventDefault(); lenis.scrollTo(0, { duration: 1 }); }));
+  $$('.cta-scroll').forEach(a => a.addEventListener('click', e => { e.preventDefault(); lenis.scrollTo(0, { duration: 1, immediate: calm }); }));
   $$('a[href="#"]').forEach(a => a.addEventListener('click', e => e.preventDefault()));
 
   // in-page anchors (article nav, hero jump rows, guide contents)
   const anchorTarget = hash => { try { return hash.length > 1 ? $(hash) : null; } catch (e) { return null; } };
-  const scrollToTarget = (el, immediate) => lenis.scrollTo(el, { offset: -rem() * 2.4, duration: immediate ? 0 : 1.2, immediate: !!immediate, force: true });
+  const scrollToTarget = (el, immediate) => lenis.scrollTo(el, { offset: -rem() * 2.4, duration: immediate || calm ? 0 : 1.2, immediate: !!immediate || calm, force: true });
   $$('a[href^="#"]:not([data-modal])').forEach(a => {
     const target = anchorTarget(a.getAttribute('href'));
     if (!target) return;
@@ -175,25 +201,16 @@
   navToggles.forEach(t => t.addEventListener('click', () => openMenu(t)));
   mmClose.addEventListener('click', () => closeMenu());
   $$('a:not([data-modal])', mm).forEach(a => a.addEventListener('click', () => closeMenu()));
-  $$('button.mm-row', mm).forEach(row => {
-    const sub = $('#' + row.getAttribute('aria-controls'), mm);
-    row.addEventListener('click', () => {
-      const open = row.getAttribute('aria-expanded') !== 'true';
-      row.setAttribute('aria-expanded', String(open));
-      sub.inert = !open;
-      gsap.to(sub, { height: open ? 'auto' : 0, duration: calm ? 0 : .5, ease: 'power2.inOut', overwrite: true });
-    });
-  });
   mm.addEventListener('keydown', e => {
     if (e.key === 'Escape') { closeMenu(); return; }
     if (e.key !== 'Tab') return;
-    const f = $$('a, button', mm).filter(el => !el.closest('[inert]'));
+    const f = $$('a, button', mm);
     if (e.shiftKey && document.activeElement === f[0]) { e.preventDefault(); f[f.length - 1].focus(); }
     else if (!e.shiftKey && document.activeElement === f[f.length - 1]) { e.preventDefault(); f[0].focus(); }
   });
   mq.addEventListener('change', e => { if (!e.matches) closeMenu(true); });
 
-  // ---------- popup: start an audit / talk to us (front end only, nothing is sent) ----------
+  // ---------- popup: talk to us ----------
   const modal = $('#modal');
   if (modal) {
     const box = $('.modal-box', modal);
@@ -203,10 +220,6 @@
     const form = $('form', modal);
     const submitWrap = $('.wrapper-submit', modal);
     const errorBox = $('.error-message', modal);
-    const MODES = {
-      audit: { heading: 'Get<br>started', submit: 'Get Started' },
-      talk: { heading: 'Talk<br>to us', submit: 'Talk to Us' },
-    };
     let opener = null, anim, submitTimer;
 
     const dropdowns = $$('.dropdown', modal).map(dd => {
@@ -288,18 +301,14 @@
       submitWrap.classList.remove('loading');
       card.hidden = false;
       success.hidden = true;
-      gsap.set([card, success], { clearProps: 'opacity,transform' });
+      gsap.set([card, success], { clearProps: 'opacity,transform,filter' });
     };
     const focusables = () => $$('button, input, [tabindex="0"], a[href]', modal).filter(el => !el.closest('[hidden]') && el.tabIndex >= 0 && !el.closest('.dropdown-list'));
 
-    const openModal = (mode, from) => {
-      const m = MODES[mode] || MODES.audit;
+    const openModal = from => {
       opener = from || document.activeElement;
       closeMenu(true, true);
       reset();
-      $$('[data-modal-heading]', modal).forEach(h => { h.innerHTML = m.heading; });
-      $$('[data-modal-submit]', modal).forEach(s => { s.textContent = m.submit; });
-      modal.dataset.mode = mode;
       modal.hidden = false;
       html.classList.add('modal-open');
       lenis.stop();
@@ -320,7 +329,7 @@
         opener?.focus?.({ preventScroll: true });
       };
       anim = gsap.timeline({ onComplete: done })
-        .to(underlay, { opacity: 0, duration: calm ? 0 : .2, ease: 'power1.out' }, calm ? 0 : .2)
+        .to(underlay, { opacity: 0, duration: calm ? 0 : .2, ease: 'power1.out' }, 0)
         .to(box, { opacity: 0, scale: .8, duration: calm ? 0 : .4, ease: 'power1.out' }, 0);
     };
     window.reclaimModal = { open: openModal, close: closeModal };
@@ -329,7 +338,7 @@
       const t = e.target.closest('[data-modal]');
       if (!t) return;
       e.preventDefault();
-      openModal(t.dataset.modal, t);
+      openModal(t);
     });
     underlay.addEventListener('click', closeModal);
     $$('.close, .done', modal).forEach(b => b.addEventListener('click', closeModal));
@@ -347,7 +356,7 @@
       if (!validate()) { $('[data-invalid] input, [data-invalid] .dropdown-button', form)?.focus(); return; }
       submitWrap.classList.add('loading');
       const payload = {
-        kind: modal.dataset.mode === 'audit' ? 'audit' : 'talk',
+        kind: 'talk',
         name: form.elements.name.value.trim(),
         email: form.elements.email.value.trim(),
         role: dropdowns[0].values()[0] || '',
@@ -359,8 +368,9 @@
         .then(() => {
         submitWrap.classList.remove('loading');
         gsap.timeline()
-          .to(card, { opacity: 0, scale: .96, duration: calm ? 0 : .2, ease: 'power1.in', onComplete: () => { card.hidden = true; success.hidden = false; } })
-          .fromTo(success, { opacity: 0, scale: .96 }, { opacity: 1, scale: 1, duration: calm ? 0 : .4, ease: 'power1.out', onStart: () => $('.close', success).focus({ preventScroll: true }) });
+          // (a touch of blur through the swap, so the form and the thanks read as one card changing)
+          .to(card, { opacity: 0, scale: .96, filter: calm ? 'none' : 'blur(2px)', duration: calm ? 0 : .2, ease: 'power1.in', onComplete: () => { card.hidden = true; success.hidden = false; } })
+          .fromTo(success, { opacity: 0, scale: .96, filter: calm ? 'none' : 'blur(2px)' }, { opacity: 1, scale: 1, filter: 'blur(0px)', duration: calm ? 0 : .4, ease: 'power1.out', clearProps: 'filter', onStart: () => $('.close', success).focus({ preventScroll: true }) });
         })
         .catch(err => {
           submitWrap.classList.remove('loading');
@@ -371,15 +381,17 @@
   }
 
   // ---------- logo ----------
+  // (reduced motion: the logo fades in where it stands)
   const logoReset = logo => {
+    if (calm) { gsap.set(logo, { opacity: 0 }); return; }
     gsap.set($('.wheel', logo), { scale: 0, rotation: 216, transformOrigin: '50% 50%' });
     gsap.set($$('.letter', logo), { xPercent: 50, yPercent: 150 });
   };
-  const logoIn = logo => gsap.timeline({ defaults: { duration: 1, ease: 'power2.out' } })
+  const logoIn = logo => calm ? gsap.to(logo, { opacity: 1, duration: .5 }) : gsap.timeline({ defaults: { duration: 1, ease: 'power2.out' } })
     .to($('.wheel', logo), { scale: 1, rotation: 0 }, 0)
     .to($$('.letter', logo), { xPercent: 0, yPercent: 0, stagger: .1 }, .1);
   const navLogos = $$('.the-nav .hx-logo');
-  const footLogo = $('.the-footer .top .hx-logo');
+  const footLogo = $('.the-footer .hx-logo');
   navLogos.forEach(logoReset);
   if (footLogo) {
     logoReset(footLogo);
@@ -396,16 +408,28 @@
     gsap.set(water, { x: 0, y: 26 });   // empty: crest sits below the wheel
     const drift = gsap.to(water, { x: -13, duration: 1.2, ease: 'none', repeat: -1, paused: true });
     let level;
-    logo.addEventListener('mouseenter', () => {
+    logo.addEventListener('pointerenter', e => {
+      if (!byMouse(e)) return;
       if (!calm) drift.play();
       level?.kill();
       level = gsap.to(water, { y: -3, duration: calm ? 0 : 1, ease: 'power2.out' });
     });
-    logo.addEventListener('mouseleave', () => {
+    logo.addEventListener('pointerleave', () => {
       level?.kill();
       level = gsap.to(water, { y: 26, duration: calm ? 0 : .6, ease: 'power1.inOut', onComplete: () => drift.pause() });
     });
   });
+
+  // ---------- hero film: its floor is the hero's, as this browser decodes it (a film and the page's CSS colour
+  // can decode a level apart, and that would show as a box round the stack). Sampled from its top-left corner ----------
+  const heroFilm = document.querySelector('.hero-film');
+  if (heroFilm) heroFilm.addEventListener('loadeddata', () => {
+    const c = document.createElement('canvas'); c.width = c.height = 1;
+    const x = c.getContext('2d', { willReadFrequently: true });
+    x.drawImage(heroFilm, heroFilm.videoWidth * .01, heroFilm.videoHeight * .01, heroFilm.videoWidth * .06, heroFilm.videoHeight * .04, 0, 0, 1, 1);
+    const d = x.getImageData(0, 0, 1, 1).data;
+    heroFilm.closest('.hero-home').style.setProperty('--cl-bg1', `rgb(${d[0]} ${d[1]} ${d[2]})`);
+  }, { once: true });
 
   // ---------- hero initial state (heading lines rise, image fades up, description follows) ----------
   const hero = $('.page > :first-child');
@@ -414,18 +438,23 @@
   const heroWrap = hero ? $('.hero-home .bg-wrap .wrap', hero.parentNode) : null;
   const heroDesc = hero ? $(':scope .desc, :scope [data-hero-desc]', hero) : null;
   const heroJumps = hero ? $$('.hero-business-nav-item', hero) : [];
-  gsap.set(heroLines, { x: -50, yPercent: 100 });
-  if (heroWrap) gsap.set(heroWrap, { opacity: 0, yPercent: 20 });
-  if (heroDesc) gsap.set(heroDesc, { opacity: 0, y: 50 });
-  if (heroJumps.length) gsap.set(heroJumps, { opacity: 0, y: '20%' });
+  // the lines start a fifth past their own height below the mask: the mask is padded for descenders, and at
+  // a whole height the tops of the letters would show through it while they wait. Reduced motion: fades only
+  const HERO = calm
+    ? { lines: { opacity: 0 }, wrap: { opacity: 0 }, desc: { opacity: 0 }, jumps: { opacity: 0 } }
+    : { lines: { x: -50, yPercent: 120 }, wrap: { opacity: 0, yPercent: 20 }, desc: { opacity: 0, y: 50 }, jumps: { opacity: 0, y: '20%' } };
+  gsap.set(heroLines, HERO.lines);
+  if (heroWrap) gsap.set(heroWrap, HERO.wrap);
+  if (heroDesc) gsap.set(heroDesc, HERO.desc);
+  if (heroJumps.length) gsap.set(heroJumps, HERO.jumps);
 
   const heroIn = () => {
-    const tl = gsap.timeline();
+    const tl = gsap.timeline({ defaults: { ease: 'power4.out' } });
     heroLines = heroLinesOf();
-    if (heroLines.length) tl.fromTo(heroLines, { x: -50, yPercent: 100 }, { x: 0, yPercent: 0, stagger: .1 }, 0);
-    if (heroWrap) tl.fromTo(heroWrap, { opacity: 0, yPercent: 20 }, { opacity: 1, yPercent: 0 }, .1);
-    if (heroDesc) tl.fromTo(heroDesc, { opacity: 0, y: 50 }, { opacity: 1, y: 0 }, .5);
-    if (heroJumps.length) tl.fromTo(heroJumps, { opacity: 0, y: '20%' }, { opacity: 1, y: 0, stagger: .2 }, .8);
+    if (heroLines.length) tl.fromTo(heroLines, HERO.lines, { x: 0, yPercent: 0, opacity: 1, stagger: .1 }, 0);
+    if (heroWrap) tl.fromTo(heroWrap, HERO.wrap, { opacity: 1, yPercent: 0 }, .1);
+    if (heroDesc) tl.fromTo(heroDesc, HERO.desc, { opacity: 1, y: 0 }, .5);
+    if (heroJumps.length) tl.fromTo(heroJumps, HERO.jumps, { opacity: 1, y: 0, stagger: .2 }, .8);
     return tl;
   };
 
@@ -464,36 +493,69 @@
   addEventListener('pageshow', e => { if (e.persisted) { gsap.set('.page', { opacity: 1 }); lenis.start(); } });
 
   // ---------- section headings (Heading2) ----------
-  const hideLines = lines => gsap.set(lines, { x: -50, opacity: 0, overwrite: true });
-  const showLines = (lines, delay = 0) => gsap.fromTo(lines, { x: -50, opacity: 0 }, { x: 0, opacity: 1, stagger: .1, delay, overwrite: true });
-  const grouped = '.content-columns .columns [data-split], .entry-solutions .columns [data-split]';
+  // A heading reveals once it is well on screen (15% up from the foot), so the move is seen, not spent below the
+  // fold; it hides again only once it is back off the screen. Left-set headings slide in from the left; centred
+  // ones rise out of a light blur, mask and all (a slide from the side reads off-axis over a centred line).
+  // Reduced motion: fades only.
+  const reveal = (el, show, hide) => {
+    ScrollTrigger.create({ start: at(el, .85), onEnter: show });
+    ScrollTrigger.create({ start: at(el, 1), onLeaveBack: hide });
+  };
+  const SLIDE = calm ? { opacity: 0 } : { x: -50, opacity: 0 };
+  const RISE = calm ? { opacity: 0 } : { y: 24, opacity: 0, filter: 'blur(8px)' };
+  const hideLines = lines => gsap.set(lines, { ...SLIDE, overwrite: true });
+  const showLines = (lines, delay = 0) => gsap.fromTo(lines, SLIDE, { x: 0, opacity: 1, stagger: .1, delay, ease: 'power4.out', overwrite: true });
+  const hideRise = wraps => gsap.set(wraps, { ...RISE, overwrite: true });
+  const showRise = wraps => gsap.fromTo(wraps, RISE, { y: 0, opacity: 1, filter: 'blur(0px)', stagger: .1, ease: 'power4.out', overwrite: true, clearProps: 'filter' });
+  const grouped = '.content-columns .columns [data-split]';
   // (lines are looked up when used: a re-split replaces them)
   $$('[data-split="h2"]').filter(h => !h.matches(grouped)).forEach(h => {
+    if (getComputedStyle(h).textAlign === 'center') {
+      const wraps = () => $$('.line-wrap', h);
+      hideRise(wraps());
+      reveal(h, () => showRise(wraps()), () => hideRise(wraps()));
+      return;
+    }
     const lines = () => $$('.line', h);
     hideLines(lines());
-    ScrollTrigger.create({ trigger: h, start: 'top bottom', onEnter: () => showLines(lines()), onLeaveBack: () => hideLines(lines()) });
+    reveal(h, () => showLines(lines()), () => hideLines(lines()));
   });
-  // column headings stagger in together, .2s apart
-  $$('.content-columns .columns, .entry-solutions .columns').forEach(cols => {
+  // closing: once its heading is in, the line, the actions and the promises rise in after it (blur-in on the
+  // expo-out curve, a beat apart); the stack drifts a touch slower than the page
+  $$('[data-closing]').forEach(sec => {
+    if (calm) return;
+    const items = $$('[data-closing-in]', sec);
+    const hide = () => gsap.set(items, { y: 24, opacity: 0, filter: 'blur(8px)', overwrite: true });
+    hide();
+    reveal($('.heading', sec),
+      () => gsap.to(items, { y: 0, opacity: 1, filter: 'blur(0px)', duration: .9, ease: 'expo.out', stagger: .08, delay: .3, overwrite: true, clearProps: 'filter' }),
+      hide);
+    gsap.fromTo($('[data-closing-object]', sec), { y: -48 }, { y: 32, ease: 'none', scrollTrigger: { trigger: sec, start: 'top bottom', end: 'bottom top', scrub: true } });
+  });
+  // column headings stagger in together, .2s apart; each one's number and words follow it a beat later
+  const FOLLOW = calm ? { opacity: 0 } : { y: 12, opacity: 0 };
+  $$('.content-columns .columns').forEach(cols => {
     const heads = () => $$('[data-split]', cols).map(h => $$('.line', h));
-    heads().forEach(hideLines);
-    ScrollTrigger.create({
-      trigger: cols.closest('.section'), start: 'top bottom',
-      onEnter: () => heads().forEach((lines, i) => showLines(lines, i * .2)),
-      onLeaveBack: () => heads().forEach(hideLines),
-    });
+    const details = $$(':scope > *', cols).map(col => $$(':scope > .step-no, :scope > .desc', col));
+    const hide = () => { heads().forEach(hideLines); details.forEach(d => gsap.set(d, { ...FOLLOW, overwrite: true })); };
+    hide();
+    reveal(cols, () => {
+      heads().forEach((lines, i) => showLines(lines, i * .2));
+      details.forEach((d, i) => gsap.fromTo(d, FOLLOW, { y: 0, opacity: 1, duration: .5, ease: 'power4.out', delay: i * .2 + .1, overwrite: true }));
+    }, hide);
   });
 
   // ---------- rounded sections: scale up as they arrive ----------
-  $$('.rounded-section.shouldAnimate').forEach(rs => {
+  // (the footer is the last card and shorter than half a screen: its top never reaches the middle, so it
+  // finishes as the page does instead)
+  if (!calm) $$('.rounded-section.shouldAnimate').forEach(rs => {   // (reduced motion: they are simply there)
     const sc = $('.rs-scale', rs);
+    const last = rs.classList.contains('ft-card');
     gsap.set(sc, { transformOrigin: 'top center' });
-    const bars = on => rs.classList.toggle('canShowBars', on);
     gsap.fromTo(sc, { scale: .9, y: 100 }, {
       scale: 1, y: 0,
       scrollTrigger: {
-        trigger: rs, start: 'top bottom', end: 'top center', scrub: true,
-        onLeave: () => bars(true), onEnter: () => bars(false), onEnterBack: () => bars(false), onLeaveBack: () => bars(false),
+        trigger: rs, start: 'top bottom', end: last ? 'bottom bottom' : 'top center', scrub: true,
       },
     });
   });
@@ -510,52 +572,14 @@
   addEventListener('resize', () => swipers.forEach(s => { s.params.spaceBetween = rem() * 2.4; s.update(); }));
 
   // entrance: cells slide in from the right with a Y-rotation
-  $$('.carousel1, .article-carousel').forEach(sec => {
+  if (!calm) $$('.article-carousel').forEach(sec => {
     const tl = gsap.timeline({ paused: true });
     $$('.swiper .carousel-cell', sec).forEach((cell, i) => tl.from(cell, { duration: .7, x: innerWidth * .15, rotationY: -15 }, i * .1));
     ScrollTrigger.create({ trigger: sec, start: 'top bottom', toggleActions: 'play none none reset', animation: tl });
   });
 
-  // use-case carousel with 6s autoplay progress
-  const uc = $('.use-cases');
-  if (uc) {
-    const swiper = makeSwiper($('.swiper', uc));
-    swipers.push(swiper);
-    const ctl = $('.carousel-play-controls', uc);
-    const btn = $('button', ctl);
-    const dots = $$('.dot', ctl);
-    const icons = { playing: ['i-pause', 'Pause'], paused: ['i-play', 'Play'], ended: ['i-replay', 'Replay'] };
-    let state = 'paused', tween;
-    const setState = s => {
-      state = s;
-      btn.innerHTML = `<svg class="${s === 'ended' ? 'wide' : ''}"><use href="#${icons[s][0]}"/></svg>`;
-      btn.setAttribute('aria-label', icons[s][1]);
-    };
-    const run = () => {
-      tween && tween.kill();
-      const i = swiper.activeIndex;
-      dots.forEach((d, j) => { d.toggleAttribute('active', j === i); d.toggleAttribute('inactive', j !== i); });
-      tween = gsap.fromTo($('.progress', dots[i]), { scaleX: 0 }, {
-        scaleX: 1, duration: 6, ease: 'none', paused: state !== 'playing',
-        onComplete: () => (i < dots.length - 1 ? swiper.slideTo(i + 1) : setState('ended')),
-      });
-    };
-    swiper.on('slideChange', run);
-    btn.addEventListener('click', () => {
-      if (state === 'playing') { setState('paused'); tween.pause(); }
-      else if (state === 'ended') { setState('playing'); swiper.activeIndex === 0 ? run() : swiper.slideTo(0); }
-      else { setState('playing'); tween.resume(); }
-    });
-    dots.forEach((d, i) => d.addEventListener('click', () => swiper.slideTo(i)));
-    const resume = () => { if (state !== 'ended') { setState('playing'); tween.resume(); } };
-    const pause = () => { if (state === 'playing') { tween.pause(); setState('paused'); } };
-    setState('paused');
-    run();
-    ScrollTrigger.create({ trigger: ctl, start: 'top bottom', end: 'bottom top', onEnter: resume, onEnterBack: resume, onLeave: pause, onLeaveBack: pause });
-  }
-
-  // prev / next carousels (departments on the home page, article carousels on subpages)
-  $$('.departments, .article-carousel').forEach(dp => {
+  // prev / next carousels (the article carousels)
+  $$('.article-carousel').forEach(dp => {
     const swiper = makeSwiper($('.swiper', dp));
     swipers.push(swiper);
     const prev = $('.prev', dp), next = $('.next', dp);
@@ -588,43 +612,26 @@
       .fromTo(firsts, { yPercent: 0 }, { yPercent: -100 }, 0)
       .fromTo(copies, { yPercent: 100 }, { yPercent: 0 }, 0);
     reset();
-    ScrollTrigger.create({ trigger: el, start: 'top 90%', onEnter: roll, onLeaveBack: reset });
+    ScrollTrigger.create({ start: at(el, .9), onEnter: roll, onLeaveBack: reset });
   });
 
-  // ---------- integrations grid ----------
+  // ---------- integrations grid: tiles rise in, left to right ----------
   const gridList = $('.grid1 .content');
-  if (gridList) {
-    gsap.fromTo($$('.grid-item', gridList), { rotationY: -30 }, { rotationY: 0, scrollTrigger: { trigger: gridList, start: 'top bottom', end: 'top center', scrub: true } });
-    // mouse 3d tilt (amount 20, lerp .05) plus a pan: the wordmark glides toward the
-    // cursor inside the tile, like looking around through a window
-    $$('.grid-item-brand', gridList).forEach(tile => {
-      const target = $('.m3d', tile);
-      const mark = $('.wm', tile);
-      const s = { x: 0, y: 0, tx: 0, ty: 0, w: 0, h: 0 };
-      tile.addEventListener('mousemove', e => {
-        const r = tile.getBoundingClientRect();
-        s.w = r.width; s.h = r.height;
-        s.tx = (e.clientX - r.left) / r.width - .5;
-        s.ty = (e.clientY - r.top) / r.height - .5;
-      });
-      tile.addEventListener('mouseleave', () => { s.tx = 0; s.ty = 0; });
-      gsap.ticker.add(() => {
-        s.x += (s.tx - s.x) * .05;
-        s.y += (s.ty - s.y) * .05;
-        if (Math.abs(s.x) < 1e-4 && Math.abs(s.y) < 1e-4 && !s.tx && !s.ty) return;
-        target.style.transform = `perspective(1000px) rotateY(${s.x * 20}deg) rotateX(${-s.y * 20}deg) translate3d(${s.x * s.w * .06}px, ${s.y * s.h * .06}px, 0)`;
-        mark.style.transform = `translate3d(${s.x * s.w * .22}px, ${s.y * s.h * .3}px, 0)`;
-      });
-    });
+  if (gridList && !calm) {
+    gsap.from($$('.grid-item', gridList), { y: 24, opacity: 0, duration: .6, ease: 'power2.out', stagger: .06, scrollTrigger: { start: at(gridList, .85), toggleActions: 'play none none reverse' } });
   }
 
-  // ---------- laptop mock: on narrow screens lay the app out at its desktop width, then scale it to fit ----------
-  $$('.laptop .app, [data-fit-always] .app').forEach(app => {
-    const base = parseFloat(app.dataset.baseWidth || 86.5);   // the app's width inside the laptop at 1440px, in rem
+  // ---------- pipeline: the two lanes draw in when the diagram arrives (CSS does the motion) ----------
+  if (!calm) $$('[data-pipeline]').forEach(pl => {
+    pl.classList.add('is-armed');
+    ScrollTrigger.create({ start: at(pl, .8), onEnter: () => pl.classList.add('is-in'), onLeaveBack: () => pl.classList.remove('is-in') });
+  });
+
+  // ---------- framed app mock-ups: lay the app out at its desktop width, then scale it to fit the frame ----------
+  $$('[data-fit-always] .app').forEach(app => {
+    const base = parseFloat(app.dataset.baseWidth || 86.5);   // the app's layout width, in rem
     const fitApp = () => {
       app.style.cssText = '';
-      const box = app.closest('[data-fit-always]');
-      if (!mq.matches && !box) return;
       const w = app.offsetWidth, h = app.offsetHeight;
       const s = w / (base * rem());
       app.style.cssText = 'width:' + w / s + 'px;height:' + h / s + 'px;transform:scale(' + s + ');transform-origin:0 0';
@@ -633,26 +640,12 @@
     addEventListener('resize', fitApp);
   });
 
-  // ---------- hero jump rows: hovering a row shows its picture (2 x 2 grid: the other rows dim) ----------
+  // ---------- hero jump rows: the row under the pointer lights (2 x 2 grid: the other rows dim) ----------
   $$('.hero-services-nav-item, .hero-business-nav-item').forEach(item => {
     const scope = item.closest('.section');
-    const pic = scope && $(`.bg .wrap[data-idx="${item.dataset.idx}"]`, scope);
     const others = item.classList.contains('hero-business-nav-item') ? $$('.hero-business-nav-item', scope).filter(o => o !== item) : [];
-    item.addEventListener('mouseenter', () => { item.classList.add('hovering'); item.classList.remove('disabled'); others.forEach(o => o.classList.add('disabled')); pic?.classList.add('is-hovering'); });
-    item.addEventListener('mouseleave', () => { item.classList.remove('hovering'); others.forEach(o => o.classList.remove('disabled')); pic?.classList.remove('is-hovering'); });
-  });
-
-  // ---------- example cards: the grid straightens as it scrolls in, every other card rises ----------
-  $$('.article-grid-cards .grid').forEach(grid => {
-    const cells = $$('.animate-in', grid);
-    const cols = getComputedStyle(grid).gridTemplateColumns.split(' ').length;
-    const raised = cols % 2 === 0
-      ? cells.filter((c, i) => i % 2 === 0)
-      : cells.filter((c, i) => { const u = i % (cols * 2); return u < cols ? u % 2 === 0 : u % 2 === 1; });
-    if (calm) return;
-    const tl = gsap.timeline({ scrollTrigger: { trigger: grid, start: 'top bottom', end: 'top center', scrub: true } });
-    tl.fromTo(raised, { y: '50%' }, { y: 0, ease: 'power1.inOut' }, 0)
-      .fromTo(cells, { rotationY: -30 }, { rotationY: 0, ease: 'power1.inOut' }, 0);
+    item.addEventListener('pointerenter', e => { if (!byMouse(e)) return; item.classList.add('hovering'); item.classList.remove('disabled'); others.forEach(o => o.classList.add('disabled')); });
+    item.addEventListener('pointerleave', () => { item.classList.remove('hovering'); others.forEach(o => o.classList.remove('disabled')); });
   });
 
   // ---------- article nav: light the section being read ----------
@@ -783,8 +776,8 @@
     links[0]?.setAttribute('active', '');
   });
 
-  // ---------- page modules (library filters, guide contents) register here ----------
-  (window.reclaimModules || []).forEach(fn => fn({ $, $$, gsap, ScrollTrigger, lenis, rem, calm }));
+  // ---------- page modules (the walkthrough, what Reclaim finds) register here ----------
+  (window.reclaimModules || []).forEach(fn => fn({ $, $$, gsap, ScrollTrigger, lenis, rem, calm, at, docTop }));
 
   // ---------- boot: wait for fonts, then intro → hero ----------
   const boot = async () => {

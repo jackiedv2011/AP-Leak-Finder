@@ -17,6 +17,7 @@ import { entitlementsFor, isPlan, monthStart, planOf, PLAN_LIMITS, type Plan } f
 import { checkRepeat, repeatMessage, rowFingerprint } from './uploads.ts'
 import { authorizedDraftFacts } from './caseFacts.ts'
 import { createGmailClient, createGmailRoutes, type GmailClient } from './gmail.ts'
+import { OnboardingProfileSchema } from './onboarding.ts'
 
 const SESSION_COOKIE = 'reclaim_session'
 const OAUTH_STATE_COOKIE = 'reclaim_oauth_state'
@@ -436,6 +437,15 @@ export function createApp(deps: AppDependencies): App {
     if (path === '/api/account/onboarding-seen' && method === 'POST') {
       const user = requireUser(req)
       auth.markOnboardingSeen(user.id)
+      return json(200, { user: publicUser(auth.findUserById(user.id)!) })
+    }
+
+    if (path === '/api/account/onboarding' && method === 'POST') {
+      const user = requireUser(req)
+      requireJson(req)
+      const parsed = OnboardingProfileSchema.safeParse(await req.json())
+      if (!parsed.success) throw new HttpError(400, 'Some onboarding answers were not recognised.', 'validation')
+      auth.saveOnboarding(user.id, parsed.data)
       return json(200, { user: publicUser(auth.findUserById(user.id)!) })
     }
 
