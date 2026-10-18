@@ -44,7 +44,8 @@ export function toAuthUser(user: ServerUser): AuthUser {
   return { ...user, isGuest: false }
 }
 
-async function call<T>(path: string, init: RequestInit & { json?: unknown } = {}): Promise<{ status: number; body: T }> {
+/** Same-origin JSON call through the current fetch (tests swap it via setFetch). */
+export async function call<T>(path: string, init: RequestInit & { json?: unknown } = {}): Promise<{ status: number; body: T }> {
   const headers = new Headers(init.headers)
   if (init.json !== undefined) headers.set('Content-Type', 'application/json')
   const res = await fetchImpl(path, { ...init, headers, credentials: 'same-origin', body: init.json !== undefined ? JSON.stringify(init.json) : init.body })

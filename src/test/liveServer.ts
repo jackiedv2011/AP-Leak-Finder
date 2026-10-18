@@ -2,6 +2,7 @@ import { createApp, type App } from '../../server/app.ts'
 import { loadConfig } from '../../server/config.ts'
 import { openDatabase } from '../../server/db.ts'
 import { DevMailer } from '../../server/mailer.ts'
+import type { FakeStripe } from '../../server/fakeStripe.ts'
 import { setFetch as setAuthFetch } from '@/lib/auth/apiAuthService'
 import { projectSync } from '@/ledger/projectSync'
 
@@ -19,13 +20,18 @@ export interface LiveServer {
   inbox(email: string): Promise<Array<{ subject: string; link: string | null }>>
   tokenFrom(link: string | null): string
   newBrowser(): void
+  /** Delivers the fake Stripe's queued events to the webhook, signed (needs `stripe`). */
+  deliverStripeEvents(): Promise<void>
   close(): Promise<void>
 }
 
-export async function startLiveServer(): Promise<LiveServer> {
-  const config = loadConfig({ NODE_ENV: 'test', DATABASE_PATH: ':memory:', APP_ORIGIN: 'http://localhost:0' })
+export const LIVE_WEBHOOK_SECRET = 'whsec_live_test'
+
+export async function startLiveServer(options: { stripe?: FakeStripe } = {}): Promise<LiveServer> {
+  const stripeEnv = options.stripe ? { STRIPE_SECRET_KEY: 'sk_test_unused', STRIPE_WEBHOOK_SECRET: LIVE_WEBHOOK_SECRET } : {}
+  const config = loadConfig({ NODE_ENV: 'test', DATABASE_PATH: ':memory:', APP_ORIGIN: 'http://localhost:0', ...stripeEnv })
   const db = openDatabase(':memory:')
-  const app = createApp({ config, db, mailer: new DevMailer(db), google: null, drafts: null })
+  const app = createApp({ config, db, mailer: new DevMailer(db), google: null, drafts: null, stripe: options.stripe ?? null })
   const port = await app.listen(0)
   const base = `http://127.0.0.1:${port}`
   let jar = new Map<string, string>()
@@ -66,6 +72,13 @@ export async function startLiveServer(): Promise<LiveServer> {
     tokenFrom: (link) => new URL(link!).searchParams.get('token')!,
     newBrowser() {
       jar = new Map()
+    },
+    async deliverStripeEvents() {
+      for (const { body, signature } of options.stripe?.drainSigned(LIVE_WEBHOOK_SECRET) ?? []) {
+        const res = await fetch(`${base}/api/billing/webhook`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Stripe-Signature': signature }, body })
+        if (res.status !== 200) throw new Error(`webhook refused: ${res.status}`)
+      }
+      await app.billingIdle()
     },
     async close() {
       await app.close()

@@ -32,6 +32,12 @@ export interface ServerConfig {
    * it only means customers reconnect.
    */
   quickbooks: { clientId: string; clientSecret: string; tokenKey: Buffer } | null
+  /**
+   * Stripe billing (server/billing.ts). Both are secrets. The webhook secret
+   * (whsec_…) comes from the dashboard endpoint or `stripe listen`; without it
+   * the webhook refuses every event.
+   */
+  stripe: { secretKey: string; webhookSecret: string | null } | null
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): ServerConfig {
@@ -65,6 +71,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): ServerConfig {
     // become an account-takeover endpoint; DEV_MAILBOX=true opts in explicitly.
     devMailbox: !production && (env.DEV_MAILBOX === 'true' || (env.DEV_MAILBOX !== 'false' && isLocalOrigin(appOrigin))),
     quickbooks: quickbooksConfig(env),
+    stripe: env.STRIPE_SECRET_KEY?.trim() ? { secretKey: env.STRIPE_SECRET_KEY.trim(), webhookSecret: env.STRIPE_WEBHOOK_SECRET?.trim() || null } : null,
   }
 }
 
@@ -98,6 +105,11 @@ function productionProblems(env: NodeJS.ProcessEnv, appOrigin: string): string[]
   const qbo = ['QBO_CLIENT_ID', 'QBO_CLIENT_SECRET', 'QBO_TOKEN_KEY']
   const missing = qbo.filter((name) => !set(name))
   if (missing.length && missing.length < qbo.length) problems.push(`QuickBooks is half configured: ${missing.join(', ')} missing. Set all three QBO_* values, or none.`)
+
+  // Without the webhook secret Stripe's events are refused, so renewals,
+  // failed payments and cancellations would never reach users.plan.
+  if (set('STRIPE_SECRET_KEY') !== set('STRIPE_WEBHOOK_SECRET')) problems.push('Set both STRIPE_SECRET_KEY and STRIPE_WEBHOOK_SECRET, or neither.')
+  if (set('STRIPE_SECRET_KEY') && !/^(sk|rk)_(test|live)_/.test(env.STRIPE_SECRET_KEY!.trim())) problems.push('STRIPE_SECRET_KEY must be a Stripe secret key (sk_test_… or sk_live_…), never the publishable key.')
 
   return problems
 }

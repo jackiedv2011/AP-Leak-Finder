@@ -14,6 +14,8 @@ import { createQuickBooksClient, pullLedger, toLedgerImport, QuickBooksReconnect
 import { entitlementsFor, isPlan, monthStart, planOf, PLAN_LIMITS, type Plan } from './plans.ts'
 import { checkRepeat, repeatMessage, rowFingerprint } from './uploads.ts'
 import { authorizedDraftFacts } from './caseFacts.ts'
+import { createBilling } from './billing.ts'
+import { createStripeClient, type StripeApi } from './stripe.ts'
 
 const SESSION_COOKIE = 'reclaim_session'
 const OAUTH_STATE_COOKIE = 'reclaim_oauth_state'
@@ -27,6 +29,8 @@ export interface AppDependencies {
   google?: GoogleClient | null
   drafts?: DraftService | null
   quickbooks?: QuickBooksClient | null
+  /** Stripe (tests pass FakeStripe). Defaults to the REST client when STRIPE_SECRET_KEY is set. */
+  stripe?: StripeApi | null
   /** Directory of built static files to serve alongside the API (production). */
   staticDir?: string | null
 }
@@ -36,6 +40,8 @@ export interface App {
   db: DatabaseSync
   auth: AuthService
   mailer: Mailer
+  /** Resolves when background success-fee billing has caught up (tests). */
+  billingIdle(): Promise<void>
   listen(port?: number): Promise<number>
   close(): Promise<void>
 }
@@ -126,6 +132,7 @@ export function createApp(deps: AppDependencies): App {
   const limit = (limiter: RateLimiter, key: string) => {
     if (!limiter.check(key)) throw new HttpError(429, 'Too many attempts. Wait a minute and try again.', 'rate_limited')
   }
+  const billing = createBilling({ db, auth, requireUser, stripe: deps.stripe !== undefined ? deps.stripe : config.stripe ? createStripeClient(config.stripe.secretKey) : null, webhookSecret: config.stripe?.webhookSecret ?? null })
 
   // QuickBooks Online (sandbox, read-only). Tokens are sealed at rest under a
   // key from the environment; they are never logged and never sent to the browser.
@@ -390,6 +397,10 @@ export function createApp(deps: AppDependencies): App {
       return json(200, { ok: true })
     }
 
+    // ---------- billing (server/billing.ts) ----------
+    const billed = await billing.route(req)
+    if (billed) return billed
+
     // ---------- plan / entitlements ----------
     if (path === '/api/account/entitlements' && method === 'GET') {
       const user = requireUser(req)
@@ -445,6 +456,7 @@ export function createApp(deps: AppDependencies): App {
       if (isNew) recordAuditStart(user.id, project.id as string)
       upsertProject(db, user.id, project)
       rememberUpload(user.id, project.id as string, fingerprints)
+      billing.recordRecoveries(user.id, project)
       return json(200, { ok: true })
     }
     if (projectMatch && method === 'DELETE') {
@@ -488,6 +500,7 @@ export function createApp(deps: AppDependencies): App {
         recordAuditStart(user.id, id)
         upsertProject(db, user.id, project)
         rememberUpload(user.id, id, fingerprints)
+        billing.recordRecoveries(user.id, project, { imported: true })
         imported.push(id)
       }
       return json(200, { imported, skipped, blocked })
@@ -560,6 +573,7 @@ export function createApp(deps: AppDependencies): App {
     db,
     auth,
     mailer,
+    billingIdle: () => billing.idle(),
     listen(port = config.port) {
       return new Promise((resolve) => server.listen(port, () => resolve((server.address() as { port: number }).port)))
     },

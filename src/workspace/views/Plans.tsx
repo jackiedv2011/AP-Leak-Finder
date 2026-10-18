@@ -35,6 +35,11 @@ export function Plans({ onStartAudit }: { onStartAudit: () => void }) {
 
   const continueWith = (plan: Plan) => {
     if (plan === 'free') {
+      // Leaving a paid plan is a cancellation, which Settings handles (access runs to the period's end).
+      if (current !== 'free') {
+        window.location.href = '/audit?mode=settings'
+        return
+      }
       setFreeConfirmed(true)
       return
     }

@@ -19,6 +19,12 @@ interface AuthContextValue {
   /** The server's statement of what this account may do. Guests get Free limits locally. */
   entitlements: Entitlements | null
   refreshEntitlements: () => Promise<Entitlements | null>
+  /**
+   * Re-read the account and its entitlements from the server — after a plan
+   * change, and on its own when the tab regains focus, so a plan that ended
+   * (a cancelled period, a failed payment) locks without a reload.
+   */
+  refreshAccount: () => Promise<void>
   markOnboardingSeen: () => Promise<void>
   /** Development only: flip the account's plan. */
   setDevPlan: (plan: Plan) => Promise<void>
@@ -62,6 +68,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (mounted.current && next) setEntitlements(next)
     return next
   }, [])
+
+  const signedInId = user && !user.isGuest ? user.id : null
+  const refreshAccount = useCallback(async () => {
+    const [next, ent] = await Promise.all([api.getSession(), api.fetchEntitlements()])
+    if (!mounted.current || !next || next.id !== signedInId) return
+    // Same object when nothing changed, so the workspace doesn't re-render for nothing.
+    setUser((prev) => (prev && JSON.stringify(prev) === JSON.stringify(next) ? prev : next))
+    if (ent) setEntitlements((prev) => (prev && JSON.stringify(prev) === JSON.stringify(ent) ? prev : ent))
+  }, [signedInId])
+
+  useEffect(() => {
+    if (!signedInId) return
+    const onFocus = () => {
+      if (document.visibilityState !== 'hidden') void refreshAccount()
+    }
+    window.addEventListener('focus', onFocus)
+    document.addEventListener('visibilitychange', onFocus)
+    const timer = window.setInterval(onFocus, 5 * 60 * 1000)
+    return () => {
+      window.removeEventListener('focus', onFocus)
+      document.removeEventListener('visibilitychange', onFocus)
+      window.clearInterval(timer)
+    }
+  }, [signedInId, refreshAccount])
 
   useEffect(() => {
     mounted.current = true
@@ -187,6 +217,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       providers,
       entitlements,
       refreshEntitlements,
+      refreshAccount,
       markOnboardingSeen,
       setDevPlan,
       signUp,
@@ -198,7 +229,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       requestPasswordReset: api.requestPasswordReset,
       resetPassword,
     }),
-    [user, status, providers, entitlements, refreshEntitlements, markOnboardingSeen, setDevPlan, signUp, verifyEmail, logIn, continueAsGuest, logOut, resetPassword]
+    [user, status, providers, entitlements, refreshEntitlements, refreshAccount, markOnboardingSeen, setDevPlan, signUp, verifyEmail, logIn, continueAsGuest, logOut, resetPassword]
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
