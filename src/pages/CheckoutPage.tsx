@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { CardElement, Elements, useElements, useStripe } from '@stripe/react-stripe-js'
 import type { StripeCardElementChangeEvent, StripeCardElementOptions } from '@stripe/stripe-js'
 import { ArrowLeft, BadgeCheck, Check, CreditCard, Lock, ShieldCheck } from 'lucide-react'
@@ -39,7 +39,7 @@ interface Receipt {
   last4: string
 }
 
-function PaymentForm({ plan, email, defaultName, onDone }: { plan: PaidPlan; email: string; defaultName: string; onDone: (r: Receipt) => void }) {
+function PaymentForm({ plan, email, defaultName, theme, onDone }: { plan: PaidPlan; email: string; defaultName: string; theme: string; onDone: (r: Receipt) => void }) {
   const { refreshAccount } = useAuth()
   const stripe = useStripe()
   const elements = useElements()
@@ -52,7 +52,10 @@ function PaymentForm({ plan, email, defaultName, onDone }: { plan: PaidPlan; ema
   const [submitted, setSubmitted] = useState(false)
   const [busy, setBusy] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
-  const options = useMemo(cardOptions, [])
+  // Read after mount (and on a theme change): before that the themed wrapper isn't in the page,
+  // and the card field would get the light theme's text colour on a dark page.
+  const [options, setOptions] = useState<StripeCardElementOptions>(cardOptions)
+  useEffect(() => setOptions(cardOptions()), [theme])
 
   const errors = {
     name: !name.trim() ? 'Enter the name on the card.' : null,
@@ -265,7 +268,7 @@ function Summary({ plan }: { plan: PaidPlan }) {
  */
 export function CheckoutPage() {
   const { user, status } = useAuth()
-  useTheme()
+  const { resolved: theme } = useTheme()
   const plan = planFromUrl()
   const [stripePromise] = useState(getStripe)
   const [receipt, setReceipt] = useState<Receipt | null>(null)
@@ -350,7 +353,7 @@ export function CheckoutPage() {
             <SwitchPlan plan={plan} current={current} onDone={() => setSwitched(true)} />
           ) : (
             <Elements stripe={stripePromise}>
-              <PaymentForm plan={plan} email={user.email} defaultName={user.name} onDone={setReceipt} />
+              <PaymentForm plan={plan} email={user.email} defaultName={user.name} theme={theme} onDone={setReceipt} />
             </Elements>
           )}
         </section>
