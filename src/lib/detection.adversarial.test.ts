@@ -309,6 +309,42 @@ describe('Rule 2 — near duplicates', () => {
     expect(near[0].explanation).toContain('within 45 days')
   })
 
+  it('FP: a twice-weekly standing order, each delivery with its own invoice, is recurring', () => {
+    const deliveries = Array.from({ length: 16 }, (_, i) =>
+      rec({ vendor: 'Sunrise Bakery', invoiceNumber: `SB${String(i + 1).padStart(4, '0')}`, amountPaid: 186.4, paymentDate: d(2025, 1, 7 + Math.floor(i / 2) * 7 + (i % 2) * 3) })
+    )
+    const result = detectFindings(deliveries)
+    expect(ofType(result.findings, 'near_duplicate')).toHaveLength(0)
+    expect(result.recurringSeries).toHaveLength(1)
+  })
+
+  it('FP: fuel fill-ups at the same few prices, no reference and no schedule, are routine', () => {
+    const fortyDays = [2, 4, 13, 14, 31, 33, 52, 70, 71]
+    const seventyFiveDays = [5, 6, 20, 41, 44, 45, 66, 90]
+    const fills = [
+      ...fortyDays.map((n) => rec({ vendor: 'Chevron', amountPaid: 40, paymentDate: d(2025, 1, n) })),
+      ...seventyFiveDays.map((n) => rec({ vendor: 'Chevron', amountPaid: 75, paymentDate: d(2025, 1, n) })),
+    ]
+    const result = detectFindings(fills)
+    expect(ofType(result.findings, 'near_duplicate')).toHaveLength(0)
+    expect(result.recurringSeries).toHaveLength(0)
+  })
+
+  it('POS: an unusual amount charged twice at a vendor with routine prices is still caught', () => {
+    const fills = [2, 9, 16, 21, 30].map((n) => rec({ vendor: 'Chevron', amountPaid: 40, paymentDate: d(2025, 1, n) }))
+    const repair = rec({ vendor: 'Chevron', amountPaid: 312.48, paymentDate: d(2025, 1, 12) })
+    const again = rec({ vendor: 'Chevron', amountPaid: 312.48, paymentDate: d(2025, 1, 13) })
+    const near = ofType(run([...fills, repair, again]), 'near_duplicate')
+    expect(near).toHaveLength(1)
+    expect(near[0].relatedRecords.map((r) => r.id)).toEqual([repair.id, again.id])
+  })
+
+  it('NEG (accepted trade-off): a routine price charged twice in a row is not flagged', () => {
+    const fills = [2, 4, 13, 31, 52].map((n) => rec({ vendor: 'Chevron', amountPaid: 40, paymentDate: d(2025, 1, n) }))
+    const doubled = rec({ vendor: 'Chevron', amountPaid: 40, paymentDate: d(2025, 1, 14) })
+    expect(ofType(run([...fills, doubled]), 'near_duplicate')).toHaveLength(0)
+  })
+
   it('POS: a bill paid by check and again by card with no reference is caught', () => {
     const card = rec({ vendor: 'Hicks Hardware', amountPaid: 228.75, paymentDate: d(2026, 9, 19) })
     const near = ofType(
