@@ -1,0 +1,499 @@
+/* Onboarding — one frame for eight steps (see Onboarding.tsx).
+ *
+ * It wears the workspace's tokens (reclaim.css), so light and dark, the accent and
+ * the type all match the dashboard it leads into. Two rules keep it calm:
+ *   - green is spent twice per screen at most: the glossy object in the 3D, and the
+ *     button that moves you on. Selection is shown in ink (the text colour), not green.
+ *   - the frame never moves: brand and progress on top, Back and the answer button at
+ *     the bottom. Only the stage's distance and the question change between steps.
+ */
+
+.wk.ob {
+  --ob-display: 'Barlow Condensed', 'Anton', ui-sans-serif, system-ui, sans-serif;
+  --ob-col: 720px;
+  position: relative;
+  display: flex;
+  min-height: 100dvh;
+  flex-direction: column;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--f-text);
+  -webkit-font-smoothing: antialiased;
+}
+.wk.ob[data-zoom='cards'] { --ob-col: 900px; }
+.wk.ob[data-zoom='wide'] { --ob-col: 1040px; }
+.wk.ob[data-zoom='finale'] { --ob-col: 1120px; }
+
+/* ---------- top: brand, progress, theme and skip (same bar as Launch, the next screen) ---------- */
+.wk.ob .ob-top {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 16px;
+  min-height: 60px;
+  padding: 0 var(--gutter);
+  border-bottom: 1px solid var(--line);
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: blur(12px);
+}
+.wk.ob .ob-brand { display: inline-flex; align-items: center; gap: 9px; color: var(--text); }
+.wk.ob .ob-brand svg { width: 22px; height: 20px; fill: currentColor; }
+.wk.ob .ob-brand b { font-size: 19px; font-weight: 650; letter-spacing: -.045em; }
+.wk.ob .ob-top-actions { display: flex; align-items: center; justify-content: flex-end; gap: 6px; }
+.wk.ob .ob-skip {
+  height: 32px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: var(--r-sm);
+  background: none;
+  color: var(--text-muted);
+  font: 500 13px var(--f-text);
+  cursor: pointer;
+}
+.wk.ob .ob-skip:hover { background: var(--bg-deep); color: var(--text); }
+
+.wk.ob .ob-progress { display: flex; align-items: center; gap: 14px; }
+.wk.ob .ob-progress ol { display: flex; gap: 4px; margin: 0; padding: 0; list-style: none; }
+.wk.ob .ob-progress li {
+  position: relative;
+  width: 26px;
+  height: 3px;
+  overflow: hidden;
+  border-radius: 2px;
+  background: var(--line-strong);
+}
+.wk.ob .ob-progress li::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--text);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform var(--t-slow) var(--ease-out);
+}
+.wk.ob .ob-progress li[data-state='done']::after,
+.wk.ob .ob-progress li[data-state='current']::after { transform: scaleX(1); }
+.wk.ob .ob-progress li[data-state='done']::after { opacity: .55; }
+.wk.ob .ob-count {
+  min-width: 82px;
+  color: var(--text-muted);
+  font: 500 11.5px var(--f-mono);
+  letter-spacing: .075em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* ---------- main column ---------- */
+.wk.ob .ob-main {
+  position: relative;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  padding: 0 var(--gutter);
+}
+.wk.ob .ob-step {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  width: min(var(--ob-col), 100%);
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  margin: auto 0;
+  padding: clamp(20px, 5vh, 56px) 0 28px;
+  text-align: center;
+}
+
+/* every step arrives the same way: a short rise and fade, children a beat apart */
+@keyframes ob-in {
+  from { opacity: 0; transform: translateY(var(--ob-shift, 14px)); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes ob-fade { from { opacity: 0; } to { opacity: 1; } }
+.wk.ob .ob-step > * { animation: ob-in 560ms var(--ease-out) both; }
+.wk.ob .ob-step[data-dir='back'] { --ob-shift: -14px; }
+.wk.ob .ob-step > :nth-child(2) { animation-delay: 45ms; }
+.wk.ob .ob-step > :nth-child(3) { animation-delay: 90ms; }
+.wk.ob .ob-step > :nth-child(4) { animation-delay: 135ms; }
+.wk.ob .ob-step > :nth-child(5) { animation-delay: 180ms; }
+.wk.ob .ob-step > :nth-child(n + 6) { animation-delay: 220ms; }
+.wk.ob .ob-step > .ob-stage { animation: ob-fade 700ms ease both; }
+
+.wk.ob .ob-head { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.wk.ob .ob-kicker {
+  color: var(--text-muted);
+  font: 500 12px var(--f-mono);
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.wk.ob .ob-title {
+  max-width: 18ch;
+  margin: 0;
+  outline: none;
+  font-family: var(--ob-display);
+  font-size: clamp(38px, 4.6vw, 64px);
+  font-weight: 700;
+  line-height: .92;
+  letter-spacing: 0;
+  text-transform: uppercase;
+  text-wrap: balance;
+}
+.wk.ob[data-zoom='hero'] .ob-title { max-width: 15ch; font-size: clamp(42px, 5.6vw, 76px); }
+.wk.ob[data-zoom='wide'] .ob-title,
+.wk.ob[data-zoom='cards'] .ob-title,
+.wk.ob[data-zoom='stage'] .ob-title { max-width: 22ch; }
+.wk.ob .ob-lede {
+  max-width: 52ch;
+  margin: 0;
+  color: var(--text-dim);
+  font-size: 17px;
+  line-height: 1.5;
+  text-wrap: pretty;
+}
+.wk.ob .ob-meta { margin: 4px 0 0; color: var(--text-muted); font-size: 13.5px; }
+.wk.ob .ob-note {
+  max-width: 62ch;
+  margin: 8px 0 0;
+  padding: 11px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  color: var(--text-muted);
+  font-size: 13.5px;
+  line-height: 1.5;
+  text-align: left;
+}
+.wk.ob .ob-note a { color: var(--text); text-decoration: underline; text-underline-offset: 2px; }
+
+/* ---------- the stage: one 3D loop at three distances ---------- */
+.wk.ob .ob-stage { position: relative; flex: none; pointer-events: none; }
+.wk.ob .ob-stage[data-size='hero'] { width: min(440px, 72vw, 46vh); aspect-ratio: 1; margin: -12px 0 -34px; }
+.wk.ob .ob-stage[data-size='stage'] { width: min(250px, 56vw, 28vh); aspect-ratio: 1; margin: -10px 0 -18px; }
+.wk.ob .ob-stage[data-size='wide'] { width: 100%; aspect-ratio: 1440 / 640; }
+.wk.ob .ob-reel { display: block; width: 100%; height: 100%; object-fit: contain; }
+/* loops whose pieces enter from outside the frame: fade the box edge so they arrive, not appear */
+.wk.ob .ob-soft,
+.wk.ob .ob-card-reel {
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 9%, #000 91%, transparent), linear-gradient(to bottom, transparent, #000 9%, #000 91%, transparent);
+  -webkit-mask-composite: source-in;
+  mask-image: linear-gradient(to right, transparent, #000 9%, #000 91%, transparent), linear-gradient(to bottom, transparent, #000 9%, #000 91%, transparent);
+  mask-composite: intersect;
+}
+
+/* wide: three places, each labelled under its third of the picture */
+/* the picture and its labels share one width, capped by height, so each label stays under its third */
+.wk.ob .ob-wide { display: flex; width: min(100%, calc(42vh * 2.25)); flex-direction: column; align-items: center; margin-top: 0; }
+.wk.ob .ob-thirds {
+  display: grid;
+  width: 100%;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 28px;
+  margin: -6px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.wk.ob .ob-third { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 0 6px; }
+.wk.ob .ob-third-n { color: var(--text-muted); font: 500 11px var(--f-mono); letter-spacing: .08em; }
+.wk.ob .ob-third strong { font-size: 16px; font-weight: 600; letter-spacing: -.01em; }
+.wk.ob .ob-third p { max-width: 34ch; margin: 2px 0 0; color: var(--text-muted); font-size: 14px; line-height: 1.5; text-wrap: pretty; }
+
+/* finale: the stage fills the screen behind the words */
+.wk.ob .ob-finale-stage { position: absolute; inset: 0; z-index: 0; pointer-events: none; animation: ob-fade 900ms ease both; }
+.wk.ob .ob-reel-layer { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 72% 50%; }
+.wk.ob[data-zoom='finale'] .ob-step { align-items: flex-start; text-align: left; }
+.wk.ob[data-zoom='finale'] .ob-step > * { max-width: 540px; }
+.wk.ob[data-zoom='finale'] .ob-head { align-items: flex-start; }
+.wk.ob[data-zoom='finale'] .ob-title { max-width: 13ch; }
+.wk.ob[data-zoom='finale'] .ob-field { width: 100%; }
+
+/* ---------- choice cards (goals, autonomy): each carries its own small loop ---------- */
+.wk.ob .ob-cards { display: grid; width: 100%; gap: 12px; margin-top: 10px; }
+.wk.ob .ob-cards[data-count='4'] { grid-template-columns: repeat(4, 1fr); }
+.wk.ob .ob-cards[data-count='3'] { grid-template-columns: repeat(3, 1fr); }
+.wk.ob .ob-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 14px 16px 20px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color var(--t-fast) ease, box-shadow var(--t-fast) ease, transform var(--t-med) var(--ease-out);
+}
+.wk.ob .ob-card:hover { border-color: var(--line-strong); transform: translateY(-2px); }
+.wk.ob .ob-card:active { transform: translateY(0) scale(.99); }
+.wk.ob .ob-card[data-on] { border-color: var(--text); box-shadow: 0 0 0 1px var(--text); }
+.wk.ob .ob-card:focus-visible,
+.wk.ob .ob-tool:focus-visible,
+.wk.ob .ob-chip:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
+.wk.ob .ob-card-art { display: block; width: min(150px, 100%); aspect-ratio: 1; margin: -4px 0 0; }
+.wk.ob .ob-card-reel { display: block; width: 100%; height: 100%; object-fit: contain; }
+.wk.ob .ob-card-text { display: flex; flex-direction: column; gap: 5px; }
+.wk.ob .ob-card-text strong { font-size: 15px; font-weight: 600; letter-spacing: -.01em; }
+.wk.ob .ob-card-text small { color: var(--text-muted); font-size: 13px; line-height: 1.45; }
+.wk.ob .ob-badge {
+  position: absolute;
+  top: 11px;
+  left: 11px;
+  padding: 3px 7px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface-hi);
+  color: var(--text-muted);
+  font: 500 10px var(--f-mono);
+  letter-spacing: .07em;
+  text-transform: uppercase;
+}
+.wk.ob .ob-tick {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  flex: none;
+  border: 1.5px solid var(--line-strong);
+  border-radius: 999px;
+  color: var(--bg);
+  transition: background-color var(--t-fast) ease, border-color var(--t-fast) ease;
+}
+.wk.ob .ob-tick svg { width: 12px; height: 12px; stroke-width: 3; }
+.wk.ob .ob-card .ob-tick { position: absolute; top: 11px; right: 11px; }
+.wk.ob [data-on] > .ob-tick { border-color: var(--text); background: var(--text); }
+
+/* ---------- fields and chips (business, purpose) ---------- */
+.wk.ob .ob-fields { display: grid; width: min(680px, 100%); grid-template-columns: 1fr 1fr; gap: 16px 14px; margin-top: 6px; text-align: left; }
+.wk.ob .ob-fields > [data-wide] { grid-column: 1 / -1; }
+.wk.ob .ob-field { display: flex; flex-direction: column; gap: 7px; text-align: left; }
+.wk.ob .ob-field > span { color: var(--text-dim); font-size: 13.5px; font-weight: 500; }
+.wk.ob .ob-field .wk-input {
+  width: 100%;
+  height: 46px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 15px;
+}
+.wk.ob .ob-field .wk-input::placeholder { color: var(--text-muted); opacity: .8; }
+.wk.ob .ob-field .wk-input:focus { border-color: var(--text-dim); outline: none; box-shadow: 0 0 0 3px color-mix(in srgb, var(--text) 12%, transparent); }
+.wk.ob .ob-field .ob-textarea { height: auto; min-height: 110px; padding: 12px 14px; line-height: 1.5; resize: vertical; }
+.wk.ob .ob-field-inline { width: min(640px, 100%); margin-top: 4px; }
+
+.wk.ob .ob-chips,
+.wk.ob .ob-suggest { display: flex; flex-wrap: wrap; gap: 8px; }
+.wk.ob .ob-chip {
+  height: 38px;
+  padding: 0 16px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text);
+  font: 500 14px var(--f-text);
+  cursor: pointer;
+  transition: background-color var(--t-fast) ease, border-color var(--t-fast) ease, color var(--t-fast) ease;
+}
+.wk.ob .ob-chip:hover { border-color: var(--line-strong); }
+.wk.ob .ob-chip[data-on] { border-color: var(--text); background: var(--text); color: var(--bg); }
+.wk.ob .ob-chip[data-variant='suggest'] { height: 34px; padding: 0 14px; background: none; color: var(--text-dim); font-size: 13.5px; }
+.wk.ob .ob-chip[data-variant='suggest']::before { content: '+'; margin-right: 6px; color: var(--text-muted); }
+.wk.ob .ob-chip[data-variant='suggest']:hover { color: var(--text); }
+
+/* ---------- tools ---------- */
+.wk.ob .ob-tools { display: grid; width: min(680px, 100%); grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 8px; }
+.wk.ob .ob-tool {
+  display: grid;
+  grid-template-columns: 36px 1fr auto 20px;
+  align-items: center;
+  gap: 12px;
+  min-height: 58px;
+  padding: 0 14px 0 11px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--t-fast) ease, box-shadow var(--t-fast) ease;
+}
+.wk.ob .ob-tool:hover { border-color: var(--line-strong); }
+.wk.ob .ob-tool[data-on] { border-color: var(--text); box-shadow: 0 0 0 1px var(--text); }
+.wk.ob .ob-tool-mono {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--surface-hi);
+  color: var(--text-dim);
+  font: 600 11px var(--f-mono);
+  letter-spacing: .02em;
+}
+.wk.ob .ob-tool-name { font-size: 14.5px; font-weight: 500; line-height: 1.25; }
+.wk.ob .ob-tool-status { color: var(--text-muted); font: 500 10px var(--f-mono); letter-spacing: .07em; text-transform: uppercase; white-space: nowrap; }
+.wk.ob .ob-tool-status[data-ready] { color: var(--text); }
+.wk.ob .ob-tool-status[data-ready]::before {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: 6px;
+  border-radius: 999px;
+  background: var(--accent);
+  vertical-align: 1px;
+}
+
+/* ---------- bottom: Back and the answer button never move ---------- */
+.wk.ob .ob-foot {
+  position: sticky;
+  bottom: 0;
+  z-index: 4;
+  display: flex;
+  width: min(var(--ob-col), 100%);
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 20px 0 clamp(18px, 4vh, 36px);
+  background: linear-gradient(to bottom, transparent, var(--bg) 38%);
+}
+.wk.ob[data-zoom='finale'] .ob-foot { background: none; }
+.wk.ob[data-step='welcome'] .ob-foot { justify-content: center; }
+.wk.ob[data-step='welcome'] .ob-foot > span:first-child { display: none; }
+.wk.ob .ob-foot-go { display: flex; align-items: center; gap: 16px; }
+.wk.ob .ob-next-hint { color: var(--text-muted); font-size: 13px; }
+html[data-surface='workspace'] .wk.ob .ob-cta { min-width: 210px; height: 50px; padding: 0 22px; border-radius: var(--r-md); font-size: 15px; }
+html[data-surface='workspace'] .wk.ob .ob-cta svg { width: 17px; height: 17px; transition: transform var(--t-med) var(--ease-out); }
+html[data-surface='workspace'] .wk.ob .ob-cta:hover svg { transform: translateX(3px); }
+
+/* ---------- Launch: the ledger choice, in the same frame (views/Launch.tsx) ---------- */
+/* The choice is the picture: two cards, each with its own loop, the way onboarding's
+   choices carry theirs. The green is the primary button and the loops' green pieces. */
+.wk.ob.ob-launch { --ob-col: 940px; }
+.wk.ob.ob-launch .ob-step { gap: 16px; }
+.wk.ob.ob-launch .ob-title { max-width: none; }
+.wk.ob.ob-launch .ob-lede { max-width: 62ch; }
+.wk.ob a.ob-brand { text-decoration: none; }
+
+.wk.ob .ob-paths { display: grid; width: 100%; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-top: 10px; }
+.wk.ob .ob-path {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 8px 22px 24px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color var(--t-fast) ease, transform var(--t-med) var(--ease-out), opacity var(--t-med) ease;
+}
+.wk.ob .ob-path:hover:not(:disabled) { border-color: var(--line-strong); transform: translateY(-2px); }
+.wk.ob .ob-path:active:not(:disabled) { transform: translateY(0) scale(.995); }
+.wk.ob .ob-path:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
+.wk.ob .ob-path:disabled { cursor: default; opacity: .55; }
+.wk.ob .ob-path-art { display: block; width: 100%; height: min(250px, 27vh); }
+.wk.ob .ob-path-reel { display: block; width: 100%; height: 100%; object-fit: contain; }
+.wk.ob .ob-path-text { display: flex; min-width: 0; flex-direction: column; align-items: center; gap: 7px; }
+.wk.ob .ob-path-text strong {
+  font-family: var(--ob-display);
+  font-size: 27px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: .005em;
+  text-transform: uppercase;
+}
+.wk.ob .ob-path-text small { max-width: 40ch; color: var(--text-muted); font-size: 14px; line-height: 1.5; text-wrap: pretty; }
+/* the card is the control; this is its label, drawn as the button it stands for */
+html[data-surface='workspace'] .wk.ob .ob-path-go { min-width: 210px; height: 48px; margin-top: 2px; padding: 0 22px; border-radius: var(--r-md); font-size: 15px; pointer-events: none; }
+html[data-surface='workspace'] .wk.ob .ob-path-go svg { width: 17px; height: 17px; transition: transform var(--t-med) var(--ease-out); }
+html[data-surface='workspace'] .wk.ob .ob-path:hover:not(:disabled) .ob-path-go[data-variant='primary'] { background: var(--accent-hover); }
+html[data-surface='workspace'] .wk.ob .ob-path:hover:not(:disabled) .ob-path-go[data-variant='outline'] { border-color: var(--text-dim); background: var(--surface-hi); }
+html[data-surface='workspace'] .wk.ob .ob-path:hover:not(:disabled) .ob-path-go svg { transform: translateX(3px); }
+html[data-surface='workspace'] .wk.ob .ob-path:hover:not(:disabled) .ob-path-go[data-variant='primary'] svg { transform: translateY(-2px); }
+
+.wk.ob .ob-launch-status,
+.wk.ob .ob-launch-note { width: 100%; text-align: left; }
+
+/* what happens after either: a real order, so it is numbered */
+.wk.ob .ob-sequence {
+  display: grid;
+  width: 100%;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
+  margin: 10px 0 0;
+  padding: 18px 0 0;
+  border-top: 1px solid var(--line);
+  list-style: none;
+}
+.wk.ob .ob-sequence li { display: flex; min-width: 0; flex-direction: column; align-items: center; gap: 3px; }
+.wk.ob .ob-sequence strong { font-size: 14px; font-weight: 600; letter-spacing: -.01em; }
+.wk.ob .ob-sequence small { color: var(--text-muted); font-size: 13px; line-height: 1.45; }
+
+/* ---------- narrower screens ---------- */
+@media (max-width: 900px) {
+  .wk.ob .ob-cards[data-count='4'] { grid-template-columns: repeat(2, 1fr); }
+  .wk.ob .ob-cards[data-count='3'] { grid-template-columns: 1fr; }
+  .wk.ob .ob-cards[data-count='3'] .ob-card { flex-direction: row; gap: 14px; padding: 10px 44px 10px 10px; text-align: left; }
+  .wk.ob .ob-cards[data-count='3'] .ob-card-art { width: 92px; margin: 0; flex: none; }
+  .wk.ob .ob-cards[data-count='3'] .ob-badge { position: static; align-self: flex-start; order: 3; display: none; }
+  .wk.ob .ob-finale-stage { position: relative; inset: auto; width: 100%; height: 34vh; }
+  .wk.ob .ob-reel-layer { object-fit: contain; object-position: 70% 50%; }
+}
+@media (max-width: 720px) {
+  .wk.ob { --gutter: 16px; }
+  .wk.ob .ob-top { grid-template-columns: auto 1fr auto; }
+  .wk.ob .ob-progress { justify-content: center; }
+  .wk.ob .ob-progress ol { display: none; }
+  .wk.ob .ob-count { min-width: 0; text-align: center; }
+  .wk.ob .ob-brand b { display: none; }
+  .wk.ob .ob-title { font-size: clamp(36px, 10vw, 48px); }
+  .wk.ob .ob-lede { font-size: 16px; }
+  .wk.ob .ob-tools { grid-template-columns: 1fr; }
+  .wk.ob .ob-fields { grid-template-columns: 1fr; }
+  .wk.ob .ob-thirds { grid-template-columns: 1fr; gap: 14px; text-align: left; }
+  .wk.ob .ob-third { align-items: flex-start; }
+  .wk.ob .ob-next-hint { display: none; }
+  html[data-surface='workspace'] .wk.ob .ob-cta { min-width: 0; flex: 1; }
+  .wk.ob .ob-foot-go { flex: 1; justify-content: flex-end; }
+
+  /* Launch: the cards stack, each a row of picture and words with its button under */
+  .wk.ob.ob-launch .ob-title { font-size: clamp(34px, 9.4vw, 44px); }
+  .wk.ob .ob-paths { grid-template-columns: minmax(0, 1fr); gap: 10px; margin-top: 4px; }
+  .wk.ob .ob-path {
+    display: grid;
+    grid-template-columns: 116px minmax(0, 1fr);
+    grid-template-areas: 'art text' 'go go';
+    align-items: center;
+    gap: 10px 14px;
+    padding: 10px 14px 14px;
+    text-align: left;
+  }
+  .wk.ob .ob-path-art { grid-area: art; height: 96px; }
+  .wk.ob .ob-path-text { grid-area: text; align-items: flex-start; gap: 5px; }
+  .wk.ob .ob-path-text strong { font-size: 22px; }
+  .wk.ob .ob-path-text small { font-size: 13.5px; }
+  html[data-surface='workspace'] .wk.ob .ob-path-go { grid-area: go; width: 100%; min-width: 0; margin: 0; }
+  .wk.ob .ob-sequence { grid-template-columns: minmax(0, 1fr); gap: 10px; }
+  .wk.ob .ob-sequence li { flex-direction: row; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wk.ob .ob-step > * { animation: ob-fade 200ms ease both; animation-delay: 0ms; }
+  .wk.ob .ob-card,
+  .wk.ob .ob-progress li::after { transition: none; }
+  .wk.ob .ob-card:hover { transform: none; }
+}

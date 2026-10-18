@@ -52,7 +52,7 @@ async function registerViaApi(input: typeof alice) {
   await live.api('/api/auth/signup', { method: 'POST', json: input })
   const [mail] = await live.inbox(input.email)
   await live.api('/api/auth/verify-email', { method: 'POST', json: { token: live.tokenFrom(mail.link) } })
-  // These flows are not about the first-run tour; the tour has its own test below.
+  // These flows are not about onboarding; onboarding has its own tests below.
   if (!input.keepTour) await live.api('/api/account/onboarding-seen', { method: 'POST' })
   await live.api('/api/auth/logout', { method: 'POST' })
   live.newBrowser()
@@ -243,28 +243,100 @@ describe('session bootstrap', () => {
   })
 })
 
-describe('first-run tour and plans', () => {
+describe('onboarding and plans', () => {
   const carol = { ...alice, firstName: 'Carol', lastName: 'Diaz', email: 'carol@example.com', keepTour: true }
 
-  it('a new account sees the tour once; skipping it is remembered on the account; Settings can reopen it', async () => {
+  it('a new account goes through onboarding once; its answers are saved on the account and it hands over to the ledger choice', async () => {
     await registerViaApi(carol)
     mountWorkspace()
     await screen.findByText('ready:nobody')
     await logIn(carol)
-    const tour = await screen.findByTestId('onboarding-tour')
-    expect(tour).toHaveTextContent('Step 1 of 6')
-    fireEvent.click(within(tour).getByRole('button', { name: 'Next' }))
-    expect(tour).toHaveTextContent('Audits — where you start')
-    fireEvent.click(within(tour).getByRole('button', { name: 'Skip tour' }))
-    await waitFor(() => expect(screen.queryByTestId('onboarding-tour')).not.toBeInTheDocument())
-    await waitFor(async () => expect((await live.api('/api/auth/me')).body.user.onboardingSeenAt).toBeTypeOf('number'))
+    const flow = await screen.findByTestId('onboarding')
+    expect(flow).toHaveTextContent('Step 1 of 8')
+    expect(flow).toHaveTextContent('Welcome, Carol')
+    fireEvent.click(within(flow).getByRole('button', { name: /let’s go/i }))
 
-    // next session: no tour
+    // goals: nothing picked yet means the button offers to skip; picking changes it
+    expect(flow).toHaveTextContent('Step 2 of 8')
+    expect(within(flow).getByRole('button', { name: /skip this/i })).toBeInTheDocument()
+    fireEvent.click(within(flow).getByRole('checkbox', { name: /duplicate payments/i }))
+    fireEvent.click(within(flow).getByRole('checkbox', { name: /unpaid invoices/i }))
+    expect(flow).toHaveTextContent(/today’s checks read the payments you’ve made/i)
+    // "not sure yet" stands alone
+    fireEvent.click(within(flow).getByRole('checkbox', { name: /not sure yet/i }))
+    expect(within(flow).getByRole('checkbox', { name: /duplicate payments/i })).toHaveAttribute('aria-checked', 'false')
+    fireEvent.click(within(flow).getByRole('checkbox', { name: /unpaid invoices/i }))
+    fireEvent.click(within(flow).getByRole('checkbox', { name: /duplicate payments/i }))
+    expect(within(flow).getByRole('checkbox', { name: /not sure yet/i })).toHaveAttribute('aria-checked', 'false')
+    fireEvent.click(within(flow).getByRole('button', { name: /^continue/i }))
+
+    // business: the company from sign-up is already filled in
+    expect(within(flow).getByLabelText('Business name')).toHaveValue(carol.company)
+    fireEvent.change(within(flow).getByLabelText(/what kind of work/i), { target: { value: 'Paper distribution' } })
+    fireEvent.click(within(flow).getByRole('radio', { name: 'I run finance' }))
+    fireEvent.click(within(flow).getByRole('button', { name: /^continue/i }))
+
+    // tools: only CSV works today, and the screen says so
+    expect(within(flow).getByRole('checkbox', { name: /quickbooks online/i })).toHaveTextContent(/coming later/i)
+    expect(within(flow).getByRole('checkbox', { name: /spreadsheets or csv/i })).toHaveTextContent(/works today/i)
+    fireEvent.click(within(flow).getByRole('checkbox', { name: /quickbooks online/i }))
+    fireEvent.click(within(flow).getByRole('button', { name: /^continue/i }))
+
+    // how it works, then autonomy: the automatic option is marked as not built yet
+    expect(flow).toHaveTextContent('Step 5 of 8')
+    fireEvent.click(within(flow).getByRole('button', { name: /^continue/i }))
+    fireEvent.click(within(flow).getByRole('radio', { name: /follow up on what i approve/i }))
+    expect(flow).toHaveTextContent(/needs your email connected/i)
+    fireEvent.click(within(flow).getByRole('radio', { name: /draft it for me/i }))
+    fireEvent.click(within(flow).getByRole('button', { name: /^continue/i }))
+
+    // data: an account's audits are saved to the account; AI only when asked
+    expect(flow).toHaveTextContent('With your Reclaim account')
+    expect(flow).toHaveTextContent(/only if you ask/i)
+    fireEvent.click(within(flow).getByRole('button', { name: /^continue/i }))
+
+    // purpose is optional; a suggestion fills it in
+    fireEvent.click(within(flow).getByRole('button', { name: 'More breathing room' }))
+    expect(within(flow).getByLabelText(/this money would mean/i)).toHaveValue('More breathing room.')
+    fireEvent.click(within(flow).getByRole('button', { name: /continue to ledger setup/i }))
+
+    await waitFor(() => expect(screen.queryByTestId('onboarding')).not.toBeInTheDocument())
+    await screen.findByRole('button', { name: /upload a ledger/i })
+    const me = (await live.api('/api/auth/me')).body.user
+    expect(me.onboardingSeenAt).toBeTypeOf('number')
+    expect(me.onboardingProfile).toMatchObject({
+      goals: ['unpaid', 'duplicates'],
+      businessName: carol.company,
+      work: 'Paper distribution',
+      role: 'finance',
+      tools: ['quickbooks'],
+      autonomy: 'draft',
+      purpose: 'More breathing room.',
+    })
+
+    // next session: straight to the ledger choice
     cleanup()
     mountWorkspace()
     await screen.findByText(`ready:${carol.email}`)
     await screen.findByRole('button', { name: /upload a ledger/i })
-    expect(screen.queryByTestId('onboarding-tour')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('onboarding')).not.toBeInTheDocument()
+  })
+
+  it('skipping onboarding is remembered too, with whatever was answered', async () => {
+    const dana = { ...carol, firstName: 'Dana', email: 'dana@example.com' }
+    await registerViaApi(dana)
+    mountWorkspace()
+    await screen.findByText('ready:nobody')
+    await logIn(dana)
+    const flow = await screen.findByTestId('onboarding')
+    fireEvent.click(within(flow).getByRole('button', { name: /let’s go/i }))
+    fireEvent.click(within(flow).getByRole('checkbox', { name: /credits or refunds/i }))
+    fireEvent.click(within(flow).getByRole('button', { name: 'Skip setup' }))
+    await waitFor(() => expect(screen.queryByTestId('onboarding')).not.toBeInTheDocument())
+    await screen.findByRole('button', { name: /upload a ledger/i })
+    const me = (await live.api('/api/auth/me')).body.user
+    expect(me.onboardingSeenAt).toBeTypeOf('number')
+    expect(me.onboardingProfile.goals).toEqual(['credits'])
   })
 
   it('a Free account sees the three lowest-value findings in full and the rest locked; Pro sees everything', async () => {

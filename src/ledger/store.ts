@@ -6,6 +6,7 @@ import { normalizeVendor } from '@/lib/format'
 import { reviewMetadata } from '@/lib/findingMetadata'
 import { evaluateEligibility, type RecoveryEvidence } from '@/recovery/eligibility'
 import type { QuickBooksFacts } from '../../server/quickbooksFacts.ts'
+import type { QuickBooksSyncSummary } from './quickbooksSync'
 
 export interface ImportBatch {
   schemaVersion?: 2
@@ -23,6 +24,8 @@ export interface ImportBatch {
   findingIds?: string[]
   /** A QuickBooks import's vendor-level searches (credits, refunds, voids); each row keeps its own payment facts. */
   quickbooks?: Omit<QuickBooksFacts, 'payments'>
+  /** What a QuickBooks import did to this audit: new, changed, voided or deleted, and already present. */
+  quickbooksSync?: QuickBooksSyncSummary
 }
 
 /**
@@ -35,6 +38,12 @@ export interface LedgerEnvironment {
   historicalFindings?: Finding[]
   migration?: { fromVersion: number; at: number; limitations: string[] }
   records: APRecord[]
+  /**
+   * Records the source system no longer has (a QuickBooks payment voided or
+   * deleted since it was imported). Out of detection, but kept so findings and
+   * history that cite them still resolve.
+   */
+  retiredRecords?: APRecord[]
   imports: ImportBatch[]
   result: DetectionResult
   /** Keyed by finding id. Stable because finding ids are derived from stable record ids. */
@@ -81,10 +90,12 @@ export function serializeEnvironment(env: LedgerEnvironment): string {
 export function deserializeEnvironment(json: string): LedgerEnvironment {
   const parsed = JSON.parse(json)
   const records = (parsed.records as Record<string, unknown>[]).map(reviveRecord)
-  const recordsById = new Map(records.map((r) => [r.id, r]))
+  const retiredRecords = ((parsed.retiredRecords ?? []) as Record<string, unknown>[]).map(reviveRecord)
+  const recordsById = new Map([...retiredRecords, ...records].map((r) => [r.id, r]))
   const env = {
     ...parsed,
     records,
+    ...(retiredRecords.length ? { retiredRecords } : {}),
     historicalFindings: (parsed.historicalFindings ?? []).map((f: Finding) => ({ ...f, relatedRecords: f.relatedRecords.map(r=>reviveRecord(r as unknown as Record<string,unknown>)) })),
     caseStates: Object.fromEntries(
       Object.entries(parsed.caseStates ?? {}).map(([id, state]) => [id, normalizeCaseState(state as CaseState)])
@@ -212,7 +223,29 @@ export function mergeImport(env: LedgerEnvironment | null, input: MergeImportInp
     }
   })
 
-  const allRecords = [...base.records, ...newRecords]
+  const batch: Omit<ImportBatch, 'findingIds'> = {
+    schemaVersion: 2,
+    fileChecksum: inspection.fileChecksum,
+    rowResults: inspection.rowResults,
+    id: batchId,
+    sourceLabel: input.sourceLabel,
+    mode: input.mode,
+    importedAt: Date.now(),
+    recordCount: newRecords.length,
+    skippedCount: input.parsed.skippedCount,
+    detectedColumns: [...input.parsed.detectedColumns],
+    ...(qbo ? { quickbooks: { schemaVersion: qbo.schemaVersion, companyName: qbo.companyName, pulledAt: qbo.pulledAt, vendors: qbo.vendors, searched: qbo.searched, ...(qbo.sync ? { sync: { ...qbo.sync, touched: [], removed: [] } } : {}) } } : {}),
+  }
+  return rebuildLedger(base, [...base.records, ...newRecords], batch, seq)
+}
+
+/**
+ * Re-runs detection over the ledger's records after an import, and carries
+ * each surviving finding's evidence and case forward. A finding whose rows
+ * changed — different rows, or a row whose source values were updated
+ * (`changedRecordIds`) — keeps its history but must be revalidated.
+ */
+export function rebuildLedger(base: LedgerEnvironment, allRecords: APRecord[], batch: Omit<ImportBatch, 'findingIds'>, nextRecordSeq: number, changedRecordIds: ReadonlySet<string> = new Set(), retired: APRecord[] = []): LedgerEnvironment {
   const result = detectFindings(allRecords)
   const oldById = new Map(base.result.findings.map(f=>[f.id,f]))
   const revised: Finding[] = []
@@ -220,7 +253,7 @@ export function mergeImport(env: LedgerEnvironment | null, input: MergeImportInp
   result.findings = result.findings.map(f=> {
     const previous = oldById.get(f.id)
     if (!previous) return f
-    const changed = previous.relatedRecords.map(r=>r.id).sort().join('|') !== f.relatedRecords.map(r=>r.id).sort().join('|')
+    const changed = previous.relatedRecords.map(r=>r.id).sort().join('|') !== f.relatedRecords.map(r=>r.id).sort().join('|') || f.relatedRecords.some(r=>changedRecordIds.has(r.id))
     if(changed) {
       revised.push(previous)
       const state=caseStates[f.id]
@@ -241,27 +274,13 @@ export function mergeImport(env: LedgerEnvironment | null, input: MergeImportInp
   const previousFindingIds = new Set(base.result.findings.map((f) => f.id))
   const newFindingIds = result.findings.filter((f) => !previousFindingIds.has(f.id)).map((f) => f.id)
 
-  const batch: ImportBatch = {
-    schemaVersion: 2,
-    fileChecksum: inspection.fileChecksum,
-    rowResults: inspection.rowResults,
-    id: batchId,
-    sourceLabel: input.sourceLabel,
-    mode: input.mode,
-    importedAt: Date.now(),
-    recordCount: newRecords.length,
-    skippedCount: input.parsed.skippedCount,
-    detectedColumns: [...input.parsed.detectedColumns],
-    findingIds: newFindingIds,
-    ...(qbo ? { quickbooks: { schemaVersion: qbo.schemaVersion, companyName: qbo.companyName, pulledAt: qbo.pulledAt, vendors: qbo.vendors, searched: qbo.searched } } : {}),
-  }
-
   return {
     ...base,
     schemaVersion: 2,
     historicalFindings: [...(base.historicalFindings ?? []), ...superseded, ...revised],
     records: allRecords,
-    imports: [...base.imports, batch],
+    ...(retired.length || base.retiredRecords?.length ? { retiredRecords: [...(base.retiredRecords ?? []), ...retired] } : {}),
+    imports: [...base.imports, { ...batch, findingIds: newFindingIds }],
     result,
     // Finding ids are stable across a merge as long as the same records
     // produced them, so existing case decisions stay attached to the right case.
@@ -269,7 +288,7 @@ export function mergeImport(env: LedgerEnvironment | null, input: MergeImportInp
     newFindingIds,
     createdAt: base.createdAt,
     updatedAt: Date.now(),
-    nextRecordSeq: seq,
+    nextRecordSeq,
   }
 }
 

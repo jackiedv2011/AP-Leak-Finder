@@ -1,12 +1,27 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import * as api from '@/lib/auth/apiAuthService'
 import * as guest from '@/lib/auth/localAuthService'
-import type { AuthOutcome, AuthUser } from '@/lib/auth/types'
+import type { AuthError, AuthOutcome, AuthUser } from '@/lib/auth/types'
 import { TERMS_VERSION } from '@/legal/terms'
 import { clearStorageScope, setStorageScope } from '@/lib/storageScope'
 import { fromStorable, replaceLocalProjects } from '@/ledger/projects'
 import { projectSync } from '@/ledger/projectSync'
 import { entitlementsFor, type Entitlements, type Plan } from '@/lib/plans'
+import { readProfile, type OnboardingProfile } from '../../../server/onboarding.ts'
+
+// A guest lives for the tab, so its onboarding does too.
+const GUEST_SEEN_KEY = 'reclaim.tour.seen'
+const GUEST_PROFILE_KEY = 'reclaim.onboarding.v1'
+
+function withGuestOnboarding(user: AuthUser): AuthUser {
+  try {
+    const seen = window.sessionStorage.getItem(GUEST_SEEN_KEY) === '1'
+    const profile = readProfile(window.sessionStorage.getItem(GUEST_PROFILE_KEY))
+    return seen ? { ...user, onboardingSeenAt: user.onboardingSeenAt ?? Date.now(), onboardingProfile: profile } : user
+  } catch {
+    return user
+  }
+}
 
 export type AuthStatus = 'loading' | 'ready'
 
@@ -26,6 +41,8 @@ interface AuthContextValue {
    */
   refreshAccount: () => Promise<void>
   markOnboardingSeen: () => Promise<void>
+  /** Stores onboarding's answers (on the account, or in the tab for a guest) and marks it done. */
+  saveOnboarding: (profile: OnboardingProfile) => Promise<void>
   /** Development only: flip the account's plan. */
   setDevPlan: (plan: Plan) => Promise<void>
   signUp: (input: Omit<Parameters<typeof api.signUp>[0], 'termsVersion'>) => Promise<api.SignUpResult>
@@ -36,6 +53,12 @@ interface AuthContextValue {
   logOut: () => Promise<void>
   requestPasswordReset: (email: string) => Promise<void>
   resetPassword: (token: string, newPassword: string, confirmPassword: string) => Promise<AuthOutcome>
+  /** Downloads everything the account holds, after any unsaved changes reach the server. */
+  exportAccountData: () => Promise<void>
+  /** Deletes the account on the server, then everything cached for it in this browser. */
+  deleteAccount: (confirmEmail: string) => Promise<{ ok: true } | AuthError>
+  /** Accepts the current Terms and Privacy Policy (shown when they changed since the account accepted). */
+  acceptTerms: () => Promise<AuthOutcome>
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -102,7 +125,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setStorageScope('guest')
         if (mounted.current) {
           setEntitlements(entitlementsFor('free', 0))
-          setUser(guestUser)
+          setUser(withGuestOnboarding(guestUser))
         }
       } else {
         const serverUser = await api.getSession()
@@ -130,13 +153,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const markOnboardingSeen = useCallback(async () => {
     if (user?.isGuest) {
-      window.sessionStorage.setItem('reclaim.tour.seen', '1')
+      window.sessionStorage.setItem(GUEST_SEEN_KEY, '1')
       setUser({ ...user, onboardingSeenAt: Date.now() })
       return
     }
     const next = await api.markOnboardingSeen()
     if (next) setUser(next)
   }, [user])
+
+  const saveOnboarding = useCallback(
+    async (profile: OnboardingProfile) => {
+      if (!user) return
+      if (user.isGuest) {
+        try {
+          window.sessionStorage.setItem(GUEST_SEEN_KEY, '1')
+          window.sessionStorage.setItem(GUEST_PROFILE_KEY, JSON.stringify(profile))
+        } catch {
+          /* storage refused: the answers still hold for this render */
+        }
+        setUser({ ...user, onboardingSeenAt: Date.now(), onboardingProfile: profile })
+        return
+      }
+      const next = await api.saveOnboarding(profile)
+      // If the save failed, onboarding still ends: nobody is held on step 8 by a network error.
+      setUser(next ?? { ...user, onboardingSeenAt: Date.now(), onboardingProfile: profile })
+    },
+    [user]
+  )
 
   const setDevPlan = useCallback(
     async (plan: Plan) => {
@@ -180,7 +223,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setStorageScope('guest')
     setEntitlements(entitlementsFor('free', 0))
     const g = guest.continueAsGuest()
-    setUser(window.sessionStorage.getItem('reclaim.tour.seen') === '1' ? { ...g, onboardingSeenAt: Date.now() } : g)
+    setUser(withGuestOnboarding(g))
   }, [])
 
   const logOut = useCallback(async () => {
@@ -209,6 +252,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [adopt]
   )
 
+  const exportAccountData = useCallback(async () => {
+    await projectSync.flush()
+    window.location.assign(api.ACCOUNT_EXPORT_URL)
+  }, [])
+
+  const deleteAccount = useCallback<AuthContextValue['deleteAccount']>(
+    async (confirmEmail) => {
+      const leaving = user
+      if (!leaving || leaving.isGuest) return { ok: false, message: 'Only a signed-in account can be deleted.' }
+      // Pending saves are dropped, not flushed: nothing should be written back after this.
+      projectSync.reset()
+      const result = await api.deleteAccount(confirmEmail)
+      if (!result.ok) return result
+      clearStorageScope(leaving.id)
+      guest.logOut()
+      setStorageScope(null)
+      setEntitlements(null)
+      setUser(null)
+      return result
+    },
+    [user]
+  )
+
+  const acceptTerms = useCallback<AuthContextValue['acceptTerms']>(async () => {
+    const result = await api.acceptTerms(TERMS_VERSION)
+    if (result.ok) setUser(result.user)
+    return result
+  }, [])
+
   const value = useMemo<AuthContextValue>(
     () => ({
       user,
@@ -219,6 +291,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       refreshEntitlements,
       refreshAccount,
       markOnboardingSeen,
+      saveOnboarding,
       setDevPlan,
       signUp,
       verifyEmail,
@@ -228,8 +301,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       logOut,
       requestPasswordReset: api.requestPasswordReset,
       resetPassword,
+      exportAccountData,
+      deleteAccount,
+      acceptTerms,
     }),
-    [user, status, providers, entitlements, refreshEntitlements, refreshAccount, markOnboardingSeen, setDevPlan, signUp, verifyEmail, logIn, continueAsGuest, logOut, resetPassword]
+    [user, status, providers, entitlements, refreshEntitlements, refreshAccount, markOnboardingSeen, saveOnboarding, setDevPlan, signUp, verifyEmail, logIn, continueAsGuest, logOut, resetPassword, exportAccountData, deleteAccount, acceptTerms]
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

@@ -38,13 +38,16 @@ export function TermsPage() {
       </section>
 
       <section>
-        <h2>4. Connecting QuickBooks Online</h2>
+        <h2>4. Connecting QuickBooks Online and Gmail</h2>
         <ul>
           <li>Only connect a QuickBooks company you are authorised to share. Connecting confirms you have that authority.</li>
           <li>The connection is read-only: Reclaim reads the records listed in the <a href="/privacy">Privacy Policy</a> and never creates, changes or deletes anything in your books.</li>
           <li>You can disconnect at any time from Settings → Connected accounts, or from your QuickBooks account. Disconnecting stops future imports; audits already imported stay until you delete them.</li>
           <li>Your use of QuickBooks remains governed by your agreement with Intuit. Reclaim is not affiliated with or endorsed by Intuit, and is not responsible for QuickBooks being available or for errors in the records it provides.</li>
           <li>During testing the connection works only with Intuit's sandbox (test) companies.</li>
+          <li>Only connect a Gmail account you are allowed to send from on behalf of your business. Reclaim can only send from it; it never reads your inbox.</li>
+          <li><b>You are responsible for every email you send through Reclaim</b>, including its recipients, its content and any amount it asks for. Reclaim sends only after you approve the request and confirm the send, and it sends the text you approved; read it before you send it.</li>
+          <li>Your use of Gmail remains governed by your agreement with Google, including Google's sending limits. Reclaim is not affiliated with or endorsed by Google, and is not responsible for whether a vendor receives, reads or acts on an email.</li>
         </ul>
       </section>
 

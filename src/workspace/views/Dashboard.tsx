@@ -1,15 +1,17 @@
 import { REDACTED_MONEY, REDACTED_VENDOR } from '../planGates'
-import { ArrowRight, Banknote, CalendarClock, Check, CircleHelp, Clock, Info, Lock, Send, X } from 'lucide-react'
+import { ArrowRight, Banknote, CalendarClock, Check, CircleHelp, Clock, Info, Lock, MessageSquare, Pause, Send, X } from 'lucide-react'
 import { formatDate, plural } from '@/lib/format'
 import { getCaseState, type LedgerEnvironment } from '@/ledger/store'
-import type { CaseEvent } from '@/ledger/caseState'
+import type { CaseEvent, VendorUpdateStatus } from '@/ledger/caseState'
 import { useEntitlements } from '@/lib/auth/AuthContext'
 import { Locked } from '@/components/plan/Locked'
 import { internalReviews, ladder, opportunities, recentReturns, recordedRootCauses, recoveries, recoveryAging, rootCauses, vendorCommitments, vendors, type Opportunity } from '../selectors'
-import { recoveryNextAction, recoveryStatusLabel, requiresCustomerAction } from '@/recovery/model'
+import { recoveryNextAction, requiresCustomerAction } from '@/recovery/model'
+import { dueStatus, vendorTone, type StatusTone } from '@/recovery/status'
 import { usePreferences, useHeadlineMoney, type OverviewSectionId } from '../preferences'
 import type { WorkspaceMode } from '../WorkspaceShell'
 import { KindChip } from './KindChip'
+import { StatusChip } from './StatusChip'
 import { CountUp } from './CountUp'
 import { findingReference } from './findingText'
 import { formatCauseValue } from './amounts'
@@ -25,15 +27,7 @@ interface DashboardProps {
   onNavigate: (mode: WorkspaceMode) => void
 }
 
-const DAY = 86_400_000
 const shortDate = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' })
-
-function dueLabel(dueAt: number, now: number): { text: string; overdue: boolean } {
-  const days = Math.round((new Date(dueAt).setHours(0, 0, 0, 0) - new Date(now).setHours(0, 0, 0, 0)) / DAY)
-  if (days < 0) return { text: `${-days}d overdue`, overdue: true }
-  if (days === 0) return { text: 'Due today', overdue: true }
-  return { text: `Due ${shortDate.format(dueAt)}`, overdue: false }
-}
 
 function ago(at: number, now: number): string {
   const minutes = Math.round((now - at) / 60_000)
@@ -45,13 +39,20 @@ function ago(at: number, now: number): string {
   return days < 7 ? `${days}d ago` : shortDate.format(at)
 }
 
-function eventIcon(event: CaseEvent) {
-  if (event.to.recoveryStage === 'recovered') return { icon: Banknote, tone: 'accent' as const }
-  if (event.to.recoveryStage === 'requested') return { icon: Send, tone: undefined }
-  if (event.to.decision === 'confirmed') return { icon: Check, tone: undefined }
-  if (event.to.decision === 'expected') return { icon: X, tone: undefined }
-  if (event.to.decision === 'needs_info') return { icon: CircleHelp, tone: undefined }
-  return { icon: Clock, tone: undefined }
+/** An activity row's icon, tinted by the status family the event moved the case into. */
+function eventIcon(event: CaseEvent): { icon: typeof Clock; tone: StatusTone } {
+  if (event.action.startsWith('vendor:')) return { icon: MessageSquare, tone: vendorTone(event.action.slice('vendor:'.length) as VendorUpdateStatus) }
+  if (event.action === 'outcome:recovered' || event.action === 'recovery:settlement_recorded' || event.action === 'accounting:reconciled') return { icon: Banknote, tone: 'back' }
+  if (event.action === 'outcome:not_recovered') return { icon: X, tone: 'neutral' }
+  if (event.action === 'recovery:contact_held') return { icon: Pause, tone: 'paused' }
+  if (event.action === 'stage:requested') return { icon: Send, tone: 'waiting' }
+  if (event.action === 'recovery:approved') return { icon: Check, tone: 'action' }
+  if (event.action.startsWith('decision:')) {
+    if (event.to.decision === 'confirmed') return { icon: Check, tone: 'action' }
+    if (event.to.decision === 'expected') return { icon: X, tone: 'neutral' }
+    if (event.to.decision === 'needs_info') return { icon: CircleHelp, tone: 'action' }
+  }
+  return { icon: Clock, tone: 'neutral' }
 }
 
 export function Dashboard({ env, visible, auditLabel, onOpenCase, onSeeAllFindings, onSeeFindingsKind, onSearchFindings, onNavigate }: DashboardProps) {
@@ -65,8 +66,8 @@ export function Dashboard({ env, visible, auditLabel, onOpenCase, onSeeAllFindin
   const inPlay = (o: Opportunity) => o.state.decision !== 'expected' && o.state.recoveryStage !== 'recovered' && o.state.recoveryStage !== 'not_recovered'
   // Undecided, or parked as "needs more detail": both are waiting on a person.
   const undecided = all.filter((o) => (o.state.decision === null || o.state.decision === 'needs_info') && inPlay(o))
-  const needsContext = all.filter((o) => o.finding.classification === 'review_needed' && inPlay(o) && o.state.recoveryStage === null)
-  const needsContextValue = needsContext.reduce((sum, o) => sum + (o.finding.flaggedAmount ?? o.finding.dollarImpact), 0)
+  // The same flagged-for-review total (isFlaggedForReview) that Findings and Reports show.
+  const needsContextValue = l.flagged
   // The five worth the most attention, plus, on Free, the ones this plan can open,
   // so the list is honest about the big money and still gives you something to do.
   const top = undecided.slice(0, 5)
@@ -129,7 +130,7 @@ export function Dashboard({ env, visible, auditLabel, onOpenCase, onSeeAllFindin
         <button type="button" className="wk-total" data-total="review" data-amount={needsContextValue} onClick={() => onSeeFindingsKind('review')}>
           <span className="wk-total-label"><span className="wk-label">Flagged for review</span><ArrowRight aria-hidden="true" /></span>
           <strong className="wk-total-value"><CountUp value={needsContextValue} format={money} /></strong>
-          <span className="wk-total-note">{needsContext.length} {plural(needsContext.length, 'finding')} to check · not money owed until confirmed</span>
+          <span className="wk-total-note">{l.flaggedCount} {plural(l.flaggedCount, 'finding')} to check · not money owed until confirmed</span>
         </button>
         <button type="button" className="wk-total" data-total="inRecovery" data-amount={l.inRecovery} data-empty={l.inRecovery === 0 || undefined} onClick={() => onNavigate('recoveries')}>
           <span className="wk-total-label"><span className="wk-label">In recovery</span><ArrowRight aria-hidden="true" /></span>
@@ -157,15 +158,16 @@ export function Dashboard({ env, visible, auditLabel, onOpenCase, onSeeAllFindin
           </div>
           <div className="wk-queue">
             {tasks.slice(0, 5).map(({ o, action, internal }) => {
-              const due = action.dueAt ? dueLabel(action.dueAt, now) : null
+              const due = dueStatus(action.dueAt, now, shortDate.format)
               const outstanding = o.state.recoveryStage === 'requested' ? Math.max(0, (o.state.requestedAmount ?? o.finding.dollarImpact) - (o.state.recoveredAmount ?? 0)) : o.finding.dollarImpact
               return (
                 <button key={o.finding.id} type="button" className="wk-queue-row" data-amount={outstanding} onClick={() => onOpenCase(o.finding.id)}>
                   <span className="wk-queue-main">
                     <strong>{action.label} · {o.finding.vendor}</strong>
                     <span>
-                      {due ? <span className="wk-chip" data-tone={due.overdue ? 'accent' : undefined}><CalendarClock aria-hidden="true" style={{ width: 12, height: 12 }} />{due.text}</span> : null}
-                      <em>{recoveryStatusLabel(o.state, internal)}{internal ? ' · internal review' : ''}</em>
+                      <StatusChip state={o.state} internal={internal} now={now} />
+                      {due ? <StatusChip status={due} icon={<CalendarClock aria-hidden="true" />} /> : null}
+                      {internal ? <em>Internal review</em> : null}
                     </span>
                   </span>
                   <span className="wk-queue-amount">{money(outstanding)}</span>
@@ -198,7 +200,7 @@ export function Dashboard({ env, visible, auditLabel, onOpenCase, onSeeAllFindin
                   <button key={o.finding.id} type="button" className="wk-queue-row" data-amount={locked ? undefined : o.finding.dollarImpact} data-locked={locked || undefined} onClick={() => onOpenCase(o.finding.id)} aria-label={locked ? `${o.typeLabel}, part of Growth and Flat` : `${o.finding.vendor}, ${o.typeLabel}, ${money(o.finding.dollarImpact)}`}>
                     <span className="wk-queue-main">
                       <strong>{locked ? o.typeLabel : o.finding.vendor}</strong>
-                      {locked ? null : <span><KindChip finding={o.finding} label={o.typeLabel} />{o.state.decision === 'needs_info' ? <span className="wk-chip" data-tone="quiet">Needs information</span> : null}<em>{findingReference(o.finding)}</em></span>}
+                      {locked ? null : <span><KindChip finding={o.finding} label={o.typeLabel} />{o.state.decision === 'needs_info' ? <StatusChip state={o.state} /> : null}<em>{findingReference(o.finding)}</em></span>}
                     </span>
                     <span className="wk-queue-amount">{locked ? REDACTED_MONEY : money(o.finding.dollarImpact)}</span>
                     <span className="wk-queue-go">{locked ? <Lock aria-hidden="true" /> : <>Review<ArrowRight aria-hidden="true" /></>}</span>
@@ -363,7 +365,7 @@ export function Dashboard({ env, visible, auditLabel, onOpenCase, onSeeAllFindin
                 const { icon: Icon, tone } = eventIcon(event)
                 return (
                   <li key={`${finding.id}-${event.at}-${index}`}>
-                    <span className="wk-feed-icon" data-tone={tone}><Icon aria-hidden="true" /></span>
+                    <span className="wk-feed-icon" data-status-tone={tone}><Icon aria-hidden="true" /></span>
                     <span className="wk-feed-text">
                       <button type="button" onClick={() => onOpenCase(finding.id)}>{finding.vendor}</button> · {event.summary}
                       {event.amount != null ? ` · ${money(event.amount)}` : ''}

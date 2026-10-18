@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, type ReactElement } from 'react'
 import { AuthProvider, useAuth } from '@/lib/auth/AuthContext'
 import { loginUrlFor, redirectTo } from '@/pages/authRedirect'
+import { TermsUpdateGate } from '@/legal/TermsUpdateGate'
 
 const SiteLanding = lazy(() =>
   import('@/components/site/SiteLanding').then((module) => ({ default: module.SiteLanding }))
@@ -105,6 +106,7 @@ function App() {
   return (
     <AuthProvider>
       <Suspense fallback={<RouteFallback />}>{page}</Suspense>
+      <TermsUpdateGate />
     </AuthProvider>
   )
 }

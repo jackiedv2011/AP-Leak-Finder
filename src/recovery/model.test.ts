@@ -6,6 +6,7 @@ import {
   approveRecovery,
   canRecordRequest,
   closeWithoutRecovery,
+  recordEmailSent,
   recordVendorUpdate,
   requiresCustomerAction,
   recommendRecoveryMethod,
@@ -311,4 +312,31 @@ describe('case history keeps every fact from one change', () => {
   function requested() {
     return startRecoveryRequest(approveRecovery(confirmCase(null), { at: monday, knownBeforeReclaim: false }), 1000, monday)
   }
+})
+
+describe('recording a Gmail send', () => {
+  const sent = { channel: 'gmail' as const, messageId: 'msg-9', from: 'owner@gmail.com', to: 'ap@vendor.test', cc: [], sentAt: Date.UTC(2026, 9, 14, 15) }
+
+  it('records the request at Gmail’s time, with its id, and schedules the follow-up from it', () => {
+    const approved = approveRecovery(confirmCase(null), { knownBeforeReclaim: false })
+    const next = recordEmailSent(approved, sent, 500)
+    expect(next).toMatchObject({ recoveryStage: 'requested', requestedAmount: 500, recoveryRequestedAt: sent.sentAt, recoveryRecipientEmail: 'ap@vendor.test', recoverySentEmail: sent })
+    expect(next.nextFollowUpAt).toBe(addBusinessDays(sent.sentAt, 5))
+    const event = withHistory(approved, next, 'Alice').history!.at(-1)!
+    expect(event).toMatchObject({ action: 'stage:requested', summary: 'Recovery request sent from Gmail', at: sent.sentAt, amount: 500 })
+    expect(event.note).toBe('From owner@gmail.com to ap@vendor.test. Gmail message ID msg-9')
+  })
+
+  it('refuses a case that is not waiting to be sent, or a send without Gmail’s id', () => {
+    const approved = approveRecovery(confirmCase(null), { knownBeforeReclaim: false })
+    expect(() => recordEmailSent(recordEmailSent(approved, sent, 500), sent, 500)).toThrow()
+    expect(() => recordEmailSent(approved, { ...sent, messageId: '' }, 500)).toThrow()
+  })
+
+  it('a request sent by hand carries no Gmail record', () => {
+    const approved = approveRecovery(confirmCase(null), { knownBeforeReclaim: false })
+    const next = startRecoveryRequest(approved, 500)
+    expect(next.recoverySentEmail).toBeUndefined()
+    expect(withHistory(approved, next, null).history!.at(-1)!).toMatchObject({ summary: 'Recovery request sent', note: null })
+  })
 })

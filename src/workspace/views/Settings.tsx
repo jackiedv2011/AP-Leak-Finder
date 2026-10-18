@@ -6,6 +6,8 @@ import { Facts } from './Reports'
 import { CustomizeControls } from '../Customize'
 import { PlanBilling } from '@/components/plan/PlanBilling'
 import { QuickBooksSettings } from '@/components/audit/QuickBooksSource'
+import { AccountData } from './AccountData'
+import { GmailSettings } from '@/components/gmail/Gmail'
 import { ladder } from '../selectors'
 import type { ResolvedTheme, ThemeChoice } from '@/workspace/theme'
 
@@ -23,14 +25,15 @@ const THEME_OPTIONS: Array<{ value: ThemeChoice; label: string }> = [
 interface SettingsViewProps {
   env: LedgerEnvironment
   onClear: () => void
-  onShowTour?: () => void
+  /** Reopens onboarding with the answers already given, to change them. */
+  onEditOnboarding?: () => void
   theme: ThemeChoice
   resolvedTheme: ResolvedTheme
   onThemeChange: (choice: ThemeChoice) => void
 }
 
 /** Account, appearance, legal, and the one destructive action — deliberately small. */
-export function SettingsView({ env, onClear, onShowTour, theme, resolvedTheme, onThemeChange }: SettingsViewProps) {
+export function SettingsView({ env, onClear, onEditOnboarding, theme, resolvedTheme, onThemeChange }: SettingsViewProps) {
   const s = overviewSummary(env)
   const auth = useOptionalAuth()
   const user = auth?.user ?? null
@@ -74,7 +77,15 @@ export function SettingsView({ env, onClear, onShowTour, theme, resolvedTheme, o
 
       <PlanBilling recovered={recovered} />
 
-      <QuickBooksSettings />
+      {user && !user.isGuest ? (
+        <section className="wk-section" data-testid="connected-accounts">
+          <h2 className="wk-display wk-h2">Connected accounts</h2>
+          <div className="wk-stack">
+            <QuickBooksSettings bare />
+            <GmailSettings />
+          </div>
+        </section>
+      ) : null}
 
       <section className="wk-section">
         <h2 className="wk-display wk-h2">Appearance</h2>
@@ -95,16 +106,20 @@ export function SettingsView({ env, onClear, onShowTour, theme, resolvedTheme, o
       </section>
 
       <section className="wk-section">
-        <h2 className="wk-display wk-h2">Help</h2>
+        <h2 className="wk-display wk-h2">Your setup</h2>
         <div className="wk-card-flat">
           <ul className="wk-list">
             <li>
               <div>
-                <div style={{ fontWeight: 500 }}>Product tour</div>
-                <div className="wk-table-sub">A two-minute walk through audits, findings, reviewing and recoveries.</div>
+                <div style={{ fontWeight: 500 }}>Onboarding answers</div>
+                <div className="wk-table-sub">
+                  {user?.onboardingProfile
+                    ? 'What you want back, your tools and how hands-on Reclaim should be. Change any of it.'
+                    : 'The eight questions from your first visit: what you want back, your tools, how hands-on Reclaim should be.'}
+                </div>
               </div>
-              <button type="button" className="wk-btn" data-variant="outline" data-size="sm" onClick={onShowTour}>
-                Show the tour
+              <button type="button" className="wk-btn" data-variant="outline" data-size="sm" onClick={onEditOnboarding}>
+                {user?.onboardingProfile ? 'Edit answers' : 'Answer them'}
               </button>
             </li>
           </ul>
@@ -140,6 +155,8 @@ export function SettingsView({ env, onClear, onShowTour, theme, resolvedTheme, o
           </ul>
         </div>
       </section>
+
+      <AccountData />
 
       <section className="wk-section">
         <h2 className="wk-display wk-h2">This audit's data</h2>

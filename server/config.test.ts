@@ -4,7 +4,8 @@ import { loadConfig } from './config.ts'
 
 const tokenKey = Buffer.alloc(32, 7).toString('base64')
 /** The smallest environment a production server accepts. */
-const prod = { NODE_ENV: 'production', APP_ORIGIN: 'https://app.reclaim.example', RESEND_API_KEY: 're_test', EMAIL_FROM: 'Reclaim <no-reply@reclaim.example>' }
+const dataKey = Buffer.alloc(32, 9).toString('base64')
+const prod = { NODE_ENV: 'production', APP_ORIGIN: 'https://app.reclaim.example', RESEND_API_KEY: 're_test', EMAIL_FROM: 'Reclaim <no-reply@reclaim.example>', DATA_KEY: dataKey }
 
 describe('production startup checks', () => {
   it('starts with an https origin and a real email provider', () => {
@@ -65,6 +66,13 @@ describe('production startup checks', () => {
     expect(() => loadConfig({ ...prod, ...qbo })).toThrow(`QuickBooks is half configured: ${missing} missing`)
   })
 
+  it('refuses to start without DATA_KEY, or with the QuickBooks key reused as it', () => {
+    const { DATA_KEY: _key, ...rest } = prod
+    expect(() => loadConfig(rest)).toThrow(/DATA_KEY is not set/)
+    expect(() => loadConfig({ ...prod, QBO_CLIENT_ID: 'id', QBO_CLIENT_SECRET: 'secret', QBO_TOKEN_KEY: dataKey })).toThrow(/DATA_KEY must be different/)
+    expect(loadConfig(prod).dataKeys?.current.equals(Buffer.from(dataKey, 'base64'))).toBe(true)
+  })
+
   it('lists every problem at once, without echoing any value', () => {
     let message = ''
     try {
@@ -77,6 +85,15 @@ describe('production startup checks', () => {
     expect(message).toMatch(/DEV_MAILBOX/)
     expect(message).toMatch(/QuickBooks is half configured/)
     expect(message).not.toContain('super-secret-value')
+  })
+
+  it('checks the data keys everywhere: 32 bytes, and no previous key without a current one', () => {
+    expect(() => loadConfig({ DATA_KEY: 'c2hvcnQ=' })).toThrow(/DATA_KEY must be 32 random bytes/)
+    expect(() => loadConfig({ DATA_KEY_PREVIOUS: dataKey })).toThrow(/without DATA_KEY/)
+    const previous = Buffer.alloc(32, 1).toString('base64')
+    expect(loadConfig({ DATA_KEY: dataKey, DATA_KEY_PREVIOUS: previous }).dataKeys?.previous?.length).toBe(32)
+    expect(loadConfig({ DATA_KEY: dataKey, DATA_KEY_PREVIOUS: dataKey }).dataKeys?.previous).toBeNull()
+    expect(loadConfig({}).dataKeys).toBeNull()
   })
 
   it('applies none of this outside production', () => {

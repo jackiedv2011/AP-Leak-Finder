@@ -3,6 +3,7 @@ import { loadConfig } from '../../server/config.ts'
 import { openDatabase } from '../../server/db.ts'
 import { DevMailer } from '../../server/mailer.ts'
 import type { FakeStripe } from '../../server/fakeStripe.ts'
+import type { GmailClient } from '../../server/gmail.ts'
 import { setFetch as setAuthFetch } from '@/lib/auth/apiAuthService'
 import { projectSync } from '@/ledger/projectSync'
 
@@ -16,6 +17,8 @@ export interface LiveServer {
   base: string
   jar: Map<string, string>
   /** Direct API access with the current jar (for seeding and assertions). */
+  /** The tab's own fetch: relative URLs, cookies kept. */
+  fetch: typeof fetch
   api<T = any>(path: string, init?: RequestInit & { json?: unknown }): Promise<{ status: number; body: T }>
   inbox(email: string): Promise<Array<{ subject: string; link: string | null }>>
   tokenFrom(link: string | null): string
@@ -27,20 +30,23 @@ export interface LiveServer {
 
 export const LIVE_WEBHOOK_SECRET = 'whsec_live_test'
 
-export async function startLiveServer(options: { stripe?: FakeStripe } = {}): Promise<LiveServer> {
+/** `env` adds settings (such as GMAIL_TOKEN_KEY); `gmail` stands in for Google so nothing is ever really sent; `stripe` is a FakeStripe. */
+export async function startLiveServer(options: { env?: Record<string, string>; gmail?: GmailClient; stripe?: FakeStripe } = {}): Promise<LiveServer> {
   const stripeEnv = options.stripe ? { STRIPE_SECRET_KEY: 'sk_test_unused', STRIPE_WEBHOOK_SECRET: LIVE_WEBHOOK_SECRET } : {}
-  const config = loadConfig({ NODE_ENV: 'test', DATABASE_PATH: ':memory:', APP_ORIGIN: 'http://localhost:0', ...stripeEnv })
+  const config = loadConfig({ NODE_ENV: 'test', DATABASE_PATH: ':memory:', APP_ORIGIN: 'http://localhost:0', ...stripeEnv, ...options.env })
   const db = openDatabase(':memory:')
-  const app = createApp({ config, db, mailer: new DevMailer(db), google: null, drafts: null, stripe: options.stripe ?? null })
+  const app = createApp({ config, db, mailer: new DevMailer(db), google: null, drafts: null, gmail: options.gmail ?? null, stripe: options.stripe ?? null })
   const port = await app.listen(0)
   const base = `http://127.0.0.1:${port}`
   let jar = new Map<string, string>()
+  // Captured now, so a test can stub the global fetch with this tab's fetch.
+  const networkFetch = globalThis.fetch
 
   const tabFetch: typeof fetch = async (input, init) => {
     const url = typeof input === 'string' && input.startsWith('/') ? base + input : input
     const headers = new Headers(init?.headers)
     if (jar.size) headers.set('Cookie', [...jar].map(([k, v]) => `${k}=${v}`).join('; '))
-    const res = await fetch(url, { ...init, headers, redirect: 'manual' })
+    const res = await networkFetch(url, { ...init, headers, redirect: 'manual' })
     for (const line of res.headers.getSetCookie()) {
       const [pair, ...attrs] = line.split(';')
       const [name, value] = pair.split('=')
@@ -55,6 +61,7 @@ export async function startLiveServer(options: { stripe?: FakeStripe } = {}): Pr
   return {
     app,
     base,
+    fetch: tabFetch,
     get jar() {
       return jar
     },

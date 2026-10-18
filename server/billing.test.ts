@@ -387,6 +387,29 @@ describe('Growth success fee', () => {
   })
 })
 
+describe('deleting an account', () => {
+  it('bills fees owed, ends the subscription now, then deletes; a Stripe outage stops the deletion', async () => {
+    const client = await signedIn()
+    await client.post('/api/billing/subscribe', { plan: 'growth', paymentMethodId: 'pm_card_visa' })
+    const { project, findingId } = authorizedProject('d1', { vendor: 'Acme Supply', invoice: 'INV-9', amount: 500, requested: 500 })
+    const states: Record<string, unknown> = project.environment.caseStates
+    states[findingId] = { ...(states[findingId] as object), recoveryStage: 'recovered', recoverySettlements: [{ amount: 500, method: 'refund', source: 'bank', reference: 'BANK-DEL', settledAt: 5 }] }
+    await client.put('/api/projects/d1', project)
+    await app.billingIdle()
+    stripe.failNext = new StripeError(500, 'api_error', null, 'down')
+    const refused = await client.post('/api/account/delete', { confirmEmail: 'pilot@example.com' })
+    expect(refused.status).toBe(502)
+    expect(refused.body.message).toMatch(/account wasn’t deleted/)
+    expect(await plan(client)).toBe('growth')
+
+    const deleted = await client.post('/api/account/delete', { confirmEmail: 'pilot@example.com' })
+    expect(deleted.status).toBe(200)
+    expect([...stripe.subscriptions.values()][0].status).toBe('canceled')
+    expect(stripe.invoices.at(-1)).toMatchObject({ amountCents: 5000 })
+    expect(app.db.prepare('SELECT COUNT(*) AS n FROM billing_accounts').get()).toEqual({ n: 0 })
+  })
+})
+
 describe('Stripe REST client', () => {
   it('form-encodes nested params the way Stripe expects', () => {
     expect(decodeURIComponent(formEncode({ items: [{ price: 'p_1' }], expand: ['latest_invoice.payment_intent'], metadata: { a: 'b' }, skip: undefined }))).toBe(

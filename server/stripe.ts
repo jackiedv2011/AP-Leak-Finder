@@ -44,7 +44,8 @@ export interface StripeApi {
   /** Prorated, charged now; if the charge fails the subscription keeps its old price. */
   changeSubscriptionPrice(id: string, itemId: string, priceId: string): Promise<StripeSubscription>
   setCancelAtPeriodEnd(id: string, cancel: boolean): Promise<StripeSubscription>
-  cancelSubscriptionNow(id: string): Promise<void>
+  /** Ends it immediately; `invoiceNow` bills its pending items (success fees) on a final invoice. */
+  cancelSubscriptionNow(id: string, options?: { invoiceNow?: boolean }): Promise<void>
   createInvoiceItem(input: { customerId: string; subscriptionId: string | null; amountCents: number; description: string; metadata: Record<string, string> }, idempotencyKey: string): Promise<{ id: string }>
   /** False when the item was already on a finalized invoice and can no longer be removed. */
   deleteInvoiceItem(id: string): Promise<boolean>
@@ -111,7 +112,7 @@ export function normalizeSubscription(raw: Json): StripeSubscription {
 export function createStripeClient(secretKey: string, fetchImpl: typeof fetch = fetch): StripeApi {
   async function call(method: 'GET' | 'POST' | 'DELETE', path: string, params: Json = {}, idempotencyKey?: string): Promise<Json> {
     const body = formEncode(params)
-    const url = `https://api.stripe.com/v1${path}${method === 'GET' && body ? `?${body}` : ''}`
+    const url = `https://api.stripe.com/v1${path}${method !== 'POST' && body ? `?${body}` : ''}`
     const headers: Record<string, string> = { Authorization: `Bearer ${secretKey}`, 'Stripe-Version': STRIPE_API_VERSION }
     if (method === 'POST') headers['Content-Type'] = 'application/x-www-form-urlencoded'
     if (idempotencyKey) headers['Idempotency-Key'] = idempotencyKey
@@ -174,8 +175,8 @@ export function createStripeClient(secretKey: string, fetchImpl: typeof fetch = 
     async setCancelAtPeriodEnd(id, cancel) {
       return normalizeSubscription(await call('POST', `/subscriptions/${encodeURIComponent(id)}`, { cancel_at_period_end: cancel, expand }))
     },
-    async cancelSubscriptionNow(id) {
-      await call('DELETE', `/subscriptions/${encodeURIComponent(id)}`)
+    async cancelSubscriptionNow(id, options = {}) {
+      await call('DELETE', `/subscriptions/${encodeURIComponent(id)}`, options.invoiceNow ? { invoice_now: true, prorate: false } : {})
     },
     async createInvoiceItem({ customerId, subscriptionId, amountCents, description, metadata }, idempotencyKey) {
       const item = await call('POST', '/invoiceitems', { customer: customerId, subscription: subscriptionId ?? undefined, amount: amountCents, currency: 'usd', description, metadata }, idempotencyKey)

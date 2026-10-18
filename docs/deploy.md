@@ -32,14 +32,17 @@ files entirely (`.dockerignore`), so a container only sees what the host gives i
 | `SESSION_DAYS` / `REMEMBER_ME_DAYS` | no | no | Default 1 and 30. |
 | `GOOGLE_CLIENT_ID` | no (public id) | no | Both Google values set → "Continue with Google" appears. |
 | `GOOGLE_CLIENT_SECRET` | **secret** | with the id | |
+| `GMAIL_TOKEN_KEY` | **secret** | no | 32 random bytes, base64: `openssl rand -base64 32`. With the two Google values, turns on "Send from your Gmail" (all plans). Seals stored Gmail refresh tokens. Needs the Google setup in §4a. Rotating it disconnects every Gmail user, like `QBO_TOKEN_KEY` (§6). |
 | `ANTHROPIC_API_KEY` | **secret** | no | Without it, "Draft with AI" reports itself unavailable. |
 | `ANTHROPIC_MODEL` | no | no | Default `claude-opus-5`. |
+| `DATA_KEY` | **secret** | **yes** | 32 random bytes, base64: `openssl rand -base64 32`. Encrypts every stored audit (AES-256-GCM). **Losing it loses every audit**, so keep a copy somewhere other than the server and the backups (§6). Must differ from `QBO_TOKEN_KEY`. |
+| `DATA_KEY_PREVIOUS` | **secret** | only while rotating | The old `DATA_KEY` during a rotation (§6). Remove it once the rotation is done. |
 | `QBO_CLIENT_ID` | no (public id) | no | QuickBooks Online, **sandbox only**, read-only. All three `QBO_*` or none: the server refuses a partial set. |
 | `QBO_CLIENT_SECRET` | **secret** | with the id | |
-| `QBO_TOKEN_KEY` | **secret** | with the id | 32 random bytes, base64: `openssl rand -base64 32`. Seals stored QuickBooks tokens (AES-256-GCM). See §6. |
+| `QBO_TOKEN_KEY` | **secret** | with the id | 32 random bytes, base64: `openssl rand -base64 32`. Seals stored QuickBooks tokens (AES-256-GCM). See §7. |
 | `VITE_STRIPE_PUBLISHABLE_KEY` | no (public by design) | no | **Build argument**, not a runtime variable: it is compiled into the browser bundle. Must come from the **same Stripe account** as `STRIPE_SECRET_KEY` (card ids from another account are refused). Without it checkout runs on Stripe's demo test key and can't subscribe against a real account. |
-| `STRIPE_SECRET_KEY` | **secret** | no | `sk_test_…` for pilots. Turns on paid plans (§7). Without it, subscribing answers "paid plans aren't switched on" and nothing is charged. |
-| `STRIPE_WEBHOOK_SECRET` | **secret** | with the key | `whsec_…` of the webhook endpoint (§7). The server refuses to start with only one of the two. |
+| `STRIPE_SECRET_KEY` | **secret** | no | `sk_test_…` for pilots. Turns on paid plans (§7a). Without it, subscribing answers "paid plans aren't switched on" and nothing is charged. |
+| `STRIPE_WEBHOOK_SECRET` | **secret** | with the key | `whsec_…` of the webhook endpoint (§7a). The server refuses to start with only one of the two. |
 | `DEV_MAILBOX` | — | **must be unset** | Exposes reset links to anyone. The server refuses to start in production unless it is unset or `false`. |
 | `SESSION_COOKIE_SECURE_OK` | — | never on a server | Lets a production build run over plain http, and only on a `localhost` origin, for local checks. |
 | `BACKUP_DIR` | no | no | Where `server/backup.ts` writes. Default `/data/backups`. |
@@ -121,6 +124,42 @@ Both are built from `APP_ORIGIN`, so they must match it character for character.
 
 The server prints the QuickBooks redirect URI it expects at startup.
 
+## 4a. Gmail sending (Google Cloud setup)
+
+Sending uses the **same Google Cloud project and OAuth client** as sign-in
+(`GOOGLE_CLIENT_ID`). It's a separate consent from sign-in: Reclaim asks for
+`gmail.send` (plus `openid email`, only to show which address is connected)
+when a customer clicks **Connect Gmail**, never at sign-in. It can't read the
+inbox. Someone with owner access to the Google Cloud project has to do this:
+
+1. **Enable the Gmail API:** APIs & Services → Library → "Gmail API" → Enable.
+2. **Add the redirect URI** to the existing OAuth client (APIs & Services → Credentials):
+   `<APP_ORIGIN>/api/integrations/gmail/callback`. For local development also add
+   `http://localhost:5174/api/integrations/gmail/callback`, or whatever `APP_ORIGIN` is in `.env`.
+3. **Add the scope to the consent screen** (Google Auth Platform → Data access → Add or remove scopes):
+   `https://www.googleapis.com/auth/gmail.send`. Google lists it as a **sensitive** scope.
+4. **Test users:** while the app is unverified, only listed test users can connect Gmail
+   (Audience → Test users → add Jagan's address, and each pilot customer's Gmail address, up to 100).
+   Others see "This app is blocked" or an unverified-app warning.
+5. **Verification before public use:** `gmail.send` needs Google's verification before
+   anyone outside the test-user list can connect: Google Auth Platform → Verification Center. Google asks
+   for a public homepage and privacy policy on a domain you've verified in Search Console, a
+   justification for the scope ("sends recovery request emails the user has reviewed and approved, from
+   the user's own address; never reads mail"), and a short screen recording of the connect → approve →
+   send flow. It usually takes a few days to a few weeks. `gmail.send` is sensitive, not restricted, so no
+   third-party security assessment is needed.
+6. Set `GMAIL_TOKEN_KEY` (`openssl rand -base64 32`) in the host's secret store and restart.
+
+Check it: Settings → Connected accounts shows a **Gmail** card. Connecting returns to the same
+page with "Gmail is connected". If Google says `redirect_uri_mismatch`, step 2 doesn't match `APP_ORIGIN`
+character for character.
+
+How sending is guarded (so support can explain it): the server sends only for a case that passes the
+evidence checks and the customer's approval on the server's copy, and only the approved subject,
+message and recipient. Each case sends at most once (`gmail_sends` table). If Gmail's answer is lost
+(network failure or a Google 5xx), the case is **not** marked sent, and the customer is asked to check
+their Gmail Sent folder before they can try again.
+
 ## 5. Backups and restore
 
 `server/backup.ts` takes a consistent copy while the server keeps running
@@ -140,8 +179,11 @@ docker exec reclaim rm /data/backups/reclaim-2026-10-17T09-30-00-123Z.sqlite
 ```
 
 - Schedule it at least daily (host cron, or the platform's scheduled job), and keep 30 days.
-- The file holds every account, audit and sealed QuickBooks token. Store
-  backups encrypted at rest, with access limited to the founders.
+- Audits in a backup stay sealed under the `DATA_KEY` of the day it was taken.
+  **A backup is useless without that key**, and a backup together with its key
+  is all the data. Keep the key and the backups in separate places.
+- Account details (emails, names, company names, password hashes) and the
+  QuickBooks company name are not sealed. Store backups encrypted at rest, with access limited to the founders.
 - Test a restore once before the pilot starts and once a month.
 - A volume snapshot from the host is a good second layer, but take it after a
   `server/backup.ts` run or with the container stopped. A snapshot of a live
@@ -153,11 +195,52 @@ docker exec reclaim rm /data/backups/reclaim-2026-10-17T09-30-00-123Z.sqlite
 2. Keep the current file in case you need it back: `docker run --rm -v reclaim-data:/data alpine mv /data/reclaim.sqlite /data/reclaim.sqlite.before-restore`
 3. Remove any leftover `/data/reclaim.sqlite-wal` and `/data/reclaim.sqlite-shm`. They belong to the old file and must not be replayed onto the restored one.
 4. Copy the backup in as `/data/reclaim.sqlite`, owned by uid 1000 (`docker cp` then `chown 1000:1000`, or a helper container).
-5. `docker start reclaim` and check `curl -s <APP_ORIGIN>/healthz`, then sign in with a known account.
+5. Make sure `DATA_KEY` is the key that was current when the backup was taken.
+   If it has been rotated since, set the old one as `DATA_KEY_PREVIOUS` and the
+   server re-seals the restored audits under the current key at startup.
+6. `docker start reclaim` and check `curl -s <APP_ORIGIN>/healthz`, then sign in with a known account.
 
 Anything written after the backup was taken is lost. Tell affected pilot customers.
 
-## 6. Rotating `QBO_TOKEN_KEY`
+## 6. `DATA_KEY`: encryption at rest, and rotating it
+
+Each stored audit (every record, finding, decision and recovery note in it) is
+sealed with AES-256-GCM under `DATA_KEY`, bound to its account and audit IDs
+(`server/projectStore.ts`). The audit's name and file name live only inside the
+sealed payload. The key is never in the database.
+
+**First start with `DATA_KEY`** (an existing database with plain audits): the
+server seals every plain row in one transaction, then runs `VACUUM` and
+`PRAGMA wal_checkpoint(TRUNCATE)`. That rebuilds the file without free pages
+and empties the WAL, so no plaintext copy stays in `reclaim.sqlite` or
+`reclaim.sqlite-wal`. The log says `encrypted N stored audits at rest`.
+`VACUUM` needs free disk about the size of the database, and can take a while on a big one.
+From then on `secure_delete` is on, so deleted audits and deleted accounts are
+zeroed in the file instead of left in free pages.
+
+What that does **not** clean up, so plan for it:
+- Backups and volume snapshots taken before the first encrypted start still hold
+  plaintext. Delete them once a fresh backup exists, or keep them under the same access as the live data.
+- Disk blocks SQLite gave back to the filesystem (the old file VACUUM replaced,
+  the truncated WAL) are not overwritten. Use a host volume that is itself encrypted at rest.
+- The browser's working copy (localStorage) is plain JSON while someone is signed
+  in, and is removed when they log out or delete their account.
+
+**Rotating `DATA_KEY`** (if it may have leaked, or someone who had it leaves).
+Nobody is signed out, and nothing needs reconnecting.
+
+1. Generate a new key: `openssl rand -base64 32`.
+2. Set `DATA_KEY` to the new key and `DATA_KEY_PREVIOUS` to the old one. Restart.
+   At startup every audit is re-sealed under the new key, then the file is vacuumed and the WAL truncated.
+3. Check the log for `encrypted N stored audits at rest`, and that `/healthz` and sign-in work.
+4. Remove `DATA_KEY_PREVIOUS` and restart.
+5. Take a fresh backup. Keep the old key, stored as carefully as the new one,
+   for as long as you keep backups taken under it (30 days), then destroy it.
+
+**Never just replace `DATA_KEY` without step 2.** Audits sealed under a key the
+server doesn't have can't be read, and the app returns errors for those accounts until the key is restored.
+
+## 7. Rotating `QBO_TOKEN_KEY`
 
 The key seals each customer's QuickBooks tokens. There's no re-encryption
 step: tokens sealed with the old key can't be opened with the new one.
@@ -176,7 +259,7 @@ leaked, or someone who had it leaves.
 `QBO_CLIENT_SECRET` and the other secrets rotate in their own consoles: issue
 the new value, update the host, restart, then revoke the old one.
 
-## 7. Paid plans (Stripe)
+## 7a. Paid plans (Stripe)
 
 Billing lives in `server/billing.ts`; the REST client is `server/stripe.ts` (no SDK).
 
@@ -211,12 +294,16 @@ stripe listen --forward-to localhost:8790/api/billing/webhook
 - [ ] `DEV_MAILBOX` is unset. `GET /api/dev/mailbox?to=x` returns 404.
 - [ ] Google sign-in works on the real domain (origin and redirect URI set, consent screen published).
 - [ ] QuickBooks: either all three `QBO_*` set with the redirect URI registered at Intuit, or none set.
-- [ ] Daily backup scheduled and copied off the server. One restore tested.
+- [ ] `DATA_KEY` set, different from `QBO_TOKEN_KEY`, and a copy kept apart from the server and the backups. The first-start log says audits were encrypted (or there were none).
+- [ ] Any backups or snapshots from before encryption deleted, or held under the same access as live data. The host volume is encrypted at rest.
+- [ ] Gmail: `GMAIL_TOKEN_KEY` set, Gmail API enabled, redirect URI and `gmail.send` scope added (§4a). Until Google verifies the app, only listed test users can connect. Send one request to an address you own and check it arrives and shows the Gmail message ID in the case history.
+- [ ] Daily backup scheduled and copied off the server. One restore tested, with the key.
 - [ ] Secrets live only in the host's secret store. Nobody has pasted them in chat, tickets or the repo.
 - [ ] One container per volume. No autoscaling to more than one instance.
 - [ ] Pilot customers know it's supervised: billing is test-mode only, and QuickBooks is sandbox only.
 - [ ] Stripe: prices created (`npm run stripe:setup`), webhook endpoint added with the five events, both `STRIPE_*` secrets set, `VITE_STRIPE_PUBLISHABLE_KEY` from the same account baked into the build. One test subscription started, switched, cancelled.
 - [ ] Rate limiting behind the proxy (§3): accepted for this pilot, or fixed.
+- [ ] Data policy (`docs/pilot-data-policy.md`) reviewed by the founders, and the Privacy Policy updated to match.
 
 ## Running a production build locally
 
@@ -224,7 +311,8 @@ To check the production build on this Mac without real email or the main checkou
 
 ```bash
 npm run build
-env -i PATH="$PATH" HOME="$HOME" NODE_ENV=production SESSION_COOKIE_SECURE_OK=1 PORT=8799 APP_ORIGIN=http://localhost:8799 DATABASE_PATH=/tmp/reclaim-qa.sqlite RESEND_API_KEY=re_not_real EMAIL_FROM=qa@localhost node server/index.ts
+env -i PATH="$PATH" HOME="$HOME" NODE_ENV=production SESSION_COOKIE_SECURE_OK=1 PORT=8799 APP_ORIGIN=http://localhost:8799 DATABASE_PATH=/tmp/reclaim-qa.sqlite RESEND_API_KEY=re_not_real EMAIL_FROM=qa@localhost DATA_KEY="$(openssl rand -base64 32)" node server/index.ts
 ```
 
 The dummy Resend key gets past the startup check. Any email the server tries to send fails, which is fine for browsing.
+A fresh `DATA_KEY` each run means audits saved in an earlier run can't be read; use a fresh `DATABASE_PATH` too, or keep the key.

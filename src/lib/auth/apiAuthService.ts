@@ -1,5 +1,6 @@
 import type { AuthError, AuthOutcome, AuthUser } from '@/lib/auth/types'
 import type { Entitlements, Plan } from '@/lib/plans'
+import type { OnboardingProfile } from '../../../server/onboarding.ts'
 
 /**
  * The browser side of the account system. Every call goes to the Reclaim
@@ -29,6 +30,7 @@ export interface ServerUser {
   methods: Array<'password' | 'google'>
   plan: Plan
   onboardingSeenAt: number | null
+  onboardingProfile: OnboardingProfile | null
 }
 
 export type SignUpResult = { ok: true; requiresVerification: true; email: string } | { ok: true; requiresVerification: false; user: AuthUser } | AuthError
@@ -152,6 +154,12 @@ export async function markOnboardingSeen(): Promise<AuthUser | null> {
   return status === 200 ? toAuthUser(body.user) : null
 }
 
+/** Saves onboarding's answers on the account; also marks onboarding as done. */
+export async function saveOnboarding(profile: OnboardingProfile): Promise<AuthUser | null> {
+  const { status, body } = await call<{ user: ServerUser }>('/api/account/onboarding', { method: 'POST', json: profile })
+  return status === 200 ? toAuthUser(body.user) : null
+}
+
 /** Asks the server to upgrade. Today the server answers "coming soon"; the message is shown as-is. */
 export async function requestUpgrade(): Promise<{ ok: boolean; message: string }> {
   const { status, body } = await call<{ message?: string }>('/api/account/upgrade', { method: 'POST' })
@@ -162,4 +170,21 @@ export async function requestUpgrade(): Promise<{ ok: boolean; message: string }
 export async function setDevPlan(plan: Plan): Promise<AuthUser | null> {
   const { status, body } = await call<{ user: ServerUser }>('/api/dev/plan', { method: 'POST', json: { plan } })
   return status === 200 ? toAuthUser(body.user) : null
+}
+
+/** Same-origin download of everything the account holds, as JSON (the server sets the filename). */
+export const ACCOUNT_EXPORT_URL = '/api/account/export'
+
+/** Deletes the account and all its data. The server checks the typed email; the session ends with it. */
+export async function deleteAccount(confirmEmail: string): Promise<{ ok: true } | AuthError> {
+  const { status, body } = await call<Failure>('/api/account/delete', { method: 'POST', json: { confirmEmail } })
+  if (status !== 200) return failure(body, 'Could not delete the account. Nothing was deleted.')
+  return { ok: true }
+}
+
+/** Records acceptance of the Terms and Privacy Policy version shown to the person. */
+export async function acceptTerms(termsVersion: string): Promise<AuthOutcome> {
+  const { status, body } = await call<{ user: ServerUser } & Failure>('/api/account/accept-terms', { method: 'POST', json: { termsVersion } })
+  if (status !== 200) return failure(body, 'Could not record your acceptance. Try again.')
+  return { ok: true, user: toAuthUser(body.user) }
 }

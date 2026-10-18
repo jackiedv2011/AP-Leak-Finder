@@ -236,7 +236,7 @@ function detectExactDuplicates(records: APRecord[], refundPool: RefundPool): {
 }
 
 /**
- * Records that belong to a recurring series for this vendor: three or more
+ * The recurring series for this vendor, each as its on-cadence rows: three or more
  * payments of the same amount on a steady cadence, no two sharing an invoice
  * number. Rows without a reference count (card and check purchases rarely
  * carry one). One vendor can have several such series (two subscriptions).
@@ -248,8 +248,8 @@ function detectExactDuplicates(records: APRecord[], refundPool: RefundPool): {
  * the series going. If too little of the series keeps to the cadence, none of
  * it is treated as recurring.
  */
-function recurringRecordIds(sortedByDate: APRecord[]): Set<string> {
-  const recurring = new Set<string>()
+function recurringRuns(sortedByDate: APRecord[]): APRecord[][] {
+  const runs: APRecord[][] = []
   const byAmount = groupBy(sortedByDate, (r) => toCents(r.amountPaid).toString())
   for (const series of byAmount.values()) {
     if (series.length < 3) continue
@@ -268,9 +268,54 @@ function recurringRecordIds(sortedByDate: APRecord[]): Set<string> {
       if (gap >= cadence - tolerance) onCadence.push(r)
     }
     if (onCadence.length < 3 || onCadence.length < Math.ceil(series.length * 0.6)) continue
-    onCadence.forEach((r) => recurring.add(r.id))
+    runs.push(onCadence)
   }
-  return recurring
+  return runs
+}
+
+/**
+ * A run of payments recognised as a recurring charge and therefore not flagged
+ * as near-duplicates of each other. Plain JSON (no Date objects) so it survives
+ * saving and reloading an audit.
+ */
+export interface RecurringSeries {
+  vendor: string
+  amount: number
+  /** The rows' currency when they agree, else null. */
+  currency: string | null
+  /** Median days between payments. */
+  cadenceDays: number
+  paymentCount: number
+  /** Local calendar dates, YYYY-MM-DD. */
+  firstPaymentDate: string
+  lastPaymentDate: string
+  recordIds: string[]
+}
+
+export type DetectionResultWithRecurring = DetectionResult & { recurringSeries: RecurringSeries[] }
+
+/** Recurring series on a detection result; [] for audits saved before the field existed. */
+export function recurringSeriesOf(result: DetectionResult): RecurringSeries[] {
+  const series = (result as Partial<DetectionResultWithRecurring>).recurringSeries
+  return Array.isArray(series) ? series : []
+}
+
+const localDate = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+
+function toRecurringSeries(rows: APRecord[]): RecurringSeries {
+  const currencies = new Set(rows.map((r) => r.currency ?? null))
+  // Measured over the series itself, so an off-series extra payment doesn't skew it.
+  const gaps = rows.slice(1).map((r, i) => daysBetween(rows[i].paymentDate, r.paymentDate))
+  return {
+    vendor: rows[0].vendor,
+    amount: centsToDollars(toCents(rows[0].amountPaid)),
+    currency: currencies.size === 1 ? [...currencies][0] : null,
+    cadenceDays: median(gaps),
+    paymentCount: rows.length,
+    firstPaymentDate: localDate(rows[0].paymentDate),
+    lastPaymentDate: localDate(rows[rows.length - 1].paymentDate),
+    recordIds: rows.map((r) => r.id),
+  }
 }
 
 /** Only deterministic reference normalization establishes a variant; typos remain general near-match review. */
@@ -294,15 +339,18 @@ function detectNearDuplicates(
   records: APRecord[],
   excludeRecordIds: Set<string>,
   windowDays = DEFAULT_REVIEW_WINDOW_DAYS
-): FindingWithImpactRows[] {
+): { findings: FindingWithImpactRows[]; recurringSeries: RecurringSeries[] } {
   const findings: FindingWithImpactRows[] = []
+  const recurringSeries: RecurringSeries[] = []
   const eligible = records.filter((r) => isPayment(r) && !excludeRecordIds.has(r.id))
   const groups = groupBy(eligible, (r) => normalizeVendor(r.vendor))
   const usedAsLater = new Set<string>()
 
   for (const group of groups.values()) {
     const sorted = [...group].sort((a, b) => a.paymentDate.getTime() - b.paymentDate.getTime())
-    const recurring = recurringRecordIds(sorted)
+    const runs = recurringRuns(sorted)
+    recurringSeries.push(...runs.map(toRecurringSeries))
+    const recurring = new Set(runs.flatMap((rows) => rows.map((r) => r.id)))
 
     for (let i = 1; i < sorted.length; i++) {
       const later = sorted[i]
@@ -361,7 +409,7 @@ function detectNearDuplicates(
     }
   }
 
-  return findings
+  return { findings, recurringSeries }
 }
 
 // Rule 3 — Overpayment vs invoice (recoverable, high)
@@ -629,10 +677,10 @@ function dedupeRecoverable(candidates: FindingWithImpactRows[]): Finding[] {
 
 const SEVERITY_RANK: Record<Finding['severity'], number> = { high: 0, medium: 1, low: 2 }
 
-export function detectFindings(records: APRecord[]): DetectionResult {
+export function detectFindings(records: APRecord[]): DetectionResultWithRecurring {
   const refundPool = buildRefundPool(records)
   const { findings: exactDuplicates, allGroupedRecordIds } = detectExactDuplicates(records, refundPool)
-  const nearDuplicates = detectNearDuplicates(records, allGroupedRecordIds)
+  const { findings: nearDuplicates, recurringSeries } = detectNearDuplicates(records, allGroupedRecordIds)
   const overpayments = detectOverpayments(records, refundPool)
   const unclaimedDiscounts = detectUnclaimedDiscounts(records)
 
@@ -670,6 +718,7 @@ export function detectFindings(records: APRecord[]): DetectionResult {
     centsToDollars(findings.filter((f) => f.class === cls).reduce((sum, f) => sum + toCents(f.dollarImpact), 0))
 
   return {
+    recurringSeries,
     findings,
     recoverableTotal: sumBy('recoverable'),
     reviewTotal: sumBy('review'),

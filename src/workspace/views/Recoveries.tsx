@@ -7,6 +7,7 @@ import { verifiedReturned } from '@/recovery/financials'
 import { ladder, recoveries, vendorCommitments, type Opportunity } from '../selectors'
 import { useHeadlineMoney } from '../preferences'
 import { CountUp } from './CountUp'
+import { MiniPie } from './MiniPie'
 
 const LANES: Array<{ stage: RecoveryStage; title: string; hint: string }> = [
   { stage: 'confirmed', title: 'Prepared', hint: 'Confirmed findings waiting for approval or to be sent.' },
@@ -40,6 +41,14 @@ export function Recoveries({ env, onOpenCase, onOpenFindings }: { env: LedgerEnv
   const commitments = vendorCommitments(env)
   const money = useHeadlineMoney()
   const now = Date.now()
+  // Every pie is a share of the same whole: what is still out plus what came back.
+  const pursued = l.inRecovery + l.recovered
+  const pie = (value: number, color: string, label: string) => (
+    <span className="wk-total-pie">
+      <MiniPie value={value} total={pursued} color={color} label={label} />
+      <small>{pursued > 0 ? Math.round((value / pursued) * 100) : 0}%</small>
+    </span>
+  )
 
   if (rows.length === 0) {
     return (
@@ -62,26 +71,30 @@ export function Recoveries({ env, onOpenCase, onOpenFindings }: { env: LedgerEnv
 
   return (
     <>
-      <section className="wk-totals" aria-label="Recovery totals">
+      <section className="wk-totals" data-pies aria-label="Recovery totals">
         <div className="wk-total" data-total="inRecovery" data-amount={l.inRecovery} data-empty={l.inRecovery === 0 || undefined}>
           <span className="wk-label">In recovery</span>
           <strong className="wk-total-value"><CountUp value={l.inRecovery} format={money} /></strong>
           <span className="wk-total-note">{l.counts.inRecovery} {plural(l.counts.inRecovery, 'request')} out with vendors</span>
+          {pie(l.inRecovery, 'var(--st-waiting-dot)', 'In recovery')}
         </div>
         <div className="wk-total" data-total="agreed" data-amount={commitments.confirmed} data-empty={commitments.confirmed === 0 || undefined}>
           <span className="wk-label">Vendor agreed</span>
           <strong className="wk-total-value"><CountUp value={commitments.confirmed} format={money} /></strong>
           <span className="wk-total-note">{commitments.confirmedCases} {plural(commitments.confirmedCases, 'agreement')} you recorded</span>
+          {pie(commitments.confirmed, 'var(--st-agreed-ink)', 'Vendor agreed')}
         </div>
         <div className="wk-total" data-total="pending" data-amount={commitments.pendingReturn} data-empty={commitments.pendingReturn === 0 || undefined}>
           <span className="wk-label">Return pending</span>
           <strong className="wk-total-value"><CountUp value={commitments.pendingReturn} format={money} /></strong>
           <span className="wk-total-note">{commitments.pendingCases === 1 ? '1 promise or credit' : `${commitments.pendingCases} promises or credits`} awaiting proof</span>
+          {pie(commitments.pendingReturn, 'var(--st-agreed-dot)', 'Return pending')}
         </div>
         <div className="wk-total" data-total="recovered" data-amount={l.recovered} data-empty={l.recovered === 0 || undefined} data-accent={l.recovered > 0 || undefined}>
           <span className="wk-label">Recovered</span>
           <strong className="wk-total-value" style={l.recovered > 0 ? { color: 'var(--accent-ink)' } : undefined}><CountUp value={l.recovered} format={money} /></strong>
           <span className="wk-total-note">Only money you recorded as settled</span>
+          {pie(l.recovered, 'var(--st-back-dot)', 'Recovered')}
         </div>
       </section>
 

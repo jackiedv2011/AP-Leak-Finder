@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Reclaim Onboarding</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Geist:wght@300..700&family=Geist+Mono:wght@400;500&family=Barlow+Condensed:wght@500;600;700&family=Inter:opsz,wght@14..32,300..700&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <script>
+      /* Resolve the theme before first paint (mirrors workspace/theme.ts). Storage
+         may be refused in a framed snapshot, so every read is guarded. */
+      (function () {
+        var c = null;
+        try { c = localStorage.getItem('reclaim.theme.v1'); } catch (e) {}
+        if (c !== 'light' && c !== 'dark') {
+          c = window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+        }
+        document.documentElement.dataset.theme = c;
+      })();
+    </script>
+    <style>
+      html,body,#root{margin:0;padding:0;min-height:100%;background:#000}
+      html[data-theme='light'],html[data-theme='light'] body{background:#f3f3f3}
+      .review-restart{position:fixed;right:16px;bottom:16px;z-index:50;height:30px;padding:0 12px;border:1px solid rgb(127 127 127 / .35);border-radius:999px;background:rgb(20 20 20 / .72);color:#ddd;font:500 12px Inter,system-ui,sans-serif;cursor:pointer;backdrop-filter:blur(8px)}
+      body:has([data-testid='onboarding']) .review-restart{display:none}
+      html[data-theme='light'] .review-restart{background:rgb(255 255 255 / .82);color:#333}
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="./onboarding.tsx"></script>
+  </body>
+</html>

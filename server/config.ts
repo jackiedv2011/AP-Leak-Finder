@@ -33,6 +33,19 @@ export interface ServerConfig {
    */
   quickbooks: { clientId: string; clientSecret: string; tokenKey: Buffer } | null
   /**
+   * Seals every stored audit (projectStore.ts). Secret, and unlike the
+   * QuickBooks key it cannot be lost: without it the audits can't be read.
+   * `previous` is only set while rotating, so rows sealed under it are re-sealed.
+   * Required in production; without it (development) audits are stored as plain JSON.
+   */
+  dataKeys: { current: Buffer; previous: Buffer | null } | null
+  /**
+   * Sending recovery emails from the customer's own Gmail, through the same
+   * Google OAuth client as sign-in. GMAIL_TOKEN_KEY (32 random bytes, base64)
+   * seals stored refresh tokens; losing it only means customers reconnect.
+   */
+  gmailSend: { clientId: string; clientSecret: string; tokenKey: Buffer } | null
+  /**
    * Stripe billing (server/billing.ts). Both are secrets. The webhook secret
    * (whsec_…) comes from the dashboard endpoint or `stripe listen`; without it
    * the webhook refuses every event.
@@ -72,7 +85,22 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): ServerConfig {
     devMailbox: !production && (env.DEV_MAILBOX === 'true' || (env.DEV_MAILBOX !== 'false' && isLocalOrigin(appOrigin))),
     quickbooks: quickbooksConfig(env),
     stripe: env.STRIPE_SECRET_KEY?.trim() ? { secretKey: env.STRIPE_SECRET_KEY.trim(), webhookSecret: env.STRIPE_WEBHOOK_SECRET?.trim() || null } : null,
+    dataKeys: dataKeysConfig(env),
+    gmailSend: gmailSendConfig(env, google),
   }
+}
+
+function dataKeysConfig(env: NodeJS.ProcessEnv): ServerConfig['dataKeys'] {
+  const parse = (name: string) => {
+    const key = Buffer.from(env[name]!, 'base64')
+    if (key.length !== 32) throw new Error(`${name} must be 32 random bytes, base64-encoded (openssl rand -base64 32).`)
+    return key
+  }
+  if (env.DATA_KEY_PREVIOUS?.trim() && !env.DATA_KEY?.trim()) throw new Error('DATA_KEY_PREVIOUS is set without DATA_KEY.')
+  if (!env.DATA_KEY?.trim()) return null
+  const current = parse('DATA_KEY')
+  const previous = env.DATA_KEY_PREVIOUS?.trim() ? parse('DATA_KEY_PREVIOUS') : null
+  return { current, previous: previous && !previous.equals(current) ? previous : null }
 }
 
 /**
@@ -102,6 +130,11 @@ function productionProblems(env: NodeJS.ProcessEnv, appOrigin: string): string[]
   // The dev mailbox hands password-reset links to anyone who asks.
   if (set('DEV_MAILBOX') && env.DEV_MAILBOX !== 'false') problems.push('DEV_MAILBOX must be unset or false in production.')
 
+  // Every stored audit is sealed under this key. Reusing the QuickBooks key
+  // would mean rotating one forces rotating the other.
+  if (!set('DATA_KEY')) problems.push('DATA_KEY is not set. Stored audits are encrypted with it: openssl rand -base64 32, and keep a copy apart from the database backups.')
+  else if (set('QBO_TOKEN_KEY') && env.DATA_KEY!.trim() === env.QBO_TOKEN_KEY!.trim()) problems.push('DATA_KEY must be different from QBO_TOKEN_KEY.')
+
   const qbo = ['QBO_CLIENT_ID', 'QBO_CLIENT_SECRET', 'QBO_TOKEN_KEY']
   const missing = qbo.filter((name) => !set(name))
   if (missing.length && missing.length < qbo.length) problems.push(`QuickBooks is half configured: ${missing.join(', ')} missing. Set all three QBO_* values, or none.`)
@@ -110,6 +143,7 @@ function productionProblems(env: NodeJS.ProcessEnv, appOrigin: string): string[]
   // failed payments and cancellations would never reach users.plan.
   if (set('STRIPE_SECRET_KEY') !== set('STRIPE_WEBHOOK_SECRET')) problems.push('Set both STRIPE_SECRET_KEY and STRIPE_WEBHOOK_SECRET, or neither.')
   if (set('STRIPE_SECRET_KEY') && !/^(sk|rk)_(test|live)_/.test(env.STRIPE_SECRET_KEY!.trim())) problems.push('STRIPE_SECRET_KEY must be a Stripe secret key (sk_test_… or sk_live_…), never the publishable key.')
+  if (set('GMAIL_TOKEN_KEY') && !(set('GOOGLE_CLIENT_ID') && set('GOOGLE_CLIENT_SECRET'))) problems.push('GMAIL_TOKEN_KEY is set but GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET are not; Gmail sending uses the same Google client.')
 
   return problems
 }
@@ -128,6 +162,13 @@ function quickbooksConfig(env: NodeJS.ProcessEnv): ServerConfig['quickbooks'] {
   const tokenKey = Buffer.from(env.QBO_TOKEN_KEY, 'base64')
   if (tokenKey.length !== 32) throw new Error('QBO_TOKEN_KEY must be 32 random bytes, base64-encoded (openssl rand -base64 32).')
   return { clientId: env.QBO_CLIENT_ID, clientSecret: env.QBO_CLIENT_SECRET, tokenKey }
+}
+
+function gmailSendConfig(env: NodeJS.ProcessEnv, google: ServerConfig['google']): ServerConfig['gmailSend'] {
+  if (!google || !env.GMAIL_TOKEN_KEY) return null
+  const tokenKey = Buffer.from(env.GMAIL_TOKEN_KEY, 'base64')
+  if (tokenKey.length !== 32) throw new Error('GMAIL_TOKEN_KEY must be 32 random bytes, base64-encoded (openssl rand -base64 32).')
+  return { ...google, tokenKey }
 }
 
 function isLocalOrigin(origin: string): boolean {

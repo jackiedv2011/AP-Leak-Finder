@@ -98,6 +98,12 @@ export interface Billing {
   recordRecoveries(userId: string, project: Record<string, unknown>, options?: { imported?: boolean }): void
   /** Resolves once background fee billing has finished (tests). */
   idle(): Promise<void>
+  /**
+   * Before an account is deleted: bill fees already owed, then end the
+   * subscription now so nothing charges an account that no longer exists.
+   * Throws (and the deletion stops) if Stripe can't be reached.
+   */
+  closeAccount(userId: string): Promise<void>
 }
 
 export interface BillingDependencies {
@@ -457,7 +463,28 @@ export function createBilling({ db, auth, stripe, webhookSecret, requireUser }: 
     throw new HttpError(404, 'Not found.')
   }
 
-  return { route, recordRecoveries, idle: () => background }
+  async function closeAccount(userId: string): Promise<void> {
+    const row = account(userId)
+    if (!row) return
+    if (!stripe) {
+      if (hasPaidSubscription(row)) throw new HttpError(503, 'Your subscription can’t be cancelled on this server right now, so the account wasn’t deleted. Contact us and we’ll cancel it.', 'billing_unavailable')
+      return
+    }
+    await background
+    try {
+      if (hasPaidSubscription(row)) {
+        await billFees(userId)
+        await stripe.cancelSubscriptionNow(row.stripe_subscription_id, { invoiceNow: true })
+      } else {
+        await billFees(userId, { finalInvoice: true })
+      }
+    } catch (err) {
+      console.error('billing: closing account failed:', err instanceof Error ? err.message : 'unknown')
+      throw new HttpError(502, 'We couldn’t cancel your subscription with our payment provider, so the account wasn’t deleted. Try again in a minute.', 'billing_failed')
+    }
+  }
+
+  return { route, recordRecoveries, idle: () => background, closeAccount }
 }
 
 const PLAN_NAME: Record<Plan, string> = { free: 'Free', growth: 'Growth', flat: 'Flat' }

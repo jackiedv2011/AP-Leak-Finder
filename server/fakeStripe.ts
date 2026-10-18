@@ -202,9 +202,10 @@ export class FakeStripe implements StripeApi {
     return this.view(sub)
   }
 
-  async cancelSubscriptionNow(id: string) {
+  async cancelSubscriptionNow(id: string, options: { invoiceNow?: boolean } = {}) {
     this.enter('cancelSubscriptionNow')
     const sub = this.sub(id)
+    if (options.invoiceNow) this.invoice(sub.customer, null)
     sub.status = sub.status === 'incomplete' ? 'incomplete_expired' : 'canceled'
     this.emit('customer.subscription.deleted', this.wire(sub))
   }

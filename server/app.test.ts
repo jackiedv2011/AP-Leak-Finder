@@ -319,7 +319,7 @@ describe('plans and entitlements', () => {
     expect(user.onboardingSeenAt).toBeNull()
     const ent = await c.get('/api/account/entitlements')
     expect(ent.status).toBe(200)
-    expect(ent.body).toMatchObject({ plan: 'free', limits: { auditsPerMonth: null, findingsVisible: 3, blocksRepeatUploads: true, aiDrafts: false, fullLetters: false, fullRecoveryWorkflow: false, advancedReports: false }, usage: { auditsThisMonth: 0 }, canStartAudit: true })
+    expect(ent.body).toMatchObject({ plan: 'free', limits: { auditsPerMonth: null, findingsVisible: 3, blocksRepeatUploads: true, aiDrafts: false, fullLetters: true, gmailSending: true, fullRecoveryWorkflow: false, advancedReports: false }, usage: { auditsThisMonth: 0 }, canStartAudit: true })
     expect((await new Client().get('/api/account/entitlements')).status).toBe(401)
   })
 
@@ -375,6 +375,19 @@ describe('plans and entitlements', () => {
     const res = await c.post('/api/account/onboarding-seen')
     expect(res.body.user.onboardingSeenAt).toBeTypeOf('number')
     expect((await c.get('/api/auth/me')).body.user.onboardingSeenAt).toBeTypeOf('number')
+  })
+
+  it('onboarding answers are saved on the account, and malformed ones are refused', async () => {
+    const c = new Client()
+    await signUpAndVerify(c, alice)
+    expect((await c.get('/api/auth/me')).body.user.onboardingProfile).toBeNull()
+    const res = await c.post('/api/account/onboarding', { goals: ['duplicates', 'credits'], role: 'owner', tools: ['xero'], autonomy: 'show', purpose: '  Payroll  ' })
+    expect(res.status).toBe(200)
+    expect(res.body.user.onboardingSeenAt).toBeTypeOf('number')
+    const profile = (await c.get('/api/auth/me')).body.user.onboardingProfile
+    expect(profile).toMatchObject({ goals: ['duplicates', 'credits'], role: 'owner', tools: ['xero'], autonomy: 'show', purpose: 'Payroll', businessName: '', teamSize: null })
+    expect((await c.post('/api/account/onboarding', { goals: ['everything'] })).status).toBe(400)
+    expect((await c.post('/api/account/onboarding', { autonomy: 'send_without_asking' })).status).toBe(400)
   })
 
   it('the dev plan switch is not available in production', async () => {
