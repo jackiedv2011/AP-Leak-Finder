@@ -202,10 +202,10 @@
 .wk.ob .ob-third p { max-width: 34ch; margin: 2px 0 0; color: var(--text-muted); font-size: 14px; line-height: 1.5; text-wrap: pretty; }
 
 /* finale: the stage fills the screen behind the words */
-.wk.ob .ob-finale-stage { position: absolute; inset: 0; z-index: 0; pointer-events: none; animation: ob-fade 900ms ease both; }
+.wk.ob .ob-finale-stage { position: absolute; inset: 0 0 0 30%; z-index: 0; pointer-events: none; animation: ob-fade 900ms ease both; }
 .wk.ob .ob-reel-layer { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 72% 50%; }
 .wk.ob[data-zoom='finale'] .ob-step { align-items: flex-start; text-align: left; }
-.wk.ob[data-zoom='finale'] .ob-step > * { max-width: 540px; }
+.wk.ob[data-zoom='finale'] .ob-step > * { max-width: min(540px, 44vw); }
 .wk.ob[data-zoom='finale'] .ob-head { align-items: flex-start; }
 .wk.ob[data-zoom='finale'] .ob-title { max-width: 13ch; }
 .wk.ob[data-zoom='finale'] .ob-field { width: 100%; }
@@ -285,7 +285,7 @@
 }
 .wk.ob .ob-field .wk-input::placeholder { color: var(--text-muted); opacity: .8; }
 .wk.ob .ob-field .wk-input:focus { border-color: var(--text-dim); outline: none; box-shadow: 0 0 0 3px color-mix(in srgb, var(--text) 12%, transparent); }
-.wk.ob .ob-field .ob-textarea { height: auto; min-height: 110px; padding: 12px 14px; line-height: 1.5; resize: vertical; }
+.wk.ob .ob-field .ob-textarea { height: auto; min-height: 110px; padding: 12px 14px; line-height: 1.5; resize: none; }
 .wk.ob .ob-field-inline { width: min(640px, 100%); margin-top: 4px; }
 
 .wk.ob .ob-chips,
@@ -451,10 +451,11 @@ html[data-surface='workspace'] .wk.ob .ob-path:hover:not(:disabled) .ob-path-go[
   .wk.ob .ob-cards[data-count='3'] .ob-card-art { width: 92px; margin: 0; flex: none; }
   .wk.ob .ob-cards[data-count='3'] .ob-badge { position: static; align-self: flex-start; order: 3; display: none; }
   .wk.ob .ob-finale-stage { position: relative; inset: auto; width: 100%; height: 34vh; }
+  .wk.ob[data-zoom='finale'] .ob-step > * { max-width: 100%; }
   .wk.ob .ob-reel-layer { object-fit: contain; object-position: 70% 50%; }
 }
 @media (max-width: 720px) {
-  .wk.ob { --gutter: 16px; }
+  html[data-surface='workspace'] .wk.ob { --gutter: 16px; }
   .wk.ob .ob-top { grid-template-columns: auto 1fr auto; }
   .wk.ob .ob-progress { justify-content: center; }
   .wk.ob .ob-progress ol { display: none; }

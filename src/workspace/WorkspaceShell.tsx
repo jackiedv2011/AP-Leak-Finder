@@ -23,6 +23,7 @@ import {
   X,
 } from 'lucide-react'
 import { useOptionalAuth } from '@/lib/auth/AuthContext'
+import { TutorialTour, type TutorialStep } from '@/components/tutorial/TutorialTour'
 import { CustomizeSheet } from './Customize'
 import { PreferencesProvider, usePreferences } from './preferences'
 import { resolveTheme } from './theme'
@@ -89,6 +90,15 @@ export function WorkspaceShell(props: WorkspaceShellProps) {
     </PreferencesProvider>
   )
 }
+
+const DASHBOARD_TOUR: TutorialStep[] = [
+  { id: 'welcome', title: 'Welcome to Reclaim', body: 'A quick look around: where findings land, how recoveries are tracked, and where to start a new audit.' },
+  { id: 'overview', title: 'Overview', body: 'Your money-owed picture at a glance: totals, what needs verifying, and what is already recovered.', target: '[data-tour="nav-dashboard"]', placement: 'bottom' },
+  { id: 'findings', title: 'Findings', body: 'Every flagged payment, with the evidence behind it. Open one to review and decide what to do.', target: '[data-tour="nav-findings"]', placement: 'bottom' },
+  { id: 'recoveries', title: 'Recoveries', body: 'Once you act on a finding it becomes a case here, coloured by who holds the ball.', target: '[data-tour="nav-recoveries"]', placement: 'bottom' },
+  { id: 'audits', title: 'Audits', body: 'Each ledger you upload is an audit. Switch between them or start a new one here.', target: '[data-tour="nav-audits"]', placement: 'bottom' },
+  { id: 'find', title: 'Find anything', body: 'Press F to jump to a page, vendor or finding.', target: '[data-tour="find"]', placement: 'bottom' },
+]
 
 function Shell({ mode, onModeChange, auditCount, findingCount, recoveryCount, workspaceLabel, workspaceId, availableWorkspaces, onOpenWorkspace, searchableFindings = [], onOpenFinding, title, finding = null, actions, children }: WorkspaceShellProps) {
   const auth = useOptionalAuth()
@@ -163,7 +173,7 @@ function Shell({ mode, onModeChange, auditCount, findingCount, recoveryCount, wo
   }, [switcherOpen])
 
   const renderItem = ({ mode: entryMode, label, icon: Icon, count }: NavEntry) => <li key={entryMode}>
-    <button type="button" className="wk-nav-item" aria-current={mode === entryMode ? 'page' : undefined} title={prefs.sidebarCollapsed ? label : undefined} onClick={() => { onModeChange(entryMode); setMobileNavOpen(false) }}>
+    <button type="button" className="wk-nav-item" data-tour={`nav-${entryMode}`} aria-current={mode === entryMode ? 'page' : undefined} title={prefs.sidebarCollapsed ? label : undefined} onClick={() => { onModeChange(entryMode); setMobileNavOpen(false) }}>
       <Icon aria-hidden="true" /><span>{label}</span>{count !== undefined && count > 0 ? <span className="wk-nav-count">{count}</span> : null}
     </button>
   </li>
@@ -176,7 +186,7 @@ function Shell({ mode, onModeChange, auditCount, findingCount, recoveryCount, wo
       <button type="button" className="wk-brandrow" onClick={() => { onModeChange('dashboard'); setMobileNavOpen(false) }} aria-label="Reclaim overview">
         <Mark /><b>Reclaim</b><span className="wk-plan-chip" data-plan={plan}>{plan === 'local' ? 'Local' : plan === 'guest' ? 'guest' : PLAN_LABEL[plan]}</span>
       </button>
-      <button ref={findTrigger} type="button" className="wk-find" onClick={openFind} title="Find (F)"><Search aria-hidden="true" /><span>Find</span><kbd aria-hidden="true">F</kbd></button>
+      <button ref={findTrigger} type="button" className="wk-find" data-tour="find" onClick={openFind} title="Find (F)"><Search aria-hidden="true" /><span>Find</span><kbd aria-hidden="true">F</kbd></button>
       <nav aria-label="Workspace">
         <ul className="wk-nav">{primary.map(renderItem)}</ul>
         <div className="wk-nav-rule" />
@@ -227,6 +237,7 @@ function Shell({ mode, onModeChange, auditCount, findingCount, recoveryCount, wo
         {children}
       </main>
     </div>
+    <TutorialTour tourId="dashboard" steps={DASHBOARD_TOUR} />
     <CustomizeSheet open={customizeOpen} onOpenChange={setCustomizeOpen} />
     {findOpen ? <div className="wk-command-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) closeFind() }}><section className="wk-command" role="dialog" aria-modal="true" aria-labelledby="wk-command-title">
       <h2 id="wk-command-title" className="wk-sr-only">Find in workspace</h2><div className="wk-command-input-row"><Search aria-hidden="true" /><input ref={findInput} type="search" value={findQuery} onChange={(event) => { setFindQuery(event.target.value); setActiveIndex(0) }} placeholder="Find a page, vendor or finding…" aria-label="Find pages or findings" /><button type="button" className="wk-icon-btn" aria-label="Close search" onClick={closeFind}><X aria-hidden="true" /></button></div>

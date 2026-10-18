@@ -26,6 +26,12 @@ interface Rect {
 }
 
 const PAD = 8
+const RESTART_EVENT = 'reclaim:tutorial-restart'
+
+/** Replays the walkthrough from the first step, whichever tour is mounted. */
+export function restartTutorial(): void {
+  window.dispatchEvent(new Event(RESTART_EVENT))
+}
 
 export function TutorialTour({ tourId, steps, autoStart = true }: TutorialTourProps) {
   const [open, setOpen] = useState(false)
@@ -40,6 +46,17 @@ export function TutorialTour({ tourId, steps, autoStart = true }: TutorialTourPr
     return () => window.clearTimeout(timeout)
     // Only ever auto-start once per mount.
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Settings → "Restart tutorial" fires this; the tour is mounted for the whole session.
+  useEffect(() => {
+    function restart() {
+      skipCountRef.current = 0
+      setStepIndex(0)
+      setOpen(true)
+    }
+    window.addEventListener(RESTART_EVENT, restart)
+    return () => window.removeEventListener(RESTART_EVENT, restart)
   }, [])
 
   const step = steps[stepIndex]

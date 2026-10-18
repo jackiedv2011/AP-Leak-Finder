@@ -2,6 +2,7 @@ import { overviewSummary } from '@/ledger/views'
 import type { LedgerEnvironment } from '@/ledger/store'
 import { useOptionalAuth } from '@/lib/auth/AuthContext'
 import { TERMS_VERSION } from '@/legal/terms'
+import { restartTutorial } from '@/components/tutorial/TutorialTour'
 import { Facts } from './Reports'
 import { CustomizeControls } from '../Customize'
 import { useState } from 'react'
@@ -171,6 +172,15 @@ export function SettingsView({ env, onClear, onEditOnboarding, theme, resolvedTh
               </div>
               <button type="button" className="wk-btn" data-variant="outline" data-size="sm" onClick={onEditOnboarding}>
                 {user?.onboardingProfile ? 'Edit answers' : 'Answer them'}
+              </button>
+            </li>
+            <li>
+              <div>
+                <div style={{ fontWeight: 500 }}>Product tutorial</div>
+                <div className="wk-table-sub">A short walkthrough of the sidebar: findings, recoveries and audits.</div>
+              </div>
+              <button type="button" className="wk-btn" data-variant="outline" data-size="sm" onClick={restartTutorial}>
+                Restart tutorial
               </button>
             </li>
           </ul>
