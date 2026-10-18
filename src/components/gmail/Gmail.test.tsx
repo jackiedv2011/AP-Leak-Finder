@@ -11,9 +11,9 @@ import { startLiveServer, type LiveServer } from '@/test/liveServer'
 import { authorizedProject } from '../../../server/testProject.ts'
 import { GmailSendError, type GmailClient } from '../../../server/gmail.ts'
 import { RecoveryRequestPanel, type RequestPackage } from '@/workspace/views/RecoveryPanels'
-import { GmailSettings } from '@/components/gmail/Gmail'
+import { GmailFollowUp, GmailSettings } from '@/components/gmail/Gmail'
 import { updateRecoveryPackage, withHistory, type CaseState } from '@/ledger/caseState'
-import { approveRecovery, recordEmailSent } from '@/recovery/model'
+import { approveRecovery, recordEmailSent, recordFollowUpSent, recordVendorUpdate, setFollowUpAfterDays } from '@/recovery/model'
 import { PLAN_LIMITS } from '@/lib/plans'
 import type { GmailSendReceipt } from '@/lib/gmailApi'
 import type { Finding } from '@/types'
@@ -207,5 +207,102 @@ describe('Gmail in Settings → Connected accounts', () => {
     await signUpAndConnect(false)
     const { container } = render(<GmailSettings />)
     await waitFor(() => expect(container).toBeEmptyDOMElement())
+  })
+})
+
+const DAY = 86_400_000
+
+describe('following up from Gmail', () => {
+  /** A request Gmail sent `daysAgo`, saved on the account as sent, and the follow-up section around it. */
+  async function sentDaysAgo(daysAgo: number, extra: Partial<CaseState> = {}) {
+    const { project, env, finding, findingId } = await savedCase()
+    const sentAt = Date.now() - daysAgo * DAY
+    const sent = { channel: 'gmail' as const, messageId: 'msg-original', from: 'owner@gmail.com', to: 'ap@sierra.test', cc: ['controller@ng.test'], sentAt }
+    const approved = approveRecovery({ ...env.caseStates[findingId], recoverySubject: 'Duplicate payment of invoice INV-1', recoveryDraft: 'Hello,\nPlease refund $6,800.00.', recoveryRecipientEmail: 'ap@sierra.test', requestedAmount: 6800, requestedResolution: 'refund' }, { knownBeforeReclaim: false, at: sentAt - 1000 })
+    env.caseStates[findingId] = { ...recordEmailSent(approved, sent, 6800), ...extra }
+    await live.api('/api/projects/p1', { method: 'PUT', json: project })
+    const save = async (state: CaseState) => {
+      env.caseStates[findingId] = state
+      await live.api('/api/projects/p1', { method: 'PUT', json: project })
+    }
+    return { finding, initial: env.caseStates[findingId], save }
+  }
+
+  function FollowUpHarness({ finding, initial, save }: { finding: Finding; initial: CaseState; save: (s: CaseState) => Promise<void> }) {
+    const [state, setState] = useState(initial)
+    const commit = (next: CaseState) => {
+      const recorded = withHistory(state, next, 'Alice Ng')
+      setState(recorded)
+      void save(recorded)
+    }
+    return (
+      <>
+        <ol data-testid="history">{(state.history ?? []).map((e, i) => <li key={i}>{e.summary} · {e.note}</li>)}</ol>
+        <GmailFollowUp finding={finding} state={state} projectId="p1" sender={{ businessName: 'Ng Co', senderName: 'Alice Ng', senderEmail: 'alice@example.com' }}
+          onChangeDays={(days) => commit(setFollowUpAfterDays(state, days))}
+          onSent={(receipt) => commit(recordFollowUpSent(state, { channel: 'gmail', ...receipt }))} />
+      </>
+    )
+  }
+
+  it('after 7 days with no reply: review a polite draft, edit it, confirm, and it’s on the case', async () => {
+    await signUpAndConnect()
+    render(<FollowUpHarness {...await sentDaysAgo(8)} />)
+    const section = await screen.findByTestId('gmail-follow-up')
+    expect(within(section).getByTestId('follow-up-state')).toHaveTextContent('No reply since')
+    fireEvent.click(within(section).getByRole('button', { name: 'Follow up' }))
+
+    const dialog = screen.getByTestId('follow-up-dialog')
+    expect(within(dialog).getByLabelText('To')).toHaveValue('ap@sierra.test')
+    expect(within(dialog).getByLabelText('Cc (optional)')).toHaveValue('controller@ng.test')
+    expect(within(dialog).getByLabelText('Subject')).toHaveValue('Re: Duplicate payment of invoice INV-1')
+    const body = within(dialog).getByLabelText('Message') as HTMLTextAreaElement
+    expect(body.value).toMatch(/^Hello,\n\nI'm following up on my email of /)
+    expect(body.value).toContain('$6,800.00')
+    expect(body.value).toContain('> Please refund $6,800.00.')
+    fireEvent.change(body, { target: { value: `${body.value}\nP.S. Happy to send the remittance advice.` } })
+    expect(gmail.state.sent).toHaveLength(0)
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Review and send' }))
+    expect(dialog).toHaveTextContent('Send this follow-up to ap@sierra.test?')
+    expect(dialog).toHaveTextContent('from owner@gmail.com to ap@sierra.test, cc controller@ng.test')
+    expect(gmail.state.sent).toHaveLength(0)
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Send follow-up' }))
+
+    await waitFor(() => expect(screen.getByTestId('history')).toHaveTextContent('Follow-up sent from Gmail · From owner@gmail.com to ap@sierra.test, cc controller@ng.test. Gmail message ID msg-1'))
+    const mime = Buffer.from(gmail.state.sent[0], 'base64url').toString('utf8')
+    expect(Buffer.from(mime.split('\r\n\r\n')[1].replace(/\r\n/g, ''), 'base64').toString('utf8')).toContain('P.S. Happy to send the remittance advice.')
+    expect(within(screen.getByTestId('gmail-follow-up')).getByTestId('follow-up-state')).toHaveTextContent('If there’s no reply by')
+    expect(screen.queryByRole('button', { name: 'Follow up' })).not.toBeInTheDocument()
+  })
+
+  it('isn’t offered before the chosen number of days, or once the vendor has replied', async () => {
+    await signUpAndConnect()
+    const early = await sentDaysAgo(3)
+    const { unmount } = render(<FollowUpHarness {...early} />)
+    expect(await screen.findByTestId('follow-up-state')).toHaveTextContent('If there’s no reply by')
+    expect(screen.queryByRole('button', { name: 'Follow up' })).not.toBeInTheDocument()
+    // Shortening the wait to 2 days makes it due now.
+    fireEvent.change(screen.getByLabelText('Follow up if there’s no reply after (days)'), { target: { value: '2' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+    expect(await screen.findByRole('button', { name: 'Follow up' })).toBeInTheDocument()
+    unmount()
+
+    const replied = await sentDaysAgo(10)
+    const withReply = recordVendorUpdate(replied.initial, { status: 'acknowledged', note: 'Looking into it', at: Date.now() - 2 * DAY })
+    render(<FollowUpHarness {...replied} initial={withReply} />)
+    expect(await screen.findByTestId('follow-up-state')).toHaveTextContent('The vendor replied on')
+    expect(screen.queryByRole('button', { name: 'Follow up' })).not.toBeInTheDocument()
+  })
+
+  it('a refused follow-up isn’t recorded and says why', async () => {
+    await signUpAndConnect()
+    render(<FollowUpHarness {...await sentDaysAgo(8)} />)
+    fireEvent.click(await screen.findByRole('button', { name: 'Follow up' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Review and send' }))
+    gmail.state.failNext = 'rejected'
+    fireEvent.click(screen.getByRole('button', { name: 'Send follow-up' }))
+    expect(await within(screen.getByTestId('follow-up-dialog')).findByRole('alert')).toHaveTextContent('Gmail rejected the message.')
+    expect(screen.getByTestId('history')).not.toHaveTextContent('Follow-up sent')
   })
 })
