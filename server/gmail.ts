@@ -17,7 +17,7 @@ import type { DatabaseSync } from 'node:sqlite'
 import { HttpError, json, redirect, serializeCookie, type Request, type Response } from './http.ts'
 import { newToken, openSecret, sealSecret } from './crypto.ts'
 import { PLAN_LIMITS, planOf } from './plans.ts'
-import { authorizedSendFacts } from './caseFacts.ts'
+import { authorizedFollowUpFacts, authorizedSendFacts } from './caseFacts.ts'
 
 export const GMAIL_SEND_SCOPE = 'https://www.googleapis.com/auth/gmail.send'
 /** `openid email` identify the connected address; `gmail.send` is the only Gmail permission. */
@@ -45,8 +45,8 @@ export interface GmailClient {
   exchangeCode(params: { code: string; redirectUri: string }): Promise<GmailGrant>
   /** A fresh access token from the stored refresh token. */
   accessToken(refreshToken: string): Promise<string>
-  /** `users.messages.send`. Resolves only when Gmail accepted the message. */
-  send(accessToken: string, raw: string): Promise<{ id: string; threadId: string | null }>
+  /** `users.messages.send`, in `threadId`'s conversation when given. Resolves only when Gmail accepted the message. */
+  send(accessToken: string, raw: string, threadId?: string | null): Promise<{ id: string; threadId: string | null }>
   revoke(token: string): Promise<void>
 }
 
@@ -112,13 +112,13 @@ export function createGmailClient(clientId: string, clientSecret: string, fetchI
       if (!tokens.access_token) throw new Error('Google returned no access token.')
       return tokens.access_token
     },
-    async send(accessToken, raw) {
+    async send(accessToken, raw, threadId) {
       let res: globalThis.Response
       try {
         res = await fetchImpl(SEND_ENDPOINT, {
           method: 'POST',
           headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json', Accept: 'application/json' },
-          body: JSON.stringify({ raw }),
+          body: JSON.stringify(threadId ? { raw, threadId } : { raw }),
         })
       } catch {
         throw new GmailSendError('Gmail didn’t answer, so Reclaim can’t tell whether the email went out.', 'uncertain')
@@ -195,17 +195,28 @@ export interface GmailRouteDeps {
   gmail: { client: GmailClient; tokenKey: Buffer } | null
   /** The signed-in account for this request, or null. */
   userFor(req: Request): GmailUser | null
+  /** The account's saved audit, opened (audits are encrypted at rest), or null. */
+  getProject(userId: string, projectId: string): Record<string, unknown> | null
   /** Per-account send limiter: true while under the limit. */
   allowSend(userId: string): boolean
-  /** The account's saved audit, decrypted (projectStore.ts), or null. */
-  project(userId: string, projectId: string): Record<string, unknown> | null
+  /** The clock, for tests. */
+  now?: () => number
 }
 
-/** The Gmail routes, plus revoking an account's Gmail grant (used by account deletion). */
-export type GmailRoutes = ((req: Request) => Promise<Response | null>) & { revoke(userId: string): Promise<void> }
+export interface GmailRoutes {
+  route(req: Request): Promise<Response | null>
+  /** Cancels the account's Gmail access with Google and deletes it. Never throws. */
+  revoke(userId: string): Promise<void>
+}
+
+/** Follow-ups per case, and the least time between two emails on one case. */
+export const MAX_FOLLOW_UPS = 5
+export const MIN_FOLLOW_UP_GAP_MS = 24 * 60 * 60 * 1000
 
 type ConnectionRow = { realm_id: string; company_name: string; tokens_sealed: string; connected_at: number }
-type SendRow = { status: 'sending' | 'sent' | 'uncertain'; message_id: string | null; from_email: string; to_email: string; cc: string; sent_at: number | null }
+type SendStatus = 'sending' | 'sent' | 'uncertain'
+type SendRow = { status: SendStatus; message_id: string | null; thread_id: string | null; from_email: string; to_email: string; cc: string; sent_at: number | null }
+type FollowUpRow = SendRow & { seq: number }
 
 const sendView = (r: SendRow) => ({ messageId: r.message_id, from: r.from_email, to: r.to_email, cc: r.cc ? r.cc.split(',') : [], sentAt: r.sent_at })
 
@@ -220,12 +231,25 @@ const withStatus = (next: string, status: string) => {
   return `${url.pathname}${url.search}`
 }
 
+/** What an account's Gmail connection and sends look like in its data export. Never tokens. */
+export function exportGmail(db: DatabaseSync, userId: string) {
+  const conn = db.prepare("SELECT company_name, connected_at FROM integration_connections WHERE user_id = ? AND provider = 'gmail'").get(userId) as { company_name: string; connected_at: number } | undefined
+  const tables = (db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name IN ('gmail_sends', 'gmail_follow_ups')").all() as Array<{ name: string }>).map((t) => t.name)
+  const rows = (table: string) => (tables.includes(table)
+    ? db.prepare(`SELECT project_id, finding_id, message_id, from_email, to_email, cc, sent_at FROM ${table} WHERE user_id = ? AND status = 'sent' ORDER BY sent_at`).all(userId) as Array<{ project_id: string; finding_id: string; message_id: string; from_email: string; to_email: string; cc: string; sent_at: number }>
+    : [])
+  const view = (kind: 'request' | 'follow-up') => (r: ReturnType<typeof rows>[number]) => ({ kind, auditId: r.project_id, findingId: r.finding_id, gmailMessageId: r.message_id, from: r.from_email, to: r.to_email, cc: r.cc ? r.cc.split(',') : [], sentAt: new Date(r.sent_at).toISOString() })
+  const sent = [...rows('gmail_sends').map(view('request')), ...rows('gmail_follow_ups').map(view('follow-up'))].sort((a, b) => a.sentAt.localeCompare(b.sentAt))
+  return conn || sent.length ? { connectedAddress: conn?.company_name ?? null, connectedAt: conn ? new Date(conn.connected_at).toISOString() : null, sent } : null
+}
+
 /**
- * The Gmail routes. Returns null for any path it doesn't own, so `app.ts`
- * dispatches to it with one line.
+ * The Gmail routes. `route` returns null for any path it doesn't own, so
+ * `app.ts` dispatches to it with one line.
  */
 export function createGmailRoutes(deps: GmailRouteDeps): GmailRoutes {
   const { db, gmail } = deps
+  const now = deps.now ?? Date.now
   db.exec(`
     -- One row per case sent through Gmail, reserved before Gmail is called.
     CREATE TABLE IF NOT EXISTS gmail_sends (
@@ -242,6 +266,22 @@ export function createGmailRoutes(deps: GmailRouteDeps): GmailRoutes {
       created_at INTEGER NOT NULL,
       sent_at INTEGER,
       PRIMARY KEY (user_id, project_id, finding_id)
+    );
+    -- Follow-ups on a sent case, numbered 1, 2, 3… and reserved the same way.
+    CREATE TABLE IF NOT EXISTS gmail_follow_ups (
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      project_id TEXT NOT NULL,
+      finding_id TEXT NOT NULL,
+      seq INTEGER NOT NULL,
+      status TEXT NOT NULL,
+      message_id TEXT,
+      thread_id TEXT,
+      from_email TEXT NOT NULL,
+      to_email TEXT NOT NULL,
+      cc TEXT NOT NULL DEFAULT '',
+      created_at INTEGER NOT NULL,
+      sent_at INTEGER,
+      PRIMARY KEY (user_id, project_id, finding_id, seq)
     )
   `)
   const redirectUri = `${deps.appOrigin}${GMAIL_PATH}/callback`
@@ -263,18 +303,88 @@ export function createGmailRoutes(deps: GmailRouteDeps): GmailRoutes {
     return user
   }
   const unavailable = () => new HttpError(503, 'Gmail sending isn’t set up on this server.', 'gmail_unavailable')
-  /** Tells Google to cancel the grant. Deleting the sealed token afterwards still ends Reclaim's access if this fails. */
-  const revoke = async (userId: string) => {
+
+  async function revoke(userId: string) {
     const row = connection(userId)
-    if (!row || !gmail) return
+    if (row && gmail) {
+      try {
+        await gmail.client.revoke(refreshToken(userId, row))
+      } catch (err) {
+        // Deleting the sealed token still ends Reclaim's access.
+        console.error('gmail revoke failed:', err instanceof Error ? err.message : 'unknown error')
+      }
+    }
+    drop(userId)
+  }
+
+  /** The checks every send shares, before anything about the case: plan, server, JSON, rate, connection. */
+  function precheck(req: Request) {
+    const user = requireUser(req)
+    if (!PLAN_LIMITS[planOf(user.plan)].gmailSending) throw new HttpError(402, 'Sending through Gmail isn’t part of this plan.', 'plan_limit', { feature: 'gmail' })
+    if (!gmail) throw unavailable()
+    if (!(req.headers['content-type'] ?? '').includes('application/json')) throw new HttpError(415, 'Send JSON.')
+    if (!deps.allowSend(user.id)) throw new HttpError(429, 'Too many sends. Wait a while and try again.', 'rate_limited')
+    const row = connection(user.id)
+    if (!row) throw new HttpError(409, 'Connect Gmail first.', 'gmail_not_connected')
+    return { user, row, gmail }
+  }
+
+  /** The email fields from the browser, validated. Throws a 400 naming each bad field. */
+  function emailFields(input: Record<string, unknown>) {
+    const projectId = typeof input.projectId === 'string' ? input.projectId : ''
+    const findingId = typeof input.findingId === 'string' ? input.findingId : ''
+    const to = typeof input.to === 'string' ? input.to.trim() : ''
+    const cc = Array.isArray(input.cc) ? input.cc.map((c) => (typeof c === 'string' ? c.trim() : '')).filter(Boolean) : []
+    const subject = typeof input.subject === 'string' ? input.subject : ''
+    const body = typeof input.body === 'string' ? input.body : ''
+    const fields: Record<string, string> = {}
+    if (!isEmailAddress(to)) fields.to = 'Enter the vendor’s email address.'
+    if (cc.length > 5 || !cc.every(isEmailAddress)) fields.cc = 'Enter up to five valid addresses, separated by commas.'
+    if (!subject.trim() || subject.length > 300 || /[\r\n]/.test(subject)) fields.subject = 'Enter a one-line subject.'
+    if (!body.trim() || body.length > 20_000) fields.body = 'Enter the message.'
+    if (!/^[\w-]+$/.test(projectId) || !findingId) throw new HttpError(400, 'The case data is malformed.', 'validation')
+    if (Object.keys(fields).length) throw new HttpError(400, 'Check the highlighted fields.', 'validation', fields)
+    return { projectId, findingId, to, cc, subject, body }
+  }
+
+  /**
+   * Mints an access token and sends, after the caller has reserved the send.
+   * `settle` records the outcome on the reservation: null deletes it (nothing
+   * went out), 'uncertain' keeps it so a retry needs the customer's word.
+   */
+  async function deliver(ctx: ReturnType<typeof precheck>, email: OutgoingEmail, threadId: string | null, settle: (status: 'sent' | 'uncertain' | null, sent?: { id: string; threadId: string | null }) => void) {
+    const { user, row } = ctx
+    let accessToken: string
     try {
-      await gmail.client.revoke(refreshToken(userId, row))
+      accessToken = await ctx.gmail.client.accessToken(refreshToken(user.id, row))
     } catch (err) {
-      console.error('gmail revoke failed:', err instanceof Error ? err.message : 'unknown error')
+      settle(null)
+      if (err instanceof GmailReconnectError) {
+        drop(user.id)
+        throw new HttpError(409, 'Gmail needs to be connected again. Nothing was sent.', 'gmail_reconnect')
+      }
+      console.error('gmail token refresh failed:', err instanceof Error ? err.message : 'unknown error')
+      throw new HttpError(502, 'Couldn’t reach Google. Nothing was sent; try again in a minute.', 'gmail_failed')
+    }
+    try {
+      settle('sent', await ctx.gmail.client.send(accessToken, buildRawMessage(email), threadId))
+    } catch (err) {
+      if (err instanceof GmailReconnectError) {
+        settle(null)
+        drop(user.id)
+        throw new HttpError(409, 'Gmail needs to be connected again. Nothing was sent.', 'gmail_reconnect')
+      }
+      if (err instanceof GmailSendError && err.kind === 'rejected') {
+        settle(null)
+        throw new HttpError(502, err.message, 'gmail_rejected')
+      }
+      settle('uncertain')
+      console.error('gmail send uncertain:', err instanceof Error ? err.message : 'unknown error')
+      throw new HttpError(502, `${err instanceof GmailSendError ? err.message : 'Gmail didn’t confirm the send.'} Check your Gmail Sent folder before trying again.`, 'gmail_send_uncertain')
     }
   }
 
-  const gmailRoute = async function gmailRoute(req: Request): Promise<Response | null> {
+  async function route(req: Request): Promise<Response | null> {
     const path = req.url.pathname
     if (path !== GMAIL_PATH && !path.startsWith(`${GMAIL_PATH}/`)) return null
     const method = req.method
@@ -319,7 +429,7 @@ export function createGmailRoutes(deps: GmailRouteDeps): GmailRoutes {
           VALUES (?, 'gmail', ?, ?, ?, ?, NULL)
           ON CONFLICT(user_id, provider) DO UPDATE SET realm_id = excluded.realm_id, company_name = excluded.company_name,
             tokens_sealed = excluded.tokens_sealed, connected_at = excluded.connected_at`)
-          .run(user.id, grant.sub, grant.email.slice(0, 254), sealSecret(grant.refreshToken, gmail.tokenKey, sealContext(user.id, grant.sub)), Date.now())
+          .run(user.id, grant.sub, grant.email.slice(0, 254), sealSecret(grant.refreshToken, gmail.tokenKey, sealContext(user.id, grant.sub)), now())
         return back('connected')
       } catch (err) {
         if (err instanceof GmailScopeError) return back('scope')
@@ -331,38 +441,20 @@ export function createGmailRoutes(deps: GmailRouteDeps): GmailRoutes {
     if (path === `${GMAIL_PATH}/disconnect` && method === 'POST') {
       const user = requireUser(req)
       await revoke(user.id)
-      drop(user.id)
       return json(200, { ok: true })
     }
 
     if (path === `${GMAIL_PATH}/send` && method === 'POST') {
-      const user = requireUser(req)
-      if (!PLAN_LIMITS[planOf(user.plan)].gmailSending) throw new HttpError(402, 'Sending through Gmail isn’t part of this plan.', 'plan_limit', { feature: 'gmail' })
-      if (!gmail) throw unavailable()
-      if (!(req.headers['content-type'] ?? '').includes('application/json')) throw new HttpError(415, 'Send JSON.')
-      if (!deps.allowSend(user.id)) throw new HttpError(429, 'Too many sends. Wait a while and try again.', 'rate_limited')
-      const row = connection(user.id)
-      if (!row) throw new HttpError(409, 'Connect Gmail first.', 'gmail_not_connected')
-
+      const ctx = precheck(req)
+      const { user, row } = ctx
       const input = await req.json<Record<string, unknown>>()
-      const projectId = typeof input.projectId === 'string' ? input.projectId : ''
-      const findingId = typeof input.findingId === 'string' ? input.findingId : ''
-      const to = typeof input.to === 'string' ? input.to.trim() : ''
-      const cc = Array.isArray(input.cc) ? input.cc.map((c) => (typeof c === 'string' ? c.trim() : '')).filter(Boolean) : []
-      const subject = typeof input.subject === 'string' ? input.subject : ''
-      const body = typeof input.body === 'string' ? input.body : ''
+      const { projectId, findingId, to, cc, subject, body } = emailFields(input)
       const amount = typeof input.amountRequested === 'number' ? input.amountRequested : NaN
-      const fields: Record<string, string> = {}
-      if (!isEmailAddress(to)) fields.to = 'Enter the vendor’s email address.'
-      if (cc.length > 5 || !cc.every(isEmailAddress)) fields.cc = 'Enter up to five valid addresses, separated by commas.'
-      if (!subject.trim() || subject.length > 300 || /[\r\n]/.test(subject)) fields.subject = 'Enter a one-line subject.'
-      if (!body.trim() || body.length > 20_000) fields.body = 'Enter the message.'
-      if (!/^[\w-]+$/.test(projectId) || !findingId || !Number.isFinite(amount)) throw new HttpError(400, 'The case data is malformed.', 'validation')
-      if (Object.keys(fields).length) return json(400, { message: 'Check the highlighted fields.', code: 'validation', fields })
+      if (!Number.isFinite(amount)) throw new HttpError(400, 'The case data is malformed.', 'validation')
 
-      const facts = authorizedSendFacts(deps.project(user.id, projectId), findingId, amount)
+      const facts = authorizedSendFacts(deps.getProject(user.id, projectId), findingId, amount)
       // Asked before the approval checks, so a case already sent through Gmail reports that instead of "not approved".
-      const earlier = db.prepare('SELECT status, message_id, from_email, to_email, cc, sent_at FROM gmail_sends WHERE user_id = ? AND project_id = ? AND finding_id = ?').get(user.id, projectId, findingId) as SendRow | undefined
+      const earlier = db.prepare('SELECT status, message_id, thread_id, from_email, to_email, cc, sent_at FROM gmail_sends WHERE user_id = ? AND project_id = ? AND finding_id = ?').get(user.id, projectId, findingId) as SendRow | undefined
       if (earlier?.status === 'sent') return json(409, { message: 'This request was already sent from Gmail.', code: 'gmail_already_sent', send: sendView(earlier) })
       if (earlier?.status === 'sending') throw new HttpError(409, 'This request is being sent right now.', 'gmail_send_in_progress')
       if (earlier?.status === 'uncertain' && input.retryUncertain !== true) {
@@ -378,54 +470,73 @@ export function createGmailRoutes(deps: GmailRouteDeps): GmailRoutes {
         throw new HttpError(409, 'The vendor email differs from the approved one. Approve the request with this address first.', 'not_approved_version')
       }
 
-      const now = Date.now()
+      const key = [user.id, projectId, findingId] as const
       const reserved = earlier?.status === 'uncertain'
         ? db.prepare("UPDATE gmail_sends SET status = 'sending', from_email = ?, to_email = ?, cc = ?, amount_minor = ?, created_at = ? WHERE user_id = ? AND project_id = ? AND finding_id = ? AND status = 'uncertain'")
-            .run(row.company_name, to, cc.join(','), Math.round(amount * 100), now, user.id, projectId, findingId)
+            .run(row.company_name, to, cc.join(','), Math.round(amount * 100), now(), ...key)
         : db.prepare("INSERT INTO gmail_sends (user_id, project_id, finding_id, status, from_email, to_email, cc, amount_minor, created_at) VALUES (?, ?, ?, 'sending', ?, ?, ?, ?, ?) ON CONFLICT DO NOTHING")
-            .run(user.id, projectId, findingId, row.company_name, to, cc.join(','), Math.round(amount * 100), now)
+            .run(...key, row.company_name, to, cc.join(','), Math.round(amount * 100), now())
       if (Number(reserved.changes) !== 1) throw new HttpError(409, 'This request is being sent right now.', 'gmail_send_in_progress')
-      const settle = (status: 'sent' | 'uncertain' | null, sent?: { id: string; threadId: string | null }) => {
-        if (status === null) db.prepare('DELETE FROM gmail_sends WHERE user_id = ? AND project_id = ? AND finding_id = ?').run(user.id, projectId, findingId)
+      await deliver(ctx, { from: row.company_name, fromName: `${user.first_name} ${user.last_name}`.trim(), to, cc, subject, body }, null, (status, sent) => {
+        if (status === null) db.prepare('DELETE FROM gmail_sends WHERE user_id = ? AND project_id = ? AND finding_id = ?').run(...key)
         else db.prepare('UPDATE gmail_sends SET status = ?, message_id = ?, thread_id = ?, sent_at = ? WHERE user_id = ? AND project_id = ? AND finding_id = ?')
-          .run(status, sent?.id ?? null, sent?.threadId ?? null, status === 'sent' ? Date.now() : null, user.id, projectId, findingId)
-      }
-
-      let accessToken: string
-      try {
-        accessToken = await gmail.client.accessToken(refreshToken(user.id, row))
-      } catch (err) {
-        settle(null)
-        if (err instanceof GmailReconnectError) {
-          drop(user.id)
-          throw new HttpError(409, 'Gmail needs to be connected again. Nothing was sent.', 'gmail_reconnect')
-        }
-        console.error('gmail token refresh failed:', err instanceof Error ? err.message : 'unknown error')
-        throw new HttpError(502, 'Couldn’t reach Google. Nothing was sent; try again in a minute.', 'gmail_failed')
-      }
-      const raw = buildRawMessage({ from: row.company_name, fromName: `${user.first_name} ${user.last_name}`.trim(), to, cc, subject, body })
-      try {
-        const sent = await gmail.client.send(accessToken, raw)
-        settle('sent', sent)
-      } catch (err) {
-        if (err instanceof GmailReconnectError) {
-          settle(null)
-          drop(user.id)
-          throw new HttpError(409, 'Gmail needs to be connected again. Nothing was sent.', 'gmail_reconnect')
-        }
-        if (err instanceof GmailSendError && err.kind === 'rejected') {
-          settle(null)
-          throw new HttpError(502, err.message, 'gmail_rejected')
-        }
-        settle('uncertain')
-        console.error('gmail send uncertain:', err instanceof Error ? err.message : 'unknown error')
-        throw new HttpError(502, `${err instanceof GmailSendError ? err.message : 'Gmail didn’t confirm the send.'} Check your Gmail Sent folder before trying again.`, 'gmail_send_uncertain')
-      }
-      const done = db.prepare('SELECT status, message_id, from_email, to_email, cc, sent_at FROM gmail_sends WHERE user_id = ? AND project_id = ? AND finding_id = ?').get(user.id, projectId, findingId) as SendRow
+          .run(status, sent?.id ?? null, sent?.threadId ?? null, status === 'sent' ? now() : null, ...key)
+      })
+      const done = db.prepare('SELECT status, message_id, thread_id, from_email, to_email, cc, sent_at FROM gmail_sends WHERE user_id = ? AND project_id = ? AND finding_id = ?').get(...key) as SendRow
       return json(200, { send: sendView(done) })
+    }
+
+    // A follow-up on a request that has gone out and has no settlement for the
+    // whole amount. Never automatic: the browser sends it only after the
+    // customer has read and confirmed the text. Numbered per case, so a retry
+    // or a double click can't email the vendor twice.
+    if (path === `${GMAIL_PATH}/follow-up` && method === 'POST') {
+      const ctx = precheck(req)
+      const { user, row } = ctx
+      const input = await req.json<Record<string, unknown>>()
+      const { projectId, findingId, to, cc, subject, body } = emailFields(input)
+      const seq = typeof input.sequence === 'number' && Number.isInteger(input.sequence) ? input.sequence : NaN
+      if (!(seq >= 1)) throw new HttpError(400, 'The case data is malformed.', 'validation')
+      const key = [user.id, projectId, findingId] as const
+
+      const existing = db.prepare('SELECT seq, status, message_id, thread_id, from_email, to_email, cc, sent_at FROM gmail_follow_ups WHERE user_id = ? AND project_id = ? AND finding_id = ? ORDER BY seq').all(...key) as FollowUpRow[]
+      const mine = existing.find((r) => r.seq === seq)
+      if (mine?.status === 'sent') return json(409, { message: 'This follow-up was already sent from Gmail.', code: 'gmail_already_sent', send: { ...sendView(mine), sequence: seq } })
+      if (existing.some((r) => r.status === 'sending')) throw new HttpError(409, 'A follow-up is being sent right now.', 'gmail_send_in_progress')
+      if (mine?.status === 'uncertain' && input.retryUncertain !== true) {
+        throw new HttpError(409, 'The last attempt may have gone out. Check your Gmail Sent folder before trying again.', 'gmail_send_uncertain')
+      }
+      const facts = authorizedFollowUpFacts(deps.getProject(user.id, projectId), findingId)
+      if (!facts.ok) throw new HttpError(403, facts.reason, 'recovery_not_authorized')
+      const sentCount = existing.filter((r) => r.status === 'sent').length
+      if (!mine && seq !== sentCount + 1) throw new HttpError(409, 'The case changed since this follow-up was written. Reload it and try again.', 'gmail_follow_up_stale')
+      if (!mine && sentCount >= MAX_FOLLOW_UPS) throw new HttpError(409, `This case already has ${MAX_FOLLOW_UPS} follow-ups. Call the vendor or close the case instead.`, 'gmail_follow_up_limit')
+
+      // The last email Reclaim knows went out on this case: the request (from
+      // Gmail, or the time the customer recorded sending it), or a follow-up.
+      const original = db.prepare("SELECT status, message_id, thread_id, from_email, to_email, cc, sent_at FROM gmail_sends WHERE user_id = ? AND project_id = ? AND finding_id = ? AND status = 'sent'").get(...key) as SendRow | undefined
+      const last = Math.max(facts.requestedAt ?? 0, original?.sent_at ?? 0, ...existing.filter((r) => r.status === 'sent').map((r) => r.sent_at ?? 0))
+      if (now() - last < MIN_FOLLOW_UP_GAP_MS) throw new HttpError(409, 'The vendor was emailed less than a day ago. Give them a little longer.', 'gmail_follow_up_too_soon')
+      // Same Gmail conversation as the request, or as the last follow-up.
+      const threadId = [...existing].reverse().find((r) => r.status === 'sent' && r.thread_id)?.thread_id ?? original?.thread_id ?? null
+
+      const reserved = mine
+        ? db.prepare("UPDATE gmail_follow_ups SET status = 'sending', from_email = ?, to_email = ?, cc = ?, created_at = ? WHERE user_id = ? AND project_id = ? AND finding_id = ? AND seq = ? AND status = 'uncertain'")
+            .run(row.company_name, to, cc.join(','), now(), ...key, seq)
+        : db.prepare("INSERT INTO gmail_follow_ups (user_id, project_id, finding_id, seq, status, from_email, to_email, cc, created_at) VALUES (?, ?, ?, ?, 'sending', ?, ?, ?, ?) ON CONFLICT DO NOTHING")
+            .run(...key, seq, row.company_name, to, cc.join(','), now())
+      if (Number(reserved.changes) !== 1) throw new HttpError(409, 'A follow-up is being sent right now.', 'gmail_send_in_progress')
+      await deliver(ctx, { from: row.company_name, fromName: `${user.first_name} ${user.last_name}`.trim(), to, cc, subject, body }, threadId, (status, sent) => {
+        if (status === null) db.prepare('DELETE FROM gmail_follow_ups WHERE user_id = ? AND project_id = ? AND finding_id = ? AND seq = ?').run(...key, seq)
+        else db.prepare('UPDATE gmail_follow_ups SET status = ?, message_id = ?, thread_id = ?, sent_at = ? WHERE user_id = ? AND project_id = ? AND finding_id = ? AND seq = ?')
+          .run(status, sent?.id ?? null, sent?.threadId ?? null, status === 'sent' ? now() : null, ...key, seq)
+      })
+      const done = db.prepare('SELECT seq, status, message_id, thread_id, from_email, to_email, cc, sent_at FROM gmail_follow_ups WHERE user_id = ? AND project_id = ? AND finding_id = ? AND seq = ?').get(...key, seq) as FollowUpRow
+      return json(200, { send: { ...sendView(done), sequence: seq } })
     }
 
     throw new HttpError(404, 'Not found.')
   }
-  return Object.assign(gmailRoute, { revoke })
+
+  return { route, revoke }
 }

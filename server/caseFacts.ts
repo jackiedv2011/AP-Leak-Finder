@@ -3,7 +3,7 @@ import type { Finding } from '../src/types.ts'
 import type { DraftRequest } from './ai.ts'
 
 type StoredRecord = Record<string, unknown> & { id: string }
-type StoredState = { recoverySubject?: string | null; recoveryDraft?: string | null; recoveryRecipientEmail?: string | null; approvedAt?: number | null; requestedAmount?: number | null; requestedResolution?: DraftRequest['method'] | null; contactHold?: string | null; requiresRevalidation?: boolean; recoveryStage?: DraftRequest['recoveryStage']; recoverySettlements?: Array<{ amount: number; reference: string; settledAt: number; source: string; method: string; appliedToBill?: string }>; recoveryVerification?: { amount: number; reference: string; settledAt: number; source: string; method: string; appliedToBill?: string } | null }
+type StoredState = { recoveryRequestedAt?: number | null; recoverySubject?: string | null; recoveryDraft?: string | null; recoveryRecipientEmail?: string | null; approvedAt?: number | null; requestedAmount?: number | null; requestedResolution?: DraftRequest['method'] | null; contactHold?: string | null; requiresRevalidation?: boolean; recoveryStage?: DraftRequest['recoveryStage']; recoverySettlements?: Array<{ amount: number; reference: string; settledAt: number; source: string; method: string; appliedToBill?: string }>; recoveryVerification?: { amount: number; reference: string; settledAt: number; source: string; method: string; appliedToBill?: string } | null }
 const settled = (s: StoredState) => Math.round((s.recoverySettlements ?? (s.recoveryVerification ? [s.recoveryVerification] : [])).filter(e => Number.isFinite(e.amount) && e.amount > 0 && Number.isFinite(e.settledAt) && e.settledAt > 0 && Boolean(e.reference?.trim()) && ['bank', 'accounting', 'document', 'manual'].includes(e.source) && (e.method === 'refund' || ((e.method === 'credit' || e.method === 'offset') && Boolean(e.appliedToBill?.trim())))).reduce((sum, e) => sum + e.amount, 0) * 100) / 100
 
 const iso = (v: unknown) => (typeof v === 'string' && v ? v.slice(0, 10) : null)
@@ -87,4 +87,26 @@ export function authorizedSendFacts(project: Record<string, unknown> | null, fin
   if (!auth.ok) return auth
   const { state } = auth
   return { ok: true, vendor: auth.finding.vendor, approved: { subject: state.recoverySubject ?? null, body: state.recoveryDraft ?? null, recipientEmail: state.recoveryRecipientEmail ?? null } }
+}
+
+/**
+ * Whether a follow-up may go out: a recovery request that was sent, isn't on
+ * hold, and hasn't been settled in full. The text is the customer's own,
+ * confirmed in the browser right before sending.
+ */
+export function authorizedFollowUpFacts(project: Record<string, unknown> | null, findingId: string):
+  | { ok: true; vendor: string; requestedAt: number | null }
+  | { ok: false; reason: string } {
+  if (!project) return { ok: false, reason: 'That project is not saved on this account.' }
+  const env = project.environment as { result?: { findings?: Array<Record<string, unknown>> }; caseStates?: Record<string, StoredState> } | undefined
+  const finding = (env?.result?.findings ?? []).find((f) => f.id === findingId)
+  if (!finding) return { ok: false, reason: 'That finding is not in the saved project.' }
+  if (finding.classification !== 'recovery_candidate') return { ok: false, reason: 'Only recovery requests can be followed up.' }
+  const state = env?.caseStates?.[findingId] ?? {}
+  if (state.recoveryStage !== 'requested') return { ok: false, reason: 'Only a request that has been sent, and is still open, can be followed up.' }
+  if (state.contactHold) return { ok: false, reason: 'Vendor contact is on hold.' }
+  const requested = Math.round((state.requestedAmount ?? 0) * 100)
+  if (requested <= 0) return { ok: false, reason: 'The saved request has no amount.' }
+  if (Math.round(settled(state) * 100) >= requested) return { ok: false, reason: 'The request has already been settled.' }
+  return { ok: true, vendor: String(finding.vendor ?? ''), requestedAt: Number.isFinite(state.recoveryRequestedAt) ? (state.recoveryRequestedAt as number) : null }
 }

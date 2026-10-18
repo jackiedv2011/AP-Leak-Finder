@@ -323,15 +323,6 @@ export function RecoveryRequestPanel({
                 : 'Mark it sent only after you have sent it yourself.'}
           </p>
 
-          {limits.gmailSending && onEmailSent && projectId ? (
-            <GmailSendStep
-              pkg={{ projectId, findingId: finding.id, vendor: finding.vendor, to: recipientEmail.trim(), subject, body, amount, methodLabel: METHOD_LABEL[method] }}
-              ready={approvedForCurrent && !amountError}
-              blockedReason={!gate.eligible ? 'Sending opens after the evidence checks pass.' : state.contactHold ? 'Vendor contact is on hold.' : null}
-              onSent={(receipt) => onEmailSent(pkg, receipt)}
-            />
-          ) : null}
-
           <div className="wk-disclosure">
             {!holdOpen && !state.contactHold ? (
               <button type="button" className="wk-linklike" onClick={() => setHoldOpen(true)}>Hold vendor contact instead</button>
@@ -351,14 +342,25 @@ export function RecoveryRequestPanel({
             )}
           </div>
         </div>
-      ) : (
+      ) : null}
+
+      {isVendorLetter && limits.gmailSending && onEmailSent && projectId ? (
+        <GmailSendStep
+          pkg={{ projectId, findingId: finding.id, vendor: finding.vendor, to: recipientEmail.trim(), subject, body, amount, methodLabel: METHOD_LABEL[method] }}
+          ready={approvedForCurrent && !amountError}
+          blockedReason={!gate.eligible ? 'Sending opens after the evidence checks pass.' : state.contactHold ? 'Vendor contact is on hold.' : null}
+          onSent={(receipt) => onEmailSent(pkg, receipt)}
+        />
+      ) : null}
+
+      {!isVendorLetter ? (
         <div className="wk-panelcard-body wk-subsection">
           <div className="wk-actions">
             <button type="button" className="wk-btn" data-variant="primary" data-size="sm" onClick={() => onMarkRequested({ ...pkg, requestedAmount: finding.dollarImpact })}>Mark as filed</button>
             <span className="wk-field-hint">Records that the check has been handed to the right person.</span>
           </div>
         </div>
-      )}
+      ) : null}
     </section>
   )
 }

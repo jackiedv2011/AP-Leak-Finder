@@ -94,11 +94,23 @@ export function PrivacyPage() {
           <li>The connected Gmail address and Google's account ID for it, and the date you connected</li>
         </ul>
         <p>
-          <b>Reclaim sends only the emails you approve.</b> An email goes out only after you approve a recovery request
-          and then confirm the send, and only with the recipient, subject and message you approved, plus any Cc
-          addresses you add. For each email sent, Reclaim keeps the Gmail message ID, the time, the sender, the
-          recipients and the amount requested, and adds them to that case's history. The sent email itself stays in
-          your Gmail Sent folder; Reclaim does not keep a separate copy beyond the letter already saved on the case.
+          <b>Reclaim sends only the emails you approve.</b> A recovery request goes out only after you approve it and
+          then confirm the send, and only with the recipient, subject and message you approved, plus any Cc addresses
+          you add.
+        </p>
+        <p>
+          <b>Follow-ups are never sent automatically.</b> When a request you sent has no recorded reply after the
+          number of days you choose (7 unless you change it), Reclaim offers a follow-up and drafts one from the facts
+          already on the case, quoting your original request. It goes out only if you open it, edit it as you like and
+          confirm the send, in the same Gmail conversation as your request. Reclaim sends at most one follow-up a day
+          and five per case.
+        </p>
+        <p>
+          For each email sent, request or follow-up, Reclaim keeps the Gmail message ID and conversation ID, the time,
+          the sender and the recipients, and adds them to that case's history; for a request it also keeps the amount
+          requested. The text of a follow-up is not stored by Reclaim. Sent emails stay in your Gmail Sent folder;
+          Reclaim does not keep a separate copy beyond the letter already saved on the case. The download under Settings → Your data
+          lists every email sent this way.
         </p>
       </section>
 

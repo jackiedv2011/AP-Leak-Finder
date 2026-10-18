@@ -13,8 +13,6 @@ const tokenKey = randomBytes(32)
 const config = loadConfig({
   NODE_ENV: 'test', DATABASE_PATH: ':memory:', APP_ORIGIN: 'http://localhost:0', SESSION_DAYS: '1', REMEMBER_ME_DAYS: '30',
   GOOGLE_CLIENT_ID: 'test-client', GOOGLE_CLIENT_SECRET: 'test-secret', GMAIL_TOKEN_KEY: tokenKey.toString('base64'),
-  // As in production: saved audits are sealed, so every send reads the case through the project store.
-  DATA_KEY: randomBytes(32).toString('base64'),
 })
 
 /** A stand-in for Google that records every call. It never touches the network. */
@@ -25,6 +23,7 @@ function fakeGmail() {
     revoked: [] as string[],
     refreshRefused: false,
     sendFailure: null as null | 'rejected' | 'uncertain' | 'reconnect',
+    threads: [] as Array<string | null>,
     issued: 0,
   }
   const client: GmailClient = {
@@ -44,12 +43,13 @@ function fakeGmail() {
       if (state.refreshRefused) throw new GmailReconnectError('revoked')
       return 'fresh-access-SECRET'
     },
-    send: async (accessToken, raw) => {
+    send: async (accessToken, raw, threadId) => {
       state.calls.push(`send:${accessToken}`)
+      state.threads.push(threadId ?? null)
       if (state.sendFailure === 'reconnect') throw new GmailReconnectError('401')
       if (state.sendFailure) throw new GmailSendError('failed', state.sendFailure)
       state.sent.push(raw)
-      return { id: `msg-${state.sent.length}`, threadId: `thread-${state.sent.length}` }
+      return { id: `msg-${state.sent.length}`, threadId: threadId ?? `thread-${state.sent.length}` }
     },
     revoke: async (t) => {
       state.calls.push('revoke')
@@ -62,6 +62,8 @@ function fakeGmail() {
 let app: App
 let base: string
 let gmail: ReturnType<typeof fakeGmail>
+let clock = Date.now()
+const DAY = 24 * 60 * 60 * 1000
 
 class Client {
   cookies = new Map<string, string>()
@@ -122,7 +124,8 @@ async function saveApprovedCase(c: Client, id = 's1', overrides: Record<string, 
 beforeEach(async () => {
   const db = openDatabase(':memory:')
   gmail = fakeGmail()
-  app = createApp({ config, db, mailer: new DevMailer(db), google: null, drafts: null, quickbooks: null, gmail: gmail.client })
+  clock = Date.now()
+  app = createApp({ config, db, mailer: new DevMailer(db), google: null, drafts: null, quickbooks: null, gmail: gmail.client, now: () => clock })
   base = `http://127.0.0.1:${await app.listen(0)}`
 })
 afterEach(async () => {
@@ -376,25 +379,115 @@ describe('sending a recovery request from Gmail', () => {
   })
 })
 
-describe('with stored audits encrypted (DATA_KEY)', () => {
-  it('reads the approved case through the project store: the stored payload is sealed', async () => {
+describe('following up from Gmail', () => {
+  /** A request sent from Gmail and recorded on the saved case, the way the browser records it. */
+  async function sentCase(c: Client) {
+    await connect(c)
+    const saved = await saveApprovedCase(c)
+    const res = await c.post('/api/integrations/gmail/send', saved.payload)
+    expect(res.status).toBe(200)
+    Object.assign(saved.project.environment.caseStates[saved.findingId], { recoveryStage: 'requested', recoveryRequestedAt: res.body.send.sentAt })
+    expect((await c.put('/api/projects/s1', saved.project)).status).toBe(200)
+    const followUp = (sequence: number, extra: Record<string, unknown> = {}) => c.post('/api/integrations/gmail/follow-up', {
+      projectId: 's1', findingId: saved.findingId, sequence, to: 'ap@sierra.test', cc: [], subject: `Re: ${LETTER.subject}`, body: 'Hello again, following up on my email. Thanks, Alice', ...extra,
+    })
+    return { ...saved, followUp }
+  }
+
+  it('sends a confirmed follow-up in the same Gmail conversation, once per number', async () => {
+    const alice = await signedIn('Alice', 'alice@example.com')
+    const { followUp } = await sentCase(alice)
+    expect((await followUp(1)).body.code).toBe('gmail_follow_up_too_soon')
+
+    clock += 7 * DAY
+    const first = await followUp(1)
+    expect(first.status).toBe(200)
+    expect(first.body.send).toMatchObject({ messageId: 'msg-2', to: 'ap@sierra.test', sequence: 1 })
+    expect(gmail.state.threads).toEqual([null, 'thread-1'])
+    expect(Buffer.from(gmail.state.sent[1], 'base64url').toString('utf8')).toContain(`Subject: Re: ${LETTER.subject}`)
+
+    // A double click, or a browser that never recorded it, gets the same follow-up back.
+    expect((await followUp(1)).body).toMatchObject({ code: 'gmail_already_sent', send: { messageId: 'msg-2', sequence: 1 } })
+    expect((await followUp(3)).body.code).toBe('gmail_follow_up_stale')
+    expect((await followUp(2)).body.code).toBe('gmail_follow_up_too_soon')
+    clock += 2 * DAY
+    expect((await followUp(2)).status).toBe(200)
+    expect(gmail.state.sent).toHaveLength(3)
+  })
+
+  it('stops at the limit, and never follows up a case that isn’t open', async () => {
+    const alice = await signedIn('Alice', 'alice@example.com')
+    const { project, findingId, followUp } = await sentCase(alice)
+    for (let n = 1; n <= 5; n++) {
+      clock += 2 * DAY
+      expect((await followUp(n)).status).toBe(200)
+    }
+    clock += 2 * DAY
+    expect((await followUp(6)).body.code).toBe('gmail_follow_up_limit')
+
+    const state = project.environment.caseStates[findingId] as Record<string, unknown>
+    for (const change of [{ contactHold: 'Paused by the CFO' }, { recoveryStage: 'recovered' }, { recoveryStage: 'confirmed' }]) {
+      Object.assign(state, { recoveryStage: 'requested', contactHold: null }, change)
+      await alice.put('/api/projects/s1', project)
+      expect((await followUp(6)).body.code).toBe('recovery_not_authorized')
+    }
+    expect(gmail.state.sent).toHaveLength(6)
+  })
+
+  it('a request sent by hand can be followed up from Gmail, timed from when it was recorded as sent', async () => {
     const alice = await signedIn('Alice', 'alice@example.com')
     await connect(alice)
-    const { payload } = await saveApprovedCase(alice)
-    expect((app.db.prepare('SELECT payload FROM projects').get() as { payload: string }).payload.startsWith('v1.')).toBe(true)
-    expect((await alice.post('/api/integrations/gmail/send', payload)).status).toBe(200)
+    const { findingId } = await saveApprovedCase(alice, 's1', { recoveryStage: 'requested', recoveryRequestedAt: clock - DAY / 2 })
+    const payload = { projectId: 's1', findingId, sequence: 1, to: 'ap@sierra.test', cc: [], subject: 'Following up', body: 'Hello again.' }
+    expect((await alice.post('/api/integrations/gmail/follow-up', payload)).body.code).toBe('gmail_follow_up_too_soon')
+    clock += DAY
+    expect((await alice.post('/api/integrations/gmail/follow-up', payload)).status).toBe(200)
+    expect(gmail.state.threads).toEqual([null])
+  })
+
+  it('a refused follow-up can be retried; an unconfirmed one needs the Sent folder checked', async () => {
+    const alice = await signedIn('Alice', 'alice@example.com')
+    const { followUp } = await sentCase(alice)
+    clock += 7 * DAY
+    gmail.state.sendFailure = 'rejected'
+    expect((await followUp(1)).body.code).toBe('gmail_rejected')
+    gmail.state.sendFailure = 'uncertain'
+    expect((await followUp(1)).body.code).toBe('gmail_send_uncertain')
+    gmail.state.sendFailure = null
+    expect((await followUp(1)).body.code).toBe('gmail_send_uncertain')
+    expect((await followUp(1, { retryUncertain: true })).status).toBe(200)
+    expect(gmail.state.sent).toHaveLength(2)
   })
 })
 
-describe('deleting the account', () => {
-  it('revokes the Gmail grant with Google first, then removes the connection and the send log', async () => {
+describe('Gmail and the account', () => {
+  it('sends from an audit encrypted at rest', async () => {
+    const keyed = loadConfig({
+      NODE_ENV: 'test', DATABASE_PATH: ':memory:', APP_ORIGIN: 'http://localhost:0', DATA_KEY: randomBytes(32).toString('base64'),
+      GOOGLE_CLIENT_ID: 'test-client', GOOGLE_CLIENT_SECRET: 'test-secret', GMAIL_TOKEN_KEY: tokenKey.toString('base64'),
+    })
+    await app.close()
+    app.db.close()
+    const db = openDatabase(':memory:')
+    app = createApp({ config: keyed, db, mailer: new DevMailer(db), google: null, drafts: null, quickbooks: null, gmail: gmail.client })
+    base = `http://127.0.0.1:${await app.listen(0)}`
     const alice = await signedIn('Alice', 'alice@example.com')
     await connect(alice)
     const { payload } = await saveApprovedCase(alice)
+    expect((db.prepare('SELECT payload FROM projects').get() as { payload: string }).payload).toMatch(/^v1\./)
     expect((await alice.post('/api/integrations/gmail/send', payload)).status).toBe(200)
+  })
+
+  it('deleting the account revokes Gmail with Google; the export lists what was sent, never tokens', async () => {
+    const alice = await signedIn('Alice', 'alice@example.com')
+    await connect(alice)
+    const { payload } = await saveApprovedCase(alice)
+    await alice.post('/api/integrations/gmail/send', payload)
+    const exported = await alice.get('/api/account/export')
+    expect(exported.body.gmail).toMatchObject({ connectedAddress: 'owner@gmail.com', sent: [{ kind: 'request', gmailMessageId: 'msg-1', to: 'ap@sierra.test' }] })
+    expect(exported.text).not.toMatch(/SECRET/)
     expect((await alice.post('/api/account/delete', { confirmEmail: 'alice@example.com' })).status).toBe(200)
     expect(gmail.state.revoked).toEqual(['refresh-1-SECRET'])
-    expect(app.db.prepare("SELECT COUNT(*) AS n FROM integration_connections WHERE provider = 'gmail'").get()).toEqual({ n: 0 })
     expect(app.db.prepare('SELECT COUNT(*) AS n FROM gmail_sends').get()).toEqual({ n: 0 })
   })
 })

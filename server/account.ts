@@ -4,6 +4,7 @@ import { normalizeEmail, type PublicUser } from './auth.ts'
 import type { UserRow } from './db.ts'
 import { HttpError, RateLimiter, json, type Request, type Response } from './http.ts'
 import { checkpointWal, type ProjectStore } from './projectStore.ts'
+import { exportGmail } from './gmail.ts'
 
 /** An export decrypts every audit on the account: plenty for a person, not a loop. */
 const exportLimiter = new RateLimiter(10, 60 * 60 * 1000)
@@ -88,6 +89,7 @@ export function exportAccount(db: DatabaseSync, projects: ProjectStore, user: Us
     quickbooks: qbo
       ? { companyName: qbo.company_name, connectedAt: new Date(qbo.connected_at).toISOString(), lastSyncAt: qbo.last_sync_at ? new Date(qbo.last_sync_at).toISOString() : null }
       : null,
+    gmail: exportGmail(db, user.id),
     audits: projects.list(user.id),
   }
 }

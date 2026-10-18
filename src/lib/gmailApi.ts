@@ -75,8 +75,12 @@ const isReceipt = (v: unknown): v is GmailSendReceipt => {
 
 /** Asks the server to send. `ok` only when Gmail accepted the message and returned its id. */
 export async function sendWithGmail(request: GmailSendRequest): Promise<GmailSendResult> {
+  return postSend('/api/integrations/gmail/send', request)
+}
+
+async function postSend(path: string, request: unknown): Promise<GmailSendResult> {
   try {
-    const { status, body } = await call('/api/integrations/gmail/send', 'POST', request)
+    const { status, body } = await call(path, 'POST', request)
     const receipt = body?.send
     if (status === 200 && isReceipt(receipt)) return { ok: true, receipt, alreadySent: false }
     if (status === 409 && body?.code === 'gmail_already_sent' && isReceipt(receipt)) return { ok: true, receipt, alreadySent: true }
@@ -90,6 +94,16 @@ export async function sendWithGmail(request: GmailSendRequest): Promise<GmailSen
     // The request may or may not have reached the server; treat it like an unconfirmed send.
     return { ok: false, message: 'Couldn’t reach Reclaim’s server, so it isn’t known whether the email went out. Check your Gmail Sent folder before trying again.', code: 'gmail_send_uncertain' }
   }
+}
+
+export interface GmailFollowUpRequest extends Omit<GmailSendRequest, 'amountRequested'> {
+  /** Which follow-up this is on the case: 1 for the first. The server sends each number once. */
+  sequence: number
+}
+
+/** A follow-up the customer has read and confirmed. `ok` only when Gmail accepted it. */
+export async function sendFollowUpWithGmail(request: GmailFollowUpRequest): Promise<GmailSendResult> {
+  return postSend('/api/integrations/gmail/follow-up', request)
 }
 
 /** Splits a typed Cc line into addresses. */

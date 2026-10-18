@@ -36,6 +36,8 @@ export interface AppDependencies {
   /** Stripe (tests pass FakeStripe). Defaults to the REST client when STRIPE_SECRET_KEY is set. */
   stripe?: StripeApi | null
   gmail?: GmailClient | null
+  /** The clock Gmail follow-ups are timed by (tests). */
+  now?: () => number
   /** Directory of built static files to serve alongside the API (production). */
   staticDir?: string | null
 }
@@ -100,7 +102,7 @@ export function createApp(deps: AppDependencies): App {
   const quickbooksSyncLimiter = new RateLimiter(20, 60 * 60 * 1000)
   const gmailSendLimiter = new RateLimiter(30, 60 * 60 * 1000)
   const gmailClient = deps.gmail !== undefined ? deps.gmail : config.gmailSend ? createGmailClient(config.gmailSend.clientId, config.gmailSend.clientSecret) : null
-  const gmailRoute = createGmailRoutes({ db, appOrigin: config.appOrigin, production: config.production, gmail: gmailClient && config.gmailSend ? { client: gmailClient, tokenKey: config.gmailSend.tokenKey } : null, userFor: (req) => auth.userForSession(req.cookies[SESSION_COOKIE]), allowSend: (id) => gmailSendLimiter.check(`gmail:${id}`), project: (userId, projectId) => projects.get(userId, projectId) })
+  const gmailRoutes = createGmailRoutes({ db, appOrigin: config.appOrigin, production: config.production, gmail: gmailClient && config.gmailSend ? { client: gmailClient, tokenKey: config.gmailSend.tokenKey } : null, userFor: (req) => auth.userForSession(req.cookies[SESSION_COOKIE]), getProject: (userId, projectId) => projects.get(userId, projectId), allowSend: (id) => gmailSendLimiter.check(`gmail:${id}`), now: deps.now })
 
   const sessionCookie = (token: string, maxAge: number) => serializeCookie(SESSION_COOKIE, token, { maxAge, secure: config.production })
   const clearSessionCookie = () => serializeCookie(SESSION_COOKIE, '', { maxAge: 0, secure: config.production })
@@ -179,7 +181,7 @@ export function createApp(deps: AppDependencies): App {
   const billing = createBilling({ db, auth, requireUser, stripe: deps.stripe !== undefined ? deps.stripe : config.stripe ? createStripeClient(config.stripe.secretKey) : null, webhookSecret: config.stripe?.webhookSecret ?? null })
   const revokeIntegrations = async (userId: string) => {
     await revokeQuickBooks(userId)
-    await gmailRoute.revoke(userId)
+    await gmailRoutes.revoke(userId)
   }
   const accountContext = { db, projects, requireUser, publicUser, clearSessionCookie, revokeIntegrations, endSubscription: billing.closeAccount }
   /** A usable access token, refreshed and re-sealed when it is about to expire (or when `force`d after a 401). */
@@ -600,7 +602,7 @@ export function createApp(deps: AppDependencies): App {
       return json(200, { messages: rows })
     }
 
-    const gmailResponse = await gmailRoute(req)
+    const gmailResponse = await gmailRoutes.route(req)
     if (gmailResponse) return gmailResponse
 
     if (path.startsWith('/api/')) throw new HttpError(404, 'Not found.')

@@ -60,7 +60,7 @@ import {
   type RecoveryVerification,
   type VendorUpdate,
 } from '@/ledger/caseState'
-import { approveRecovery, closeWithoutRecovery, recordVendorUpdate, reconcileRecovery, recordEmailSent, reopenRemainingBalance, setContactHold, setNextFollowUp, startRecoveryRequest, verifyRecovery } from '@/recovery/model'
+import { approveRecovery, closeWithoutRecovery, recordVendorUpdate, reconcileRecovery, recordEmailSent, recordFollowUpSent, reopenRemainingBalance, setFollowUpAfterDays, setContactHold, setNextFollowUp, startRecoveryRequest, verifyRecovery } from '@/recovery/model'
 import type { GmailSendReceipt } from '@/lib/gmailApi'
 import { assertRecoveryEligible, type RecoveryEvidence } from '@/recovery/eligibility'
 import { useEntitlements, useOptionalAuth } from '@/lib/auth/AuthContext'
@@ -441,6 +441,16 @@ export function AuditApp() {
       : current)
   }, [persistCaseState])
 
+  const handleFollowUpSent = useCallback((findingId: string, receipt: GmailSendReceipt) => {
+    persistCaseState(findingId, (current) => current.recoveryStage === 'requested'
+      ? recordFollowUpSent(current, { channel: 'gmail', messageId: receipt.messageId, from: receipt.from, to: receipt.to, cc: receipt.cc, sentAt: receipt.sentAt })
+      : current)
+  }, [persistCaseState])
+
+  const handleFollowUpDays = useCallback((findingId: string, days: number) => {
+    persistCaseState(findingId, (current) => setFollowUpAfterDays(current, days))
+  }, [persistCaseState])
+
   const handleContactHold = useCallback((findingId: string, reason: string | null) => {
     persistCaseState(findingId, (current) => setContactHold(current, reason))
   }, [persistCaseState])
@@ -790,6 +800,8 @@ export function AuditApp() {
               onApproveRecovery={handleApproveRecovery}
               onApproveAndSend={handleApproveAndSend}
               onEmailSent={handleEmailSent}
+              onFollowUpSent={handleFollowUpSent}
+              onFollowUpDays={handleFollowUpDays}
               onContactHold={handleContactHold}
               onVendorUpdate={handleVendorUpdate}
               onFollowUp={handleFollowUp}
