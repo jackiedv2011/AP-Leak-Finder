@@ -10,7 +10,7 @@ import { DevMailer, GmailMailer, ResendMailer, type Mailer } from './mailer.ts'
 import { createGoogleClient, type GoogleClient } from './google.ts'
 import { createDraftService, DraftError, DraftRequestSchema, unsupportedAmounts, type DraftService } from './ai.ts'
 import type { ServerConfig } from './config.ts'
-import { HttpError, RateLimiter, empty, json, redirect, serializeCookie, toRequest, writeResponse, type Request, type Response } from './http.ts'
+import { HttpError, RateLimiter, empty, isCrossSiteWrite, json, redirect, serializeCookie, toRequest, writeResponse, type Request, type Response } from './http.ts'
 import { newToken, openSecret, sealSecret } from './crypto.ts'
 import { createQuickBooksClient, migrateQuickBooksLink, syncLedger, QuickBooksReconnectError, QuickBooksUnauthorizedError, type QuickBooksClient, type QuickBooksTokens } from './quickbooks.ts'
 import { entitlementsFor, isPlan, monthStart, planOf, PLAN_LIMITS, type Plan } from './plans.ts'
@@ -85,12 +85,16 @@ export function createApp(deps: AppDependencies): App {
     rememberMeMs: config.rememberMeDays * 24 * 60 * 60 * 1000,
   })
   const credentialLimiter = new RateLimiter(20, 60 * 1000)
+  // Per address, whatever IP asks: stops password guessing spread over many IPs,
+  // and stops anyone using Reclaim to flood someone's inbox with its emails.
+  const loginEmailLimiter = new RateLimiter(10, 15 * 60 * 1000)
+  const mailLimiter = new RateLimiter(5, 60 * 60 * 1000)
   const draftLimiter = new RateLimiter(30, 60 * 60 * 1000)
   const contactLimiter = new RateLimiter(5, 60 * 60 * 1000)
   const quickbooksSyncLimiter = new RateLimiter(20, 60 * 60 * 1000)
   const gmailSendLimiter = new RateLimiter(30, 60 * 60 * 1000)
   const gmailClient = deps.gmail !== undefined ? deps.gmail : config.gmailSend ? createGmailClient(config.gmailSend.clientId, config.gmailSend.clientSecret) : null
-  const gmailRoute = createGmailRoutes({ db, appOrigin: config.appOrigin, production: config.production, gmail: gmailClient && config.gmailSend ? { client: gmailClient, tokenKey: config.gmailSend.tokenKey } : null, userFor: (req) => auth.userForSession(req.cookies[SESSION_COOKIE]), allowSend: (id) => gmailSendLimiter.check(`gmail:${id}`) })
+  const gmailRoute = createGmailRoutes({ db, appOrigin: config.appOrigin, production: config.production, gmail: gmailClient && config.gmailSend ? { client: gmailClient, tokenKey: config.gmailSend.tokenKey } : null, userFor: (req) => auth.userForSession(req.cookies[SESSION_COOKIE]), allowSend: (id) => gmailSendLimiter.check(`gmail:${id}`), project: (userId, projectId) => projects.get(userId, projectId) })
 
   const sessionCookie = (token: string, maxAge: number) => serializeCookie(SESSION_COOKIE, token, { maxAge, secure: config.production })
   const clearSessionCookie = () => serializeCookie(SESSION_COOKIE, '', { maxAge: 0, secure: config.production })
@@ -166,7 +170,11 @@ export function createApp(deps: AppDependencies): App {
       console.error('quickbooks revoke failed:', err instanceof Error ? err.message : 'unknown error')
     }
   }
-  const accountContext = { db, projects, requireUser, publicUser, clearSessionCookie, revokeQuickBooks }
+  const revokeIntegrations = async (userId: string) => {
+    await revokeQuickBooks(userId)
+    await gmailRoute.revoke(userId)
+  }
+  const accountContext = { db, projects, requireUser, publicUser, clearSessionCookie, revokeIntegrations }
   /** A usable access token, refreshed and re-sealed when it is about to expire (or when `force`d after a 401). */
   async function qboAccessToken(userId: string, row: ConnectionRow, force = false): Promise<string> {
     const tokens = qboTokens(userId, row)
@@ -180,6 +188,7 @@ export function createApp(deps: AppDependencies): App {
   async function route(req: Request): Promise<Response> {
     const path = req.url.pathname
     const method = req.method
+    if (isCrossSiteWrite(req, config.appOrigin, config.production)) throw new HttpError(403, 'This request came from another site.', 'cross_site')
 
     // ---------- discovery ----------
     if (path === '/api/auth/providers' && method === 'GET') {
@@ -221,6 +230,7 @@ export function createApp(deps: AppDependencies): App {
       const body = await req.json<Record<string, unknown>>()
       const fields = auth.validateSignUp(body)
       if (Object.keys(fields).length) return json(400, { message: 'Check the highlighted fields.', code: 'validation', fields })
+      limit(mailLimiter, `signup:${normalizeEmail(body.email as string)}`)
       const result = await auth.signUp({
         firstName: body.firstName as string,
         lastName: body.lastName as string,
@@ -248,7 +258,8 @@ export function createApp(deps: AppDependencies): App {
       requireJson(req)
       limit(credentialLimiter, `resend:${req.ip}`)
       const { email } = await req.json<{ email?: string }>()
-      if (typeof email === 'string') await auth.resendVerification(email)
+      // Over the per-address limit nothing is sent, and the answer is the same.
+      if (typeof email === 'string' && mailLimiter.check(`resend:${normalizeEmail(email)}`)) await auth.resendVerification(email)
       return json(200, { ok: true })
     }
 
@@ -257,6 +268,7 @@ export function createApp(deps: AppDependencies): App {
       limit(credentialLimiter, `login:${req.ip}`)
       const { email, password, rememberMe } = await req.json<{ email?: string; password?: string; rememberMe?: boolean }>()
       if (typeof email !== 'string' || typeof password !== 'string') throw new HttpError(400, 'Enter your email and password.')
+      limit(loginEmailLimiter, `login:${normalizeEmail(email)}`)
       const user = await auth.logIn(email, password)
       const session = auth.createSession(user.id, rememberMe === true)
       return json(200, { user: publicUser(user) }, { 'Set-Cookie': sessionCookie(session.token, session.maxAgeSeconds) })
@@ -277,7 +289,7 @@ export function createApp(deps: AppDependencies): App {
       requireJson(req)
       limit(credentialLimiter, `forgot:${req.ip}`)
       const { email } = await req.json<{ email?: string }>()
-      if (typeof email === 'string' && email.trim()) await auth.requestPasswordReset(email)
+      if (typeof email === 'string' && email.trim() && mailLimiter.check(`forgot:${normalizeEmail(email)}`)) await auth.requestPasswordReset(email)
       // Same answer whether or not the address is registered.
       return json(200, { ok: true })
     }
@@ -317,7 +329,7 @@ export function createApp(deps: AppDependencies): App {
         return redirect('/audit', { 'Set-Cookie': [sessionCookie(session.token, session.maxAgeSeconds), clearState] })
       } catch (err) {
         if (err instanceof HttpError && err.code === 'google_email_unverified') return back('google_email_unverified')
-        console.error('google sign-in failed:', err instanceof Error ? err.message : err)
+        console.error('google sign-in failed:', err instanceof Error ? err.message : 'unknown error')
         return back('google_failed')
       }
     }
@@ -588,7 +600,7 @@ export function createApp(deps: AppDependencies): App {
   const server = createServer(async (rawReq, rawRes) => {
     const options = { noStore: (rawReq.url ?? '').startsWith('/api/'), hsts: config.production }
     try {
-      const req = await toRequest(rawReq)
+      const req = await toRequest(rawReq, { trustProxy: config.trustProxy })
       const response = await route(req)
       writeResponse(rawRes, response, options)
     } catch (err) {

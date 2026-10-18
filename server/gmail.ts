@@ -197,7 +197,12 @@ export interface GmailRouteDeps {
   userFor(req: Request): GmailUser | null
   /** Per-account send limiter: true while under the limit. */
   allowSend(userId: string): boolean
+  /** The account's saved audit, decrypted (projectStore.ts), or null. */
+  project(userId: string, projectId: string): Record<string, unknown> | null
 }
+
+/** The Gmail routes, plus revoking an account's Gmail grant (used by account deletion). */
+export type GmailRoutes = ((req: Request) => Promise<Response | null>) & { revoke(userId: string): Promise<void> }
 
 type ConnectionRow = { realm_id: string; company_name: string; tokens_sealed: string; connected_at: number }
 type SendRow = { status: 'sending' | 'sent' | 'uncertain'; message_id: string | null; from_email: string; to_email: string; cc: string; sent_at: number | null }
@@ -219,7 +224,7 @@ const withStatus = (next: string, status: string) => {
  * The Gmail routes. Returns null for any path it doesn't own, so `app.ts`
  * dispatches to it with one line.
  */
-export function createGmailRoutes(deps: GmailRouteDeps): (req: Request) => Promise<Response | null> {
+export function createGmailRoutes(deps: GmailRouteDeps): GmailRoutes {
   const { db, gmail } = deps
   db.exec(`
     -- One row per case sent through Gmail, reserved before Gmail is called.
@@ -258,8 +263,18 @@ export function createGmailRoutes(deps: GmailRouteDeps): (req: Request) => Promi
     return user
   }
   const unavailable = () => new HttpError(503, 'Gmail sending isn’t set up on this server.', 'gmail_unavailable')
+  /** Tells Google to cancel the grant. Deleting the sealed token afterwards still ends Reclaim's access if this fails. */
+  const revoke = async (userId: string) => {
+    const row = connection(userId)
+    if (!row || !gmail) return
+    try {
+      await gmail.client.revoke(refreshToken(userId, row))
+    } catch (err) {
+      console.error('gmail revoke failed:', err instanceof Error ? err.message : 'unknown error')
+    }
+  }
 
-  return async function gmailRoute(req) {
+  const gmailRoute = async function gmailRoute(req: Request): Promise<Response | null> {
     const path = req.url.pathname
     if (path !== GMAIL_PATH && !path.startsWith(`${GMAIL_PATH}/`)) return null
     const method = req.method
@@ -315,15 +330,7 @@ export function createGmailRoutes(deps: GmailRouteDeps): (req: Request) => Promi
 
     if (path === `${GMAIL_PATH}/disconnect` && method === 'POST') {
       const user = requireUser(req)
-      const row = connection(user.id)
-      if (row && gmail) {
-        try {
-          await gmail.client.revoke(refreshToken(user.id, row))
-        } catch (err) {
-          // Deleting the sealed token below still ends Reclaim's access.
-          console.error('gmail revoke failed:', err instanceof Error ? err.message : 'unknown error')
-        }
-      }
+      await revoke(user.id)
       drop(user.id)
       return json(200, { ok: true })
     }
@@ -353,8 +360,7 @@ export function createGmailRoutes(deps: GmailRouteDeps): (req: Request) => Promi
       if (!/^[\w-]+$/.test(projectId) || !findingId || !Number.isFinite(amount)) throw new HttpError(400, 'The case data is malformed.', 'validation')
       if (Object.keys(fields).length) return json(400, { message: 'Check the highlighted fields.', code: 'validation', fields })
 
-      const stored = db.prepare('SELECT payload FROM projects WHERE user_id = ? AND id = ?').get(user.id, projectId) as { payload: string } | undefined
-      const facts = authorizedSendFacts(stored ? JSON.parse(stored.payload) : null, findingId, amount)
+      const facts = authorizedSendFacts(deps.project(user.id, projectId), findingId, amount)
       // Asked before the approval checks, so a case already sent through Gmail reports that instead of "not approved".
       const earlier = db.prepare('SELECT status, message_id, from_email, to_email, cc, sent_at FROM gmail_sends WHERE user_id = ? AND project_id = ? AND finding_id = ?').get(user.id, projectId, findingId) as SendRow | undefined
       if (earlier?.status === 'sent') return json(409, { message: 'This request was already sent from Gmail.', code: 'gmail_already_sent', send: sendView(earlier) })
@@ -421,4 +427,5 @@ export function createGmailRoutes(deps: GmailRouteDeps): (req: Request) => Promi
 
     throw new HttpError(404, 'Not found.')
   }
+  return Object.assign(gmailRoute, { revoke })
 }

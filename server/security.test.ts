@@ -241,7 +241,8 @@ describe('what the server reveals', () => {
 
   it('credential endpoints are rate limited', async () => {
     const statuses: number[] = []
-    for (let i = 0; i < 25; i++) statuses.push((await new Client().post('/api/auth/login', { email: 'x@example.com', password: 'wrong-password' })).status)
+    // Different addresses from one IP: the per-IP limit.
+    for (let i = 0; i < 25; i++) statuses.push((await new Client().post('/api/auth/login', { email: `x${i}@example.com`, password: 'wrong-password' })).status)
     expect(statuses.slice(0, 20).every((s) => s === 401)).toBe(true)
     expect(statuses.slice(20).every((s) => s === 429)).toBe(true)
   }, 15_000)

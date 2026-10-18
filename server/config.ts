@@ -40,6 +40,12 @@ export interface ServerConfig {
    */
   dataKeys: { current: Buffer; previous: Buffer | null } | null
   /**
+   * How many proxies in front of the server append to X-Forwarded-For (0 = none,
+   * the default: the header is ignored). Rate limits key on the client address,
+   * so behind the host's load balancer this must be 1 or every visitor shares one limit.
+   */
+  trustProxy: number
+  /**
    * Sending recovery emails from the customer's own Gmail, through the same
    * Google OAuth client as sign-in. GMAIL_TOKEN_KEY (32 random bytes, base64)
    * seals stored refresh tokens; losing it only means customers reconnect.
@@ -79,8 +85,16 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): ServerConfig {
     devMailbox: !production && (env.DEV_MAILBOX === 'true' || (env.DEV_MAILBOX !== 'false' && isLocalOrigin(appOrigin))),
     quickbooks: quickbooksConfig(env),
     dataKeys: dataKeysConfig(env),
+    trustProxy: trustProxyConfig(env.TRUST_PROXY),
     gmailSend: gmailSendConfig(env, google),
   }
+}
+
+function trustProxyConfig(value: string | undefined): number {
+  if (!value?.trim() || value.trim() === 'false') return 0
+  const hops = Number(value.trim() === 'true' ? 1 : value.trim())
+  if (!Number.isInteger(hops) || hops < 0 || hops > 5) throw new Error('TRUST_PROXY must be the number of proxies in front of the server (usually 1), or unset.')
+  return hops
 }
 
 function dataKeysConfig(env: NodeJS.ProcessEnv): ServerConfig['dataKeys'] {
@@ -123,10 +137,12 @@ function productionProblems(env: NodeJS.ProcessEnv, appOrigin: string): string[]
   // The dev mailbox hands password-reset links to anyone who asks.
   if (set('DEV_MAILBOX') && env.DEV_MAILBOX !== 'false') problems.push('DEV_MAILBOX must be unset or false in production.')
 
-  // Every stored audit is sealed under this key. Reusing the QuickBooks key
-  // would mean rotating one forces rotating the other.
+  // Every stored audit is sealed under this key.
   if (!set('DATA_KEY')) problems.push('DATA_KEY is not set. Stored audits are encrypted with it: openssl rand -base64 32, and keep a copy apart from the database backups.')
-  else if (set('QBO_TOKEN_KEY') && env.DATA_KEY!.trim() === env.QBO_TOKEN_KEY!.trim()) problems.push('DATA_KEY must be different from QBO_TOKEN_KEY.')
+  // One key per purpose, so rotating (or leaking) one never touches the others.
+  const keyNames = ['DATA_KEY', 'QBO_TOKEN_KEY', 'GMAIL_TOKEN_KEY'].filter(set)
+  const reused = keyNames.filter((name, i) => keyNames.some((other, j) => j !== i && env[other]!.trim() === env[name]!.trim()))
+  if (reused.length) problems.push(`${reused.join(' and ')} are the same key. Generate a separate one for each (openssl rand -base64 32).`)
 
   const qbo = ['QBO_CLIENT_ID', 'QBO_CLIENT_SECRET', 'QBO_TOKEN_KEY']
   const missing = qbo.filter((name) => !set(name))
