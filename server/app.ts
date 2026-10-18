@@ -14,6 +14,7 @@ import { createQuickBooksClient, pullLedger, toLedgerImport, QuickBooksReconnect
 import { entitlementsFor, isPlan, monthStart, planOf, PLAN_LIMITS, type Plan } from './plans.ts'
 import { checkRepeat, repeatMessage, rowFingerprint } from './uploads.ts'
 import { authorizedDraftFacts } from './caseFacts.ts'
+import { createGmailClient, createGmailRoutes, type GmailClient } from './gmail.ts'
 
 const SESSION_COOKIE = 'reclaim_session'
 const OAUTH_STATE_COOKIE = 'reclaim_oauth_state'
@@ -27,6 +28,7 @@ export interface AppDependencies {
   google?: GoogleClient | null
   drafts?: DraftService | null
   quickbooks?: QuickBooksClient | null
+  gmail?: GmailClient | null
   /** Directory of built static files to serve alongside the API (production). */
   staticDir?: string | null
 }
@@ -80,6 +82,9 @@ export function createApp(deps: AppDependencies): App {
   const draftLimiter = new RateLimiter(30, 60 * 60 * 1000)
   const contactLimiter = new RateLimiter(5, 60 * 60 * 1000)
   const quickbooksSyncLimiter = new RateLimiter(20, 60 * 60 * 1000)
+  const gmailSendLimiter = new RateLimiter(30, 60 * 60 * 1000)
+  const gmailClient = deps.gmail !== undefined ? deps.gmail : config.gmailSend ? createGmailClient(config.gmailSend.clientId, config.gmailSend.clientSecret) : null
+  const gmailRoute = createGmailRoutes({ db, appOrigin: config.appOrigin, production: config.production, gmail: gmailClient && config.gmailSend ? { client: gmailClient, tokenKey: config.gmailSend.tokenKey } : null, userFor: (req) => auth.userForSession(req.cookies[SESSION_COOKIE]), allowSend: (id) => gmailSendLimiter.check(`gmail:${id}`) })
 
   const sessionCookie = (token: string, maxAge: number) => serializeCookie(SESSION_COOKIE, token, { maxAge, secure: config.production })
   const clearSessionCookie = () => serializeCookie(SESSION_COOKIE, '', { maxAge: 0, secure: config.production })
@@ -530,6 +535,9 @@ export function createApp(deps: AppDependencies): App {
       const rows = db.prepare('SELECT id, to_email, subject, body, link, created_at FROM mailbox WHERE to_email = ? ORDER BY id DESC LIMIT 20').all(normalizeEmail(to))
       return json(200, { messages: rows })
     }
+
+    const gmailResponse = await gmailRoute(req)
+    if (gmailResponse) return gmailResponse
 
     if (path.startsWith('/api/')) throw new HttpError(404, 'Not found.')
 

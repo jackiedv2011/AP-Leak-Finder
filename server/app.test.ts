@@ -319,7 +319,7 @@ describe('plans and entitlements', () => {
     expect(user.onboardingSeenAt).toBeNull()
     const ent = await c.get('/api/account/entitlements')
     expect(ent.status).toBe(200)
-    expect(ent.body).toMatchObject({ plan: 'free', limits: { auditsPerMonth: null, findingsVisible: 3, blocksRepeatUploads: true, aiDrafts: false, fullLetters: false, fullRecoveryWorkflow: false, advancedReports: false }, usage: { auditsThisMonth: 0 }, canStartAudit: true })
+    expect(ent.body).toMatchObject({ plan: 'free', limits: { auditsPerMonth: null, findingsVisible: 3, blocksRepeatUploads: true, aiDrafts: false, fullLetters: true, gmailSending: true, fullRecoveryWorkflow: false, advancedReports: false }, usage: { auditsThisMonth: 0 }, canStartAudit: true })
     expect((await new Client().get('/api/account/entitlements')).status).toBe(401)
   })
 

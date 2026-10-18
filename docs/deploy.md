@@ -32,6 +32,7 @@ files entirely (`.dockerignore`), so a container only sees what the host gives i
 | `SESSION_DAYS` / `REMEMBER_ME_DAYS` | no | no | Default 1 and 30. |
 | `GOOGLE_CLIENT_ID` | no (public id) | no | Both Google values set → "Continue with Google" appears. |
 | `GOOGLE_CLIENT_SECRET` | **secret** | with the id | |
+| `GMAIL_TOKEN_KEY` | **secret** | no | 32 random bytes, base64: `openssl rand -base64 32`. With the two Google values, turns on "Send from your Gmail" (all plans). Seals stored Gmail refresh tokens. Needs the Google setup in §4a. Rotating it disconnects every Gmail user, like `QBO_TOKEN_KEY` (§6). |
 | `ANTHROPIC_API_KEY` | **secret** | no | Without it, "Draft with AI" reports itself unavailable. |
 | `ANTHROPIC_MODEL` | no | no | Default `claude-opus-5`. |
 | `QBO_CLIENT_ID` | no (public id) | no | QuickBooks Online, **sandbox only**, read-only. All three `QBO_*` or none: the server refuses a partial set. |
@@ -119,6 +120,42 @@ Both are built from `APP_ORIGIN`, so they must match it character for character.
 
 The server prints the QuickBooks redirect URI it expects at startup.
 
+## 4a. Gmail sending (Google Cloud setup)
+
+Sending uses the **same Google Cloud project and OAuth client** as sign-in
+(`GOOGLE_CLIENT_ID`). It's a separate consent from sign-in: Reclaim asks for
+`gmail.send` (plus `openid email`, only to show which address is connected)
+when a customer clicks **Connect Gmail**, never at sign-in. It can't read the
+inbox. Someone with owner access to the Google Cloud project has to do this:
+
+1. **Enable the Gmail API:** APIs & Services → Library → "Gmail API" → Enable.
+2. **Add the redirect URI** to the existing OAuth client (APIs & Services → Credentials):
+   `<APP_ORIGIN>/api/integrations/gmail/callback`. For local development also add
+   `http://localhost:5174/api/integrations/gmail/callback`, or whatever `APP_ORIGIN` is in `.env`.
+3. **Add the scope to the consent screen** (Google Auth Platform → Data access → Add or remove scopes):
+   `https://www.googleapis.com/auth/gmail.send`. Google lists it as a **sensitive** scope.
+4. **Test users:** while the app is unverified, only listed test users can connect Gmail
+   (Audience → Test users → add Jagan's address, and each pilot customer's Gmail address, up to 100).
+   Others see "This app is blocked" or an unverified-app warning.
+5. **Verification before public use:** `gmail.send` needs Google's verification before
+   anyone outside the test-user list can connect: Google Auth Platform → Verification Center. Google asks
+   for a public homepage and privacy policy on a domain you've verified in Search Console, a
+   justification for the scope ("sends recovery request emails the user has reviewed and approved, from
+   the user's own address; never reads mail"), and a short screen recording of the connect → approve →
+   send flow. It usually takes a few days to a few weeks. `gmail.send` is sensitive, not restricted, so no
+   third-party security assessment is needed.
+6. Set `GMAIL_TOKEN_KEY` (`openssl rand -base64 32`) in the host's secret store and restart.
+
+Check it: Settings → Connected accounts shows a **Gmail** card. Connecting returns to the same
+page with "Gmail is connected". If Google says `redirect_uri_mismatch`, step 2 doesn't match `APP_ORIGIN`
+character for character.
+
+How sending is guarded (so support can explain it): the server sends only for a case that passes the
+evidence checks and the customer's approval on the server's copy, and only the approved subject,
+message and recipient. Each case sends at most once (`gmail_sends` table). If Gmail's answer is lost
+(network failure or a Google 5xx), the case is **not** marked sent, and the customer is asked to check
+their Gmail Sent folder before they can try again.
+
 ## 5. Backups and restore
 
 `server/backup.ts` takes a consistent copy while the server keeps running
@@ -185,6 +222,7 @@ the new value, update the host, restart, then revoke the old one.
 - [ ] `DEV_MAILBOX` is unset. `GET /api/dev/mailbox?to=x` returns 404.
 - [ ] Google sign-in works on the real domain (origin and redirect URI set, consent screen published).
 - [ ] QuickBooks: either all three `QBO_*` set with the redirect URI registered at Intuit, or none set.
+- [ ] Gmail: `GMAIL_TOKEN_KEY` set, Gmail API enabled, redirect URI and `gmail.send` scope added (§4a). Until Google verifies the app, only listed test users can connect. Send one request to an address you own and check it arrives and shows the Gmail message ID in the case history.
 - [ ] Daily backup scheduled and copied off the server. One restore tested.
 - [ ] Secrets live only in the host's secret store. Nobody has pasted them in chat, tickets or the repo.
 - [ ] One container per volume. No autoscaling to more than one instance.

@@ -10,6 +10,8 @@ import { type CaseState, type RecoveryMethod } from '@/ledger/caseState'
 import type { Finding } from '@/types'
 import type { PlanLimits } from '@/lib/plans'
 import { UpgradeDialog } from '@/components/plan/UpgradeDialog'
+import { GmailSendStep } from '@/components/gmail/Gmail'
+import type { GmailSendReceipt } from '@/lib/gmailApi'
 
 const METHOD_LABEL: Record<RecoveryMethod, string> = {
   refund: 'Refund',
@@ -32,9 +34,10 @@ function parseMoney(input: string): number {
 /**
  * Stage "confirmed": build the recovery request, then approve it. The letter is
  * generated from the case, can be rewritten by hand or redrafted with AI help,
- * copied or downloaded, and nothing leaves Reclaim. Approval records the
- * customer's go-ahead and who first knew about the issue; "Mark request sent"
- * only records that the reviewer sent it themselves.
+ * copied or downloaded. Approval records the customer's go-ahead and who first
+ * knew about the issue. Once approved, it can be sent from the customer's own
+ * connected Gmail (recorded as sent only when Gmail accepts it), or sent by
+ * hand and recorded with "Mark request sent".
  */
 export function RecoveryRequestPanel({
   finding,
@@ -45,6 +48,7 @@ export function RecoveryRequestPanel({
   onMarkRequested,
   onApprove,
   onApproveAndSend,
+  onEmailSent,
   onContactHold,
   recommendation,
 }: {
@@ -56,6 +60,8 @@ export function RecoveryRequestPanel({
   onMarkRequested: (pkg: RequestPackage) => void
   onApprove: (pkg: RequestPackage, knownBeforeReclaim: boolean, knownBeforeNote: string | null) => void
   onApproveAndSend?: (pkg: RequestPackage, knownBeforeReclaim: boolean, knownBeforeNote: string | null) => void
+  /** Gmail accepted the request; record it as sent with Gmail's receipt. */
+  onEmailSent?: (pkg: RequestPackage, receipt: GmailSendReceipt) => void
   onContactHold: (reason: string | null) => void
   recommendation?: { method: RecoveryMethod; reason: string }
 }) {
@@ -164,7 +170,7 @@ export function RecoveryRequestPanel({
           <h2 id="request-title">{isVendorLetter ? 'Recovery request' : 'Internal note'}</h2>
           <p>
             {isVendorLetter
-              ? 'Written from the records on this page. Edit it, then send it from your own email. Reclaim never contacts a vendor.'
+              ? 'Written from the records on this page. Edit it, approve it, then send it from your Gmail or your own email. Nothing reaches a vendor until you send it.'
               : 'This finding needs checking inside your business before anyone contacts the vendor.'}
           </p>
         </div>
@@ -206,7 +212,7 @@ export function RecoveryRequestPanel({
               </select>
             </div>
             <div className="wk-field">
-              <label htmlFor="request-recipient">Vendor email (optional)</label>
+              <label htmlFor="request-recipient">Vendor email</label>
               <input id="request-recipient" className="wk-input" type="email" value={recipientEmail} onChange={(e) => setRecipientEmail(e.target.value)} placeholder="ap@vendor.com" />
             </div>
           </div>
@@ -223,12 +229,12 @@ export function RecoveryRequestPanel({
 
         {!canEdit ? (
           <p className="wk-field-hint">
-            Editing, downloading and AI drafting are part of Growth and Flat.{' '}
+            Editing and downloading are part of Growth and Flat.{' '}
             <button type="button" className="wk-linklike" onClick={() => setUpgrade('Editable letters are part of Growth and Flat.')}>See what paid plans add</button>
           </p>
         ) : null}
 
-        {isVendorLetter && canEdit ? (
+        {isVendorLetter && limits.aiDrafts ? (
           <div className="wk-field">
             <label htmlFor="request-context">Anything the draft should know? (optional)</label>
             <input id="request-context" className="wk-input" placeholder="e.g. long-standing supplier, keep the tone warm; their AP contact is Maria" value={context} onChange={(e) => setContext(e.target.value)} />
@@ -314,8 +320,17 @@ export function RecoveryRequestPanel({
               ? 'Answer the question above first, so the case records who identified the issue.'
               : state.approvedAt && !approvedForCurrent && !state.contactHold
                 ? 'The request changed after approval. Review and approve this version.'
-                : 'Mark it sent only after you have sent it. Reclaim does not send email.'}
+                : 'Mark it sent only after you have sent it yourself.'}
           </p>
+
+          {limits.gmailSending && onEmailSent && projectId ? (
+            <GmailSendStep
+              pkg={{ projectId, findingId: finding.id, vendor: finding.vendor, to: recipientEmail.trim(), subject, body, amount, methodLabel: METHOD_LABEL[method] }}
+              ready={approvedForCurrent && !amountError}
+              blockedReason={!gate.eligible ? 'Sending opens after the evidence checks pass.' : state.contactHold ? 'Vendor contact is on hold.' : null}
+              onSent={(receipt) => onEmailSent(pkg, receipt)}
+            />
+          ) : null}
 
           <div className="wk-disclosure">
             {!holdOpen && !state.contactHold ? (

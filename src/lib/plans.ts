@@ -36,7 +36,8 @@ export const PLAN_PITCH: Record<Plan, PlanPitch> = {
       'Unlimited ledger uploads',
       'All eight checks on every file',
       'The 3 lowest-value findings of each upload, in full',
-      'Recovery letters to read and copy',
+      'Recovery letters you can edit',
+      'Send approved requests from your own Gmail',
       'Track what comes back by hand',
     ],
     note: 'One audit per ledger: uploading the same file again, or a smaller piece of it, is flagged and doesn’t unlock more findings.',
@@ -48,7 +49,7 @@ export const PLAN_PITCH: Record<Plan, PlanPitch> = {
     features: [
       'Every finding in every audit — nothing hidden',
       'AI-drafted recovery emails from the exact records',
-      'Automatic sending through your Gmail — coming soon',
+      'Send approved requests from your own Gmail',
       'Approvals, follow-ups, partial returns and full case history',
       'Every-vendor reports and accounting closeout',
       'Unlimited uploads and re-audits',

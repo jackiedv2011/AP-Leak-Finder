@@ -18,6 +18,7 @@ import { verifiedReturned } from '@/recovery/financials'
 import { playbookFor } from '@/recovery/playbooks'
 import { evidenceOf, openQuestion, timelineFor } from '../selectors'
 import { InternalReviewPanel, METHOD_LABEL, RecoveryRequestPanel, type RequestPackage } from './RecoveryPanels'
+import type { GmailSendReceipt } from '@/lib/gmailApi'
 import { RecoveryAccountingPanel, RecoveryProgressPanel } from './RecoveryJourney'
 import { KIND_LABEL, KindChip } from './KindChip'
 import { Strength } from './Strength'
@@ -42,6 +43,8 @@ interface CaseDetailProps {
   onReopenBalance: (findingId: string) => void
   onApproveRecovery: (findingId: string, pkg: RequestPackage, knownBeforeReclaim: boolean, knownBeforeNote: string | null) => void
   onApproveAndSend?: (findingId: string, pkg: RequestPackage, knownBeforeReclaim: boolean, knownBeforeNote: string | null) => void
+  /** Gmail accepted the request; record it as sent. */
+  onEmailSent?: (findingId: string, pkg: RequestPackage, receipt: GmailSendReceipt) => void
   onContactHold: (findingId: string, reason: string | null) => void
   onVendorUpdate: (findingId: string, update: VendorUpdate) => void
   onFollowUp: (findingId: string, at: number | null) => void
@@ -192,7 +195,7 @@ function stepsDone(state: CaseState): boolean[] {
 
 /** §29 — what happened and the work in front of you, the decision and money alongside. */
 export function CaseDetail(props: CaseDetailProps) {
-  const { finding, findings = [], imports, projectId, onSaveEvidence, state, records, discoveredAt, sender, onDecide, onMarkRequested, onRecordOutcome, onReopen, onReopenBalance, onApproveRecovery, onApproveAndSend, onContactHold, onVendorUpdate, onFollowUp, onVerifyRecovery, onCloseRecovery, onReconcileRecovery } = props
+  const { finding, findings = [], imports, projectId, onSaveEvidence, state, records, discoveredAt, sender, onDecide, onMarkRequested, onRecordOutcome, onReopen, onReopenBalance, onApproveRecovery, onApproveAndSend, onEmailSent, onContactHold, onVendorUpdate, onFollowUp, onVerifyRecovery, onCloseRecovery, onReconcileRecovery } = props
   const gate = evaluateEligibility(finding, finding.evidence, findings)
   const entitlements = useEntitlements()
   const [deciding, setDeciding] = useState<DecisionValue | null>(null)
@@ -267,6 +270,7 @@ export function CaseDetail(props: CaseDetailProps) {
         onMarkRequested={(pkg) => onMarkRequested(finding.id, pkg)}
         onApprove={(pkg, known, note) => onApproveRecovery(finding.id, pkg, known, note)}
         onApproveAndSend={onApproveAndSend ? (pkg, known, note) => onApproveAndSend(finding.id, pkg, known, note) : undefined}
+        onEmailSent={onEmailSent ? (pkg, receipt) => onEmailSent(finding.id, pkg, receipt) : undefined}
         onContactHold={(reason) => onContactHold(finding.id, reason)}
         recommendation={internal ? undefined : recommendRecoveryMethod(finding, records)}
       />

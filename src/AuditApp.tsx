@@ -60,7 +60,8 @@ import {
   type RecoveryVerification,
   type VendorUpdate,
 } from '@/ledger/caseState'
-import { approveRecovery, closeWithoutRecovery, recordVendorUpdate, reconcileRecovery, reopenRemainingBalance, setContactHold, setNextFollowUp, startRecoveryRequest, verifyRecovery } from '@/recovery/model'
+import { approveRecovery, closeWithoutRecovery, recordVendorUpdate, reconcileRecovery, recordEmailSent, reopenRemainingBalance, setContactHold, setNextFollowUp, startRecoveryRequest, verifyRecovery } from '@/recovery/model'
+import type { GmailSendReceipt } from '@/lib/gmailApi'
 import { assertRecoveryEligible, type RecoveryEvidence } from '@/recovery/eligibility'
 import { useEntitlements, useOptionalAuth } from '@/lib/auth/AuthContext'
 import { Locked } from '@/components/plan/Locked'
@@ -388,6 +389,14 @@ export function AuditApp() {
     })
   }, [persistCaseState, recoveryBlocked])
 
+  // Gmail accepted the message: the request went out, so it is recorded even
+  // if the case changed in the meantime. Nothing else marks a Gmail send.
+  const handleEmailSent = useCallback((findingId: string, pkg: RequestPackage, receipt: GmailSendReceipt) => {
+    persistCaseState(findingId, (current) => current.recoveryStage === 'confirmed'
+      ? recordEmailSent(current, { channel: 'gmail', messageId: receipt.messageId, from: receipt.from, to: receipt.to, cc: receipt.cc, sentAt: receipt.sentAt }, pkg.requestedAmount)
+      : current)
+  }, [persistCaseState])
+
   const handleContactHold = useCallback((findingId: string, reason: string | null) => {
     persistCaseState(findingId, (current) => setContactHold(current, reason))
   }, [persistCaseState])
@@ -664,6 +673,7 @@ export function AuditApp() {
               onReopenBalance={handleReopenBalance}
               onApproveRecovery={handleApproveRecovery}
               onApproveAndSend={handleApproveAndSend}
+              onEmailSent={handleEmailSent}
               onContactHold={handleContactHold}
               onVendorUpdate={handleVendorUpdate}
               onFollowUp={handleFollowUp}

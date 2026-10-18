@@ -104,7 +104,8 @@ export function QuickBooksImport({ onFile }: { onFile: (file: File, facts: Quick
 }
 
 /** Settings → Connected accounts: who is connected, and a way to end it. */
-export function QuickBooksSettings() {
+/** `bare`: just the card, for a Connected accounts section that also lists Gmail. */
+export function QuickBooksSettings({ bare = false }: { bare?: boolean } = {}) {
   const { status, refresh } = useQuickBooksStatus()
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -120,41 +121,45 @@ export function QuickBooksSettings() {
     void refresh()
   }
 
+  const card = (
+    <div className="wk-card" data-testid="quickbooks-settings">
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 24, flexWrap: 'wrap', alignItems: 'flex-start' }}>
+        <div style={{ maxWidth: 560 }}>
+          <p style={{ fontSize: 15, fontWeight: 500 }}>
+            QuickBooks Online <span className="wk-chip" data-tone="quiet">Sandbox</span>
+          </p>
+          <p className="wk-dim" style={{ marginTop: 4, fontSize: 13 }}>
+            {status.connected
+              ? `Connected to ${status.companyName || 'a QuickBooks company'}${status.connectedAt ? ` since ${dateTime.format(status.connectedAt)}` : ''}.`
+              : 'Not connected.'}
+          </p>
+          <p className="wk-table-sub" style={{ marginTop: 8, display: 'flex', gap: 6, alignItems: 'flex-start' }}>
+            <ShieldCheck aria-hidden="true" style={{ width: 14, height: 14, flex: 'none', marginTop: 2 }} />
+            {READ_ONLY_NOTE} Access is stored encrypted, and disconnecting cancels it with Intuit and deletes it here.
+          </p>
+        </div>
+        {status.connected ? (
+          <button type="button" className="wk-btn" data-variant="outline" data-size="sm" onClick={() => void disconnect()} disabled={busy}>
+            {busy ? 'Disconnecting…' : 'Disconnect QuickBooks'}
+          </button>
+        ) : (
+          <a className="wk-btn" data-variant="outline" data-size="sm" href={QUICKBOOKS_CONNECT_URL}>
+            Connect QuickBooks
+          </a>
+        )}
+      </div>
+      {error ? (
+        <p className="wk-table-sub" role="alert" style={{ marginTop: 10, color: 'var(--danger)' }}>
+          {error}
+        </p>
+      ) : null}
+    </div>
+  )
+  if (bare) return card
   return (
     <section className="wk-section" data-testid="connected-accounts">
       <h2 className="wk-display wk-h2">Connected accounts</h2>
-      <div className="wk-card">
-        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 24, flexWrap: 'wrap', alignItems: 'flex-start' }}>
-          <div style={{ maxWidth: 560 }}>
-            <p style={{ fontSize: 15, fontWeight: 500 }}>
-              QuickBooks Online <span className="wk-chip" data-tone="quiet">Sandbox</span>
-            </p>
-            <p className="wk-dim" style={{ marginTop: 4, fontSize: 13 }}>
-              {status.connected
-                ? `Connected to ${status.companyName || 'a QuickBooks company'}${status.connectedAt ? ` since ${dateTime.format(status.connectedAt)}` : ''}.`
-                : 'Not connected.'}
-            </p>
-            <p className="wk-table-sub" style={{ marginTop: 8, display: 'flex', gap: 6, alignItems: 'flex-start' }}>
-              <ShieldCheck aria-hidden="true" style={{ width: 14, height: 14, flex: 'none', marginTop: 2 }} />
-              {READ_ONLY_NOTE} Access is stored encrypted, and disconnecting cancels it with Intuit and deletes it here.
-            </p>
-          </div>
-          {status.connected ? (
-            <button type="button" className="wk-btn" data-variant="outline" data-size="sm" onClick={() => void disconnect()} disabled={busy}>
-              {busy ? 'Disconnecting…' : 'Disconnect QuickBooks'}
-            </button>
-          ) : (
-            <a className="wk-btn" data-variant="outline" data-size="sm" href={QUICKBOOKS_CONNECT_URL}>
-              Connect QuickBooks
-            </a>
-          )}
-        </div>
-        {error ? (
-          <p className="wk-table-sub" role="alert" style={{ marginTop: 10, color: 'var(--danger)' }}>
-            {error}
-          </p>
-        ) : null}
-      </div>
+      {card}
     </section>
   )
 }

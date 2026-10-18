@@ -67,11 +67,11 @@ Their commit adds: customer approval before outreach (with contact hold and "alr
 | Price | $0 | $15/mo + 10% of what's recovered | $50/mo, no fee |
 | Uploads | Unlimited | Unlimited, re-audits allowed | same as Growth |
 | Findings | 3 lowest-value per upload | all | all |
-| Extras | — | AI drafts, full recovery workflow, reports, "Gmail sending — coming soon" | same as Growth |
+| Extras | Editable letters, send from own Gmail | AI drafts, full recovery workflow, reports, send from own Gmail | same as Growth |
 
 - **Free repeat-upload rule** (`server/uploads.ts`, shared by server and browser): each payment row is fingerprinted (vendor, invoice, date, amount). An upload is a repeat when ≥50% of its rows already went to a *different* audit → flagged before it runs and refused by the server (`409 repeat_upload`). Catches renamed copies, reordered rows, trimmed pieces, delete-and-reupload, and the import endpoint. A new month with a little overlap is allowed. Guests get the browser check only (`src/ledger/uploadRegistry.ts`).
 - The old 3-audits-a-month cap is gone. Old `pro` accounts migrate to `growth`. `FLAT_BREAK_EVEN` = $533.40/month recovered.
-- **"Automatic Gmail sending" does not exist** — it is always labelled "coming soon". Don't remove that label unless it's built.
+- **Gmail sending** (all plans): `server/gmail.ts` (routes, `gmail.send` scope only, sealed refresh token under `GMAIL_TOKEN_KEY`, one send per case in `gmail_sends`), `src/components/gmail/Gmail.tsx` (Settings card + the send step on a case). Google Cloud setup: `docs/deploy.md` §4a. A case is marked sent only from Gmail's receipt (`recordEmailSent` in `src/recovery/model.ts`).
 - Pitch copy: `src/lib/plans.ts` (`PLAN_PITCH`), public page `landing-site/src/pages/pricing.html` (rebuilt with `node landing-site/build.cjs`; old $99/$249/$599 tiers and claims about accounting connections, SSO, vendor outreach removed).
 
 ### Plans section and checkout
@@ -87,7 +87,7 @@ Their commit adds: customer approval before outreach (with contact hold and "alr
 1. **Owner decision: commit & push** this work (see §0).
 2. **Before real users:** configure Resend with a domain; build real Stripe billing (§3); decide deployment (none exists yet — the production server path is `npm start`, which needs `NODE_ENV=production` and an `https` `APP_ORIGIN`).
 3. Test "Draft with AI" once with a real `ANTHROPIC_API_KEY`.
-4. Gmail sending — build it, or keep it labelled "coming soon".
+4. Gmail sending is built; it needs the Google Cloud steps in `docs/deploy.md` §4a and Google's verification of `gmail.send` before public use.
 5. Pro-only (now Growth/Flat) UI flows were tested by automated tests, not by clicking — a manual pass on a paid dev account (Settings → "Dev: switch to Growth") is worthwhile.
 6. Smaller: no Content-Security-Policy (marketing pages use inline scripts); near-duplicates have no path to a vendor letter; daily same-amount orders can still flag as near-duplicates; guests lose audits over ~10k rows on reload; "Seven checks" in marketing vs eight in the app; `demo/` build has no npm script; the stray `.MOV`.
 

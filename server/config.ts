@@ -32,6 +32,12 @@ export interface ServerConfig {
    * it only means customers reconnect.
    */
   quickbooks: { clientId: string; clientSecret: string; tokenKey: Buffer } | null
+  /**
+   * Sending recovery emails from the customer's own Gmail, through the same
+   * Google OAuth client as sign-in. GMAIL_TOKEN_KEY (32 random bytes, base64)
+   * seals stored refresh tokens; losing it only means customers reconnect.
+   */
+  gmailSend: { clientId: string; clientSecret: string; tokenKey: Buffer } | null
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): ServerConfig {
@@ -65,6 +71,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): ServerConfig {
     // become an account-takeover endpoint; DEV_MAILBOX=true opts in explicitly.
     devMailbox: !production && (env.DEV_MAILBOX === 'true' || (env.DEV_MAILBOX !== 'false' && isLocalOrigin(appOrigin))),
     quickbooks: quickbooksConfig(env),
+    gmailSend: gmailSendConfig(env, google),
   }
 }
 
@@ -99,6 +106,8 @@ function productionProblems(env: NodeJS.ProcessEnv, appOrigin: string): string[]
   const missing = qbo.filter((name) => !set(name))
   if (missing.length && missing.length < qbo.length) problems.push(`QuickBooks is half configured: ${missing.join(', ')} missing. Set all three QBO_* values, or none.`)
 
+  if (set('GMAIL_TOKEN_KEY') && !(set('GOOGLE_CLIENT_ID') && set('GOOGLE_CLIENT_SECRET'))) problems.push('GMAIL_TOKEN_KEY is set but GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET are not; Gmail sending uses the same Google client.')
+
   return problems
 }
 
@@ -116,6 +125,13 @@ function quickbooksConfig(env: NodeJS.ProcessEnv): ServerConfig['quickbooks'] {
   const tokenKey = Buffer.from(env.QBO_TOKEN_KEY, 'base64')
   if (tokenKey.length !== 32) throw new Error('QBO_TOKEN_KEY must be 32 random bytes, base64-encoded (openssl rand -base64 32).')
   return { clientId: env.QBO_CLIENT_ID, clientSecret: env.QBO_CLIENT_SECRET, tokenKey }
+}
+
+function gmailSendConfig(env: NodeJS.ProcessEnv, google: ServerConfig['google']): ServerConfig['gmailSend'] {
+  if (!google || !env.GMAIL_TOKEN_KEY) return null
+  const tokenKey = Buffer.from(env.GMAIL_TOKEN_KEY, 'base64')
+  if (tokenKey.length !== 32) throw new Error('GMAIL_TOKEN_KEY must be 32 random bytes, base64-encoded (openssl rand -base64 32).')
+  return { ...google, tokenKey }
 }
 
 function isLocalOrigin(origin: string): boolean {
