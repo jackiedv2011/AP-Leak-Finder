@@ -50,6 +50,23 @@ New tests in `EvidencePanel.test.tsx` check four things: every gate check is ask
 
 `server/health.test.ts` failed once during a full parallel run and passed on its own and on the next full run. It looks timing-sensitive and isn't related to these files.
 
+## Fourth pass: after Aditya's merge (2026-10-18)
+
+I walked onboarding → first audit → Findings → case → evidence → decision → recovery request → approval → Gmail send step on Growth, at desktop and phone, in light and dark. Aditya's onboarding, status pills and status pies fit the rest of the app; I kept his design direction.
+
+Fixed:
+- **Onboarding, step 1:** the title no longer shows a green focus box. It takes focus only so each step is announced.
+- **Onboarding, step 8 on wide screens:** the art no longer runs under the answer box, and the "Next:" hint is readable where it crosses the art. Under reduced motion, the still that replaces the video is placed correctly and no longer makes the page scroll sideways.
+- **Decision dialog:** "The evidence gate passed" now reads "Your evidence checks out".
+- **Case page:** for duplicates, the short "Before asking the vendor" checklist is gone, because it repeated the evidence questions.
+- **Overview and Findings:** finding types no longer clip in Up next, and plain evidence statuses wrap instead of clipping.
+
+Not done this pass (dropped to finish within the usage window):
+- **Recurring charges in Findings:** the data is in `recurringSeriesOf(result)` in `src/lib/detection.ts`; nothing shows it yet.
+- **QuickBooks sync status:** already on Overview (`QuickBooksSyncStatus`, `AuditApp.tsx`). It shows nothing until a company is connected, so I couldn't check it live with dummy keys.
+- **Send step order** (`RecoveryPanels.tsx`, the Gmail session's file): "Mark request sent" is the green primary button above the Gmail block, and the Gmail block then says "Or copy the letter … then mark it sent". Gmail should come first, with "Mark request sent" as an outline fallback underneath.
+- **Next-step card** (`src/recovery/model.ts`): "Send the request: copy the approved draft into your email…" doesn't mention Gmail.
+
 ## Prioritized problems, with proposals for Aditya
 
 ### P0: The two Appearance controls in Settings disagree (a bug)

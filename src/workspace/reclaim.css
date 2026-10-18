@@ -1214,3 +1214,8 @@ html[data-surface='workspace'] .wk-tour .wk-tour-dots i[data-active] { width: 18
   .wk-evq-grid, .wk-evq-save { grid-template-columns: minmax(0, 1fr); }
   .wk-evq-save .wk-btn { width: 100%; }
 }
+
+/* A finding's type stays whole in queue rows; the invoice reference gives way first. */
+.wk-queue-main span .wk-chip { flex: none; }
+/* Plain evidence statuses ("Check inside the business") wrap rather than clip. */
+.wk-finding-state .wk-cell-main strong { white-space: normal; }

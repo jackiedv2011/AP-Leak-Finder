@@ -73,10 +73,10 @@ const COLUMNS: Column[] = [
 ]
 
 /** The records behind the finding. Values repeated across rows are what made them match, so they are marked. */
-function Evidence({ finding }: { finding: Finding }) {
+function Evidence({ finding, checklist = true }: { finding: Finding; checklist?: boolean }) {
   const records = finding.relatedRecords
   const showVendor = new Set(records.map((r) => r.vendor.trim().toLowerCase())).size > 1
-  const playbook = finding.class === 'recoverable' ? playbookFor(finding) : null
+  const playbook = checklist && finding.class === 'recoverable' ? playbookFor(finding) : null
   const repeated = (column: Column, record: APRecord) => {
     if (records.length < 2) return false
     const key = column.key(record)
@@ -322,7 +322,8 @@ export function CaseDetail(props: CaseDetailProps) {
           {state.requiresRevalidation ? <p className="wk-field-hint" role="status">This existing recovery needs its evidence revalidated before any further outreach. Recorded returns stay preserved.</p> : null}
 
           {/* Only duplicate rules have a recovery gate; savings and security findings never collect recovery evidence. */}
-          <Evidence finding={finding} />
+          {/* Duplicates ask these checks in the evidence questions below, so the short checklist would repeat them. */}
+          <Evidence finding={finding} checklist={!(onSaveEvidence && (finding.type === 'exact_duplicate' || finding.type === 'near_duplicate'))} />
 
           {onSaveEvidence && (finding.type === 'exact_duplicate' || finding.type === 'near_duplicate') ? <EvidencePanel key={`evidence-${finding.id}`} finding={finding} findings={findings} imports={imports} onSave={(evidence) => onSaveEvidence(finding.id, evidence)} /> : null}
 

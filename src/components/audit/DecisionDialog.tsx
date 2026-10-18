@@ -23,7 +23,7 @@ interface DecisionDialogProps {
 }
 
 const OPTIONS: Array<{ value: DecisionValue; title: string; body: string }> = [
-  { value: 'confirmed', title: 'Prepare authorization', body: 'The evidence gate passed. Review the requested amount and separately authorize vendor contact next.' },
+  { value: 'confirmed', title: 'Prepare authorization', body: 'Your evidence checks out. Review the amount to request, then approve contacting the vendor.' },
   { value: 'needs_info', title: 'I need more detail', body: 'Keep it open. Note what you still have to check — a PO, a statement, a word with the vendor.' },
   { value: 'expected', title: 'Not an issue', body: 'This was expected — a split payment, a known arrangement, or a detection mistake. It leaves the open findings.' },
 ]
