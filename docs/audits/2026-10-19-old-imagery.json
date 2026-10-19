@@ -1,0 +1,2473 @@
+{
+ "sweeps": [
+  {
+   "key": "marketing-site",
+   "result": {
+    "items": [
+     {
+      "path": "landing-site/assets/cs-1.png",
+      "kind": "image",
+      "classification": "old-generated-3d",
+      "looks_like": "1024x1024 PNG. Three rounded slabs stacked on a small wooden pallet: mint-green on top, white speckled terrazzo in the middle, black clay at the bottom, on a flat greige ground. This is the 'stat-card slabs on pallets' look.",
+      "used_by": [
+       {
+        "file": "landing-site/src/pages/how-it-works.html",
+        "line": 373,
+        "surface": "/how-it-works, #numbers stat carousel, right half of the card '57% Suppliers'",
+        "live": true,
+        "why_live": "/how-it-works is served from landing-site/how-it-works/index.html (line 563), built from this source. Rebuilding gives identical output. Shows on every viewport."
+       },
+       {
+        "file": "landing-site/src/pages/research/ap-benchmarks.html",
+        "line": 212,
+        "surface": "/research/ap-benchmarks, stat carousel card '47% Lower'",
+        "live": true,
+        "why_live": "Built at research/ap-benchmarks/index.html:318. The /research/* prefix is a landing route."
+       },
+       {
+        "file": "landing-site/src/pages/research/occupational-fraud-2026.html",
+        "line": 214,
+        "surface": "/research/occupational-fraud-2026, stat card '21% Billing schemes'",
+        "live": true,
+        "why_live": "Built at research/occupational-fraud-2026/index.html:320"
+       },
+       {
+        "file": "landing-site/src/pages/research/payments-fraud-2025.html",
+        "line": 203,
+        "surface": "/research/payments-fraud-2025, stat card '74% Hit by BEC'",
+        "live": true,
+        "why_live": "Built at research/payments-fraud-2025/index.html:309"
+       }
+      ],
+      "replace_with": "One replacement per slot. Lean option (plan 002): drop the picture and set the figure on a pastel tile. Render option: give each stat card its article's thumbnail piece on that article's pastel tile, cropped to 300:400. Per-slot ideas: 57% Suppliers = blue, a row of off-white envelopes with about half of them blue. 47% Lower = blue, two blue blocks with the second at half height and a stepped shadow. 21% Billing schemes = coral, a coral invoice slab with a white duplicate sliding out behind it. 74% BEC = coral, a coral envelope in a white tray."
+     },
+     {
+      "path": "landing-site/assets/cs-2.png",
+      "kind": "image",
+      "classification": "old-generated-3d",
+      "looks_like": "1024x1024 PNG. Four interlocking puzzle pieces (pink, white speckled terrazzo, two black clay) lying on a wooden board, greige ground.",
+      "used_by": [
+       {
+        "file": "landing-site/src/pages/research/ap-benchmarks.html",
+        "line": 198,
+        "surface": "/research/ap-benchmarks, stat card '1.5% Of payments'",
+        "live": true,
+        "why_live": "Built at research/ap-benchmarks/index.html:304"
+       },
+       {
+        "file": "landing-site/src/pages/research/improper-payments.html",
+        "line": 202,
+        "surface": "/research/improper-payments, stat card '73% In five areas'",
+        "live": true,
+        "why_live": "Built at research/improper-payments/index.html:308"
+       },
+       {
+        "file": "landing-site/src/pages/research/payments-fraud-2025.html",
+        "line": 210,
+        "surface": "/research/payments-fraud-2025, stat card '17% Using AI'",
+        "live": true,
+        "why_live": "Built at research/payments-fraud-2025/index.html:316"
+       }
+      ],
+      "replace_with": "Per slot, or the pastel figure tile. 1.5% duplicate = green, a row of white coins with one green pair (the echo motif). 73% in five areas = violet, a white tray of keys with five of them violet. 17% using AI = blue, one blue cube among plain off-white cubes."
+     },
+     {
+      "path": "landing-site/assets/cs-3.png",
+      "kind": "image",
+      "classification": "old-generated-3d",
+      "looks_like": "1024x1024 PNG. A three-bar chart (light blue, white speckled terrazzo, tall black clay bar) on a round wooden plinth, greige ground.",
+      "used_by": [
+       {
+        "file": "landing-site/src/pages/research/improper-payments.html",
+        "line": 209,
+        "surface": "/research/improper-payments, stat card '10% Or higher'",
+        "live": true,
+        "why_live": "Built at research/improper-payments/index.html:315"
+       },
+       {
+        "file": "landing-site/src/pages/research/occupational-fraud-2026.html",
+        "line": 200,
+        "surface": "/research/occupational-fraud-2026, stat card '43% Found by tips'",
+        "live": true,
+        "why_live": "Built at research/occupational-fraud-2026/index.html:306"
+       }
+      ],
+      "replace_with": "10% or higher = blue, ten off-white cubes in a row with one blue. 43% found by tips = blue or violet, a single envelope dropping into a white tray. Or use the pastel figure tile with no render."
+     },
+     {
+      "path": "landing-site/assets/dept-finance.png",
+      "kind": "image",
+      "classification": "old-generated-3d",
+      "looks_like": "1376x768 PNG. Violet discs sandwiched between wooden coins, with one wooden coin leaning against the stack. Greige ground with a dark diagonal band top-left and a saturated violet diagonal stripe bottom-right (the striped 'dept' series).",
+      "used_by": [
+       {
+        "file": "landing-site/src/pages/research/index.html",
+        "line": 110,
+        "surface": "/research, article card thumbnail 'What 2,402 fraud cases show' (links to /research/occupational-fraud-2026)",
+        "live": true,
+        "why_live": "Built at research/index.html:215"
+       },
+       {
+        "file": "landing-site/src/pages/about.html",
+        "line": 231,
+        "surface": "/about, 'From the research' carousel card 'What billing schemes cost'",
+        "live": true,
+        "why_live": "Built at about/index.html:337"
+       },
+       {
+        "file": "landing-site/src/pages/research/occupational-fraud-2026.html",
+        "line": 207,
+        "surface": "/research/occupational-fraud-2026, stat card '53% Lower losses'",
+        "live": true,
+        "why_live": "Built at research/occupational-fraud-2026/index.html:313"
+       }
+      ],
+      "replace_with": "Research-card thumbnail for occupational-fraud-2026, used on both /research and /about: coral, a white invoice slab with a coral copy sliding out behind it, on a peach tint. Stat '53% Lower losses' = green, two green coin stacks, the second at half height, on mint."
+     },
+     {
+      "path": "landing-site/assets/dept-freight.png",
+      "kind": "image",
+      "classification": "old-generated-3d",
+      "looks_like": "1376x768 PNG. A toy truck: white speckled terrazzo cargo box with a pink band, black clay cab, wooden wheels. Greige ground with a pink diagonal stripe.",
+      "used_by": [
+       {
+        "file": "landing-site/src/pages/research/index.html",
+        "line": 132,
+        "surface": "/research, article card '$186 billion in improper payments'",
+        "live": true,
+        "why_live": "Built at research/index.html:237"
+       },
+       {
+        "file": "landing-site/src/pages/how-it-works.html",
+        "line": 387,
+        "surface": "/how-it-works, #numbers stat card '$9.84 Per invoice'",
+        "live": true,
+        "why_live": "Built at how-it-works/index.html:577"
+       },
+       {
+        "file": "landing-site/src/pages/research/improper-payments.html",
+        "line": 195,
+        "surface": "/research/improper-payments, stat card '82% Overpayments'",
+        "live": true,
+        "why_live": "Built at research/improper-payments/index.html:301"
+       }
+      ],
+      "replace_with": "Research-card thumbnail for improper-payments: blue, a tall blue column of stacked bars on a white base with a long stepped shadow, on a light-blue tint. Use the same image on /about, which currently shows dept-inventory for this article. $9.84 per invoice = green, a single green coin leaning on a white sheet. 82% overpayments = coral, a reuse of the overflow bowl vocabulary."
+     },
+     {
+      "path": "landing-site/assets/dept-inventory.png",
+      "kind": "image",
+      "classification": "old-generated-3d",
+      "looks_like": "1376x768 PNG. A wooden handheld barcode scanner with a white rubber bumper and a mint button. Greige ground with a green diagonal stripe.",
+      "used_by": [
+       {
+        "file": "landing-site/src/pages/about.html",
+        "line": 249,
+        "surface": "/about, 'From the research' carousel card '$186 billion in improper payments'",
+        "live": true,
+        "why_live": "Built at about/index.html:355"
+       },
+       {
+        "file": "landing-site/src/pages/how-it-works.html",
+        "line": 380,
+        "surface": "/how-it-works, #numbers stat card '8.2 Days'",
+        "live": true,
+        "why_live": "Built at how-it-works/index.html:570"
+       }
+      ],
+      "replace_with": "The /about card should use the shared improper-payments thumbnail (blue column). 8.2 Days = violet, a violet sand timer in a plain white frame on lavender. Or the pastel figure tile."
+     },
+     {
+      "path": "landing-site/assets/dept-procurement.png",
+      "kind": "image",
+      "classification": "old-generated-3d",
+      "looks_like": "1376x768 PNG. A black clay open box with a blue price tag popping out. Greige ground with a cyan diagonal stripe.",
+      "used_by": [
+       {
+        "file": "landing-site/src/pages/research/index.html",
+        "line": 121,
+        "surface": "/research, article card 'Payments fraud in 2025'",
+        "live": true,
+        "why_live": "Built at research/index.html:226"
+       },
+       {
+        "file": "landing-site/src/pages/about.html",
+        "line": 240,
+        "surface": "/about, research carousel card 'Payments fraud in 2025'",
+        "live": true,
+        "why_live": "Built at about/index.html:346"
+       },
+       {
+        "file": "landing-site/src/pages/research/ap-benchmarks.html",
+        "line": 205,
+        "surface": "/research/ap-benchmarks, stat card '18.4% Exceptions'",
+        "live": true,
+        "why_live": "Built at research/ap-benchmarks/index.html:311"
+       },
+       {
+        "file": "landing-site/src/pages/research/payments-fraud-2025.html",
+        "line": 196,
+        "surface": "/research/payments-fraud-2025, stat card '76% Of organizations'",
+        "live": true,
+        "why_live": "Built at research/payments-fraud-2025/index.html:302"
+       }
+      ],
+      "replace_with": "Research-card thumbnail for payments-fraud-2025, on /research and /about: violet, a violet envelope standing in a white tray, on lavender. 18.4% exceptions = coral, a white sheet stack with a few coral sheets sticking out. 76% of organizations = violet, four white blocks with three of them violet."
+     },
+     {
+      "path": "landing-site/assets/dept-warehousing.png",
+      "kind": "image",
+      "classification": "old-generated-3d",
+      "looks_like": "1376x768 PNG. A wooden shelf unit holding orange, white terrazzo and black clay cubes. Greige ground with an orange diagonal stripe.",
+      "used_by": [
+       {
+        "file": "landing-site/src/pages/research/index.html",
+        "line": 99,
+        "surface": "/research, article card 'How often payments go out wrong' (ap-benchmarks)",
+        "live": true,
+        "why_live": "Built at research/index.html:204"
+       },
+       {
+        "file": "landing-site/src/pages/about.html",
+        "line": 222,
+        "surface": "/about, research carousel card 'How often payments go out wrong'",
+        "live": true,
+        "why_live": "Built at about/index.html:328"
+       }
+      ],
+      "replace_with": "Research-card thumbnail for ap-benchmarks: green, a row of off-white coins with one green coin knocked out of line, on mint (a sibling of the echo exhibit)."
+     },
+     {
+      "path": "landing-site/media/connect.webm",
+      "kind": "video",
+      "classification": "old-generated-3d",
+      "looks_like": "1080x1080, 5 s, VP9 with alpha. Two interlocked hexagon chain links rotate: one has a green top over a terrazzo body, the other is orange over wood grain (the 'hexagon chain').",
+      "used_by": [
+       {
+        "file": "landing-site/src/pages/how-it-works.html",
+        "line": 48,
+        "surface": "/how-it-works, #upload 'Connect: Start with what you have', the reel to the right of the text",
+        "live": true,
+        "why_live": "Built at how-it-works/index.html:154. It sits in .desktop-only, so it shows at 1024px and wider. reels.js plays it while it is on screen."
+       }
+      ],
+      "replace_with": "An exhibit-style piece for the Connect/Upload step: blue, three blue record cards dropping into a plain white tray on a light-blue tint. A still is enough (pages.css .article-text-image .image is a 1:1 slot)."
+     },
+     {
+      "path": "landing-site/media/connect.mp4",
+      "kind": "video",
+      "classification": "old-generated-3d",
+      "looks_like": "The H.264 Safari twin of connect.webm: the same hexagon chain baked over flat black.",
+      "used_by": [
+       {
+        "file": "landing-site/reels.js",
+        "line": 18,
+        "surface": "/how-it-works #upload reel, Safari only",
+        "live": true,
+        "why_live": "On Safari, reels.js swaps .webm to .mp4. styles.css:1115 then applies mix-blend-mode: lighten, which on the paper section washes the object out almost entirely."
+       }
+      ],
+      "replace_with": "Remove together with connect.webm. Replace both with the blue tray piece."
+     },
+     {
+      "path": "landing-site/media/find.webm",
+      "kind": "video",
+      "classification": "old-generated-3d",
+      "looks_like": "1080x1080, 5 s, alpha. A cluster of hexagonal prisms with orange, green, magenta, cyan and grey tops over terrazzo and wood-grain bodies, a white ball on top, shuffling (the 'rainbow hex prisms').",
+      "used_by": [
+       {
+        "file": "landing-site/src/pages/how-it-works.html",
+        "line": 118,
+        "surface": "/how-it-works, #find section reel",
+        "live": true,
+        "why_live": "Built at how-it-works/index.html:245. Desktop only, at 1024px and wider."
+       }
+      ],
+      "replace_with": "Find step: coral, a white grid of tiles with two identical coral tiles lifted out (the matched pair), on a peach tint."
+     },
+     {
+      "path": "landing-site/media/find.mp4",
+      "kind": "video",
+      "classification": "old-generated-3d",
+      "looks_like": "The Safari twin of find.webm, over black.",
+      "used_by": [
+       {
+        "file": "landing-site/reels.js",
+        "line": 18,
+        "surface": "/how-it-works #find reel, Safari",
+        "live": true,
+        "why_live": "Swapped in for Safari by reels.js."
+       }
+      ],
+      "replace_with": "Remove with find.webm."
+     },
+     {
+      "path": "landing-site/media/build.webm",
+      "kind": "video",
+      "classification": "old-generated-3d",
+      "looks_like": "1080x1080, 5 s, alpha. Terrazzo and ruled-wood triangular wedges with cyan and orange tops fly apart and lock into a hexagonal drum around a white ball.",
+      "used_by": [
+       {
+        "file": "landing-site/src/pages/how-it-works.html",
+        "line": 186,
+        "surface": "/how-it-works, #evidence section reel",
+        "live": true,
+        "why_live": "Built at how-it-works/index.html:334. Desktop only."
+       }
+      ],
+      "replace_with": "Evidence step: violet, a violet magnifying lens resting on a plain white record slab, or violet tabs clipped to a white sheet, on lavender."
+     },
+     {
+      "path": "landing-site/media/build.mp4",
+      "kind": "video",
+      "classification": "old-generated-3d",
+      "looks_like": "The Safari twin of build.webm, over black.",
+      "used_by": [
+       {
+        "file": "landing-site/reels.js",
+        "line": 18,
+        "surface": "/how-it-works #evidence reel, Safari",
+        "live": true,
+        "why_live": "Swapped in for Safari by reels.js."
+       }
+      ],
+      "replace_with": "Remove with build.webm."
+     },
+     {
+      "path": "landing-site/media/recover.webm",
+      "kind": "video",
+      "classification": "old-generated-3d",
+      "looks_like": "1080x1080, 5 s, alpha. A stack of coin discs (green top, terrazzo, yellow, grey, wood) with a white ball on top that topples sideways and restacks (the old yellow coin stack).",
+      "used_by": [
+       {
+        "file": "landing-site/src/pages/how-it-works.html",
+        "line": 281,
+        "surface": "/how-it-works, #recover section reel",
+        "live": true,
+        "why_live": "Built at how-it-works/index.html:450. Desktop only."
+       }
+      ],
+      "replace_with": "Recover step: green, a single green coin dropping back into a plain white dish, on mint. A dish rather than a stack, so it doesn't repeat the closer's coin stack."
+     },
+     {
+      "path": "landing-site/media/recover.mp4",
+      "kind": "video",
+      "classification": "old-generated-3d",
+      "looks_like": "The Safari twin of recover.webm, over black.",
+      "used_by": [
+       {
+        "file": "landing-site/reels.js",
+        "line": 18,
+        "surface": "/how-it-works #recover reel, Safari",
+        "live": true,
+        "why_live": "Swapped in for Safari by reels.js."
+       }
+      ],
+      "replace_with": "Remove with recover.webm."
+     },
+     {
+      "path": "landing-site/media/hero.webm",
+      "kind": "video",
+      "classification": "old-generated-3d",
+      "looks_like": "1920x1920, 8 s, alpha over black. The old coin-column hero: a hexagonal column of wood, terrazzo, black, yellow, green and magenta segments bursting apart and reassembling.",
+      "used_by": [],
+      "replace_with": "remove (nothing references it; already replaced by media/hero/ record stack)"
+     },
+     {
+      "path": "landing-site/media/hero.mp4",
+      "kind": "video",
+      "classification": "old-generated-3d",
+      "looks_like": "The same old coin-column hero, baked over light grey (#e5e5e5).",
+      "used_by": [],
+      "replace_with": "remove (unreferenced)"
+     },
+     {
+      "path": "landing-site/media/hero-white.mp4",
+      "kind": "video",
+      "classification": "old-generated-3d",
+      "looks_like": "The same old coin-column hero, baked over pure white.",
+      "used_by": [],
+      "replace_with": "remove (unreferenced)"
+     },
+     {
+      "path": "landing-site/blender/orig/media/",
+      "kind": "video",
+      "classification": "old-generated-3d",
+      "looks_like": "hero.mp4, build.mp4, find.mp4 and recover.mp4: earlier encodes of the old coin-column hero (on grey) and the build/find/recover reels (on black). They differ byte-wise from the media/ copies but show the same scenes.",
+      "used_by": [],
+      "replace_with": "remove (unreferenced. blender/ is excluded from dist and from the dev plugin, so it is not served, only repo weight of about 9.3 MB)"
+     },
+     {
+      "path": "landing-site/media/exhibits/echo/",
+      "kind": "image",
+      "classification": "new-exhibit-style",
+      "looks_like": "still.webp (2560x1440) and still-m.webp (1600x900): a smooth saturated-green coin stack with a long soft shadow on a mint tint.",
+      "used_by": [
+       {
+        "file": "landing-site/src/pages/index.html",
+        "line": 401,
+        "surface": "/, 'What Reclaim finds' tile 1 'One payment. Made twice.'",
+        "live": true,
+        "why_live": "Built at index.html:591"
+       },
+       {
+        "file": "landing-site/styles.css",
+        "line": 640,
+        "surface": "/, recovery summary row icon (background-image of still-m, loaded on .finds.is-near)",
+        "live": true,
+        "why_live": "styles.css is loaded on every landing page, and the selector only matches on /"
+       }
+      ],
+      "replace_with": "keep (target style)"
+     },
+     {
+      "path": "landing-site/media/exhibits/overflow/",
+      "kind": "image",
+      "classification": "new-exhibit-style",
+      "looks_like": "Coral beads overflowing a plain white cylinder bowl, with a neat coral bead block beside it, on a peach tint.",
+      "used_by": [
+       {
+        "file": "landing-site/src/pages/index.html",
+        "line": 402,
+        "surface": "/, tile 2 'More than the bill asked for.'",
+        "live": true,
+        "why_live": "Built at index.html:592"
+       },
+       {
+        "file": "landing-site/styles.css",
+        "line": 641,
+        "surface": "/, summary row icon",
+        "live": true,
+        "why_live": "Matches on / only"
+       }
+      ],
+      "replace_with": "keep (target style)"
+     },
+     {
+      "path": "landing-site/media/exhibits/piece/",
+      "kind": "image",
+      "classification": "new-exhibit-style",
+      "looks_like": "Eight ribbed violet keys seated in a white tray, on a lavender tint.",
+      "used_by": [
+       {
+        "file": "landing-site/src/pages/index.html",
+        "line": 403,
+        "surface": "/, tile 3 'It was yours the whole time.'",
+        "live": true,
+        "why_live": "Built at index.html:593"
+       },
+       {
+        "file": "landing-site/styles.css",
+        "line": 642,
+        "surface": "/, summary row icon",
+        "live": true,
+        "why_live": "Matches on / only"
+       }
+      ],
+      "replace_with": "keep (target style)"
+     },
+     {
+      "path": "landing-site/media/exhibits/shadow/",
+      "kind": "image",
+      "classification": "new-exhibit-style",
+      "looks_like": "Two blue cubes on a light-blue tint, each with a long stepped shadow. The right one has a stepped, nested-square face.",
+      "used_by": [
+       {
+        "file": "landing-site/src/pages/index.html",
+        "line": 404,
+        "surface": "/, tile 4 'Two bills. One purchase.'",
+        "live": true,
+        "why_live": "Built at index.html:594"
+       },
+       {
+        "file": "landing-site/styles.css",
+        "line": 643,
+        "surface": "/, summary row icon",
+        "live": true,
+        "why_live": "Matches on / only"
+       }
+      ],
+      "replace_with": "keep (target style)"
+     },
+     {
+      "path": "landing-site/media/hero/first.webp",
+      "kind": "image",
+      "classification": "record-stack",
+      "looks_like": "1280x1280 poster: an off-white record-slab stack with pastel coral, violet and blue sheets in the layers, on warm paper.",
+      "used_by": [
+       {
+        "file": "landing-site/src/pages/index.html",
+        "line": 10,
+        "surface": "/, hero video poster",
+        "live": true,
+        "why_live": "Built at index.html:116"
+       },
+       {
+        "file": "src/pages/AuthSplit.tsx",
+        "line": 7,
+        "surface": "React /signup and /verify-email split screen (AuthSplit), poster",
+        "live": true,
+        "why_live": "Imported by SignupPage.tsx and VerifyEmailPage.tsx. Served from landing-site/media through the plugin and the dist copy."
+       }
+      ],
+      "replace_with": "keep (approved)"
+     },
+     {
+      "path": "landing-site/media/hero/d.mp4",
+      "kind": "video",
+      "classification": "record-stack",
+      "looks_like": "1280x1280, 22.6 s loop: the record-slab stack pulls out each coloured sheet and files it back.",
+      "used_by": [
+       {
+        "file": "landing-site/src/pages/index.html",
+        "line": 10,
+        "surface": "/, hero film (<source>, viewports wider than 767px)",
+        "live": true,
+        "why_live": "Built at index.html:116"
+       },
+       {
+        "file": "src/pages/AuthSplit.tsx",
+        "line": 5,
+        "surface": "React auth split screen",
+        "live": true,
+        "why_live": "AuthSplit is rendered by SignupPage and VerifyEmailPage"
+       }
+      ],
+      "replace_with": "keep (approved)"
+     },
+     {
+      "path": "landing-site/media/hero/m.mp4",
+      "kind": "video",
+      "classification": "record-stack",
+      "looks_like": "The same record-stack loop at 960x960.",
+      "used_by": [
+       {
+        "file": "landing-site/src/pages/index.html",
+        "line": 10,
+        "surface": "/, hero film at 767px and narrower",
+        "live": true,
+        "why_live": "Built at index.html:116"
+       },
+       {
+        "file": "src/pages/AuthSplit.tsx",
+        "line": 6,
+        "surface": "React auth split screen, small screens",
+        "live": true,
+        "why_live": "AuthSplit"
+       }
+      ],
+      "replace_with": "keep (approved)"
+     },
+     {
+      "path": "landing-site/media/macbook/",
+      "kind": "sequence",
+      "classification": "macbook",
+      "looks_like": "120 desktop frames (d/000-119.webp) and 120 phone frames (m/) of a silver MacBook opening on near-black ink, plus still.webp and still-m.webp (open pose) and corners.json.",
+      "used_by": [
+       {
+        "file": "landing-site/walkthrough.js",
+        "line": 22,
+        "surface": "/, 'See the money and the proof' walkthrough (section at src/pages/index.html:80)",
+        "live": true,
+        "why_live": "walkthrough.js fetches /media/macbook/{d|m}/NNN.webp, the stills and corners.json. It runs on / through main.js."
+       }
+      ],
+      "replace_with": "keep (approved)"
+     },
+     {
+      "path": "landing-site/media/closing/",
+      "kind": "image",
+      "classification": "coin-closer",
+      "looks_like": "coins-720.webp and coins-1200.webp: a transparent stack of seven smooth saturated-green coins.",
+      "used_by": [
+       {
+        "file": "landing-site/src/partials/closing.html",
+        "line": 5,
+        "surface": "Closing section 'Don't just find the money. Reclaim it.' on /, /how-it-works, /what-it-checks, /pricing, /about and the 4 research articles",
+        "live": true,
+        "why_live": "Included via @include closing. Built lines: index.html:643, how-it-works:651, what-it-checks:875, pricing:310, about:375, ap-benchmarks:354, improper-payments:351, occupational-fraud-2026:356, payments-fraud-2025:352. Not on /security, /guides* or /research."
+       }
+      ],
+      "replace_with": "keep (approved)"
+     },
+     {
+      "path": "landing-site/assets/favicon.svg",
+      "kind": "image",
+      "classification": "logo-icon",
+      "looks_like": "The Reclaim hexagon mark.",
+      "used_by": [
+       {
+        "file": "landing-site/src/layout.html",
+        "line": 8,
+        "surface": "Favicon on all 16 landing pages",
+        "live": true,
+        "why_live": "In the layout head"
+       }
+      ],
+      "replace_with": "keep (out of scope)"
+     },
+     {
+      "path": "code:landing-site/src/pages/guides/index.html",
+      "kind": "code-drawn",
+      "classification": "logo-icon",
+      "looks_like": "Line 59: the hexagon logo glyph (#hx-wheel), 8rem, in pale grey-200, used as a placeholder picture in the right column of the 'Start here' panel (.guides-start .mark-art, pages.css:614-615, hidden below 1024px by pages.css:725).",
+      "used_by": [
+       {
+        "file": "landing-site/src/pages/guides/index.html",
+        "line": 59,
+        "surface": "/guides, 'Start here' panel, right column",
+        "live": true,
+        "why_live": "/guides is a landing route (built guides/index.html)"
+       }
+      ],
+      "replace_with": "Optional, since it isn't generated imagery. An exhibit still such as blue: a short stack of off-white export sheets in a white tray with one blue sheet on top. Or remove the placeholder column."
+     },
+     {
+      "path": "code:landing-site/src/pages/security.html",
+      "kind": "code-drawn",
+      "classification": "other",
+      "looks_like": "Two grey rounded 'art' panels that each hold one line icon. Line 181: #i-shield in a square panel beside 'What we'll publish next'. Line 230: #i-mail in a wide panel beside 'Found something?' (pages.css:780-783). Plan 002 calls these the 'flat shield/envelope boxes'.",
+      "used_by": [
+       {
+        "file": "landing-site/src/pages/security.html",
+        "line": 181,
+        "surface": "/security, 'What we'll publish next', right panel",
+        "live": true,
+        "why_live": "Built at security/index.html"
+       },
+       {
+        "file": "landing-site/src/pages/security.html",
+        "line": 230,
+        "surface": "/security, 'Found something?', right panel",
+        "live": true,
+        "why_live": "Built at security/index.html"
+       }
+      ],
+      "replace_with": "Optional. Square panel: violet, a sealed record box (white box with a violet band or seal) on lavender. Wide panel: coral, a coral envelope in a white tray on peach. Or keep as plain icons."
+     },
+     {
+      "path": "code:landing-site/src/pages/how-it-works.html",
+      "kind": "code-drawn",
+      "classification": "app-screenshot",
+      "looks_like": "Four live-HTML mock-ups of the real dashboard in a dark tablet bezel (.framed .screen-fit), one per section: #upload, #find, #evidence, #recover.",
+      "used_by": [
+       {
+        "file": "landing-site/src/pages/how-it-works.html",
+        "line": 55,
+        "surface": "/how-it-works, one under each step",
+        "live": true,
+        "why_live": "Built at how-it-works/index.html"
+       }
+      ],
+      "replace_with": "keep (out of scope; plan 002 D9 suggests dropping the bezel)"
+     }
+    ],
+    "unreferenced_old": [
+     "landing-site/media/hero.webm",
+     "landing-site/media/hero.mp4",
+     "landing-site/media/hero-white.mp4",
+     "landing-site/blender/orig/media/hero.mp4",
+     "landing-site/blender/orig/media/build.mp4",
+     "landing-site/blender/orig/media/find.mp4",
+     "landing-site/blender/orig/media/recover.mp4"
+    ],
+    "notes": "BUILD CHECK: I copied build.cjs and src/ to the scratchpad and ran node build.cjs there. All 16 built pages (landing-site/index.html and */index.html) are byte-identical to the committed built files, so the sources are exactly what is served. Working tree under landing-site/ is clean.\n\nSERVING: In dev, scripts/landingSitePlugin.ts serves /, /about, /pricing, /research(/*), /security, /guides(/*), /how-it-works, /what-it-checks, plus /assets/* and /media/*, from landing-site/. In the prod build (closeBundle), it copies everything in landing-site/ except src, blender, notes, README.md, BEFORE-DEPLOY.md, build.cjs and serve.cjs into dist. That means the three dead old-hero files (media/hero.webm 7.8 MB, hero.mp4 7.0 MB, hero-white.mp4 7.1 MB, about 22 MB) currently ship to production even though nothing references them. blender/orig/media/*.mp4 (about 9.3 MB) is not deployed, only repo weight.\n\nPAGE INVENTORY (old imagery marked OLD):\n- / : record-stack hero (media/hero/m.mp4 at 767px and narrower, d.mp4 above, poster first.webp); MacBook walkthrough sequence; four exhibit tiles plus their summary-row icons (styles.css:640-643); green coin closer. No old imagery on /.\n- /how-it-works : OLD four reels, desktop only (1024px and wider), with the Safari .mp4 twins: connect (#upload), find (#find), build (#evidence), recover (#recover). OLD stat carousel: cs-1 '57%', dept-inventory '8.2 Days', dept-freight '$9.84'. Coin closer.\n- /what-it-checks : coin closer only. /pricing : coin closer only.\n- /security : no raster images; two code-drawn icon panels (shield, mail).\n- /about : OLD 'From the research' carousel: dept-warehousing, dept-finance, dept-procurement, dept-inventory. Coin closer.\n- /research : OLD four article cards: dept-warehousing, dept-finance, dept-procurement, dept-freight. No closer.\n- /research/ap-benchmarks : OLD cs-2, dept-procurement, cs-1. Closer.\n- /research/improper-payments : OLD dept-freight, cs-2, cs-3. Closer.\n- /research/occupational-fraud-2026 : OLD cs-3, dept-finance, cs-1. Closer.\n- /research/payments-fraud-2025 : OLD dept-procurement, cs-1, cs-2. Closer.\n- /guides : hexagon logo placeholder art only. /guides/{bill,netsuite,quickbooks-online,xero} : no imagery.\n- Every page: favicon.svg.\nTOTAL: 27 live slots of old imagery on 8 routes. 4 are reel slots (8 files counting the Safari twins). 15 are stat-card slots and 8 are research-card slots, all drawn from just 8 PNGs (cs-1..3 and dept-*, about 4 MB). Nothing in landing-site/ uses AI 'scene' or atmosphere images. The old looks are the generated object renders: terrazzo, black clay, wood, puzzle pieces, pallets, striped 'dept' series, hex chain, hex prisms, coin column.\n\nPROPOSED REPLACEMENT SET (exhibit style: one smooth untextured object, one saturated hue, a pastel tint of that hue, long soft shadow, plain off-white secondary):\n(a) Four how-it-works step stills that replace the reels, in 1:1 slots: Connect = blue cards dropping into a white tray; Find = two lifted coral tiles in a white grid; Evidence = violet lens on a white record slab; Recover = green coin into a white dish.\n(b) Four research-article thumbnails, shared by /research and /about. That also fixes an existing inconsistency: improper-payments shows dept-freight on /research but dept-inventory on /about. ap-benchmarks = green (off-white coins, one green out of line). occupational-fraud = coral (invoice slab with a coral copy). payments-fraud = violet (envelope in a white tray). improper-payments = blue (stacked blue column with a stepped shadow).\n(c) Stat cards (15 slots): cheapest is to drop the image half and set the figure on the article's pastel tint, as plan 002 suggests. Middle option is to reuse the article's thumbnail piece cropped to 300:400. The per-slot object ideas are in each item's replace_with.\n(d) Delete media/hero.webm, hero.mp4, hero-white.mp4 and blender/orig/media/*.mp4. After (a), delete connect/find/build/recover .webm and .mp4. After (b) and (c), delete assets/cs-*.png and dept-*.png. Optional: the guides hexagon placeholder and the security icon panels, which are code-drawn and not generated imagery.\n\nOTHER FINDINGS:\n- The Safari twins of the reels are baked over black, and styles.css:1113-1115 blends them with mix-blend-mode: lighten. On the paper (#fcfbf7) sections that washes the objects out almost completely, so Safari users effectively see empty slots today. This goes away once the reels are replaced.\n- landing-site/blender/README.md is stale: it says hero.py (the old column) is still the app's login screen, but src/pages/AuthSplit.tsx:5-7 now uses the record-stack media/hero/{d,m}.mp4 and first.webp.\n- Cross-scope dependency: the React auth screens (SignupPage, VerifyEmailPage via AuthSplit) load landing-site/media/hero/*. Keep that folder.\n- plans/002-subpages-and-app-to-landing-style.md item D8 already flags this exact old-3D set.\n- Contact sheets I used are in /tmp/claude-0/-home-user-AP-Leak-Finder/7a32b480-9194-5f00-baae-20a1ca3f0020/scratchpad/audit/landing/ (sheet-assets.png, sheet-dept-zoom.png, sheet-reels.png, sheet-hero.png, sheet-new.png, sheet-orig.png)."
+   }
+  },
+  {
+   "key": "react-app",
+   "result": {
+    "items": [
+     {
+      "path": "public/onboarding/welcome.webm",
+      "kind": "video",
+      "classification": "old-generated-3d",
+      "looks_like": "Old onboarding loop, 960x960, 8 s, with welcome.webp poster and welcome-dark.mp4/welcome-light.mp4 bakes. A cube of matte black clay blocks (2x2x2) with sheets of cream paper wedged between the layers and a glowing green gem inside. Mid-loop it bursts apart: black cubes and paper fly out and the green gem floats on top, then it reassembles. Shown on black (dark) or near-white (light).",
+      "used_by": [
+       {
+        "file": "src/onboarding/Onboarding.tsx",
+        "line": 159,
+        "surface": "/audit, Onboarding step 1 'welcome' (hero reel beside 'Welcome to Reclaim')",
+        "live": true,
+        "why_live": "App.tsx '/audit' -> AuditApp -> Onboarding is rendered full-screen on first run (no onboardingSeenAt) and again from Settings > edit onboarding (AuditApp.tsx:638-646, 846)"
+       },
+       {
+        "file": "src/onboarding/Reel.tsx",
+        "line": 26,
+        "surface": "Reel component: builds name.webm (or name-{theme}.mp4 on Safari) and name.webp poster/reduced-motion still",
+        "live": true,
+        "why_live": "Used by both Onboarding and Launch"
+       }
+      ],
+      "replace_with": "Mint exhibit piece: a short green (#2fee76) coin stack using echo's reeded coins, one coin dropping on and settling, on the mint tint (c4e9d3) with the long soft shadow. Render on a transparent film with a shadow catcher, as exhibit_common does, so the WebM alpha and the dark/light MP4 bakes still come out."
+     },
+     {
+      "path": "public/onboarding/business.webm",
+      "kind": "video",
+      "classification": "old-generated-3d",
+      "looks_like": "960x960, 5 s, plus .webp/-dark.mp4/-light.mp4. The same black-clay block cube with a green gem in its core. Cream paper sheets float down and land between the block layers.",
+      "used_by": [
+       {
+        "file": "src/onboarding/Onboarding.tsx",
+        "line": 205,
+        "surface": "/audit, Onboarding step 'business' ('First, a little about your business.')",
+        "live": true,
+        "why_live": "An Onboarding step, reachable as above"
+       }
+      ],
+      "replace_with": "Apricot piece: a plain white cup holding a neat mound of coral beads (#f66535), with a few beads rolling in, on the apricot tint (f6cfb2)."
+     },
+     {
+      "path": "public/onboarding/tools.webm",
+      "kind": "video",
+      "classification": "old-generated-3d",
+      "looks_like": "960x960, 5 s, plus .webp/-dark.mp4/-light.mp4. The black-clay block cube with paper layers and a green core. A green zig-zag line (a chart line) runs through it horizontally.",
+      "used_by": [
+       {
+        "file": "src/onboarding/Onboarding.tsx",
+        "line": 240,
+        "surface": "/audit, Onboarding step 'tools' ('Where does the money live?')",
+        "live": true,
+        "why_live": "An Onboarding step"
+       }
+      ],
+      "replace_with": "Sky piece: three plain off-white trays or boxes with one blue cube (#00c9f6) settling into one of them, on the sky tint (c2dff2)."
+     },
+     {
+      "path": "public/onboarding/how.webm",
+      "kind": "video",
+      "classification": "old-generated-3d",
+      "looks_like": "Wide 1440x640, 8 s, plus .webp/-dark.mp4/-light.mp4. Three objects in a row: a cream paper block, a second paper block that grows a little flag and a fanned paper stack, and a green 'R' coin on a black clay base.",
+      "used_by": [
+       {
+        "file": "src/onboarding/Onboarding.tsx",
+        "line": 285,
+        "surface": "/audit, Onboarding step 'how' (Wide band above Find / You review / Track recovery)",
+        "live": true,
+        "why_live": "An Onboarding step (Wide component at Onboarding.tsx:511)"
+       }
+      ],
+      "replace_with": "A three-up strip in the exhibit look, one simple object per third: a green coin stack (Find), a violet key dropping into a white tray (You review), and coral beads stacking into a pyramid beside a white cup (Track recovery). Use one off-white floor or three pastel sub-tiles."
+     },
+     {
+      "path": "public/onboarding/data.webm",
+      "kind": "video",
+      "classification": "old-generated-3d",
+      "looks_like": "Wide 1440x640, 6 s, plus .webp/-dark.mp4/-light.mp4. A cream paper tray on a black clay plate, a black clay cube with a green 'R' on top, and a white clay cube with a brass hole.",
+      "used_by": [
+       {
+        "file": "src/onboarding/Onboarding.tsx",
+        "line": 331,
+        "surface": "/audit, Onboarding step 'data' (Wide band above On this device / With your account / To an AI service)",
+        "live": true,
+        "why_live": "An Onboarding step"
+       }
+      ],
+      "replace_with": "Lilac strip: three plain white trays holding violet keys (#7558f6). Keys rest in tray 1, a copy sits in tray 2, and tray 3 is lidded, with one key lifting out only when asked. Lilac tint (d8d0f3)."
+     },
+     {
+      "path": "public/onboarding/finale.webm",
+      "kind": "video",
+      "classification": "old-generated-3d",
+      "looks_like": "1280x800 loop (6 s), plus finale_in.webm (2.5 s intro) and their .webp/-dark.mp4/-light.mp4. The black-clay block cube with paper layers, and a green gem rising out of the top and hovering over it.",
+      "used_by": [
+       {
+        "file": "src/onboarding/Onboarding.tsx",
+        "line": 153,
+        "surface": "/audit, Onboarding final step (zoom==='finale'): a ReelSequence plays finale_in, then loops finale",
+        "live": true,
+        "why_live": "The last Onboarding step"
+       }
+      ],
+      "replace_with": "Mint: a green coin stack rising coin by coin and settling. It rhymes with the approved landing closer (landing-site/media/closing/coins-*.webp), which could be reused here directly."
+     },
+     {
+      "path": "public/onboarding/ic_unpaid.webm",
+      "kind": "video",
+      "classification": "old-generated-3d",
+      "looks_like": "400x400, 4 s, plus .webp/-dark.mp4/-light.mp4. A stack of cream paper (an invoice pile). A paper lid flips open and a green 'R' coin pops out.",
+      "used_by": [
+       {
+        "file": "src/onboarding/content.ts",
+        "line": 6,
+        "surface": "/audit, Onboarding 'goals' step, card 'Unpaid invoices' (Card at Onboarding.tsx:456)",
+        "live": true,
+        "why_live": "GOAL_OPTIONS are rendered as the goal cards (Onboarding.tsx:184)"
+       }
+      ],
+      "replace_with": "Apricot: one coral bead rolling into a plain white cup that is still short of full. Apricot tint."
+     },
+     {
+      "path": "public/onboarding/ic_duplicate.webm",
+      "kind": "video",
+      "classification": "old-generated-3d",
+      "looks_like": "400x400, plus .webp/-dark.mp4/-light.mp4. Two cream paper sheets with black clips, one copied off the other.",
+      "used_by": [
+       {
+        "file": "src/onboarding/content.ts",
+        "line": 7,
+        "surface": "/audit, Onboarding 'goals' card 'Duplicate payments'",
+        "live": true,
+        "why_live": "A GOAL_OPTIONS goal card"
+       }
+      ],
+      "replace_with": "Mint: reuse the echo exhibit as-is (a twin green coin stack slides out of the first, then goes home), cropped square."
+     },
+     {
+      "path": "public/onboarding/ic_credit.webm",
+      "kind": "video",
+      "classification": "old-generated-3d",
+      "looks_like": "400x400, plus .webp/-dark.mp4/-light.mp4. A cream envelope with a big green 'R' coin wheel rolling through it.",
+      "used_by": [
+       {
+        "file": "src/onboarding/content.ts",
+        "line": 8,
+        "surface": "/audit, Onboarding 'goals' card 'Credits or refunds'",
+        "live": true,
+        "why_live": "A GOAL_OPTIONS goal card"
+       }
+      ],
+      "replace_with": "Lilac: reuse the piece exhibit (a violet key drops into the last empty slot of a white tray), cropped square."
+     },
+     {
+      "path": "public/onboarding/ic_unsure.webm",
+      "kind": "video",
+      "classification": "old-generated-3d",
+      "looks_like": "400x400, plus .webp/-dark.mp4/-light.mp4. A black clay cube with a cream '?' floating above it and a green coin leaning on it.",
+      "used_by": [
+       {
+        "file": "src/onboarding/content.ts",
+        "line": 9,
+        "surface": "/audit, Onboarding 'goals' card 'Not sure yet'",
+        "live": true,
+        "why_live": "A GOAL_OPTIONS goal card"
+       }
+      ],
+      "replace_with": "Sky: reuse the shadow exhibit (a blue cube and a stepped plate tower that read as the same square from above), cropped square."
+     },
+     {
+      "path": "public/onboarding/ic_show.webm",
+      "kind": "video",
+      "classification": "old-generated-3d",
+      "looks_like": "400x400, plus .webp/-dark.mp4/-light.mp4. A black clay cube with a green flagpole and a cream flag.",
+      "used_by": [
+       {
+        "file": "src/onboarding/content.ts",
+        "line": 43,
+        "surface": "/audit, Onboarding 'autonomy' card 'Show me what you find' (Onboarding.tsx:309)",
+        "live": true,
+        "why_live": "AUTONOMY_OPTIONS are rendered as the autonomy cards"
+       }
+      ],
+      "replace_with": "Sky: a single blue cube lifting onto a plain white plinth and casting its long shadow (found and shown). Sky tint."
+     },
+     {
+      "path": "public/onboarding/ic_draft.webm",
+      "kind": "video",
+      "classification": "old-generated-3d",
+      "looks_like": "400x400, plus .webp/-dark.mp4/-light.mp4. A thick stack of cream paper (a drafted letter pile).",
+      "used_by": [
+       {
+        "file": "src/onboarding/content.ts",
+        "line": 44,
+        "surface": "/audit, Onboarding 'autonomy' card 'Draft it for me'",
+        "live": true,
+        "why_live": "An AUTONOMY_OPTIONS card"
+       }
+      ],
+      "replace_with": "Lilac: a plain white slab (the letter) with a violet tab or key sliding onto it and seating. Lilac tint."
+     },
+     {
+      "path": "public/onboarding/ic_approve.webm",
+      "kind": "video",
+      "classification": "old-generated-3d",
+      "looks_like": "400x400, 4 s, plus .webp/-dark.mp4/-light.mp4. A shiny brass rubber stamp comes down on a cream sheet and leaves a green ring.",
+      "used_by": [
+       {
+        "file": "src/onboarding/content.ts",
+        "line": 49,
+        "surface": "/audit, Onboarding 'autonomy' card 'Follow up on what I approve' (marked later)",
+        "live": true,
+        "why_live": "An AUTONOMY_OPTIONS card"
+       }
+      ],
+      "replace_with": "Mint: a green coin pressing down onto a plain white plate and seating with a small settle, standing in for the brass stamp. Mint tint."
+     },
+     {
+      "path": "public/onboarding/card_upload.webm",
+      "kind": "video",
+      "classification": "old-generated-3d",
+      "looks_like": "640x480, 5 s, plus .webp/-dark.mp4/-light.mp4. A cream paper block on a black clay plate, with green tabs sliding out of the paper.",
+      "used_by": [
+       {
+        "file": "src/workspace/views/Launch.tsx",
+        "line": 86,
+        "surface": "/audit Launch screen (first screen before any audit), 'Your payments / Upload a ledger' path card",
+        "live": true,
+        "why_live": "AuditApp.tsx:688 renders Launch when there is no audit environment yet (also /scanner and ?entry=)"
+       }
+      ],
+      "replace_with": "Sky: a short stack of blue plates (shadow exhibit's plates) sliding down into a plain white tray. Sky tint."
+     },
+     {
+      "path": "public/onboarding/card_sample.webm",
+      "kind": "video",
+      "classification": "old-generated-3d",
+      "looks_like": "640x480, 5 s, plus .webp/-dark.mp4/-light.mp4. The black-clay block cube with paper layers, which splits open to show a green gem.",
+      "used_by": [
+       {
+        "file": "src/workspace/views/Launch.tsx",
+        "line": 107,
+        "surface": "/audit Launch screen, 'Our sample' path card (made-up cafe ledger)",
+        "live": true,
+        "why_live": "Rendered by Launch, as above"
+       }
+      ],
+      "replace_with": "Apricot: reuse the overflow exhibit (coral beads overflowing a white cup, then stacking into a pyramid). The cup also fits the cafe sample. Crop to 4:3."
+     },
+     {
+      "path": "landing-site/media/hero/",
+      "kind": "video",
+      "classification": "record-stack",
+      "looks_like": "d.mp4 (1280x1280, 22.6 s), m.mp4 (960x960) and first.webp poster. The approved record-slab stack: off-white rounded slabs with thin pastel coral, violet, blue and green layers between them and a long soft shadow on a warm off-white floor.",
+      "used_by": [
+       {
+        "file": "src/pages/AuthSplit.tsx",
+        "line": 5,
+        "surface": "Left 60% stage of /login, /signup, /verify-email, /forgot-password, /reset-password and the React 404 (NotFoundPage)",
+        "live": true,
+        "why_live": "Those routes are in App.tsx ROUTES and render AuthSplit; NotFoundPage also uses AuthSplit"
+       }
+      ],
+      "replace_with": "keep (approved)"
+     },
+     {
+      "path": "landing-site/media/stills/",
+      "kind": "image",
+      "classification": "old-generated-3d",
+      "looks_like": "The files are already deleted (removed in commit 55b50c7); I looked at them from git history. Seven alpha stills (tower, cluster, fan, apart, hex, stack, ring): speckled terrazzo and plywood hexagon prisms, triangle wedges and discs with cyan, orange, magenta and green caps and a white ball.",
+      "used_by": [
+       {
+        "file": "src/workspace/WorkObject.tsx",
+        "line": 27,
+        "surface": "WorkObject/ScreenHead: the per-screen object beside each workspace screen's blurb",
+        "live": false,
+        "why_live": "Nothing imports WorkObject.tsx or objects.ts, so the code is orphaned, and /media/stills/*.webp would 404 anyway. The leftover CSS is in workspace.css:887-932, the .wk-dash-pipeline .wk-object rule at 327, and vercel.css:108."
+       }
+      ],
+      "replace_with": "remove: delete WorkObject.tsx, objects.ts and the .wk-object CSS. If screen-head objects are wanted again, use small exhibit-style pieces, one hue per screen (e.g. dashboard mint coin stack, findings apricot cup, recoveries lilac tray, reports sky cube)."
+     },
+     {
+      "path": "public/generated/reclaim-tutorial/",
+      "kind": "image",
+      "classification": "app-screenshot",
+      "looks_like": "Six 2752x1536 JPGs (01-open-a-finding-v2 to 06-follow-the-recovery-v2): generated mock-ups of an older dark, green-accent Reclaim UI ('Possible duplicate payment', 'Before we draft' modal, email draft, 'Recovery in motion'). These are tutorial step images, not 3D.",
+      "used_by": [],
+      "replace_with": "remove: nothing in the repo references them. They were added to public/ in commit 7964a7b (the archive commit) and are deployed to dist/ as dead weight, about 7.7 MB."
+     },
+     {
+      "path": "public/art/",
+      "kind": "image",
+      "classification": "app-screenshot",
+      "looks_like": "17 PNGs, 3248px wide (audit-sources, audits-list, by-check, dashboard-tiles, evidence-table, finding-confirmed, finding-detail, finding-facts, findings-pipeline, findings-table, next-step, pipeline, recent-findings, recovery-pipeline, recovery-table, report-facts, where-money-went): light-theme screenshots of workspace UI panels and tables.",
+      "used_by": [],
+      "replace_with": "remove: nothing references them. Basename hits like 'pipeline' and 'evidence-table' are only CSS class names. Added in commit 1ae4875; about 2.3 MB."
+     },
+     {
+      "path": "src/assets/app/evidence-room.webp",
+      "kind": "image",
+      "classification": "ai-generated-scene",
+      "looks_like": "1586x992: a dark, moody AI texture of near-black stone or plaster with a torn sheet of tan paper at the top-right edge.",
+      "used_by": [],
+      "replace_with": "remove: unreferenced. Its only reference is the archived copy .preview-pre-v2/src/components/audit/app-world.css."
+     },
+     {
+      "path": "src/assets/landing/optimized/",
+      "kind": "image",
+      "classification": "ai-generated-scene",
+      "looks_like": "20 photoreal AI desk props and surfaces, each as -1x and -2x webp (40 files): paper surface, green felt, green cutting mat, MacBook corner, layered paper stack, blank payment card, two city-map sheets, aged letter paper, crumpled receipt strip, torn note, blue tape, yellow tape, coffee cup, red binder clip, paperclip, green check token, sticky note, black dial timer, polaroid cafe photo.",
+      "used_by": [
+       {
+        "file": "src/components/site/SiteLanding.tsx",
+        "line": 11,
+        "surface": "Old React landing (SiteLanding): an eager import.meta.glob of every optimized/*.webp",
+        "live": false,
+        "why_live": "App.tsx:73 still maps '/' to a lazy SiteLanding, but '/' never reaches React. In dev the landingSitePlugin middleware serves landing-site/index.html first. In prod closeBundle copies landing-site/index.html over dist/index.html, and server/app.ts serveStatic falls back to that file. So SiteLanding is unreachable, but it is still built as a chunk and its assets are still emitted into dist/assets."
+       },
+       {
+        "file": "src/components/site/site.css",
+        "line": 12,
+        "surface": ".fresh-connector background (blue-tape-v2-2x.webp)",
+        "live": false,
+        "why_live": "Imported only by SiteLanding"
+       }
+      ],
+      "replace_with": "remove: drop the '/' route and the lazy SiteLanding import from App.tsx, then delete src/components/site/** and these files."
+     },
+     {
+      "path": "src/assets/landing/fresh-desktop/",
+      "kind": "image",
+      "classification": "ai-generated-scene",
+      "looks_like": "25 large source PNGs for the optimized set: the same photoreal desk props, plus aged-letter-paper v3/v5, folded letter, footer ink paper (black textured paper) and macbook-corner-v2.",
+      "used_by": [],
+      "replace_with": "remove: unreferenced (sources only; no script in the repo reads them)."
+     },
+     {
+      "path": "src/assets/landing/generated/laptop-corner-v1.png",
+      "kind": "image",
+      "classification": "ai-generated-scene",
+      "looks_like": "1536x1024 photoreal top-down corner of a silver MacBook keyboard on white. This is the source of optimized/laptop-corner-v1.",
+      "used_by": [],
+      "replace_with": "remove: unreferenced."
+     },
+     {
+      "path": "src/assets/landing/reclaim-geometric-world-mono-v6.webp",
+      "kind": "image",
+      "classification": "ai-generated-scene",
+      "looks_like": "Dark charcoal AI 'worlds' of matte geometric blocks: cubes, cylinders, arches, spheres and steps on a black stage. The same family includes reclaim-workflow-world-mono-v7.webp, reclaim-pricing-world-mono-v7.webp, reclaim-results-world-mono-v7.webp, reclaim-motto-evidence-world-v1.png (with a faint green glow) and reclaim-geometric-atmosphere-v5.webp (black ring and arch with a green edge light).",
+      "used_by": [],
+      "replace_with": "remove: none of the six files is referenced."
+     },
+     {
+      "path": "src/assets/landing/reclaim-botanical-left-atmosphere-v4.webp",
+      "kind": "image",
+      "classification": "ai-generated-scene",
+      "looks_like": "AI atmosphere images, all 1536x1024: dark botanical bouquet (lilies, red flowers); in the same family, reclaim-floral-atmosphere-v3.webp (red and orange petals on black), reclaim-dark-atmosphere-v2.webp (green-black smoke over stone), reclaim-dark-vellum-v2.webp (translucent vellum sheets in the dark), reclaim-dark-ledger.webp (papers, receipts and a tape roll under green light), reclaim-ivory-evidence.webp (cream plaster desk with papers and a binder clip), reclaim-warehouse-records.webp (warehouse shelf with kraft paper, forms and an ink pad).",
+      "used_by": [],
+      "replace_with": "remove: none of the seven files is referenced."
+     },
+     {
+      "path": "src/assets/landing/backgrounds/",
+      "kind": "image",
+      "classification": "ai-generated-scene",
+      "looks_like": "10 AI paper and stone textures: bg-01-hero and bg-02-motto (cream wall with white folders and a clip), bg-03-workflow-mineral (jpg+png), bg-04-pricing-limestone (jpg+png, veined limestone), bg-05-portfolio-cotton, bg-06-recovery-chalk, bg-07-security-linen, bg-08-about-deckle.",
+      "used_by": [
+       {
+        "file": "src/components/landing/landing-light.css",
+        "line": 2942,
+        "surface": "Old LandingPage hero and motto backgrounds (bg-01, bg-02)",
+        "live": false,
+        "why_live": "src/components/landing/LandingPage.tsx (which imports landing*.css) is imported by nothing except its own test"
+       },
+       {
+        "file": "src/components/landing/landing-system.css",
+        "line": 29,
+        "surface": "Old LandingPage (bg-05, bg-02)",
+        "live": false,
+        "why_live": "Same dead LandingPage"
+       },
+       {
+        "file": "src/components/landing/landing-reference.css",
+        "line": 322,
+        "surface": "Old LandingPage workflow band (bg-03 jpg)",
+        "live": false,
+        "why_live": "Same dead LandingPage"
+       }
+      ],
+      "replace_with": "remove: bg-03 png, bg-04 jpg/png and bg-06/07/08 are unreferenced, and the rest are used only by dead CSS."
+     },
+     {
+      "path": "src/assets/landing/scenes/",
+      "kind": "image",
+      "classification": "ai-generated-scene",
+      "looks_like": "16 AI stationery scenes on cream plaster: a black notebook with white cards and a binder clip (evidence-scene, hero-ledger-scene, hero-stationery-layer cut-out), cards leaning on a shelf (faq-scene, faq-table-scene-v2), an empty plaster plate (hero-plaster-plate-v2, pricing-plate-v2 and -clean), a cut-out embossed document and card (pricing-document-v1, pricing-card-v1), and pricing-scene-v1.",
+      "used_by": [
+       {
+        "file": "src/components/landing/LandingPage.tsx",
+        "line": 9,
+        "surface": "Old LandingPage hero and pricing (hero-plaster-plate-v2.png, pricing-document-v1.png, pricing-card-v1.png)",
+        "live": false,
+        "why_live": "LandingPage is imported only by LandingPage.test.tsx"
+       },
+       {
+        "file": "src/components/landing/landing-system.css",
+        "line": 101,
+        "surface": "Old LandingPage --scene-image (evidence-scene-v1-clean.webp, pricing-plate-v2-clean.jpg, faq-table-scene-v2.png)",
+        "live": false,
+        "why_live": "Same dead LandingPage"
+       }
+      ],
+      "replace_with": "remove: the rest are unreferenced apart from the offline script scripts/prepare_landing_scene_plates.py."
+     },
+     {
+      "path": "src/assets/brand/",
+      "kind": "image",
+      "classification": "logo-icon",
+      "looks_like": "reclaim-r-mark-v1.png (black R monogram, 1254x1254, alpha) and reclaim-wordmark-v1.png ('Reclaim.' wordmark, 2172x724).",
+      "used_by": [
+       {
+        "file": "src/components/site/SiteLanding.tsx",
+        "line": 5,
+        "surface": "Old React landing nav/footer logo",
+        "live": false,
+        "why_live": "SiteLanding is unreachable (see the optimized/ item)"
+       }
+      ],
+      "replace_with": "remove (out of scope for the new look; dead once SiteLanding goes)"
+     },
+     {
+      "path": "public/favicon.svg",
+      "kind": "image",
+      "classification": "logo-icon",
+      "looks_like": "SVG favicon and logo marks. Also in public/: reclaim-logo.svg (og:image) plus reclaim-mark.svg and icons.svg.",
+      "used_by": [
+       {
+        "file": "index.html",
+        "line": 5,
+        "surface": "React app favicon (favicon.svg) and og:image/twitter:image (reclaim-logo.svg, lines 49/53)",
+        "live": true,
+        "why_live": "index.html is the shell of every React route"
+       }
+      ],
+      "replace_with": "keep (out of scope). Note that public/reclaim-mark.svg and public/icons.svg are referenced by nothing in src/ or index.html."
+     }
+    ],
+    "unreferenced_old": [
+     "public/generated/reclaim-tutorial/01-open-a-finding-v2.jpg",
+     "public/generated/reclaim-tutorial/02-evidence-explains-the-flag-v3.jpg",
+     "public/generated/reclaim-tutorial/03-user-reviews-the-finding-v3.jpg",
+     "public/generated/reclaim-tutorial/04-data-boundary-before-draft-v3.jpg",
+     "public/generated/reclaim-tutorial/05-review-the-request-v2.jpg",
+     "public/generated/reclaim-tutorial/06-follow-the-recovery-v2.jpg",
+     "public/art/ (17 app-screenshot PNGs, unreferenced)",
+     "src/assets/app/evidence-room.webp",
+     "src/assets/landing/reclaim-botanical-left-atmosphere-v4.webp",
+     "src/assets/landing/reclaim-dark-atmosphere-v2.webp",
+     "src/assets/landing/reclaim-dark-ledger.webp",
+     "src/assets/landing/reclaim-dark-vellum-v2.webp",
+     "src/assets/landing/reclaim-floral-atmosphere-v3.webp",
+     "src/assets/landing/reclaim-geometric-atmosphere-v5.webp",
+     "src/assets/landing/reclaim-geometric-world-mono-v6.webp",
+     "src/assets/landing/reclaim-ivory-evidence.webp",
+     "src/assets/landing/reclaim-motto-evidence-world-v1.png",
+     "src/assets/landing/reclaim-pricing-world-mono-v7.webp",
+     "src/assets/landing/reclaim-results-world-mono-v7.webp",
+     "src/assets/landing/reclaim-warehouse-records.webp",
+     "src/assets/landing/reclaim-workflow-world-mono-v7.webp",
+     "src/assets/landing/generated/laptop-corner-v1.png",
+     "src/assets/landing/fresh-desktop/ (all 25 PNGs)",
+     "src/assets/landing/optimized/ (all 40 webp; used only by unreachable SiteLanding)",
+     "src/assets/landing/backgrounds/ (all 10; 4 used only by dead src/components/landing CSS, 6 unreferenced)",
+     "src/assets/landing/scenes/ (all 16; 6 used only by dead LandingPage/landing-system.css, rest unreferenced)",
+     "src/assets/brand/reclaim-r-mark-v1.png (logo, SiteLanding only)",
+     "src/assets/brand/reclaim-wordmark-v1.png (logo, SiteLanding only)",
+     "src/workspace/WorkObject.tsx + src/workspace/objects.ts + .wk-object CSS (orphan code pointing at deleted landing-site/media/stills/*.webp)"
+    ],
+    "notes": "Bottom line: in the React app, the only live old imagery is the onboarding set in public/onboarding/: 21 loops x 4 files (name.webm, name.webp, name-dark.mp4, name-light.mp4), about 17 MB. Each loop is one item above. They are all the black-clay cube, cream paper, green gem/coin and brass stamp look, and they appear on two surfaces:\n(1) Onboarding: AuditApp.tsx:638. It opens full-screen on first visit to /audit (or /scanner) and from Settings > edit onboarding. Steps are welcome, goals (4 ic_* cards), business, tools, how, autonomy (3 ic_* cards), data, finale_in/finale.\n(2) Launch: AuditApp.tsx:688. The first workspace screen before any audit, with the card_upload and card_sample path cards.\nAll of them load through src/onboarding/Reel.tsx and src/onboarding/media.ts (reelUrl -> BASE_URL + 'onboarding/' + file). If replacements keep the same names and the four-file format, no React change is needed.\nThe old loops come from landing-site/blender/onboarding.py, onboardlib.py and render_onboarding.sh. New ones should be built on exhibit_common.py: PALETTES mint c4e9d3/#2fee76, apricot f6cfb2/#f66535, lilac d8d0f3/#7558f6, sky c2dff2/#00c9f6, with a transparent film and shadow catcher. Encode with exhibit_encode.py-style output so there is a WebM with alpha plus dark and light MP4 bakes. Exhibit meanings to reuse: echo = paid twice (mint coins), overflow = overpaid (apricot beads/cup), piece = credit never used (lilac keys/tray), shadow = billed twice (sky cube/plates). Open design question: onboarding sits on black (dark) or white (light) canvases, while the exhibits sit on pastel tiles. Either keep the pastel tile as a rounded card on both themes, or render transparent and let the onboarding card supply the tint.\n\nApproved imagery that is live in the app: AuthSplit (/login, /signup, /verify-email, /forgot-password, /reset-password, React 404) plays the approved record-stack hero from /media/hero/{d.mp4, m.mp4, first.webp}. Those files are served from landing-site/media by landingSitePlugin's /media/ prefix.\n\nNo other live React surface has imagery: workspace dashboard and views, TutorialTour (src/components/tutorial), WorkspaceTour, Settings, Plans, Checkout, Privacy/Terms (LegalLayout). The tours are text-and-highlight only. No live CSS has url() backgrounds; the only url() uses are in src/components/landing and src/components/site.\n\nUnreachable code with old assets:\n- src/components/landing/* (LandingPage, DitherBackground WebGL dither shader, SideRays, landing*.css) is imported by nothing except its own tests (LandingPage.test.tsx, MagneticLink.test.tsx). Vite never bundles it.\n- src/components/site/* (SiteLanding, sections, EvidenceObjects) is still lazily imported in App.tsx:6 for '/', but '/' never reaches React. Dev: the landingSitePlugin middleware serves landing-site/index.html first. Prod: closeBundle copies landing-site over dist/index.html, and server/app.ts serveStatic falls back to that same file. So SiteLanding is dead, yet still compiled as a chunk, and its eager import.meta.glob emits all 40 optimized webps plus the brand PNGs into dist/assets.\n- Clean-up path: drop the '/' route from App.tsx, then delete src/components/site/** and src/components/landing/** with their 3 tests, plus all of src/assets/landing (70 MB) and src/assets/brand.\n- src/workspace/WorkObject.tsx and objects.ts are orphaned and point at landing-site/media/stills/*.webp, which commit 55b50c7 deleted. Those stills were the old terrazzo/plywood hex prisms. The .wk-object CSS (workspace.css:887-932 and line 327; vercel.css:108) is dead too.\n- Dead public files deployed to dist: public/art (17 light-UI screenshots, 2.3 MB, added by 'Das' in 1ae4875) and public/generated/reclaim-tutorial (6 generated dark-UI tutorial mock-ups, 7.7 MB, added in Aditya's archive commit 7964a7b). These may be relevant to the separate question about the old tutorial screens.\n\nOutside my scope, but met while tracing: .preview-pre-v2/ is a tracked 72 MB archive copy of an older src/scripts tree with the same landing assets and CSS refs; it is not served. demo/ plus vite.onboarding-demo.config.ts is a review build that reuses Onboarding and the public/onboarding loops, so it picks up replacements automatically. scripts/prepare_landing_scene_plates.py reads scenes/*.\n\nContact sheets and frames are in /tmp/claude-0/-home-user-AP-Leak-Finder/7a32b480-9194-5f00-baae-20a1ca3f0020/scratchpad/audit/react-app/: onboarding_webp.png, onboarding_frames.png, art.png, generated.png, landing_root.png, landing_bg.png, landing_scenes.png, landing_fresh.png, landing_opt.png, old_stills.png, hero_frames.png, ref_exhibits.png. Nothing in the repo was modified."
+   }
+  },
+  {
+   "key": "code-drawn",
+   "result": {
+    "items": [
+     {
+      "path": "code:src/onboarding/Reel.tsx",
+      "kind": "video",
+      "classification": "old-generated-3d",
+      "looks_like": "Reel.tsx plays the pre-rendered loops in public/onboarding/ (WebM with alpha, dark/light MP4 for Safari, a WebP poster/still). I looked at all 17 posters: matte black clay cubes, a 2x2x3 'pile' with cream paper sheets between the layers and one glossy green piece inside; cream paper stacks on a black slab; a black block with a cream flag on a green pole; a bronze/brass stamp over paper; a green coin with an R; a cream question mark on a black block. This is the old black-clay and cream-paper look. Made by landing-site/blender/onboarding.py with onboardlib.py.",
+      "used_by": [
+       {
+        "file": "src/onboarding/Onboarding.tsx",
+        "line": 159,
+        "surface": "/audit first-run onboarding, step 1 stage loop 'welcome' (the pile opening)",
+        "live": true,
+        "why_live": "AuditApp.tsx:109-110 opens onboarding for a signed-in user with no onboardingSeenAt and no ?entry, and AuditApp.tsx:638 renders <Onboarding>. Settings 'edit onboarding' (AuditApp.tsx:846) reopens it."
+       },
+       {
+        "file": "src/onboarding/Onboarding.tsx",
+        "line": 205,
+        "surface": "onboarding 'business' stage loop",
+        "live": true,
+        "why_live": "same onboarding flow"
+       },
+       {
+        "file": "src/onboarding/Onboarding.tsx",
+        "line": 240,
+        "surface": "onboarding 'tools' stage loop",
+        "live": true,
+        "why_live": "same onboarding flow"
+       },
+       {
+        "file": "src/onboarding/Onboarding.tsx",
+        "line": 184,
+        "surface": "onboarding goal choice cards: ic_unpaid, ic_duplicate, ic_credit, ic_unsure (from content.ts GOAL_OPTIONS, rendered by Card at :456)",
+        "live": true,
+        "why_live": "same onboarding flow"
+       },
+       {
+        "file": "src/onboarding/Onboarding.tsx",
+        "line": 285,
+        "surface": "onboarding 'how' wide loop (Wide at :511)",
+        "live": true,
+        "why_live": "same onboarding flow"
+       },
+       {
+        "file": "src/onboarding/Onboarding.tsx",
+        "line": 309,
+        "surface": "onboarding autonomy choice cards: ic_show, ic_draft, ic_approve (content.ts AUTONOMY_OPTIONS)",
+        "live": true,
+        "why_live": "same onboarding flow"
+       },
+       {
+        "file": "src/onboarding/Onboarding.tsx",
+        "line": 331,
+        "surface": "onboarding 'data' wide loop (device / Reclaim / AI service)",
+        "live": true,
+        "why_live": "same onboarding flow"
+       },
+       {
+        "file": "src/onboarding/Onboarding.tsx",
+        "line": 153,
+        "surface": "onboarding finale, ReelSequence finale_in then finale",
+        "live": true,
+        "why_live": "same onboarding flow"
+       },
+       {
+        "file": "src/workspace/views/Launch.tsx",
+        "line": 86,
+        "surface": "/audit Launch screen, 'Your payments' path card art (card_upload)",
+        "live": true,
+        "why_live": "AuditApp.tsx:688 renders <Launch> whenever no audit is open, or with ?entry=..., or while one runs. Every new user sees it after onboarding."
+       },
+       {
+        "file": "src/workspace/views/Launch.tsx",
+        "line": 107,
+        "surface": "/audit Launch screen, 'Our sample' path card art (card_sample)",
+        "live": true,
+        "why_live": "same Launch screen"
+       }
+      ],
+      "replace_with": "An exhibit-style set of stills, one untextured saturated object on a pastel tint of its hue with the long soft shadow and an off-white secondary (build on exhibit_common.py), each saved with a light and a dark plate. Stage: welcome = green coin stack on mint; business = violet keys settling into a white tray; tools = blue cube with a stepped shadow; how/data = a 3-beat row of small exhibit objects. Goal cards: unpaid = green coins, duplicates = blue cube plus shadow, credits = violet key in tray, unsure = coral beads in a white bowl. Autonomy cards: show = blue, draft = violet, approve = green. Finale = green coin stack rising. Launch: card_upload = blue cube or sheet stack on pale blue, card_sample = coral bowl on peach. Reel.tsx can then become a plain <img> (or keep loops, made from the exhibit scenes)."
+     },
+     {
+      "path": "code:landing-site/blender/solutions.py",
+      "kind": "code-drawn",
+      "classification": "old-generated-3d",
+      "looks_like": "A Blender generator using looklib.py (the 'DayOS-matched' look: white terrazzo #e9e1de, pale oak plywood, cyan/orange/green/pink caps). I pulled frames from its outputs: build = speckled terrazzo and plywood triangular prisms with cyan/orange caps around a white ball; connect = two linked hexagon rings (green/terrazzo and orange/plywood); find = a cluster of hexagonal prisms (terrazzo, plywood, grey, pink, green, orange) with a white ball; recover = a tilted stack of discs (green, yellow, terrazzo, grey, plywood). All on black.",
+      "used_by": [
+       {
+        "file": "landing-site/src/pages/how-it-works.html",
+        "line": 48,
+        "surface": "/how-it-works step 1 text-image module, /media/connect.webm (desktop-only)",
+        "live": true,
+        "why_live": "The output file is live: landingSitePlugin serves /how-it-works and /media/*, and closeBundle copies them into dist. The script itself is not shipped (blender/ is excluded)."
+       },
+       {
+        "file": "landing-site/src/pages/how-it-works.html",
+        "line": 118,
+        "surface": "/how-it-works step 2, /media/find.webm",
+        "live": true,
+        "why_live": "output file live, as above"
+       },
+       {
+        "file": "landing-site/src/pages/how-it-works.html",
+        "line": 186,
+        "surface": "/how-it-works step 3, /media/build.webm",
+        "live": true,
+        "why_live": "output file live, as above"
+       },
+       {
+        "file": "landing-site/src/pages/how-it-works.html",
+        "line": 281,
+        "surface": "/how-it-works step 4, /media/recover.webm",
+        "live": true,
+        "why_live": "output file live, as above"
+       }
+      ],
+      "replace_with": "Retire solutions.py and looklib.py. Add four exhibit_*.py-style stills (or short loops) for the how-it-works steps on pastel plates: Connect/Upload = blue cube sliding into a white tray slot (blue on pale blue); Find = green coin stack with an identical stack sliding out (mint); Build the case = violet key pieces filing into a white tray (lavender); Recover = coral beads poured back into a white bowl (peach), or green coins returning to a plate."
+     },
+     {
+      "path": "code:landing-site/blender/onboarding.py",
+      "kind": "code-drawn",
+      "classification": "old-generated-3d",
+      "looks_like": "Blender generator for every onboarding loop, using onboardlib.py ('black clay, cream paper and ruled ledger stock, one glossy green, brass; the Reclaim mark as geometry'). render_onboarding.sh renders the loops and ships them to public/onboarding/. Its output is the live set described under Reel.tsx.",
+      "used_by": [
+       {
+        "file": "landing-site/blender/render_onboarding.sh",
+        "surface": "build-time only: writes public/onboarding/* (WebM + dark/light MP4 + poster)",
+        "live": false,
+        "why_live": "blender/ is excluded from dist and never served. Its output files are live in onboarding and Launch."
+       }
+      ],
+      "replace_with": "Retire onboarding.py, onboardlib.py and render_onboarding.sh once replacement onboarding art is written on exhibit_common.py (see the Reel.tsx item)."
+     },
+     {
+      "path": "code:landing-site/blender/hero.py",
+      "kind": "code-drawn",
+      "classification": "old-generated-3d",
+      "looks_like": "Old hero generator: 'a hexagonal column of chevron-cut blocks that opens into an exploded view' in the looklib terrazzo/plywood look. It produces media/hero.webm, hero.mp4 and hero-white.mp4, and nothing references those any more. landing-site/blender/README.md:10 still claims it is 'the app's login screen (AuthSplit.tsx)'. That is stale: AuthSplit now plays the record-stack film. v3/ and orig/ hold older copies of hero.py, looklib.py and solutions.py, and orig/media/ holds old build/find/hero mp4s (3.4 MB).",
+      "used_by": [],
+      "replace_with": "remove (with v3/, orig/ and the unreferenced media/hero.webm, hero.mp4, hero-white.mp4), and fix the README line"
+     },
+     {
+      "path": "code:src/workspace/WorkObject.tsx",
+      "kind": "image",
+      "classification": "old-generated-3d",
+      "looks_like": "An orphaned 'one 3D object per screen' system. WorkObject renders <img src=/media/stills/{tower,cluster,fan,apart,hex,stack,ring}.webp>. objects.ts maps screens to objects (SCREEN_OBJECT) and finding causes to objects (CAUSES). workspace.css:886-933 styles .wk-object, .wk-screen-head, .wk-empty[data-object] and .wk-case-cause, plus .wk-dash-pipeline .wk-object at :327 and vercel.css:108. The stills were deleted in 55b50c7. I recovered them from git and looked: terrazzo, plywood and cyan/orange triangular prisms, hexagon clusters, a disc stack with a white ball, an octagonal tower. That is the old look. Stale comments in workspace.css:319 and :446 still say 'blocky language of the 3D renders'.",
+      "used_by": [
+       {
+        "file": "src/workspace/WorkObject.tsx",
+        "line": 28,
+        "surface": "none: nothing imports WorkObject, ScreenHead or causeOf",
+        "live": false,
+        "why_live": "No importer anywhere in src/. The image URLs would 404 because landing-site/media/stills/ no longer exists."
+       }
+      ],
+      "replace_with": "Remove (WorkObject.tsx, objects.ts and the CSS rules). Or, if the owner wants colour back in the workspace, re-point these exact slots (screen head, empty states, finding cause) at exhibit stills mapped by cause: paid twice = echo (green coins), paid too much = overflow (coral beads), unused credit / wrong time = piece (violet keys), billed twice / wrong place = shadow (blue cube)."
+     },
+     {
+      "path": "code:src/components/landing/DitherBackground.tsx",
+      "kind": "code-drawn",
+      "classification": "other",
+      "looks_like": "A WebGL fragment shader: animated fbm-noise dithered grain field (a 21st.dev/Paper Design recipe) in grey #0b0b0c to #adb5bd or cream #ccc6b8 to #ede8dd, with a scrolling 'RECLAIM' wordmark. It belongs to the old textured/grain direction.",
+      "used_by": [
+       {
+        "file": "src/components/landing/LandingPage.tsx",
+        "line": 578,
+        "surface": "footer of the old React LandingPage",
+        "live": false,
+        "why_live": "Nothing imports LandingPage.tsx except its own test. '/' is served from landing-site/."
+       }
+      ],
+      "replace_with": "remove (dead code)"
+     },
+     {
+      "path": "code:src/components/landing/SideRays.tsx",
+      "kind": "code-drawn",
+      "classification": "other",
+      "looks_like": "A WebGL light-ray shader via dynamic import('ogl'), animated coloured rays from a corner (side-rays.css). The old atmospheric-effects direction.",
+      "used_by": [],
+      "replace_with": "remove (no importer at all), and drop the 'ogl' dependency from package.json (SideRays is its only user)"
+     },
+     {
+      "path": "code:src/components/landing/LandingPage.tsx",
+      "kind": "code-drawn",
+      "classification": "ai-generated-scene",
+      "looks_like": "The old React landing and its CSS (landing.css, landing-light.css, landing-reference.css, landing-motion.css, landing-system.css). It imports AI scene plates (assets/landing/scenes/reclaim-hero-plaster-plate-v2.png, reclaim-pricing-document-v1.png, reclaim-pricing-card-v1.png) and sets AI backgrounds through CSS url() (reclaim-bg-01-hero, bg-02-motto, bg-03-workflow-mineral, bg-05-portfolio-cotton, the evidence/pricing/faq scenes). Code-drawn parts: ruled ledger-line repeating-linear-gradients (landing.css:470, :6382, landing-light.css:916), 3D 'corridor-plane' rotateX/rotateZ planes (landing.css:4487-4510), perspective tilt reveals (landing-motion.css), the dither footer.",
+      "used_by": [
+       {
+        "file": "src/components/landing/LandingPage.test.tsx",
+        "surface": "tests only",
+        "live": false,
+        "why_live": "Not imported by App.tsx or anything else."
+       }
+      ],
+      "replace_with": "remove the whole src/components/landing/ folder (with MagneticLink and the unused --motion-ray token in src/motion/motion.css)"
+     },
+     {
+      "path": "code:src/components/site/SiteLanding.tsx",
+      "kind": "code-drawn",
+      "classification": "ai-generated-scene",
+      "looks_like": "The 'fresh' desk-collage landing. Generated photo props from src/assets/landing/optimized/ (paper and felt surfaces, laptop corner, layered paper, map sheets, aged letter paper, receipt strip, torn note, blue and yellow tape, coffee cup, binder clip, paperclip, green token, sticky note, office timer, cafe photo, cutting mat), plus code-drawn hand-underline and route-map SVGs and a rotated tape connector (site.css:12).",
+      "used_by": [
+       {
+        "file": "src/App.tsx",
+        "line": 73,
+        "surface": "React route '/' (lazy import at App.tsx:6-7)",
+        "live": false,
+        "why_live": "Unreachable. In dev, landingSitePlugin middleware serves '/' from landing-site/ before Vite. In prod, closeBundle copies landing-site/index.html over dist/index.html. The React bundle never loads at '/'."
+       }
+      ],
+      "replace_with": "remove (and drop the '/' entry and the lazy SiteLanding import from App.tsx)"
+     },
+     {
+      "path": "code:src/components/site/artifacts/EvidenceObjects.tsx",
+      "kind": "code-drawn",
+      "classification": "other",
+      "looks_like": "DOM 'evidence objects' on paper: CSV strip, payment slips, ledger sheet, finding card, import receipt and recovery letter as rotated, shadowed paper cards (artifacts.css). They are staged by sections/Hero.tsx, Story.tsx, Chapters.tsx and Proof.tsx (sections.css rotates them a few degrees).",
+      "used_by": [
+       {
+        "file": "src/components/site/sections/Hero.tsx",
+        "line": 57,
+        "surface": "orphaned section components",
+        "live": false,
+        "why_live": "SiteLanding.tsx does not import sections/*, and nothing else does."
+       }
+      ],
+      "replace_with": "remove (dead code)"
+     },
+     {
+      "path": "code:landing-site/src/partials/sprite.html",
+      "kind": "code-drawn",
+      "classification": "logo-icon",
+      "looks_like": "Inline SVG sprite: the hexagon logo #hx-wheel, line UI icons, green #00fd74 rounded-square 'tile' icons (upload/find/evidence, the five finding types, file-handling tiles), small outline marks for articles, and lucide icons for the dashboard mock-ups.",
+      "used_by": [
+       {
+        "file": "landing-site/src/layout.html",
+        "line": 21,
+        "surface": "every landing-site page; tiles shown on /what-it-checks question cards and #your-files, /how-it-works heads",
+        "live": true,
+        "why_live": "included in the layout of all built landing pages"
+       }
+      ],
+      "replace_with": "Keep. Optional tie-in: tint the finding-type tiles in the exhibit hues (duplicate payments = green, overpayments = coral, unused credits = violet, duplicate bills = blue) so /what-it-checks matches the home exhibits."
+     },
+     {
+      "path": "code:landing-site/src/pages/guides/index.html",
+      "kind": "code-drawn",
+      "classification": "logo-icon",
+      "looks_like": "A big pale-grey hexagon logo (#hx-wheel, 8rem, color grey-200) used as placeholder 'mark-art' in the right column of the /guides 'start' panel (pages.css:614-615, hidden on mobile).",
+      "used_by": [
+       {
+        "file": "landing-site/src/pages/guides/index.html",
+        "line": 59,
+        "surface": "/guides, beside the system list",
+        "live": true,
+        "why_live": "/guides is served from landing-site"
+       }
+      ],
+      "replace_with": "Keep as logo. If a picture is wanted, use a small exhibit still here: a blue stack of CSV sheets or a blue cube on pale blue."
+     },
+     {
+      "path": "code:landing-site/src/partials/app-side.html",
+      "kind": "code-drawn",
+      "classification": "app-screenshot",
+      "looks_like": "Live-HTML replicas of the workspace UI (sidebar, Overview/Findings/Recoveries, tables) shown on the MacBook walkthrough screen and in the framed modules on /how-it-works.",
+      "used_by": [
+       {
+        "file": "landing-site/src/pages/index.html",
+        "line": 101,
+        "surface": "'/' walkthrough, the dashboard mapped onto the MacBook frames",
+        "live": true,
+        "why_live": "home page"
+       },
+       {
+        "file": "landing-site/src/pages/how-it-works.html",
+        "line": 58,
+        "surface": "/how-it-works article-image framed app mocks",
+        "live": true,
+        "why_live": "served page"
+       }
+      ],
+      "replace_with": "keep"
+     },
+     {
+      "path": "code:landing-site/src/pages/index.html",
+      "kind": "code-drawn",
+      "classification": "other",
+      "looks_like": "Flat CSS diagrams and tiles on the home page. The pipeline: two lanes, a dashed grey 'Most tools' track that stops, and a green Reclaim track with 5 nodes (styles.css:1072-1081). The grid1 integration tiles: typographic wordmarks (quickbooks, XERO, NETSUITE, bill, ramp, csv) on grey tiles with a mouse 3D tilt (.m3d). There is no texture, block or 3D render in any of them.",
+      "used_by": [
+       {
+        "file": "landing-site/src/pages/index.html",
+        "line": 51,
+        "surface": "'/' statement section pipeline",
+        "live": true,
+        "why_live": "home page"
+       },
+       {
+        "file": "landing-site/src/pages/index.html",
+        "line": 439,
+        "surface": "'/' 'Start with the records you already have' brand tiles",
+        "live": true,
+        "why_live": "home page"
+       }
+      ],
+      "replace_with": "keep"
+     },
+     {
+      "path": "code:landing-site/styles.css",
+      "kind": "code-drawn",
+      "classification": "new-exhibit-style",
+      "looks_like": ".ex-sum-ico (styles.css:637-643): round 5.6rem crops of the four exhibit stills (still-m.webp at 230% zoom on a tint) used as row icons in the 'Recovery summary' card. It already shows how the new pieces scale down to icon size.",
+      "used_by": [
+       {
+        "file": "landing-site/src/pages/index.html",
+        "line": 421,
+        "surface": "'/' finds section, Recovery summary rows",
+        "live": true,
+        "why_live": "home page"
+       }
+      ],
+      "replace_with": "keep. This is the pattern to reuse for small art in onboarding cards, the Launch cards and the workspace"
+     },
+     {
+      "path": "code:src/pages/AuthSplit.tsx",
+      "kind": "video",
+      "classification": "record-stack",
+      "looks_like": "The account-page split: the record-stack hero film (/media/hero/d.mp4 and m.mp4, poster first.webp, ?v=stack1) on the grey floor, plus an inline hexagon logo.",
+      "used_by": [
+       {
+        "file": "src/pages/LoginPage.tsx",
+        "surface": "/login, /signup, /forgot-password, /reset-password, /verify-email, and the 404 (NotFoundPage)",
+        "live": true,
+        "why_live": "React routes in App.tsx; all six import AuthSplit"
+       }
+      ],
+      "replace_with": "keep (approved)"
+     },
+     {
+      "path": "code:index.html",
+      "kind": "image",
+      "classification": "logo-icon",
+      "looks_like": "og:image and twitter:image = /reclaim-logo.svg. This is the OLD pre-hexagon 'R' lettermark with a green slash and a 'Reclaim.' wordmark, not the current hexagon. The landing-site layout has no og:image at all.",
+      "used_by": [
+       {
+        "file": "index.html",
+        "line": 49,
+        "surface": "link previews for React routes (/login, /signup, /audit, /checkout, ...)",
+        "live": true,
+        "why_live": "React index.html is copied into every app route dir by landingSitePlugin.closeBundle"
+       }
+      ],
+      "replace_with": "An exhibit-style 1200x630 social card (e.g. the green coin stack on mint with the hexagon logo and the headline), added to both index.html and landing-site/src/layout.html"
+     },
+     {
+      "path": "code:src/components/ReclaimLogo.tsx",
+      "kind": "code-drawn",
+      "classification": "logo-icon",
+      "looks_like": "The old 'R' mark SVG with a green-gradient 'spread' and a 'Reclaim.' wordmark. Not the hexagon.",
+      "used_by": [
+       {
+        "file": "src/pages/CheckoutPage.tsx",
+        "line": 294,
+        "surface": "/checkout header",
+        "live": true,
+        "why_live": "React route /checkout"
+       },
+       {
+        "file": "src/components/site/sections/SiteNav.tsx",
+        "line": 41,
+        "surface": "orphaned site nav (also SiteFooter, LandingPage)",
+        "live": false,
+        "why_live": "no importer"
+       }
+      ],
+      "replace_with": "Brand fix, not an imagery item: swap /checkout to the hexagon Mark (WorkspaceShell.tsx Mark, or the #hx-wheel paths)"
+     },
+     {
+      "path": "code:src/components/tutorial/TutorialTour.tsx",
+      "kind": "code-drawn",
+      "classification": "other",
+      "looks_like": "The dashboard tutorial (TutorialTour) and WorkspaceTour: text-only spotlight cards on a dimmed scrim. tutorial.css uses only subtle linear-gradient card surfaces. They contain no illustrations or images.",
+      "used_by": [
+       {
+        "file": "src/workspace/WorkspaceShell.tsx",
+        "line": 241,
+        "surface": "/audit workspace, first-visit dashboard tour (WorkspaceTour at :243). Settings can restart it.",
+        "live": true,
+        "why_live": "WorkspaceShell is rendered by AuditApp"
+       }
+      ],
+      "replace_with": "keep (no art to replace)"
+     }
+    ],
+    "unreferenced_old": [
+     "src/workspace/WorkObject.tsx",
+     "src/workspace/objects.ts",
+     "src/workspace/workspace.css (lines 886-933 .wk-object/.wk-screen-head/.wk-empty[data-object]/.wk-case-cause, :327 .wk-dash-pipeline .wk-object) + src/workspace/vercel.css:108",
+     "src/components/landing/DitherBackground.tsx",
+     "src/components/landing/SideRays.tsx",
+     "src/components/landing/side-rays.css",
+     "src/components/landing/LandingPage.tsx (+ landing.css, landing-light.css, landing-reference.css, landing-motion.css, landing-system.css, MagneticLink.tsx, tests)",
+     "src/components/site/SiteLanding.tsx + site.css (referenced by App.tsx '/' route but unreachable)",
+     "src/components/site/sections/",
+     "src/components/site/artifacts/",
+     "package.json dependency 'ogl' (only SideRays uses it)",
+     "landing-site/media/hero.webm",
+     "landing-site/media/hero.mp4",
+     "landing-site/media/hero-white.mp4",
+     "landing-site/blender/hero.py",
+     "landing-site/blender/v3/",
+     "landing-site/blender/orig/ (incl. orig/media/build.mp4, find.mp4, hero.mp4)"
+    ],
+    "notes": "My scope was imagery drawn in code. Read-only: nothing in the repo was edited. Contact sheets are in /tmp/claude-0/-home-user-AP-Leak-Finder/7a32b480-9194-5f00-baae-20a1ca3f0020/scratchpad/audit/code-drawn/ (stills_sheet.png = the deleted workspace stills recovered from git; onboarding_sheet.png = all public/onboarding posters; hiw_sheet.png = frames from the /how-it-works loops; art_sheet.png = public/art).\n\nKey findings:\n(1) Live code paths that still put OLD imagery in front of users:\n- Reel.tsx: onboarding at /audit (first run, plus the Settings revisit) and the Launch screen cards (card_upload, card_sample). Black clay cubes with cream paper.\n- The /how-it-works loops (connect, find, build, recover) from blender/solutions.py and looklib.py. Terrazzo and plywood hex prisms.\nEverything else old is dead code.\n(2) The live React app (workspace, auth, checkout, tutorial) has no code-drawn old-look art. Its CSS is flat. No noise, grain, conic or texture rules are live anywhere. The workspace's old '3D object per screen' system is still in the code but orphaned, and its stills were deleted in 55b50c7.\n(3) No old look is code-drawn on landing-site. Only flat UI, the hexagon logo, green icon tiles, the pipeline diagram and the HTML app mocks. The .ex-sum-ico exhibit crops already show the new style working at icon size.\n(4) Emails (server/mailer.ts via Resend, server/gmail.ts) are text/plain only. No images or SVG.\n(5) Branding inconsistency, separate from the imagery direction: the old 'R' lettermark is still live as the og:image (index.html) and on /checkout (ReclaimLogo). The landing-site pages have no og:image.\n(6) Unreferenced files outside my scope that I came across: public/art/*.png (clean app-UI screenshot crops, referenced by nothing) and public/generated/reclaim-tutorial/*.jpg (6 tutorial images, referenced by nothing, worth checking for the onboarding-tutorial question). Also src/styles/theme.css is imported by nothing.\n(7) Stale docs: landing-site/blender/README.md:10 says hero.py is still the login screen, but AuthSplit uses the record-stack film.\n(8) The workspace accent swatches (Customize.tsx: green #00fd74, blue #00d1ff, pink, orange #ff6838, purple #b874fc) already map roughly onto the exhibit hues, so exhibit art could follow the user's accent.\n(9) landing-v2/, experiments/ and night-report/ are not served by anything (not in landingSitePlugin routes or in dist), so I did not audit them."
+   }
+  },
+  {
+   "key": "render-pipeline",
+   "result": {
+    "items": [
+     {
+      "path": "code:landing-site/blender/exhibit_common.py",
+      "kind": "code-drawn",
+      "classification": "new-exhibit-style",
+      "looks_like": "The shared set for the four section pieces. stage() builds the light rig, a shadow-catcher floor with a light-linked 'floor_lift' sun that sets how dark the shadow is, the PALETTES hue/floor pairs, the 100 mm camera with aim() on a sphere, a one-segment bevel, motion curves (bezier eases, spring, inertia, arc), bake() keying every frame, and render() writing f_NNNN.png + meta.json, plus still.png when still=1. hero_stack.py uses it too.",
+      "used_by": [
+       {
+        "file": "landing-site/blender/exhibit_echo.py",
+        "surface": "imported by all four exhibit scripts and hero_stack.py",
+        "live": true,
+        "why_live": "its outputs ship on / (finds tiles, recovery-summary icons, closing coins) and on the hero and auth split screens"
+       }
+      ],
+      "replace_with": "keep. This is the base for every new piece. Add new hues to PALETTES (and to styles.css .fd-tile[data-ex]); set resolution_y after stage() for non-16:9 output"
+     },
+     {
+      "path": "code:landing-site/blender/exhibit_echo.py",
+      "kind": "code-drawn",
+      "classification": "new-exhibit-style",
+      "looks_like": "Mint tile: a stack of 7 smooth saturated-green coins (r .82, h .078, gap .012, milled edge, raised face ring) with a long soft shadow to the left. Its twin slides out and back in. The still is the single stack at rest.",
+      "used_by": [
+       {
+        "file": "landing-site/src/pages/index.html",
+        "line": 401,
+        "surface": "/ home, 'What Reclaim finds' tile 1 (media/exhibits/echo/still.webp, still-m.webp)",
+        "live": true,
+        "why_live": "'/' is served from landing-site built pages"
+       },
+       {
+        "file": "landing-site/styles.css",
+        "line": 640,
+        "surface": "/ home, recovery summary row icon (.ex-sum-ico, still-m.webp)",
+        "live": true,
+        "why_live": "home stylesheet"
+       },
+       {
+        "file": "landing-site/src/partials/closing.html",
+        "line": 5,
+        "surface": "closing CTA on /, /about, /pricing, /how-it-works, /what-it-checks, /research/* (frame 139 via cutout.py -> media/closing/coins-*.webp)",
+        "live": true,
+        "why_live": "partial included in 9 landing pages"
+       }
+      ],
+      "replace_with": "keep (approved target style)"
+     },
+     {
+      "path": "code:landing-site/blender/exhibit_overflow.py",
+      "kind": "code-drawn",
+      "classification": "new-exhibit-style",
+      "looks_like": "Apricot tile: coral spheres (r .12, 265 rigid bodies) heaped past the rim of a plain warm-white cup (#fff3ea, r .78 h 1.25), with the spill stacked into a neat square pyramid beside it. Long shadow to the left.",
+      "used_by": [
+       {
+        "file": "landing-site/src/pages/index.html",
+        "line": 402,
+        "surface": "/ home, finds tile 2 (media/exhibits/overflow/still*.webp)",
+        "live": true,
+        "why_live": "'/' landing page"
+       },
+       {
+        "file": "landing-site/styles.css",
+        "line": 641,
+        "surface": "/ recovery summary icon",
+        "live": true,
+        "why_live": "home stylesheet"
+       }
+      ],
+      "replace_with": "keep"
+     },
+     {
+      "path": "code:landing-site/blender/exhibit_piece.py",
+      "kind": "code-drawn",
+      "classification": "new-exhibit-style",
+      "looks_like": "Lilac tile: a pale lilac-white tray (#f1edff, 2.94x1.62x.46, eight slots) holding eight violet grooved keys (.5x.5x.26, five grooves each). In the still the last key has dropped home.",
+      "used_by": [
+       {
+        "file": "landing-site/src/pages/index.html",
+        "line": 403,
+        "surface": "/ home, finds tile 3",
+        "live": true,
+        "why_live": "'/' landing page"
+       },
+       {
+        "file": "landing-site/styles.css",
+        "line": 642,
+        "surface": "/ recovery summary icon",
+        "live": true,
+        "why_live": "home stylesheet"
+       }
+      ],
+      "replace_with": "keep"
+     },
+     {
+      "path": "code:landing-site/blender/exhibit_shadow.py",
+      "kind": "code-drawn",
+      "classification": "new-exhibit-style",
+      "looks_like": "Sky tile seen from overhead (el 89.5): a cyan cube of six plates beside a stepped tower made of the same six plates. From above both read as the same square, each with a stepped long shadow up and to the left.",
+      "used_by": [
+       {
+        "file": "landing-site/src/pages/index.html",
+        "line": 404,
+        "surface": "/ home, finds tile 4",
+        "live": true,
+        "why_live": "'/' landing page"
+       },
+       {
+        "file": "landing-site/styles.css",
+        "line": 643,
+        "surface": "/ recovery summary icon",
+        "live": true,
+        "why_live": "home stylesheet"
+       }
+      ],
+      "replace_with": "keep"
+     },
+     {
+      "path": "code:landing-site/blender/exhibit_encode.py",
+      "kind": "code-drawn",
+      "classification": "new-exhibit-style",
+      "looks_like": "Encoder for the exhibits and the hero stack. It flattens transparent frames onto the meta.json floor colour (and removes the catcher veil), then writes still.webp (2560, q84), still-m.webp (1600, q84), first.webp (1280, q80) and H.264 d.mp4 (1280) / m.mp4 (960).",
+      "used_by": [
+       {
+        "file": "landing-site/src/pages/index.html",
+        "line": 10,
+        "surface": "/ hero film media/hero/{d,m}.mp4 + first.webp, and the exhibit stills",
+        "live": true,
+        "why_live": "home page"
+       }
+      ],
+      "replace_with": "keep. Use it for every new tile still or opaque loop"
+     },
+     {
+      "path": "code:landing-site/blender/cutout.py",
+      "kind": "code-drawn",
+      "classification": "coin-closer",
+      "looks_like": "Crops a transparent exhibit frame to the object plus its shadow and writes RGBA WebP at several widths. It produced media/closing/coins-1200.webp and coins-720.webp (the green coin stack with its own soft shadow, for white pages).",
+      "used_by": [
+       {
+        "file": "landing-site/src/partials/closing.html",
+        "line": 5,
+        "surface": "closing CTA block on 9 landing pages",
+        "live": true,
+        "why_live": "partial included in built pages"
+       }
+      ],
+      "replace_with": "keep. Use it for transparent new-style pieces that sit on white or off-white pages"
+     },
+     {
+      "path": "code:landing-site/blender/hero_stack.py",
+      "kind": "code-drawn",
+      "classification": "record-stack",
+      "looks_like": "Square 22.6 s loop at 60 fps: rounded stone record slabs (#d8d5ce) on #ebe7de with a printed lid and four pastel sheets (mint c2f1d4, peach f4b99e, lavender c9aeeb, blue a2c9ec). Each sheet slides out in turn. Soft high back-right key, 250 mm lens.",
+      "used_by": [
+       {
+        "file": "landing-site/src/pages/index.html",
+        "line": 10,
+        "surface": "/ home hero (.hero-film)",
+        "live": true,
+        "why_live": "home page"
+       },
+       {
+        "file": "src/pages/AuthSplit.tsx",
+        "line": 5,
+        "surface": "/login /signup /forgot-password /reset-password /verify-email split-screen film",
+        "live": true,
+        "why_live": "AuthSplit is used by every auth route in App.tsx"
+       }
+      ],
+      "replace_with": "keep (approved)"
+     },
+     {
+      "path": "code:landing-site/blender/macbook.py",
+      "kind": "code-drawn",
+      "classification": "macbook",
+      "looks_like": "A licensed MacBook model (kept out of the repo) opening over 120 frames on dark ink #08100c, plus corners.json for the live dashboard overlay. macbook_encode.py writes media/macbook/d|m/000-119.webp and still(-m).webp.",
+      "used_by": [
+       {
+        "file": "landing-site/walkthrough.js",
+        "line": 22,
+        "surface": "/ home 'See the money and the proof' walkthrough (src/pages/index.html:80)",
+        "live": true,
+        "why_live": "home page section"
+       }
+      ],
+      "replace_with": "keep (approved)"
+     },
+     {
+      "path": "code:landing-site/blender/solutions.py",
+      "kind": "code-drawn",
+      "classification": "old-generated-3d",
+      "looks_like": "DayOS-look loops on black or transparent. find: a honeycomb of terrazzo/oak/taupe hex posts with flat green, pink, cyan and orange caps and a speckled ball. build: terrazzo and plywood wedges with cyan and orange caps closing round a ball. recover: speckled, yellow and taupe milled coins fanning out. connect: two interlocked hex links, green-capped terrazzo and orange-capped oak. An upload scene exists but is unused.",
+      "used_by": [
+       {
+        "file": "landing-site/src/pages/how-it-works.html",
+        "line": 48,
+        "surface": "/how-it-works #upload 'Start with what you have' (connect.webm; desktop only)",
+        "live": true,
+        "why_live": "built page served by landingSitePlugin"
+       },
+       {
+        "file": "landing-site/src/pages/how-it-works.html",
+        "line": 118,
+        "surface": "/how-it-works #find 'Only what the records show' (find.webm)",
+        "live": true,
+        "why_live": "built page"
+       },
+       {
+        "file": "landing-site/src/pages/how-it-works.html",
+        "line": 186,
+        "surface": "/how-it-works #evidence 'Proof behind every finding' (build.webm)",
+        "live": true,
+        "why_live": "built page"
+       },
+       {
+        "file": "landing-site/src/pages/how-it-works.html",
+        "line": 281,
+        "surface": "/how-it-works #recover 'Followed through to the money' (recover.webm)",
+        "live": true,
+        "why_live": "built page; reels.js:16-18 swaps in the .mp4 twins on Safari"
+       }
+      ],
+      "replace_with": "Retire it. Re-shoot the four how-it-works steps as exhibit_common stills or short loops: Connect = sky (blue blocks filing into a white tray/dock), Find = apricot (one coral bead lifted from a white bowl of beads), Evidence = lilac (a violet card or key pulled from a white stack/tray), Recover = mint (green coins settling into a white dish). Each is a 16:9 tile on its pastel floor"
+     },
+     {
+      "path": "code:landing-site/blender/hero.py",
+      "kind": "code-drawn",
+      "classification": "old-generated-3d",
+      "looks_like": "The old hero: a hexagonal column of chevron-cut terrazzo, oak, dark-wood and yellow-terrazzo blocks with pink/blue inner faces, green and pink accents, printed record labels and a core of coins (speckled, yellow, one green). It opens, turns and locks shut. Output: media/hero.webm, hero.mp4 (#e5e5e5), hero-white.mp4.",
+      "used_by": [
+       {
+        "file": "landing-site/media/hero.webm",
+        "surface": "none. The README says the login screen uses it, but AuthSplit.tsx now plays media/hero/d.mp4 (hero_stack)",
+        "live": false,
+        "why_live": "no HTML/TSX/CSS reference to hero.webm, hero.mp4 or hero-white.mp4"
+       }
+      ],
+      "replace_with": "remove the script and its three outputs; no re-shoot (the record-stack hero replaced it)"
+     },
+     {
+      "path": "code:landing-site/blender/looklib.py",
+      "kind": "code-drawn",
+      "classification": "other",
+      "looks_like": "Shared infrastructure. setup_render, lights, plain, prism, reeded and ring are used by the new exhibits and hero_stack. Its materials (terrazzo with PAL_WHITE/PAL_YELLOW chips, wood, plywood, library(): terr, yel, oak, ply, dark, cap colours) are the OLD DayOS speckled/terrazzo/oak look used by hero.py and solutions.py. Identical copy in v3/looklib.py.",
+      "used_by": [
+       {
+        "file": "landing-site/blender/exhibit_common.py",
+        "surface": "render settings, sun and fill, plain() material",
+        "live": true,
+        "why_live": "needed by every live render"
+       }
+      ],
+      "replace_with": "keep the core. Once solutions.py and hero.py go, delete terrazzo/wood/plywood/library() and the DayOS header. New pieces must call only K.plain/K.prism/K.reeded/K.ring"
+     },
+     {
+      "path": "code:landing-site/blender/onboardlib.py",
+      "kind": "code-drawn",
+      "classification": "old-generated-3d",
+      "looks_like": "Onboarding materials and pieces: matte black clay blocks with thumb dents, cream paper and ream stock (some ruled in faint green), one glossy green gem, a brass stamp, green wire, and the Reclaim mark as geometry.",
+      "used_by": [
+       {
+        "file": "landing-site/blender/onboarding.py",
+        "surface": "imported by the onboarding scenes",
+        "live": true,
+        "why_live": "outputs ship in public/onboarding and play in the app"
+       }
+      ],
+      "replace_with": "replace with exhibit_common (plain hue + tinted off-white, shadow-catcher floor, pastel tile)"
+     },
+     {
+      "path": "code:landing-site/blender/onboarding.py",
+      "kind": "code-drawn",
+      "classification": "old-generated-3d",
+      "looks_like": "16 onboarding scenes in the black-clay/cream-paper/green-gem look on a black canvas: welcome/business/tools/finale(_in) piles of clay cubes and paper, how/data three-beat strips (flag, pages, coin; ream, R block, white block), 7 card icons (coin on bill, sheets, flag on clay cube, ? over cube, brass stamp...), and 2 Launch cards (ream on clay plinth; clay pile with gem). Spot-checked frames confirm it.",
+      "used_by": [
+       {
+        "file": "src/onboarding/Onboarding.tsx",
+        "line": 159,
+        "surface": "/audit first-run onboarding (signed-in user without a profile): welcome :159, business :205, tools :240, how :285, data :331, finale_in/finale :153, card icons via content.ts reel names ic_unpaid/duplicate/credit/unsure (content.ts:6-9) and ic_show/draft/approve (content.ts:43-49) at :184/:309",
+        "live": true,
+        "why_live": "AuditApp.tsx:638 renders <Onboarding> when auth.user && onboardingOpen"
+       },
+       {
+        "file": "src/workspace/views/Launch.tsx",
+        "line": 86,
+        "surface": "/audit Launch ledger-choice cards: card_upload :86, card_sample :107",
+        "live": true,
+        "why_live": "AuditApp.tsx:688 renders <Launch> on first run"
+       }
+      ],
+      "replace_with": "Re-shoot in exhibit style. Icons: ic_duplicate = echo coin stack (mint), ic_credit = piece tray (lilac), ic_unpaid = apricot bill + coin, ic_unsure = sky; ic_show/ic_draft/ic_approve get one simple object each. Launch cards: card_upload = sky stack of sheets into a white tray, card_sample = mint coins. Stage loops: four-hue pieces on pastel tiles. Because the canvas is dark, ship opaque tiles (floor baked in), not alpha WebM: the catcher shadow disappears on #000"
+     },
+     {
+      "path": "code:landing-site/blender/render_onboarding.sh",
+      "kind": "code-drawn",
+      "classification": "old-generated-3d",
+      "looks_like": "Batch-renders every onboarding scene, then encodes each to <scene>.webm (VP9 alpha, crf 31), <scene>-dark.mp4 / -light.mp4 (crf 21 over #000/#f3f3f3, or #111/#fff for cards) and <scene>.webp (poster.py) in public/onboarding/.",
+      "used_by": [
+       {
+        "file": "src/onboarding/Reel.tsx",
+        "line": 26,
+        "surface": "app onboarding + Launch reels (webm, or the mp4 on Safari; webp poster/reduced motion :46,:53)",
+        "live": true,
+        "why_live": "Reel is used by Onboarding.tsx and Launch.tsx"
+       }
+      ],
+      "replace_with": "replace with an exhibit_common + exhibit_encode (or encode.py fps=60) batch for the new onboarding pieces"
+     },
+     {
+      "path": "code:landing-site/blender/encode.py",
+      "kind": "code-drawn",
+      "classification": "other",
+      "looks_like": "Generic PNG-to-video encoder: VP9 WebM with alpha (GOOD preset, custom crf), or with bg=RRGGBB an H.264 MP4 over a flat colour. Defaults: fps 30, gop 30. Used for the solutions loops, onboarding loops and the old hero.",
+      "used_by": [
+       {
+        "file": "landing-site/src/pages/how-it-works.html",
+        "line": 48,
+        "surface": "produced /media/{connect,find,build,recover}.webm/.mp4 and public/onboarding/*",
+        "live": true,
+        "why_live": "those outputs are live"
+       }
+      ],
+      "replace_with": "keep for transparent loops. Pass fps=60 prefix=f for exhibit_common renders (the default 30 would play them at half speed)"
+     },
+     {
+      "path": "code:landing-site/blender/poster.py",
+      "kind": "code-drawn",
+      "classification": "other",
+      "looks_like": "Writes the first frame as a transparent WebP (q82): the onboarding posters public/onboarding/*.webp",
+      "used_by": [
+       {
+        "file": "src/onboarding/Reel.tsx",
+        "line": 46,
+        "surface": "onboarding reduced-motion image and video poster",
+        "live": true,
+        "why_live": "Reel.tsx"
+       }
+      ],
+      "replace_with": "keep (utility)"
+     },
+     {
+      "path": "code:landing-site/blender/render_tests.sh",
+      "kind": "code-drawn",
+      "classification": "old-generated-3d",
+      "looks_like": "Half-size onboarding preview frames on black (review only)",
+      "used_by": [
+       {
+        "file": "landing-site/blender/onboarding.py",
+        "surface": "dev review only",
+        "live": false,
+        "why_live": "writes to out/onb_t (gitignored)"
+       }
+      ],
+      "replace_with": "remove together with onboarding.py"
+     },
+     {
+      "path": "code:landing-site/blender/macbook_encode.py",
+      "kind": "code-drawn",
+      "classification": "macbook",
+      "looks_like": "Walkthrough frames flattened onto #08100c as WebP (d 1280, m 960, still 3840/2560) + corners.json",
+      "used_by": [
+       {
+        "file": "landing-site/walkthrough.js",
+        "line": 22,
+        "surface": "/ walkthrough",
+        "live": true,
+        "why_live": "home page"
+       }
+      ],
+      "replace_with": "keep"
+     },
+     {
+      "path": "code:landing-site/blender/grid.py",
+      "kind": "code-drawn",
+      "classification": "other",
+      "looks_like": "Contact-sheet review tool (also montage.py: frames at page size; compare.py: side-by-side vs reference)",
+      "used_by": [
+       {
+        "file": "landing-site/blender/README.md",
+        "surface": "dev review only",
+        "live": false,
+        "why_live": "writes to out/ only"
+       }
+      ],
+      "replace_with": "keep (style-neutral tools)"
+     },
+     {
+      "path": "code:landing-site/blender/explore/",
+      "kind": "code-drawn",
+      "classification": "old-generated-3d",
+      "looks_like": "~37 exploration scripts (d00-d18, e01-e15) plus lab.py/p3lib.py: a clay, satin, metal, frosted-glass, travertine and gyroid material vocabulary and sculptural sweeps from the 2026-09-24 night pass",
+      "used_by": [
+       {
+        "file": "landing-site/blender/explore/run.sh",
+        "surface": "none",
+        "live": false,
+        "why_live": "renders go to out/explore (gitignored); nothing ships"
+       }
+      ],
+      "replace_with": "remove (or archive outside the repo)"
+     },
+     {
+      "path": "code:landing-site/blender/orig/",
+      "kind": "code-drawn",
+      "classification": "old-generated-3d",
+      "looks_like": "Archive of the first DayOS pass: hero.py, solutions.py, looklib.py, encode.py, compare.py, README, plus media/{build,find,hero,recover}.mp4 (1080 sq: terrazzo/plywood wedges with cyan and orange caps around a white ball). v3/ is a byte-identical copy of the current looklib.py/hero.py/solutions.py.",
+      "used_by": [
+       {
+        "file": "scripts/landingSitePlugin.ts",
+        "surface": "none. 'blender' is in the excluded set, so it never reaches dist",
+        "live": false,
+        "why_live": "unreachable"
+       }
+      ],
+      "replace_with": "remove orig/ and v3/"
+     },
+     {
+      "path": "landing-site/media/connect.webm",
+      "kind": "video",
+      "classification": "old-generated-3d",
+      "looks_like": "Two interlocked hexagon rings on black: speckled terrazzo with a lime cap, oak with an orange cap (connect.mp4 is the Safari twin)",
+      "used_by": [
+       {
+        "file": "landing-site/src/pages/how-it-works.html",
+        "line": 48,
+        "surface": "/how-it-works #upload (Connect), desktop only",
+        "live": true,
+        "why_live": "built page"
+       }
+      ],
+      "replace_with": "sky piece: blue blocks filing into a white tray (Connect)"
+     },
+     {
+      "path": "landing-site/media/find.webm",
+      "kind": "video",
+      "classification": "old-generated-3d",
+      "looks_like": "Honeycomb of hex posts (terrazzo, oak, taupe) with lime, pink, cyan and orange caps and a speckled ball (+ find.mp4)",
+      "used_by": [
+       {
+        "file": "landing-site/src/pages/how-it-works.html",
+        "line": 118,
+        "surface": "/how-it-works #find",
+        "live": true,
+        "why_live": "built page"
+       }
+      ],
+      "replace_with": "apricot piece: one coral bead lifted from a white bowl"
+     },
+     {
+      "path": "landing-site/media/build.webm",
+      "kind": "video",
+      "classification": "old-generated-3d",
+      "looks_like": "Speckled and plywood hex wedges with cyan and orange caps closing round a white ball (+ build.mp4)",
+      "used_by": [
+       {
+        "file": "landing-site/src/pages/how-it-works.html",
+        "line": 186,
+        "surface": "/how-it-works #evidence",
+        "live": true,
+        "why_live": "built page"
+       }
+      ],
+      "replace_with": "lilac piece: a violet card/key drawn from a white stack or tray (Evidence)"
+     },
+     {
+      "path": "landing-site/media/recover.webm",
+      "kind": "video",
+      "classification": "old-generated-3d",
+      "looks_like": "Stack of speckled, yellow, taupe and lime-capped coins fanning around a pin (+ recover.mp4)",
+      "used_by": [
+       {
+        "file": "landing-site/src/pages/how-it-works.html",
+        "line": 281,
+        "surface": "/how-it-works #recover",
+        "live": true,
+        "why_live": "built page"
+       }
+      ],
+      "replace_with": "mint piece: green coins settling into a white dish (or reuse closing coins)"
+     },
+     {
+      "path": "landing-site/media/hero.webm",
+      "kind": "video",
+      "classification": "old-generated-3d",
+      "looks_like": "Old coin-column hero: terrazzo/oak/dark-wood/yellow hex column exploding into blocks with pink and green accents (7.8 MB)",
+      "used_by": [
+       {
+        "file": "landing-site/media/hero.webm",
+        "surface": "none",
+        "live": false,
+        "why_live": "unreferenced, but still copied into dist because landing-site/media is copied wholesale"
+       }
+      ],
+      "replace_with": "remove"
+     },
+     {
+      "path": "landing-site/media/hero.mp4",
+      "kind": "video",
+      "classification": "old-generated-3d",
+      "looks_like": "Same old column hero on #e5e5e5 (7.0 MB)",
+      "used_by": [
+       {
+        "file": "landing-site/media/hero.mp4",
+        "surface": "none",
+        "live": false,
+        "why_live": "unreferenced"
+       }
+      ],
+      "replace_with": "remove"
+     },
+     {
+      "path": "landing-site/media/hero-white.mp4",
+      "kind": "video",
+      "classification": "old-generated-3d",
+      "looks_like": "Same old column hero on white (7.1 MB)",
+      "used_by": [
+       {
+        "file": "landing-site/media/hero-white.mp4",
+        "surface": "none",
+        "live": false,
+        "why_live": "unreferenced"
+       }
+      ],
+      "replace_with": "remove"
+     },
+     {
+      "path": "public/onboarding/",
+      "kind": "video",
+      "classification": "old-generated-3d",
+      "looks_like": "16 loops x (webm, -dark.mp4, -light.mp4, .webp), 17 MB: black clay cubes, cream paper, green gem/coin/flag, brass stamp",
+      "used_by": [
+       {
+        "file": "src/onboarding/Onboarding.tsx",
+        "line": 159,
+        "surface": "/audit onboarding steps and card icons",
+        "live": true,
+        "why_live": "AuditApp renders Onboarding for signed-in users"
+       },
+       {
+        "file": "src/workspace/views/Launch.tsx",
+        "line": 86,
+        "surface": "/audit Launch cards (card_upload, card_sample)",
+        "live": true,
+        "why_live": "first-run /audit"
+       }
+      ],
+      "replace_with": "exhibit-style pieces in the four hues on pastel tiles (see the onboarding.py item)"
+     },
+     {
+      "path": "landing-site/blender/orig/media/",
+      "kind": "video",
+      "classification": "old-generated-3d",
+      "looks_like": "build/find/hero/recover.mp4 (1080 sq, 4-5 s): terrazzo and plywood wedges with cyan and orange caps around a white ball, on black",
+      "used_by": [
+       {
+        "file": "scripts/landingSitePlugin.ts",
+        "surface": "none",
+        "live": false,
+        "why_live": "blender/ is excluded from dist and not routed"
+       }
+      ],
+      "replace_with": "remove"
+     },
+     {
+      "path": "landing-site/assets/dept-procurement.png",
+      "kind": "image",
+      "classification": "old-generated-3d",
+      "looks_like": "Not from this pipeline (no script makes it); AI/DayOS-style render. A black open box with a cyan tag on a warm grey floor with a cyan diagonal stripe. Siblings dept-finance (lilac/oak discs, violet stripe), dept-freight (speckled truck, pink stripe), dept-inventory (oak/white scanner, green stripe), dept-warehousing (oak shelf with orange crates, orange stripe); all 1376x768.",
+      "used_by": [
+       {
+        "file": "landing-site/src/pages/research/payments-fraud-2025.html",
+        "line": 196,
+        "surface": "research stat carousels; dept-* also on /about 'From the research' cards (about.html:222-249), /research library thumbnails (research/index.html:99-132), /how-it-works #numbers carousel (how-it-works.html:380,387)",
+        "live": true,
+        "why_live": "built landing pages"
+       }
+      ],
+      "replace_with": "exhibit_common 16:9 stills (1376x768 fits the default aspect), one hue per card, about 0.5 day each. Or reuse the four existing exhibit stills where the meaning fits"
+     },
+     {
+      "path": "landing-site/assets/cs-1.png",
+      "kind": "image",
+      "classification": "old-generated-3d",
+      "looks_like": "Not from this pipeline. A mint, speckled-terrazzo and black slab stack on an oak pallet (1024 sq). Siblings: cs-2 (pink, terrazzo and black puzzle pieces on an oak board), cs-3 (light-blue, white and black bar-chart blocks on an oak disc).",
+      "used_by": [
+       {
+        "file": "landing-site/src/pages/how-it-works.html",
+        "line": 373,
+        "surface": "/how-it-works #numbers carousel; cs-* also in research article carousels (ap-benchmarks:198,212; improper-payments:202,209; occupational-fraud-2026:200,214; payments-fraud-2025:203,210)",
+        "live": true,
+        "why_live": "built landing pages"
+       }
+      ],
+      "replace_with": "square exhibit_common stills (set resolution_y = res after stage()), for example a mint coin stack, a lilac tray with a missing key, or a sky stepped tower, about 0.5 day each"
+     },
+     {
+      "path": "landing-site/media/exhibits/",
+      "kind": "image",
+      "classification": "new-exhibit-style",
+      "looks_like": "echo/overflow/piece/shadow still.webp (2560x1440) + still-m.webp (1600x900). Floors measured #c4ead4, #f6cfb3, #d8d0f2, #c2dff1.",
+      "used_by": [
+       {
+        "file": "landing-site/src/pages/index.html",
+        "line": 401,
+        "surface": "/ finds tiles 401-404 and styles.css:640-643 icons",
+        "live": true,
+        "why_live": "home"
+       }
+      ],
+      "replace_with": "keep (the target)"
+     },
+     {
+      "path": "landing-site/media/hero/",
+      "kind": "video",
+      "classification": "record-stack",
+      "looks_like": "d.mp4 (1280 sq), m.mp4 (960), first.webp: the record-slab stack with pastel sheets on #ebe8e0",
+      "used_by": [
+       {
+        "file": "landing-site/src/pages/index.html",
+        "line": 10,
+        "surface": "/ hero",
+        "live": true,
+        "why_live": "home"
+       },
+       {
+        "file": "src/pages/AuthSplit.tsx",
+        "line": 5,
+        "surface": "auth split screens",
+        "live": true,
+        "why_live": "auth routes"
+       }
+      ],
+      "replace_with": "keep"
+     },
+     {
+      "path": "landing-site/media/closing/",
+      "kind": "image",
+      "classification": "coin-closer",
+      "looks_like": "coins-1200.webp / coins-720.webp RGBA: green 7-coin stack with its own soft shadow",
+      "used_by": [
+       {
+        "file": "landing-site/src/partials/closing.html",
+        "line": 5,
+        "surface": "closing CTA, 9 pages",
+        "live": true,
+        "why_live": "partial"
+       }
+      ],
+      "replace_with": "keep"
+     },
+     {
+      "path": "landing-site/media/macbook/",
+      "kind": "sequence",
+      "classification": "macbook",
+      "looks_like": "120+120 WebP frames of a silver MacBook opening on near-black, plus still.webp",
+      "used_by": [
+       {
+        "file": "landing-site/walkthrough.js",
+        "line": 22,
+        "surface": "/ walkthrough",
+        "live": true,
+        "why_live": "home"
+       }
+      ],
+      "replace_with": "keep"
+     }
+    ],
+    "unreferenced_old": [
+     "landing-site/media/hero.webm",
+     "landing-site/media/hero.mp4",
+     "landing-site/media/hero-white.mp4",
+     "landing-site/blender/orig/media/build.mp4",
+     "landing-site/blender/orig/media/find.mp4",
+     "landing-site/blender/orig/media/hero.mp4",
+     "landing-site/blender/orig/media/recover.mp4",
+     "landing-site/blender/hero.py (script; outputs unreferenced)",
+     "landing-site/blender/orig/ (archive scripts)",
+     "landing-site/blender/v3/ (byte-identical copy of current looklib/hero/solutions)",
+     "landing-site/blender/explore/ (exploration scripts, nothing ships)"
+    ],
+    "notes": "PIPELINE MAP (script -> look -> output -> where it ships)\n- NEW (target): exhibit_common.py + exhibit_{echo,overflow,piece,shadow}.py -> out/ex/<name>/still.png -> exhibit_encode.py -> landing-site/media/exhibits/<name>/still.webp + still-m.webp -> / home finds tiles (src/pages/index.html:401-404) and recovery-summary icons (styles.css:640-643). exhibit_echo frame 139 -> cutout.py -> media/closing/coins-{1200,720}.webp -> closing partial on 9 pages.\n- KEPT: hero_stack.py (uses exhibit_common) -> media/hero/{d,m}.mp4 + first.webp -> / hero and AuthSplit.tsx:5-7 (every auth route). macbook.py + macbook_encode.py -> media/macbook -> walkthrough.js.\n- OLD, LIVE: solutions.py (DayOS terrazzo/oak/plywood hex blocks, flat accent caps, speckled balls, yellow coins) -> media/{connect,find,build,recover}.{webm,mp4} -> /how-it-works #upload/#find/#evidence/#recover (desktop-only <video data-reel>; reels.js swaps in the mp4 on Safari). onboarding.py + onboardlib.py + render_onboarding.sh (black clay, cream paper, green gem, brass) -> public/onboarding/ (16 scenes x webm/-dark.mp4/-light.mp4/webp, 17 MB) -> /audit Onboarding.tsx (AuditApp.tsx:638) and the Launch cards (Launch.tsx:86,107).\n- OLD, DEAD: hero.py -> media/hero.webm, hero.mp4, hero-white.mp4 (about 22 MB). Nothing references them, but scripts/landingSitePlugin.ts closeBundle copies landing-site/media wholesale, so they still ship in dist. orig/ (with media/*.mp4) and v3/ are archives; v3 is byte-identical to the current looklib/hero/solutions. explore/ outputs go to the gitignored out/explore.\n- NOT FROM THIS PIPELINE but old 3D, LIVE: landing-site/assets/dept-*.png (5) and cs-*.png (3) are AI/DayOS-style renders that no script here produces. They appear on /about, /research, /research/*, /how-it-works #numbers. public/art/*.png and public/generated/reclaim-tutorial/*.jpg are app UI screenshots (out of scope) and are referenced by nothing.\n- STALE DOCS: the blender README says hero.py is the login screen, but AuthSplit plays the hero_stack film. Its 'What these are of' section describes ledger ream/paper/ruled STOCKS that looklib no longer has (commit 10cbf8e had them; a40607d replaced them with DayOS terrazzo). looklib's header and library() are still DayOS.\n\nNEW-STYLE SPEC (from exhibit_common.py, looklib.py and the exhibit scripts; shipped values)\nTooling: Blender 5.2, Cycles, GPU OptiX, run headless with `blender -b --factory-startup --python exhibit_X.py -- key=val ...`. Everything is built from primitives; no model files. This container has no Blender and no GPU, so real renders must be made on the owner's Windows/OptiX machine; mockups here have to be 2D.\n1 Render (K.setup_render + stage): 1280x720 film (res=1280, 16:9 forced in stage()), 60 fps. Samples spp=48 for the shipped run (code default 64; hero 64; closing 128). Adaptive sampling threshold .012. OpenImageDenoise on GPU. filter_width 1.0. Bounces: max 6, diffuse 3, glossy 3, transparent 4. Transparent film. Motion blur on, shutter .5 (off for the still). Persistent data. View transform 'Khronos PBR Neutral', look None, exposure 0. PNG RGBA, 8-bit, compression 30.\n2 Light: world colour #f1eeea at strength .12 (fill=.12). One key SUN aimed from direction (.5,-.55,.7), i.e. from front-right (camera on -Y) at about 43 deg elevation; energy 5.0, angle 2.0 deg, which gives a crisp edge with a small penumbra. Shadows fall back-left about 1.06x object height long. Floor: a 600 m plane, is_shadow_catcher=True. Shadow depth: a second shadowless sun 'floor_lift' light-linked to the floor only, energy = sunE*sun_dir.z*(1-shade)/shade; shade=.32 for tiles (code default .38), .22 for cutouts on white pages, .36 for the hero. Objects can sit a hair above the floor (shadow uses LIFT .1) so the shadow separates.\n3 Materials (K.plain): Principled BSDF with the base colour given as sRGB hex (converted to linear), roughness .45 (the 'rough' arg), Specular IOR Level .45, no coat. A noise texture at scale 240 on per-object-offset object coords drives a bump (strength .05, distance .002): an invisible satin grain, so the surface reads as untextured. Never use K.library()/terrazzo/wood/plywood. One saturated hue per tile. The single secondary material is a near-white tinted toward that hue, at roughness .5: '#fff3ea' (apricot cup), '#f1edff' (lilac tray). The mint and sky tiles use no secondary; for new ones derive something like #eefbf3 / #ecf6fd (proposed, not in code). Echo's coin edge adds K.reeded(freq 120, depth .4) milled grooves. Geometry: soft, simple, one-segment bevels limited to 30 deg angles (.01-.03 wide: coins .01, plates .02, tray .03, keys .022, cup rim .015); smooth shading on round walls; shade_smooth_by_angle 35 deg after booleans.\n4 Hues (PALETTES name: floor/meta bg, stock base colour; CSS floor/ink in styles.css:601-604; site target colour; measured in still lit/mid/shade):\n mint: c4e9d3, #2fee76; CSS rgb(196 234 212)=#c4ead4, ink #0c3a23; target #00fd74; measured #63fa8e / #28ee75 / #22cb57.\n apricot: f6cfb2, #f66535; CSS #f6cfb3, ink #4a1d0c; target #ff6838; measured #fb7b60 / #f66d4b / #a92509; secondary #fff3ea renders about #fbf1e9.\n lilac: d8d0f3, #7558f6; CSS #d8d0f2, ink #241858; target #7a5cff; measured #795ef8 / #7153f1 / #3e23b8; secondary #f1edff renders about #ece8f7.\n sky: c2dff2, #00c9f6; CSS #c2dff1, ink #0b2e48; target #00d1ff; measured #53cbf9 / #2bc8f3 / #016693.\n The stocks are chosen so a face square to the sun renders as the site colour (lit = stock x 5 x .69/pi, then PBR Neutral). Tile CSS floors were sampled from the stills; if you change a palette, update them too.\n5 Camera: 100 mm lens, default 36 mm sensor (about 20.4 deg horizontal FOV, near-orthographic), clip .1-300. aim(cam, target, el, dist, az=0) places it on a sphere from the front (-Y) using quaternions. Shipped values: echo el 30 dist 14.4 target (0,0,.62); overflow el 26 dist 19.2 target (.75,0,.95); piece el 36 dist 16.8 target (-.45,0,.5); shadow el 10 rising to 89.5 overhead, dist 14.8 to 14.0, target (0,.42,0). The slow push-in across the film (3-6%) has ended by the still. Framing: frame width is about .36 x dist, so 5-6.7 units. The subject group spans about 33-58% of frame width, centred, sitting slightly low with air above, and the shadow is fully inside the frame. Objects measure about 1.6-3 units across.\n6 Motion (films): 60 fps, 1.9-2.65 s, wrong to right, ending at rest. Eases are cubic-bezier: out (.16,1,.3,1) for arrivals, inOut (.65,0,.35,1) for A to B, swoop (.83,0,.17,1) for camera, in (.7,0,.84,0) for exits, plus spring(duration, bounce) and arc(). bake() keys location/rotation/scale every frame with linear interpolation so motion blur sees the true path.\n7 Output naming: render() writes out/<dir>/f_0001.png.. plus meta.json {bg, fps, frames}. With still=1 stillres=2560 it then renders the last frame (the resting pose) with motion blur off at 2560x1440 to still.png. frames=a,b,c writes <prefix>_<NNN>.png test frames instead (e.g. echo_139.png).\n8 Encode (exhibit_encode.py src=out/ex dst=../media/exhibits [only=name stills=0]): each frame is laid over the floor colour in display space, with the catcher veil (alpha < .02, eased to .05) removed. Writes still.webp 2560 q84, still-m.webp 1600 q84, first.webp 1280 q80, and H.264 d.mp4 1280 / m.mp4 960 (crf preset HIGH, ffmpeg preset BEST, gop = fps). Only the stills are published to media/exhibits/<name>/; delete the films and posters a re-encode writes there.\nSTILL vs LOOP: (a) Tile still (the target): `exhibit_X.py -- out=out/ex/X spp=48 still=1 stillres=2560 shade=.32`, then exhibit_encode. Page: <img src=still.webp srcset still-m 1600w / still 2560w> on a tile whose background is the floor colour. (b) Transparent cutout for white pages: `frames=<last> res=2560 spp=128 shade=.22`, then cutout.py widths=1200,720 (RGBA WebP q90, alpha cut .1, pad .06). (c) Opaque seamless loop: follow hero_stack.py. Frame 1 equals the last frame; every move starts and ends at rest; the camera stays fixed or returns; film() copies unchanged frames. Encode with exhibit_encode only=<name> stills=0 to d.mp4/m.mp4/first.webp. Page: <video autoplay loop muted playsinline poster=first.webp> with an m.mp4 <source media=(max-width:767px)> and a ?v= cache tag. (d) Transparent loop: encode.py src=DIR prefix=f out=X.webm crf=31 size=W fps=60, plus bg=RRGGBB MP4s and poster.py. Watch out: encode.py defaults to fps=30 and gop 30. On a dark canvas the catcher shadow vanishes, so for the app's dark theme use (c) or a tile, not (d).\nGOTCHAS: stage() forces 16:9, so set sc.render.resolution_x/y after it for square (cs-* 1024, onboarding icons 400) or 4:3 (cards 640x480), as hero_stack does. A new hue must be added to PALETTES and to styles.css. Pass the secondary material explicitly. Blender resolves relative paths against the drive root on Windows (the scripts already make paths absolute).\n\nRE-SHOOT CANDIDATES (shipping OLD assets) + effort. Times assume authoring a new 50-120-line script modelled on exhibit_shadow.py/exhibit_piece.py. A tile still renders in about 1-2 min (2560, spp 48, OptiX); a film runs a few s/frame x about 140 frames. Overflow-style rigid-body pieces take longest.\n1 /how-it-works 4 loops (solutions.py; live, desktop-only, white sections, about 425px). Connect = sky (blue blocks filing into a white tray), Find = apricot (one coral bead lifted from a white bowl), Evidence = lilac (a violet card/key drawn from a white stack), Recover = mint (green coins settling into a white dish). About 0.5 day each as stills, 1 day each as loops. Plus about 2 h to swap <video data-reel ...webm> for an <img>/<video> tile. Total about 2.5-4 days.\n2 Onboarding, public/onboarding (16 live scenes). 7 card icons (400 sq; ic_duplicate can reuse echo, ic_credit can reuse piece): 0.25-0.5 day each as stills, about 1 day as loops. 2 Launch cards (640x480): 0.5-1 day each. 7 stage pieces (welcome/business/tools 960 sq, how/data 1440x640 three-beat, finale_in/finale 1280x800, which must join seamlessly): 1-2 days each as loops, or about 0.5 day each as stills. Plus about 0.5 day of Reel.tsx/onboarding.css work to ship opaque tiles instead of alpha WebM. Total about 6-15 days depending on still vs loop.\n3 Non-pipeline AI renders (live): dept-* x5 (1376x768, fits the 16:9 default) and cs-* x3 (square). About 0.5 day each (about 4 days), or near zero by reusing the four exhibit stills and the coin cutout where the meaning fits.\n4 hero.webm/hero.mp4/hero-white.mp4 and orig/media: delete, no re-shoot.\n\nScratch contact sheets: /tmp/claude-0/-home-user-AP-Leak-Finder/7a32b480-9194-5f00-baae-20a1ca3f0020/scratchpad/audit/pipeline/sheet_oldloops.png, sheet_new.png, sheet_onboarding.png, sheet_assets.png, sheet_tutorial_art.png (same folder)."
+   }
+  },
+  {
+   "key": "archives",
+   "result": {
+    "items": [
+     {
+      "path": ".preview-pre-v2/src/assets/landing",
+      "kind": "image",
+      "classification": "ai-generated-scene",
+      "looks_like": "15 files at the folder root (reclaim-*-atmosphere/world/ledger/vellum/warehouse/ivory/motto). They are AI-generated mood plates: a dark botanical bouquet (lily, dahlias) on black, a red and pink floral close-up, dark green mist on torn paper, dark vellum sheets, a dark desk with ledgers and a receipt roll, a warehouse shelf with a kraft envelope and ledgers, cream plaster with stationery and a binder clip. There are also grey matte-clay 'geometric world' dioramas (arches, cylinders, steps, cubes, one with a green glow) and a black-ring/glass-disc still life.",
+      "used_by": [
+       {
+        "file": ".preview-pre-v2/src/components/landing/LandingPage.tsx (+ landing-*.css)",
+        "surface": "Old pre-v2 React landing, kept as an archive snapshot",
+        "live": false,
+        "why_live": "Archive copy of an earlier app. Nothing builds or serves .preview-pre-v2: tsconfig.app includes only src/, Vite builds only the root index.html, and landingSitePlugin copies only landing-site/. Vercel and the Dockerfile ship only dist/. Reachable only by typing the path into the local Vite dev server."
+       }
+      ],
+      "replace_with": "remove (archive). Byte-identical originals are still in src/assets/landing/; whether anything live imports them is for the src/ audit."
+     },
+     {
+      "path": ".preview-pre-v2/src/assets/landing/backgrounds",
+      "kind": "image",
+      "classification": "ai-generated-scene",
+      "looks_like": "10 AI-generated cream textures: plaster, limestone, linen, chalk, cotton and deckle paper (webp/jpg/png). Two have a white folder, paper clip and mint tab tucked into the corner.",
+      "used_by": [
+       {
+        "file": ".preview-pre-v2/src/components/landing/landing-light.css, landing-system.css, landing-reference.css",
+        "surface": "Section backgrounds on the old pre-v2 React landing (hero, motto, workflow, pricing)",
+        "live": false,
+        "why_live": "Archive only. Never built or copied to dist."
+       }
+      ],
+      "replace_with": "remove (archive). Identical copies are in src/assets/landing/backgrounds."
+     },
+     {
+      "path": ".preview-pre-v2/src/assets/landing/scenes",
+      "kind": "image",
+      "classification": "ai-generated-scene",
+      "looks_like": "17 AI-generated cream-plaster stationery scenes: a black notebook with papers and a binder clip, a document stack on a shelf, blank pricing plates, and cut-out embossed pricing-card and dog-eared document objects on transparency.",
+      "used_by": [
+       {
+        "file": ".preview-pre-v2/src/components/landing/LandingPage.tsx, landing-system.css",
+        "surface": "Hero, pricing, evidence and FAQ plates on the old pre-v2 React landing",
+        "live": false,
+        "why_live": "Archive only."
+       },
+       {
+        "file": "scripts/prepare_landing_scene_plates.py",
+        "surface": "One-off crop script; it points at src/assets/landing/scenes, not this archive",
+        "live": false,
+        "why_live": "Dev tooling, never run by the build."
+       }
+      ],
+      "replace_with": "remove (archive). Identical copies are in src/assets/landing/scenes. Also delete scripts/prepare_landing_scene_plates.py."
+     },
+     {
+      "path": ".preview-pre-v2/src/assets/landing/fresh-desktop + optimized + generated",
+      "kind": "image",
+      "classification": "ai-generated-scene",
+      "looks_like": "About 60 photoreal AI cut-out desk props for a collage desktop: red binder clip, blue and yellow washi tape, a polaroid of a cafe, a coffee cup with ring stains, a receipt strip, a green cutting mat, green felt, a green check token, a MacBook corner, a paper stack, city map sheets, a black dial timer, a paper clip, aged, torn and folded letters, a yellow sticky note and a black ink-paper footer. Full-size PNGs plus 1x/2x WebPs.",
+      "used_by": [
+       {
+        "file": ".preview-pre-v2/src/components/site/SiteLanding.tsx, site.css",
+        "surface": "Old SiteLanding 'fresh desktop' collage landing (archive)",
+        "live": false,
+        "why_live": "Archive only."
+       }
+      ],
+      "replace_with": "remove (archive). Identical copies are in src/assets/landing/{fresh-desktop,optimized,generated}."
+     },
+     {
+      "path": ".preview-pre-v2/src/assets/app/evidence-room.webp",
+      "kind": "image",
+      "classification": "ai-generated-scene",
+      "looks_like": "A dark olive plaster wall with a torn cream paper corner, used as a moody app background.",
+      "used_by": [
+       {
+        "file": ".preview-pre-v2/src/components/audit/app-world.css",
+        "line": 41,
+        "surface": "Background of the old pre-v2 audit workspace",
+        "live": false,
+        "why_live": "Archive only."
+       }
+      ],
+      "replace_with": "remove (archive). An identical copy is at src/assets/app/evidence-room.webp."
+     },
+     {
+      "path": ".preview-pre-v2/src/assets/brand + .preview-pre-v2/public/*.svg",
+      "kind": "image",
+      "classification": "logo-icon",
+      "looks_like": "A black R monogram PNG, a 'Reclaim.' wordmark PNG, and favicon, logo, mark and icon-sprite SVGs.",
+      "used_by": [
+       {
+        "file": ".preview-pre-v2/src/components/site/SiteLanding.tsx",
+        "surface": "Old pre-v2 site header (archive)",
+        "live": false,
+        "why_live": "Archive only. All but favicon.svg are byte-identical to files in src/assets/brand and public/."
+       }
+      ],
+      "replace_with": "n/a (out of scope; goes when the archive folder is deleted)"
+     },
+     {
+      "path": "night-report",
+      "kind": "image",
+      "classification": "app-screenshot",
+      "looks_like": "52 PNG screenshots from 2026-09-24 (before/, after/, landing-refine/): auth pages, 404, launch and upload dialogs, the dashboard, and full landing pages. The auth and home shots show the old 3D, a column of oak, terrazzo and white hex blocks with green, pink and yellow faces. The home cards show the old wedge, hex and disc loops.",
+      "used_by": [
+       {
+        "file": "night-report/README.md",
+        "surface": "Linked from the night report only",
+        "live": false,
+        "why_live": "Not referenced by any build input, not copied to dist, and not served. It is tracked in git but not in .dockerignore, so it enters the Docker build stage only, never the runtime image."
+       }
+      ],
+      "replace_with": "n/a (historical record of the old look). Delete with the folder or keep as history. section-map.md is useful input for the replacement plan (it lists every 3D slot with its size and background)."
+     },
+     {
+      "path": "docs/dashboard-review",
+      "kind": "image",
+      "classification": "app-screenshot",
+      "looks_like": "37 JPG before/after screenshots of the workspace (Overview, Findings, Case detail, Plans, Reports, Settings, Start audit) in light and dark, desktop and phone. No 3D imagery.",
+      "used_by": [
+       {
+        "file": "docs/dashboard-review.md",
+        "surface": "Review doc only",
+        "live": false,
+        "why_live": "docs/ is in .dockerignore and is never copied to dist."
+       }
+      ],
+      "replace_with": "n/a (no old imagery)"
+     },
+     {
+      "path": "landing-v2/comps",
+      "kind": "image",
+      "classification": "other",
+      "looks_like": "3 unbuilt landing comps in an Apple-like white layout with a blue accent: a hero with floating 3D invoice papers, a 'From flagged to settled' case-story card UI, and 'Take a closer look' with an invoice-and-check paper render. They match neither the old block family nor the exhibit family.",
+      "used_by": [],
+      "replace_with": "n/a (abandoned direction, not served). Delete or keep as reference."
+     },
+     {
+      "path": "landing-site/blender/orig/media",
+      "kind": "video",
+      "classification": "old-generated-3d",
+      "looks_like": "4 MP4 loops of the original DayOS-style block family (looklib terrazzo, oak and plywood materials) as committed in HEAD. build: triangular wedges, orange/cyan on top and striped terrazzo/oak on the sides, form a hexagon that splits around a white ball (on black). find: a cluster of hexagonal tiles (grey, orange, lime, pink, oak, terrazzo) with a white ball. hero: a tall column of hex blocks (oak, dark wood, terrazzo, yellow, green, pink) bursting apart on #e5e5e5. recover: a stack of discs (lime top, pink, oak, terrazzo, grey) tilting apart. In the working tree, find/hero/recover.mp4 are currently overwritten, uncommitted, with one identical 4 s cut of the wedge scene; see notes.",
+      "used_by": [
+       {
+        "file": "landing-site/blender/orig/README.md",
+        "surface": "Docs only",
+        "live": false,
+        "why_live": "landingSitePlugin.ts:78 excludes blender/ from the dist copy and from dev serving, .dockerignore excludes landing-site/blender, and no page references orig/media."
+       }
+      ],
+      "replace_with": "remove (delete landing-site/blender/orig entirely, with its looklib/hero/solutions generators)"
+     },
+     {
+      "path": "landing-site/media/hero.webm, landing-site/media/hero.mp4, landing-site/media/hero-white.mp4",
+      "kind": "video",
+      "classification": "old-generated-3d",
+      "looks_like": "The old coin/hex-column hero: a tall column of oak, terrazzo and dark-wood hex blocks with yellow, green and pink faces bursting apart. The WebM has alpha, hero.mp4 is on #e5e5e5 and hero-white.mp4 is on white. 22 MB total.",
+      "used_by": [
+       {
+        "file": "scripts/landingSitePlugin.ts",
+        "line": 78,
+        "surface": "No surface. closeBundle copies all of landing-site/ except src/blender/notes/README/BEFORE-DEPLOY/build.cjs/serve.cjs into dist, so these ship and are served at /media/hero.webm|.mp4 and /media/hero-white.mp4 in production. The dev middleware (ASSET_PREFIXES '/media/', line 40) serves them too.",
+        "live": false,
+        "why_live": "SERVED BY ACCIDENT. They are in dist and reachable by direct URL, but no landing page, landing JS, React file or index.html references them. The hero now plays media/hero/d.mp4 and m.mp4, AuthSplit uses the same files, and reels.js only swaps .webm to .mp4 for videos that a page references."
+       }
+      ],
+      "replace_with": "remove (delete the three files; nothing references them)"
+     }
+    ],
+    "unreferenced_old": [
+     ".preview-pre-v2/src/assets/landing/*.webp|*.png (15 atmosphere and 'world' plates)",
+     ".preview-pre-v2/src/assets/landing/backgrounds/",
+     ".preview-pre-v2/src/assets/landing/scenes/",
+     ".preview-pre-v2/src/assets/landing/fresh-desktop/",
+     ".preview-pre-v2/src/assets/landing/optimized/",
+     ".preview-pre-v2/src/assets/landing/generated/laptop-corner-v1.png",
+     ".preview-pre-v2/src/assets/app/evidence-room.webp",
+     "landing-site/blender/orig/media/build.mp4",
+     "landing-site/blender/orig/media/find.mp4",
+     "landing-site/blender/orig/media/hero.mp4",
+     "landing-site/blender/orig/media/recover.mp4",
+     "landing-site/media/hero.webm",
+     "landing-site/media/hero.mp4",
+     "landing-site/media/hero-white.mp4",
+     "scripts/prepare_landing_scene_plates.py (tooling for the old AI scene plates, not an image)"
+    ],
+    "notes": "The audit was read-only. Nothing in the repo was edited, and no dev server was started. docs/mockups/ was ignored. Contact sheets and frames are in /tmp/claude-0/-home-user-AP-Leak-Finder/7a32b480-9194-5f00-baae-20a1ca3f0020/scratchpad/audit/archive/ (pp-atmos.png, pp-bg-scenes.png, pp-desktop.png, nr.png, docs-dr.png, landing-v2.png, orig-frames.png, ls-hero.png, frames/).\n\nWHAT SHIPS\n- vercel.json is {}, so Vercel runs `npm run build` and serves dist/.\n- The Dockerfile runtime image copies only server/, src/ (with src/assets removed) and dist/. In production, server/index.ts serves dist/.\n- dist/ is built from three sources:\n  - the Vite build of the root index.html, plus public/;\n  - tsc -b, which covers only src/, vite.config.ts and server/;\n  - landingSitePlugin.closeBundle, which copies everything under landing-site/ except src, blender, notes, README.md, BEFORE-DEPLOY.md, build.cjs and serve.cjs.\n- So none of the scope folders ship: .preview-pre-v2, night-report, docs, landing-v2, experiments, demo, plans, landing-site/blender/orig, landing-site/notes and scripts.\n- demo/ builds only through vite.demo.config.ts and vite.onboarding-demo.config.ts, which output to demo-dist/ and demo-onboarding-dist/. Both are gitignored and dockerignored, and no npm script or deploy builds them.\n- demo/ has no images of its own. It mounts the real AuditApp, so it shows whatever /audit shows, which is for the src/ and public/ audit.\n- On the local Vite dev server, any project-root file can be fetched by path (for example /night-report/after/site-home.png). Nothing links to them, and this does not happen in production.\n\nACCIDENTAL SERVING (the main flag)\n- landing-site/media/hero.webm, hero.mp4 and hero-white.mp4 (22 MB, the old hex-column hero) are copied into dist by the blanket landing-site copy. They are publicly reachable at /media/hero*, but nothing references them. Delete them.\n- Structural risk: the same blanket copy ships every file left in landing-site/media/ and landing-site/assets/. Old renders keep shipping until they are deleted or excluded.\n- The adjacent old imagery is still LIVE. This is for the landing-site auditor, and plan 002's D8 already names it:\n  - landing-site/media/{connect,find,build,recover}.webm play on How It Works (how-it-works.html lines 48, 118, 186, 281).\n  - Their .mp4 twins are served to Safari through the reels.js swap.\n  - landing-site/assets/dept-*.png and cs-*.png are on About, Research and How It Works.\n\nDUPLICATES IN THE LIVE TREE\n- 109 of the 110 image files under .preview-pre-v2 are byte-identical to files still in src/assets/ or public/. The only exception is the old favicon.svg.\n- Deleting .preview-pre-v2 therefore does not remove the old AI imagery from the repo. The same botanical, floral, geometric-world, warehouse, vellum, scenes, backgrounds and fresh-desktop files still sit in src/assets/landing/ and src/assets/app/. Whether anything reachable imports them is for the src/ auditor.\n- scripts/prepare_landing_scene_plates.py, and its identical copy in .preview-pre-v2/scripts, crops those src/assets/landing/scenes plates. It is dead tooling and should be deleted with them.\n\nWORKING-TREE ANOMALY (not caused by this audit)\n- landing-site/blender/orig/media/find.mp4, hero.mp4 and recover.mp4 show as modified (git status ' M'). They were overwritten at 2026-10-19 22:59:54 UTC.\n- All three are now the same 745,089-byte, 4 s clip of the orange/cyan wedge scene. HEAD has the real files (6.8 MB hero column, hex-tile find, disc-stack recover).\n- This looks like collateral damage from a concurrent job; the mockup job was writing docs/mockups around the same time.\n- It does not matter if orig/ is deleted as planned. Otherwise, `git checkout -- landing-site/blender/orig/media` restores them. This audit left them alone.\n\nOTHER\n- landing-site/notes, plans, experiments and scripts/qbo-sandbox contain no images (text or code only).\n- landing-site/blender/orig/*.py (looklib terrazzo/oak/plywood materials, hero.py, solutions.py) generated the old block family. Delete them with orig/.\n- plans/002 \u00a72 D8 and \u00a74 A4 already list the old 3D on sub pages and the onboarding black-clay cubes.\n- night-report/section-map.md maps every 3D slot with its box size and background (317px on black, 425px on white, about 1015px hero on grey). That is good input for sizing exhibit-style replacements.\n- src/workspace/WorkObject.tsx points at /media/stills/*.webp. That folder was deleted in 55b50c7, but WorkObject is not imported anywhere, so it is dead code, not a broken image.\n- Hygiene, unrelated to imagery: .dockerignore does not list .preview-pre-v2, night-report, landing-v2 or experiments, so about 90 MB enters the Docker build context. They never reach the runtime image. Also, vitest's default include picks up .preview-pre-v2's tests; night-report notes the `--dir src` workaround."
+   }
+  }
+ ],
+ "verify": {
+  "missed": [],
+  "misclassified": [
+   {
+    "path": "public/generated/reclaim-tutorial/",
+    "reported_as": "app-screenshot (react-app sweep; render-pipeline and archives sweeps agree)",
+    "should_be": "AI-generated UI mock-ups rather than captured screenshots. The closest enum is ai-generated-scene. It is still out of scope and unreferenced, so nothing in the replacement plan changes.",
+    "evidence": "All six are 2752x1536 JPEGs, which is a native image-model output size, with JFIF headers and no EXIF. In 02-evidence-explains-the-flag-v3.jpg the breadcrumb reads 'Findings > Findings > User is opened a sample finding'. That is garbled machine text, and the image shows upscaling halos around the glyphs. The logo is a generic green check-mark next to 'Reclaim', not the app's mark. Crop saved at /tmp/claude-0/-home-user-AP-Leak-Finder/7a32b480-9194-5f00-baae-20a1ca3f0020/scratchpad/audit/verify/tut02_crop.png. This matters for the separate question about the tutorial screens: these are generated stand-ins, not real screens of the app. They were added in 7964a7b (Aditya Yadav, 2026-10-18, the 'Archive ...' commit), and nothing in the repo references them."
+   }
+  ],
+  "wrong_liveness": [
+   {
+    "path": "src/components/NotFoundPage.tsx (the 'React 404' surface listed for landing-site/media/hero/ and code:src/pages/AuthSplit.tsx)",
+    "reported_live": true,
+    "actually_live": false,
+    "evidence": "This applies only in production. The hero media itself stays live through the five auth routes. vercel.json is {}, so Vercel has no SPA rewrite and an unknown path gets Vercel's own 404, not React. On the Node/Docker deploy, server/app.ts serveStatic (around lines 666-683) tries join(base, safe), then safe/index.html, then join(base,'index.html'). But scripts/landingSitePlugin.ts closeBundle (lines 77-82) copies landing-site/index.html over dist/index.html after reading reactIndex, so an unknown path serves the marketing home page. App.tsx never mounts NotFoundPage in prod. It renders only under `vite dev`, where Vite's SPA fallback serves the React index."
+   }
+  ],
+  "notes": "VERDICT: the five sweeps' union is complete for live raster and video references. My own search found no live reference they missed. I found one soft misclassification, one liveness correction (prod-only) and several factual or count errors, all listed below.\n\nMETHOD (read-only; I edited nothing and started no dev server):\n- Ran rg for every media extension across landing-site/ (sources and all 16 built pages, excluding blender/), src/, public/, index.html, server/ and scripts/. I also searched for src=/srcset=/poster=, url(...) in all CSS, import.meta.glob, new URL(, BASE_URL/reelUrl, string paths '/media/', '/assets/', '/onboarding/', '/art/', '/generated/' and '/stills/', JS image loading (new Image, fetch .webp, drawImage), inline style backgrounds, iframe/object/embed/preload/lottie, canvas/WebGL in live React, and HTML or images in emails (server/mailer.ts and gmail.ts are text only).\n- Every resolved hit is already in the union: cs-1..3, dept-*\u00d75, connect/find/build/recover .webm with their .mp4 twins via reels.js:18, media/hero/{d,m}.mp4 and first.webp, the exhibits (index.html:401-404 and styles.css:640-643), closing coins, macbook (walkthrough.js:22-23,147), public/onboarding via Reel.tsx and media.ts, the dead WorkObject /media/stills, the dead SiteLanding glob and brand PNGs, and the dead LandingPage CSS and imports, plus the favicons and og:image.\n- The other live sub-page slots that look like art turned out not to be pictures. /what-it-checks and /pricing article-text-image modules have no .image child. The 110 #hx-wheel uses on /what-it-checks are the logo on the back of each flip card. The /security and /about tiles come from the sprite, and pricing .stages is a CSS rule diagram.\n- Nothing else in live React draws art: there is no <img> or <video> outside Reel.tsx, AuthSplit.tsx and the dead WorkObject, SiteLanding and LandingPage, and there is no canvas.\n\nLOOKED, and every classification held up (contact sheets in /tmp/claude-0/-home-user-AP-Leak-Finder/7a32b480-9194-5f00-baae-20a1ca3f0020/scratchpad/audit/verify/):\n- landing_assets.png: cs-1 slab stack on a pallet, cs-2 puzzle on a board, cs-3 bar chart on a plinth, and the 5 striped dept-* renders. Terrazzo, black clay and oak throughout. Old.\n- reels.png: connect is the green/orange hex chain links, find the rainbow hex posts with a ball, build the cyan/orange wedges round a ball, recover a green/yellow/terrazzo disc stack. The .mp4 twins are over black. hero.webm, hero.mp4 (#e5e5e5) and hero-white.mp4 are the exploding hex block column. Old. The media/hero/d.mp4 frames are the approved record stack.\n- new_set.png and macbook_m.png: the 4 exhibits match the target. Also first.webp, coins-720, and the macbook d/m frames and still.\n- onb_posters.png and onb_mid.png: all 16 public/onboarding loops (posters plus mid-loop frames of the -light.mp4) are black clay cubes with cream paper, a green gem/R coin/flag and a brass stamp. Old.\n- pub_gen_art.png: public/art is 17 crops of the light workspace UI, so app-screenshot is correct. On public/generated, see misclassified.\n- src_assets.png: the src/assets/landing root (13), app/evidence-room, scenes, backgrounds and optimized samples are AI scenes, and landing-v2/comps are Apple-style comps. All as reported.\n\nLIVENESS RE-TRACED:\n- Live old items, confirmed:\n  - The 8 PNGs on /how-it-works, /about, /research and the 4 articles. Their image halves are visible at every width: pages.css:235 and :268 only resize the slot.\n  - The 4 reels on /how-it-works, at 1024px and wider only (styles.css:126 hides .desktop-only). On Safari they swap to the .mp4 twins, which the lighten blend at styles.css:1115 washes out on the white rounded sections.\n  - The 16 onboarding loops in /audit and /scanner:\n    - Onboarding.tsx:30-38 runs 8 steps (welcome :159, goals cards :184, business :205, tools :240, how :285, autonomy :309, data :331, finale_in/finale :153). It opens from AuditApp.tsx:109-110 and :638, and again from Settings via AuditApp.tsx:846.\n    - The follow_up card with ic_approve still renders its reel; it only gets a 'Coming later' badge.\n    - Launch is rendered at AuditApp.tsx:688, with card_upload at Launch.tsx:86 and card_sample at :107.\n    - onboarding.css never hides a reel slot at any breakpoint (lines 250, 419, 462, 497).\n- Dead items, confirmed:\n  - App.tsx has no popstate listener and renders once. '/' is served by landing-site in dev (landingSitePlugin middleware) and in prod (dist/index.html overwritten), so SiteLanding is unreachable.\n  - Nothing imports LandingPage or anything else in src/components/landing.\n  - WorkObject.tsx and objects.ts have no importer; data-object, wk-screen-head and wk-case-cause appear only in WorkObject.tsx.\n  - media/hero.webm, hero.mp4 and hero-white.mp4 are referenced only by the blender READMEs. They still ship, because closeBundle copies landing-site/media wholesale.\n  - public/art and public/generated have no references but ship through Vite's default publicDir.\n  - SiteLanding's eager import.meta.glob still emits the optimized/*.webp and brand PNGs into dist/assets.\n  - ogl is used only by the dead SideRays.tsx:109.\n\nFACTUAL OR COUNT ERRORS IN THE SWEEPS (none changes the plan):\n- react-app says '21 loops x 4 files'. public/onboarding actually holds 16 loops (64 files, 17 MB). code-drawn's '17 posters' should be 16.\n- marketing says the old imagery sits on '27 live slots on 8 routes'. The 27 slots are right (4 reel, 15 stat, 8 research-card) but there are 7 routes: /how-it-works, /about, /research and the 4 articles.\n- marketing says AuthSplit is used only by Signup and VerifyEmail. It is used by Login, Signup, ForgotPassword, ResetPassword, VerifyEmail and NotFoundPage, which is dev-only in prod (see wrong_liveness).\n- react-app's 'fresh-desktop 25 PNGs' should be 24.\n- code-drawn says orig/media is '3.4 MB'. That is the current modified working tree; HEAD is about 9.5 MB.\n- I confirmed the working-tree anomaly the archives sweep reported. landing-site/blender/orig/media/{find,hero,recover}.mp4 have been overwritten, uncommitted, with the same 745,089-byte file (md5 03b2a8c3\u2026, mtime 22:59:54). HEAD blobs are 936,511, 6,814,608 and 500,328 bytes. I left them untouched.\n- I confirmed the /research vs /about thumbnail mismatch for improper-payments: dept-freight at research/index.html:132, dept-inventory at about.html:249.\n- landing-site/blender/v3/{looklib,hero,solutions}.py are byte-identical to the current scripts.\n\nSLOT SIZES FOR THE REPLACEMENT PLAN (pages.css):\n- how-it-works step art: 1:1, scaled 1.4x (:204, :277).\n- Stat-card image half: 300:400 portrait with object-fit cover (:235). The landscape dept-* are cropped hard into it today.\n- /research list thumbnail: 16rem wide, stretched height on desktop, 327:180 on mobile (:391, :563).\n- /about carousel thumbnail: 411:211 (:405).\n- Onboarding: cards 400 square, stage 960 square, wide 1440x640, finale 1280x800, Launch 640x480.\n\nOTHER:\n- plans/002 already lists this exact set (D8, A4), and notes that /what-it-checks would need a fifth exhibit (payment mismatch) if its checks become exhibit tiles. That is a new slot, not old imagery.\n- landing-site/README.md:79 ('media/ the 3D loops') and landing-site/blender/README.md:122-123 are stale."
+ }
+}
