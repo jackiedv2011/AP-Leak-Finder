@@ -1,9 +1,10 @@
 import { useEffect, useLayoutEffect, useRef, type MouseEvent, type ReactNode } from 'react'
 import '@/pages/authSplit.css'
 
-/** Safari plays WebM but drops its alpha, so it gets the loop baked over the page's white. */
-const SAFARI = /^((?!chrome|chromium|android|crios|fxios|edg).)*safari/i.test(navigator.userAgent)
-const HERO_SRC = SAFARI ? '/media/hero-white.mp4' : '/media/hero.webm'
+/** The landing hero's film: the record stack pulling out its sheets, on the hero's grey floor. */
+const HERO_FILM = '/media/hero/d.mp4?v=stack1'
+const HERO_FILM_SMALL = '/media/hero/m.mp4?v=stack1'
+const HERO_POSTER = '/media/hero/first.webp?v=stack1'
 
 /** The six kites of the Reclaim hexagon, as the marketing site's #hx-wheel symbol. */
 const WHEEL = [
@@ -50,7 +51,7 @@ export function SplitField({ id, label, error, hint, children }: SplitFieldProps
 }
 
 interface AuthSplitProps {
-  /** The big condensed heading, one entry per line. */
+  /** The big display heading, one entry per line, in sentence case. */
   title: string[]
   /** Heading lines this long need the smaller size to fit the panel. */
   titleSize?: 'long'
@@ -62,7 +63,7 @@ interface AuthSplitProps {
 
 /**
  * The log-in and sign-up pages, set in the marketing site's system: the hero's
- * 3D loop on white (60%), and the black rounded section that follows the hero,
+ * record-stack film on its grey floor (60%), and the ink rounded section that follows the hero,
  * turned on its side (40%). It fades in like the site's pages, and fades out
  * before following any of its own links.
  */
@@ -71,7 +72,8 @@ export function AuthSplit({ title, titleSize, lede, alternate, children }: AuthS
   const root = useRef<HTMLDivElement>(null)
 
   // index.html sets this for the known account routes before first paint; pages that can't be
-  // known ahead of routing (the 404) set it here, so the fade-in runs over the site's grey.
+  // known ahead of routing (the 404) set it here, so the fade-in runs over the site's grey, which
+  // is also the film's floor.
   useLayoutEffect(() => {
     document.documentElement.dataset.route = 'auth'
   }, [])
@@ -109,7 +111,10 @@ export function AuthSplit({ title, titleSize, lede, alternate, children }: AuthS
     <div className="rc-login" ref={root} onClick={handleLinkClick}>
       <div className="rc-login-stage">
         <div className="rc-login-reel" aria-hidden="true">
-          <video ref={reel} src={HERO_SRC} autoPlay loop muted playsInline preload="auto" />
+          <video ref={reel} poster={HERO_POSTER} autoPlay loop muted playsInline preload="auto">
+            <source src={HERO_FILM_SMALL} type="video/mp4" media="(max-width: 767px)" />
+            <source src={HERO_FILM} type="video/mp4" />
+          </video>
         </div>
         <header className="rc-login-top">
           <a href="/" className="rc-logo" aria-label="Reclaim home">

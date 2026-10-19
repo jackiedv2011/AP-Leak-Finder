@@ -45,11 +45,11 @@ export function VerifyEmailPage() {
   }, [token, verifyEmail])
 
   if (state.kind === 'working') {
-    return <AuthSplit title={['Confirming']} lede="Confirming your email. One moment." />
+    return <AuthSplit title={['Confirming']} titleSize="long" lede="Confirming your email. One moment." />
   }
 
   if (state.kind === 'done') {
-    return <AuthSplit title={['Confirmed']} lede="Email confirmed. Taking you to your dashboard." />
+    return <AuthSplit title={['Confirmed']} titleSize="long" lede="Email confirmed. Taking you to your dashboard." />
   }
 
   return (
