@@ -17,6 +17,7 @@
 /* hero: the lead-in sits above the fact, quieter, same face */
 .about-hero .about-pre { position: relative; z-index: 1; grid-column: 1 / span 7; margin-bottom: 2rem; color: var(--cl-grey-500); }
 .about-hero .kit-hero-eyebrow { margin-bottom: 2.4rem; }
+.about-hero .heading { grid-column: 1 / span 8; font-size: 9.2rem; }   /* a longer sentence than the landing's: a step down, so it keeps its three lines */
 
 /* ink: the statement, then the three tiles the paragraph names */
 .about-statement .header .desc { max-width: calc(var(--grid-column-width) * 7 + var(--grid-column-gap) * 6); color: color-mix(in srgb, var(--cl-white) 72%, transparent); }
@@ -34,8 +35,8 @@
 /* the AP rates */
 .about-headline { margin-top: 2.4rem; font-size: 3.2rem; font-weight: 500; letter-spacing: -.03em; line-height: 1.25; }
 .about-rates .kit-block-head { grid-column: 1 / span 9; }
-.about-after { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); column-gap: var(--grid-column-gap); margin-top: 6.4rem; }
-.about-after p { grid-column: 7 / span 5; color: var(--cl-grey-500); font-size: 1.8rem; line-height: 1.45; letter-spacing: -.005em; }
+.about-after { max-width: 64rem; margin-top: 6.4rem; }
+.about-after p { color: var(--cl-grey-500); font-size: 1.8rem; line-height: 1.45; letter-spacing: -.005em; }
 .about-after .about-after-last { margin-top: 1.6rem; color: var(--cl-black); font-weight: 500; }
 
 /* the quote: one sentence large, the rest under it in body size */
@@ -46,6 +47,11 @@
 
 @media (max-width: 1023px) {
   .about-hero .about-pre { grid-column: 1 / -1; margin-bottom: 1.2rem; font-size: 2.2rem; }
+  .about-hero .heading { grid-column: 1 / -1; font-size: 5rem; }
+  .about-hero .heading br, .about-statement .heading br { display: none; }   /* phones: let the sentence flow, no orphans */
+  .kit-tiles.is-3.about-tiles { grid-template-columns: 1fr; gap: .8rem; }
+  .kit-tiles.about-tiles .fd-tile > img { aspect-ratio: 16 / 9; }
+  .kit-tiles.about-tiles .fd-tile { border-radius: 1.8rem; }
   .about-tiles { margin-top: .8rem; }
   .about-beliefs { padding-block: 6.4rem 0; }
   .content-columns .columns.about-cols { display: grid; grid-template-columns: 1fr; gap: 3.2rem; grid-column: 1 / -1; }
@@ -53,7 +59,7 @@
   .about-cols-head { margin-bottom: .8rem; }
   .about-cols-desc { font-size: 1.6rem; margin-top: 1.6rem; }
   .about-headline { font-size: 2.2rem; }
-  .about-after { display: block; margin-top: 4rem; }
+  .about-after { margin-top: 4rem; }
   .about-after p { font-size: 1.6rem; }
   .about-quote { padding-block: 8rem 2.4rem; }
   .about-quote-body { grid-column: 1 / -1; padding-top: 2.4rem; }
@@ -165,7 +171,7 @@
     <div class="content the-grid">
       <p class="kit-eyebrow kit-hero-eyebrow">About</p>
       <p class="about-pre type-h4">Reclaim was built on one fact:</p>
-      <h1 class="heading heading1 type-h1">Money that leaves<br>by mistake leaves<br>a <em>record.</em></h1>
+      <h1 class="heading heading1 type-h1">Money that leaves <br>by mistake <br>leaves a <em>record.</em></h1>
       <div class="desc">
         <p class="type-body-large">Why Reclaim exists, what we believe about accounts payable, and the published research behind it. Every figure on this page links to the organization that published it.</p>
         <div class="hero-ctas">
@@ -187,7 +193,7 @@
         <div class="the-grid">
           <div class="header" theme="black" style="grid-column-end:span 8">
             <p class="kit-eyebrow">Who we are</p>
-            <h2 class="heading type-h2">We build one thing<br>and build it <em>properly.</em></h2>
+            <h2 class="heading type-h2">We build one thing <br>and build it <em>properly.</em></h2>
             <div class="desc type-body-large">
               <p>Reclaim reads the records your accounting system already holds — bills, payments, vendors, credits — and shows where the same invoice went out twice, where a payment came to more than the bill, and where a credit was issued and never used. Then, with your approval, it asks the vendor for the money back and follows the case until it has actually arrived.</p>
             </div>

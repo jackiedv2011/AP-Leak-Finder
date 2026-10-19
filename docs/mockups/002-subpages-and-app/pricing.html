@@ -53,8 +53,9 @@
   .pp-ledger .pl-fill { transform: none; }
   .pp-ledger .is-us .pl-fill { grid-column: 1 / 4; }                    /* green runs to the counted stage, not past it */
   .pp-ledger .is-us .pl-node:nth-child(8) { border-color: var(--cl-grey-500); }   /* 05 Reconcile: after the money, no green */
-  .pp-ledger .pl-steps li:nth-child(4) strong { color: var(--cl-reclaim); }
-  .pp-ledger .pl-steps li:nth-child(4) { border-top-color: var(--cl-reclaim); }
+  .pp-ledger .pl-steps li:nth-child(4) strong { color: var(--cl-reclaim); }   /* the one stage that is money back */
+  /* the plans' paper ends clear of the ink rising over it */
+  .pp-paper-plans .rs-scale { padding-bottom: calc(var(--rounded-margin) + 14rem); }
 
   @media (max-width: 1023px) {
     .pp-hero.kit-hero { min-height: 0; }
@@ -70,6 +71,7 @@
     .pp-plan .pp-cta { margin-top: 2.4rem; }
     .pp-terms { margin-top: 4rem !important; }
     .pp-pilot { flex-direction: column; align-items: flex-start; gap: 2.4rem; margin-top: 4rem; padding: 2.8rem 2.4rem; }
+    .pp-paper-plans .rs-scale { padding-bottom: calc(var(--rounded-margin) + 6.4rem); }
     .pp-ledger .header { grid-column: 1 / -1; }
     .pp-ledger .pipeline { margin-top: 4.8rem; }
     /* vertical track: green rail up to 04 Recovered (filled), grey after it */
@@ -187,7 +189,7 @@
   </section>
 
   <!-- PAPER — the plans rise straight over the grey hero (no ink here: the plans come first on a pricing page) -->
-  <div class="rounded-section kit-paper" theme="white">
+  <div class="rounded-section kit-paper pp-paper-plans" theme="white">
     <div class="bg bg-top" theme="grey"></div>
     <div class="bg bg-bottom" theme="white"></div>
     <div class="rs-scale" theme="white">

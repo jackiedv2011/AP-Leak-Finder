@@ -32,16 +32,17 @@
 .sec-points h3 { margin-top: .2rem; font-size: 1.7rem; font-weight: 600; letter-spacing: -.02em; line-height: 1.3; }
 .sec-points p { grid-column: 2; margin-top: .4rem; color: var(--cl-grey-500); font-size: 1.5rem; line-height: 1.45; letter-spacing: -.005em; }
 .sec-points .closing-ico { grid-row: span 2; }
-#evidence .kit-step-row { align-items: start; }
-#evidence .kit-step-fig { position: sticky; top: 12rem; }
+#reads, #evidence { clip-path: none; }   /* let the cards' soft shadows fall past the section edge */
 @media (max-width: 1023px) {
   .sec-card .ex-sum-row { grid-template-columns: 4.4rem minmax(0, 1fr); }
   .sec-card .ex-sum-what { padding-top: .2rem; }
-  .sec-evidence .ex-sum-row { grid-template-columns: 4.4rem minmax(0, 1fr) auto; }
+  .sec-evidence .ex-sum-row { grid-template-columns: 4.4rem minmax(0, 1fr) auto; align-items: start; }
+  .sec-evidence .ex-sum-sub { white-space: normal; }
+  .sec-evidence .ex-sum-amt { padding-top: .2rem; font-size: 1.5rem; }
+  .sec-evidence .ex-sum-head { flex-direction: column; align-items: flex-start; gap: 1.2rem; }
   .sec-matches { padding: 1.6rem; }
   .ex-sum-head .kit-chip { height: 2.6rem; padding: 0 1rem; font-size: 1.2rem; }
   .sec-points { margin-top: 3.2rem; }
-  #evidence .kit-step-fig { position: static; }
 }
 </style>
 </head>
@@ -213,7 +214,7 @@
                 <li class="ex-sum-row" data-hue="grey"><span class="ex-sum-ico is-line" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 3.5h8l4 4v13H6z"/><path d="M14 3.5v4h4M9 12.5h6M9 16h6"/></svg></span><span class="ex-sum-what"><span class="ex-sum-kind">The source you choose</span><span class="ex-sum-sub">Only the exports you choose to upload. Nothing connects to your accounting system.</span></span><span class="ex-sum-state">You choose</span></li>
                 <li class="ex-sum-row" data-hue="grey"><span class="ex-sum-ico is-line" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 7h14M9.5 7V4.5h5V7M7 7l1 13h8l1-13"/><path d="M10.5 11v5.5M13.5 11v5.5"/></svg></span><span class="ex-sum-what"><span class="ex-sum-kind">Yours to delete</span><span class="ex-sum-sub">You decide what you upload, and you can export or delete your data whenever you like.</span></span><span class="ex-sum-state">Any time</span></li>
                 <li class="ex-sum-row" data-hue="grey"><span class="ex-sum-ico is-line" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/></svg></span><span class="ex-sum-what"><span class="ex-sum-kind">Read, never write</span><span class="ex-sum-sub">Nothing in your books changes. When a case is closed, Reclaim gives you the accounting steps to make yourself.</span></span><span class="ex-sum-state">Read only</span></li>
-                <li class="ex-sum-row" data-hue="grey"><span class="ex-sum-ico is-line" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M14.3 9.6c-.5-.7-1.3-1-2.3-1-1.3 0-2.1.6-2.1 1.5 0 2.1 4.5 1.1 4.5 3.2 0 1-.9 1.6-2.2 1.6-1.1 0-2-.4-2.5-1.1M12 7.2v9.6"/><path d="M5.8 18.2 18.2 5.8"/></svg></span><span class="ex-sum-what"><span class="ex-sum-kind">No payment rights</span><span class="ex-sum-sub">Reclaim cannot move money or release a payment. Refunds and credits go straight to you.</span></span><span class="ex-sum-state">None</span></li>
+                <li class="ex-sum-row" data-hue="grey"><span class="ex-sum-ico is-line" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M14.3 9.6c-.5-.7-1.3-1-2.3-1-1.3 0-2.1.6-2.1 1.5 0 2.1 4.5 1.1 4.5 3.2 0 1-.9 1.6-2.2 1.6-1.1 0-2-.4-2.5-1.1M12 7.2v9.6"/><path d="M5.8 18.2 18.2 5.8"/></svg></span><span class="ex-sum-what"><span class="ex-sum-kind">No payment rights</span><span class="ex-sum-sub">Reclaim cannot move money or release a payment. Refunds and credits go straight to you.</span></span><span class="ex-sum-state">No access</span></li>
               </ol>
             </div>
           </div>
