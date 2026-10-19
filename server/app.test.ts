@@ -1,4 +1,7 @@
 // @vitest-environment node
+import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createApp, type App } from './app.ts'
 import { loadConfig } from './config.ts'
@@ -465,5 +468,56 @@ describe('landing-site contact form', () => {
     expect(mail.body).toContain('Email: dana@acme.test')
     expect(mail.body).toContain('Systems: Xero')
     expect(mail.body).toContain('Duplicate invoices last quarter.')
+  })
+})
+
+describe('static site (production)', () => {
+  // The layout `npm run build` leaves in dist/: the marketing site owns index.html and its own
+  // routes, and the React app sits at each of its routes and at 404.html.
+  const marketing = '<!doctype html><title>Reclaim — marketing</title>'
+  const reactApp = '<!doctype html><title>Reclaim</title><div id="root"></div>'
+  function buildDir(withNotFound = true) {
+    const dir = mkdtempSync(join(tmpdir(), 'reclaim-dist-'))
+    writeFileSync(join(dir, 'index.html'), marketing)
+    for (const route of ['pricing', 'research/ap-benchmarks']) {
+      mkdirSync(join(dir, route), { recursive: true })
+      writeFileSync(join(dir, route, 'index.html'), marketing)
+    }
+    mkdirSync(join(dir, 'audit'))
+    writeFileSync(join(dir, 'audit', 'index.html'), reactApp)
+    if (withNotFound) writeFileSync(join(dir, '404.html'), reactApp)
+    return dir
+  }
+  async function serve(dir: string) {
+    const site = createApp({ config, db: openDatabase(':memory:'), mailer: new DevMailer(openDatabase(':memory:')), google: null, drafts: null, staticDir: dir })
+    const port = await site.listen(0)
+    return { site, get: (path: string) => fetch(`http://127.0.0.1:${port}${path}`) }
+  }
+
+  it('an unknown path gets the React app (its "Page not found") with a 404, never the marketing home', async () => {
+    const { site, get } = await serve(buildDir())
+    for (const path of ['/some-unknown-path', '/some/deep/unknown', '/research/not-an-article']) {
+      const res = await get(path)
+      expect(res.status, path).toBe(404)
+      expect(res.headers.get('content-type'), path).toBe('text/html; charset=utf-8')
+      expect(await res.text(), path).toBe(reactApp)
+    }
+    for (const [path, body] of [['/', marketing], ['/pricing', marketing], ['/pricing/', marketing], ['/research/ap-benchmarks', marketing], ['/audit', reactApp], ['/audit/', reactApp]]) {
+      const res = await get(path)
+      expect(res.status, path).toBe(200)
+      expect(await res.text(), path).toBe(body)
+    }
+    const api = await get('/api/nothing-here')
+    expect(api.status).toBe(404)
+    expect(await api.json()).toMatchObject({ message: 'Not found.' })
+    await site.close()
+  })
+
+  it('without a 404 page, an unknown path is a bare 404 rather than the home page', async () => {
+    const { site, get } = await serve(buildDir(false))
+    const res = await get('/some-unknown-path')
+    expect(res.status).toBe(404)
+    expect(await res.text()).toBe('')
+    await site.close()
   })
 })

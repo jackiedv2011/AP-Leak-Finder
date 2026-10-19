@@ -70,7 +70,12 @@ export function landingSitePlugin(): Plugin {
 
       // Vercel runs the production build without Vite's dev middleware. Copy the
       // generated static site into dist so clean landing routes work in production,
-      // while retaining the compiled React app for its own routes.
+      // while retaining the compiled React app for its own routes. The landing
+      // site's index.html replaces the React one at dist/index.html, so the React
+      // app is kept as dist/<route>/index.html for its routes and as dist/404.html
+      // for every other path: Vercel serves a root 404.html for unknown paths,
+      // and server/app.ts does the same with a 404 status. App.tsx then renders
+      // NotFoundPage.
       const distRoot = join(process.cwd(), 'dist')
       const reactIndex = readFileSync(join(distRoot, 'index.html'))
       execFileSync(process.execPath, ['build.cjs'], { cwd: LANDING_ROOT, stdio: 'inherit' })
@@ -86,6 +91,7 @@ export function landingSitePlugin(): Plugin {
         mkdirSync(routeDir, { recursive: true })
         writeFileSync(join(routeDir, 'index.html'), reactIndex)
       }
+      writeFileSync(join(distRoot, '404.html'), reactIndex)
     },
     configureServer(server: ViteDevServer) {
       // Vitest reuses this same Vite config to power its own module server, which

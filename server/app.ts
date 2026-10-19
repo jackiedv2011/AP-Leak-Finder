@@ -672,12 +672,16 @@ function serveStatic(root: string, urlPath: string): Response {
   }
   const base = resolve(root)
   const safe = normalize(decoded).replace(/^(\.\.[/\\])+/, '')
-  const candidates = [join(base, safe), join(base, safe, 'index.html'), join(base, 'index.html')]
+  const candidates = [join(base, safe), join(base, safe, 'index.html')]
   for (const file of candidates) {
     if (file !== base && !file.startsWith(base + sep)) continue
     if (existsSync(file) && statSync(file).isFile()) {
       return { status: 200, headers: { 'Content-Type': MIME[extname(file)] ?? 'application/octet-stream' }, body: readFileSync(file) }
     }
   }
+  // Not index.html: in the build that is the marketing home (scripts/landingSitePlugin.ts).
+  // 404.html is the React app, which renders its "Page not found" for any path it doesn't route.
+  const notFound = join(base, '404.html')
+  if (existsSync(notFound)) return { status: 404, headers: { 'Content-Type': MIME['.html'] }, body: readFileSync(notFound) }
   return empty(404)
 }
