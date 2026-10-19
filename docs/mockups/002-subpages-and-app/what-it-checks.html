@@ -50,6 +50,8 @@
     .wic-ex .kit-ruled-title { font-size: 2rem; }
     .wic-ex .kit-ruled-desc { font-size: 1.5rem; }
     .wic-ex-head { font-size: 1rem; }
+    /* phones: three examples before "Show all" (the rest come back when it opens) */
+    .wic-ex:not(:has(.wic-more[open])) > .kit-ruled > li:nth-child(n+4) { display: none; }
     .wic-data .closing-promises.kit-trust { row-gap: 2.8rem; padding-top: 2.8rem; }
   }
 </style>

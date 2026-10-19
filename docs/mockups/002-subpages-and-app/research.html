@@ -1,0 +1,337 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Research — mockup 002</title>
+<meta name="description" content="Mockup for plan 002: the Research index in the new sub page template (grey hero with the record stack, the library on paper with plain mono filter chips, research cards on pastel exhibit tiles instead of the old striped renders).">
+<link rel="icon" type="image/svg+xml" href="../../../landing-site/assets/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400..700&family=Geist+Mono:wght@400;500&family=JetBrains+Mono:wght@400;500&family=Schibsted+Grotesk:ital,wght@0,400..800;1,400..800&display=block" rel="stylesheet">
+<link rel="stylesheet" href="../../../landing-site/styles.css">
+<link rel="stylesheet" href="../../../landing-site/pages.css">
+<link rel="stylesheet" href="kit.css">
+<style>
+/* Research index — page-specific bits on top of kit.css */
+.rx-down .icon { transform: rotate(180deg); }   /* "Browse the library": the arrow points down the page */
+
+/* the library: a sentence-case head, the filters as plain mono chips, then the four cards */
+.rx-library { padding-block: 12rem 9.6rem; }
+.rx-lib-head { grid-column: 1 / span 7; }
+
+/* filters: ruled rows (label left, chips right), the search and the count above them.
+   A chip is a hairline pill in mono capitals; "on" is ink. No green, no icon tiles. */
+.rx-filter { grid-column: 1 / -1; margin-top: 6.4rem; border-bottom: 1px solid var(--cl-grey-300); }
+.rx-filter-top { display: flex; align-items: center; justify-content: space-between; gap: 2.4rem; padding-bottom: 2.4rem; }
+.rx-search { display: flex; align-items: center; gap: 1.2rem; width: 44rem; height: 4.8rem; padding: 0 1.8rem; border-radius: 1.2rem; background: #fff; box-shadow: inset 0 0 0 1px var(--kit-card-line); }
+.rx-search .icon { flex: none; width: 1.6rem; height: 1.6rem; color: var(--cl-grey-500); }
+.rx-search input { flex: 1; min-width: 0; border: 0; outline: 0; background: none; color: var(--cl-black); font: 400 1.6rem/1 var(--f-sans); }
+.rx-search input::placeholder { color: var(--cl-grey-500); }
+.rx-count { color: var(--cl-grey-500); font: 400 1.2rem/1.3 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; }
+.rx-count button { color: var(--cl-black); font: inherit; letter-spacing: inherit; text-transform: inherit; text-decoration: underline; text-decoration-color: var(--cl-grey-400); text-underline-offset: .35em; }
+.rx-filter-row { display: grid; grid-template-columns: 17.6rem minmax(0, 1fr); gap: 2.4rem; align-items: center; padding-block: 1.6rem; border-top: 1px solid var(--cl-grey-300); }
+.rx-filter-label { color: var(--cl-grey-500); font: 400 1.2rem/1.3 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; }
+.rx-chips { display: flex; flex-wrap: wrap; gap: .8rem; margin: 0; padding: 0; list-style: none; }
+.rx-chip { display: inline-flex; align-items: center; gap: .8rem; height: 3.2rem; padding: 0 1.4rem; border-radius: 99rem; box-shadow: inset 0 0 0 1px var(--cl-grey-300); color: var(--cl-grey-600); font: 400 1.2rem/1 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; white-space: nowrap; transition: background-color .2s, color .2s, box-shadow .2s; }
+@media (hover: hover) and (pointer: fine) { button.rx-chip:hover { box-shadow: inset 0 0 0 1px var(--cl-black); color: var(--cl-black); } }
+.rx-chip[aria-pressed="true"] { background: var(--cl-black); color: var(--cl-white); box-shadow: none; }
+.rx-chip-more::before { content: "+"; font-size: 1.4rem; }
+
+/* the cards: a pastel tile (an exhibit still, or a placeholder for a piece still to render), then the words on paper */
+.rx-cards { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8.8rem 2.4rem; margin: 6.4rem 0 0; padding: 0; list-style: none; }
+.rx-card { display: block; color: inherit; }
+.rx-card .fd-tile { height: auto; }
+.rx-card .fd-tile > img, .rx-card .kit-ph-obj { aspect-ratio: 16 / 10; }
+.rx-card-body { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 3.2rem; padding-top: 2.8rem; }
+.rx-card-src { grid-column: 1 / -1; color: var(--cl-grey-500); font: 400 1.2rem/1.3 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; }
+.rx-card-title { grid-column: 1; margin-top: 1.6rem; font: 600 4rem/1.02 var(--f-display); letter-spacing: -.04em; }
+.rx-card-go { grid-column: 2; grid-row: 2; align-self: start; width: 3.2rem; height: 3.2rem; margin-top: 1.8rem; color: var(--cl-grey-500); transition: color .2s; }
+.rx-card-desc { grid-column: 1; max-width: 52rem; margin-top: 1.6rem; color: var(--cl-grey-500); font-size: 1.8rem; line-height: 1.4; letter-spacing: -.01em; }
+@media (hover: hover) and (pointer: fine) { .rx-card:hover .rx-card-go { color: var(--cl-black); } .rx-card:hover .fd-tile img { transform: scale(1.03); } }
+
+@media (max-width: 1023px) {
+  .rx-library { padding-block: 6.4rem 8rem; }
+  .rx-lib-head { grid-column: 1 / -1; }
+  .rx-filter { margin-top: 4rem; }
+  .rx-filter-top { flex-direction: column; align-items: stretch; gap: 1.6rem; }
+  .rx-search { width: 100%; }
+  .rx-filter-row { grid-template-columns: 1fr; gap: 1.2rem; padding-block: 1.6rem; }
+  .rx-filter-row.rx-more { display: none; }   /* phones: finding type and source fold behind "+ More filters" */
+  .rx-chip { height: 3rem; padding: 0 1.2rem; font-size: 1.1rem; }
+  .rx-cards { grid-template-columns: 1fr; gap: 5.6rem; margin-top: 4rem; }
+  .rx-card .fd-tile { border-radius: 1.8rem; }
+  .rx-card-body { padding-top: 2rem; column-gap: 1.6rem; }
+  .rx-card-title { margin-top: 1.2rem; font-size: 2.8rem; }
+  .rx-card-go { width: 2.4rem; height: 2.4rem; margin-top: 1.2rem; }
+  .rx-card-desc { margin-top: 1.2rem; font-size: 1.6rem; }
+}
+@media (min-width: 600px) and (max-width: 1023px) {
+  .rx-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4.8rem 2rem; }
+}
+</style>
+</head>
+<body class="kit" data-folder="research">
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-arrow" viewBox="0 0 16 16"><path d="M8 13.5V2.5M3 7.5 8 2.5l5 5" fill="none" stroke="currentColor" stroke-width="1.5"/></symbol>
+  <symbol id="i-arrow-ur" viewBox="0 0 40 40"><path d="M11 29 29 11M13.5 11H29v15.5" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
+  <symbol id="i-close" viewBox="0 0 16 16"><path d="M3.5 3.5l9 9M12.5 3.5l-9 9" fill="none" stroke="currentColor" stroke-width="1.33" stroke-linecap="round"/></symbol>
+  <symbol id="i-check-circle" viewBox="0 0 48 48"><circle cx="24" cy="24" r="24" fill="#00fd74"/><path d="M14.5 24.5l6.5 6.5 12.5-13.5" fill="none" stroke="#000" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-arrow-dr" viewBox="0 0 40 40"><path d="M11 11l18 18M29 13.5V29H13.5" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
+  <symbol id="i-tile-upload" viewBox="0 0 50 50"><rect width="50" height="50" rx="12" fill="#00fd74"/><g fill="none" stroke="#000" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M25 33V15M17.5 22.5 25 15l7.5 7.5M15 36h20"/></g></symbol>
+  <symbol id="i-tile-find" viewBox="0 0 50 50"><rect width="50" height="50" rx="12" fill="#00fd74"/><g fill="none" stroke="#000" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="22.5" cy="22.5" r="8.5"/><path d="m29 29 7.5 7.5"/></g></symbol>
+  <symbol id="i-tile-evidence" viewBox="0 0 50 50"><rect width="50" height="50" rx="12" fill="#00fd74"/><g fill="none" stroke="#000" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M17 13.5h11l6 6V36.5H17z"/><path d="M28 13.5v6h6M21.5 28l3 3 5.5-6"/></g></symbol>
+  <!-- what it finds: one tile per finding type -->
+  <symbol id="i-type-duplicate-payments" viewBox="0 0 50 50"><rect width="50" height="50" rx="12" fill="#00fd74"/><g fill="none" stroke="#000" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="11" y="20" width="22" height="14" rx="2"/><path d="M17 20v-3.5a2 2 0 0 1 2-2h18a2 2 0 0 1 2 2V27a2 2 0 0 1-2 2h-4"/><circle cx="22" cy="27" r="2.5"/></g></symbol>
+  <symbol id="i-type-duplicate-bills" viewBox="0 0 50 50"><rect width="50" height="50" rx="12" fill="#00fd74"/><g fill="none" stroke="#000" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M13 18h11l5 5v15H13z"/><path d="M20 18v-6h10l5 5v15h-6M18 29h6M18 33h4"/></g></symbol>
+  <symbol id="i-type-overpayments" viewBox="0 0 50 50"><rect width="50" height="50" rx="12" fill="#00fd74"/><g fill="none" stroke="#000" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="22" cy="27" r="10"/><path d="M22 22.5v9M17.5 27h9M33 11v9M28.5 15.5h9"/></g></symbol>
+  <symbol id="i-type-unused-credits" viewBox="0 0 50 50"><rect width="50" height="50" rx="12" fill="#00fd74"/><g fill="none" stroke="#000" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M13 25.5V14.5a1.5 1.5 0 0 1 1.5-1.5h11L37 24.5 24.5 37z"/><circle cx="19.5" cy="19.5" r="2"/></g></symbol>
+  <symbol id="i-type-payment-mismatches" viewBox="0 0 50 50"><rect width="50" height="50" rx="12" fill="#00fd74"/><g fill="none" stroke="#000" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M14 21h22M14 29h22M29.5 13l-9 24"/></g></symbol>
+  <!-- file handling tiles -->
+  <symbol id="i-tile-files" viewBox="0 0 50 50"><rect width="50" height="50" rx="12" fill="#00fd74"/><g fill="none" stroke="#000" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M17 13.5h11l6 6V36.5H17z"/><path d="M28 13.5v6h6M21.5 27h9M21.5 31.5h6"/></g></symbol>
+  <symbol id="i-tile-unlinked" viewBox="0 0 50 50"><rect width="50" height="50" rx="12" fill="#00fd74"/><g fill="none" stroke="#000" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 25h5M25 22h5M25 28h5"/><rect x="14" y="18.5" width="11" height="13" rx="2.5"/><rect x="35" y="16.5" width="5" height="17" rx="1.5"/></g></symbol>
+  <symbol id="i-tile-view" viewBox="0 0 50 50"><rect width="50" height="50" rx="12" fill="#00fd74"/><g fill="none" stroke="#000" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M11 25s5-8.5 14-8.5S39 25 39 25s-5 8.5-14 8.5S11 25 11 25z"/><circle cx="25" cy="25" r="3.5"/></g></symbol>
+  <symbol id="i-tile-nomoney" viewBox="0 0 50 50"><rect width="50" height="50" rx="12" fill="#00fd74"/><g fill="none" stroke="#000" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="11" y="17.5" width="28" height="15" rx="2"/><circle cx="25" cy="25" r="3"/><path d="m13 37 24-24"/></g></symbol>
+  <symbol id="i-tile-row" viewBox="0 0 50 50"><rect width="50" height="50" rx="12" fill="#00fd74"/><g fill="none" stroke="#000" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="12" y="14" width="26" height="22" rx="2"/><path d="M12 21h26M12 28.5h26M20 14v22"/></g><rect x="20" y="21" width="18" height="7.5" fill="#000"/></symbol>
+  <symbol id="i-tile-decide" viewBox="0 0 50 50"><rect width="50" height="50" rx="12" fill="#00fd74"/><g fill="none" stroke="#000" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M17 38V12M17 13h17l-3.5 6 3.5 6H17"/></g></symbol>
+  <!-- small outline marks used beside the numbers in an article -->
+  <symbol id="i-mark-chart" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16"/><path d="M6.5 20v-7M12 20V6M17.5 20v-10"/></g></symbol>
+  <symbol id="i-mark-flag" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 21V4M6 4h11l-2.5 4L17 12H6"/></g></symbol>
+  <symbol id="i-mark-coin" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><path d="M12 7.5v9M14.5 9.8c-.6-.8-1.6-1.1-2.7-1.1-1.4 0-2.3.7-2.3 1.7 0 2.4 5 1.2 5 3.6 0 1.1-1 1.8-2.4 1.8-1.2 0-2.2-.4-2.8-1.2"/></g></symbol>
+  <symbol id="i-mark-clock" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><path d="M12 7.5V12l3 2"/></g></symbol>
+  <symbol id="i-mark-doc" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.5h7l5 5V20.5H6z"/><path d="M13 3.5v5h5M9 13h6M9 16.5h4"/></g></symbol>
+  <symbol id="i-mark-alert" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4 21 20H3z"/><path d="M12 10v4.5M12 17.4v.1"/></g></symbol>
+  <symbol id="i-mark-eye" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 12S6 6 12 6s9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6z"/><circle cx="12" cy="12" r="2.6"/></g></symbol>
+  <symbol id="i-mark-scale" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v16M7 20h10M5 8h14M5 8l-2.5 5.5h5zM19 8l2.5 5.5h-5z"/></g></symbol>
+  <symbol id="i-mail" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-9.47 5.7a2 2 0 0 1-2.06 0L2 7"/></g></symbol>
+  <symbol id="i-shield" viewBox="0 0 16 16"><g fill="none" stroke="currentColor" stroke-width="1.33" stroke-linecap="round" stroke-linejoin="round"><path d="M13.33 8.67c0 3.33-2.33 5-5.1 5.97a.67.67 0 0 1-.46 0c-2.77-.97-5.1-2.64-5.1-5.97V4a.67.67 0 0 1 .66-.67c1.34 0 3-.8 4.16-1.81a.68.68 0 0 1 .88 0C9.54 2.54 11.2 3.33 12.53 3.33A.67.67 0 0 1 13.2 4z"/><path d="m6 8 1.33 1.33L10 6.67"/></g></symbol>
+  <symbol id="i-search" viewBox="0 0 16 16"><path d="m14 14-2.867-2.867m1.534-3.8A5.333 5.333 0 1 1 2 7.333a5.333 5.333 0 0 1 10.667 0" fill="none" stroke="currentColor" stroke-width="1.33" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-chevron" viewBox="0 0 16 16"><path d="m4 6 4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.33" stroke-linecap="round" stroke-linejoin="round" opacity=".5"/></symbol>
+  <symbol id="hx-wheel" viewBox="-13 -11.5 26 23">
+    <path d="M-2.056,-4.6 L-5.751,-11 L5.751,-11 L2.056,-4.6 Z"/><path d="M2.956,-4.081 L6.651,-10.481 L12.402,-0.520 L5.012,-0.520 Z"/><path d="M5.012,0.520 L12.402,0.520 L6.651,10.481 L2.956,4.081 Z"/><path d="M2.056,4.6 L5.751,11 L-5.751,11 L-2.056,4.6 Z"/><path d="M-2.956,4.081 L-6.651,10.481 L-12.402,0.520 L-5.012,0.520 Z"/><path d="M-5.012,-0.520 L-12.402,-0.520 L-6.651,-10.481 L-2.956,-4.081 Z"/>
+  </symbol>
+  <!-- dashboard mock-ups: the lucide icons the workspace uses (src/workspace/WorkspaceShell.tsx) -->
+  <symbol id="d-grid" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></g></symbol>
+  <symbol id="d-search" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></g></symbol>
+  <symbol id="d-banknote" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></g></symbol>
+  <symbol id="d-report" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4M8 18v-2M12 18v-4M16 18v-6"/></g></symbol>
+  <symbol id="d-folder" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M10.7 20H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H20a2 2 0 0 1 2 2v4.1"/><circle cx="17" cy="17" r="3"/><path d="m21 21-1.9-1.9"/></g></symbol>
+  <symbol id="d-settings" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></g></symbol>
+  <symbol id="d-sliders" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 4h-7M10 4H3M21 12h-9M8 12H3M21 20h-5M12 20H3M14 2v4M8 10v4M16 18v4"/></g></symbol>
+  <symbol id="d-panel" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18M16 15l-3-3 3-3"/></g></symbol>
+  <symbol id="d-moon" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></g></symbol>
+  <symbol id="d-chev-r" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="d-chev-d" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="d-arrow-r" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="d-plus" viewBox="0 0 24 24"><path d="M5 12h14M12 5v14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="d-clock" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></g></symbol>
+  <symbol id="d-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="d-send" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z"/><path d="m21.854 2.147-10.94 10.939"/></g></symbol>
+  <symbol id="d-upload" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5M12 3v12"/></g></symbol>
+  <symbol id="d-mail" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></g></symbol>
+</svg>
+
+<div class="kit-mock-label">Mockup · 002 · Research</div>
+
+<!-- NAV (partials/nav.html without its <template>, in its light state on the grey hero) -->
+<header class="the-nav" theme="grey">
+  <div class="the-container">
+    <div class="left">
+      <a href="how-it-works.html" class="hx-logo" aria-label="Reclaim home"><svg class="wheel" viewBox="0 0 26 23" fill="currentColor"><use href="#hx-wheel"/></svg><span class="word"><span class="letter">R</span><span class="letter">e</span><span class="letter">c</span><span class="letter">l</span><span class="letter">a</span><span class="letter">i</span><span class="letter">m</span></span></a>
+    </div>
+    <nav class="center" aria-label="Main">
+      <ul class="nav-bar type-body-xs inFolder">
+        <li class="group" data-folder="how-it-works"><a class="link" href="how-it-works.html"><span class="label">How It Works</span></a></li>
+        <li class="group" data-folder="what-it-checks"><a class="link" href="what-it-checks.html"><span class="label">What It Checks</span></a></li>
+        <li class="group" data-folder="pricing"><a class="link" href="pricing.html"><span class="label">Pricing</span></a></li>
+        <li class="group current" data-folder="research"><a class="link" href="research.html"><span class="label">Research</span></a></li>
+        <li class="group" data-folder="guides"><a class="link" href="guides.html"><span class="label">Guides</span></a></li>
+        <li class="group" data-folder="security"><a class="link" href="security.html"><span class="label">Security</span></a></li>
+        <li class="group" data-folder="about"><a class="link" href="about.html"><span class="label">About</span></a></li>
+      </ul>
+    </nav>
+    <div class="right">
+      <a href="#" class="nav-login type-body-xs">Log in</a>
+      <a href="#" class="cta cta-button" size="small" theme="black"><span class="hover-loop"><span class="inner">Get Started</span></span></a>
+      <button type="button" class="menu-toggle" aria-label="Open menu"><span class="bar"></span><span class="bar"></span></button>
+    </div>
+  </div>
+</header>
+
+<main class="page">
+
+  <!-- 1. HERO — grey, ink type, one <em>, the record stack on its own floor at right (as the landing).
+       Replaces the black "Research" band. Copy: the page's own description, trimmed into a heading. -->
+  <section class="hero-home kit-hero" theme="grey">
+    <div class="bg">
+      <div class="bg-wrap the-grid"><div class="wrap"><video class="hero-film" autoplay loop muted playsinline preload="auto" poster="../../../landing-site/media/hero/first.webp" aria-hidden="true"><source src="../../../landing-site/media/hero/d.mp4" type="video/mp4"></video></div></div>
+    </div>
+    <div class="content the-grid">
+      <p class="kit-eyebrow kit-hero-eyebrow">Research</p>
+      <h1 class="heading heading1 type-h1">Payments that go out <em>wrong.</em></h1>
+      <div class="desc">
+        <p class="type-body-large">Published research on payments that go out wrong: how often, what it costs, and how it gets caught. Every figure is sourced and linked.</p>
+        <div class="hero-ctas">
+          <a href="#contact" class="cta cta-button" size="large" theme="black" data-modal="talk"><span class="hover-loop"><span class="inner">Talk to us</span></span></a>
+          <a href="#library" class="cta cta-button has-arrow rx-down" size="large" theme="none"><span class="hover-loop"><span class="inner">Browse the library<svg class="icon"><use href="#i-arrow"/></svg></span></span></a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. PAPER — the library rises straight over the grey hero (no ink section on an index page).
+       The left filter panel with green icon-tile toggles becomes ruled rows of plain mono chips (ink = on). -->
+  <div class="rounded-section kit-paper" theme="white">
+    <div class="bg bg-top" theme="grey"></div>
+    <div class="bg bg-bottom" theme="white"></div>
+    <div class="rs-scale" theme="white">
+
+      <section class="section rx-library" theme="white" id="library">
+        <div class="the-grid">
+
+          <div class="rx-lib-head">
+            <p class="kit-eyebrow">Library · 4 entries</p>
+            <h2 class="heading type-h3">Every figure is sourced<br class="desktop-only"> and <em>linked.</em></h2>
+          </div>
+
+          <div class="rx-filter" role="group" aria-label="Filter the research">
+            <div class="rx-filter-top">
+              <label class="rx-search"><svg class="icon" aria-hidden="true"><use href="#i-search"/></svg><input type="search" placeholder="Search the research" aria-label="Search research"></label>
+              <p class="rx-count">Showing 4 of 4 · <button type="button">Reset</button></p>
+            </div>
+            <div class="rx-filter-row">
+              <span class="rx-filter-label">Kind</span>
+              <ul class="rx-chips">
+                <li><button type="button" class="rx-chip" aria-pressed="true">All</button></li>
+                <li><button type="button" class="rx-chip" aria-pressed="false">Benchmark</button></li>
+                <li><button type="button" class="rx-chip" aria-pressed="false">Survey</button></li>
+                <li><button type="button" class="rx-chip" aria-pressed="false">Report</button></li>
+              </ul>
+            </div>
+            <div class="rx-filter-row rx-more">
+              <span class="rx-filter-label">Finding type</span>
+              <ul class="rx-chips">
+                <li><button type="button" class="rx-chip" aria-pressed="true">All</button></li>
+                <li><button type="button" class="rx-chip" aria-pressed="false">Duplicate payments</button></li>
+                <li><button type="button" class="rx-chip" aria-pressed="false">Duplicate bills</button></li>
+                <li><button type="button" class="rx-chip" aria-pressed="false">Overpayments</button></li>
+                <li><button type="button" class="rx-chip" aria-pressed="false">Unused credits</button></li>
+                <li><button type="button" class="rx-chip" aria-pressed="false">Payment mismatches</button></li>
+              </ul>
+            </div>
+            <div class="rx-filter-row rx-more">
+              <span class="rx-filter-label">Source</span>
+              <ul class="rx-chips">
+                <li><button type="button" class="rx-chip" aria-pressed="true">All</button></li>
+                <li><button type="button" class="rx-chip" aria-pressed="false">APQC</button></li>
+                <li><button type="button" class="rx-chip" aria-pressed="false">Ardent Partners</button></li>
+                <li><button type="button" class="rx-chip" aria-pressed="false">ACFE</button></li>
+                <li><button type="button" class="rx-chip" aria-pressed="false">AFP</button></li>
+                <li><button type="button" class="rx-chip" aria-pressed="false">FBI IC3</button></li>
+                <li><button type="button" class="rx-chip" aria-pressed="false">GAO</button></li>
+              </ul>
+            </div>
+            <div class="rx-filter-row mobile-only">
+              <ul class="rx-chips"><li><button type="button" class="rx-chip rx-chip-more" aria-expanded="false">More filters · finding type, source</button></li></ul>
+            </div>
+          </div>
+
+          <!-- the four cards. Each tile keeps the four-hue meaning: green = duplicate payment, blue = duplicate bill,
+               violet = records / "your payments", orange = overpayment. Three use the landing's exhibit stills; the
+               payments-fraud card needs a piece that doesn't exist yet, drawn as a placeholder. -->
+          <ul class="rx-cards">
+            <li><a class="rx-card" href="research-article.html">
+              <div class="fd-tile" data-ex="echo"><img src="../../../landing-site/media/exhibits/echo/still.webp" alt=""></div>
+              <div class="rx-card-body">
+                <p class="rx-card-src">Benchmark · APQC · Ardent Partners</p>
+                <h3 class="rx-card-title">How often payments go out wrong</h3>
+                <svg class="rx-card-go" aria-hidden="true"><use href="#i-arrow-ur"/></svg>
+                <p class="rx-card-desc">APQC puts duplicate or erroneous payments at 1.5% of disbursements. Ardent puts invoice exceptions at 18.4%.</p>
+              </div>
+            </a></li>
+
+            <li><a class="rx-card" href="#occupational-fraud-2026">
+              <div class="fd-tile" data-ex="shadow"><img src="../../../landing-site/media/exhibits/shadow/still.webp" alt=""></div>
+              <div class="rx-card-body">
+                <p class="rx-card-src">Report · ACFE</p>
+                <h3 class="rx-card-title">What 2,402 fraud cases show</h3>
+                <svg class="rx-card-go" aria-hidden="true"><use href="#i-arrow-ur"/></svg>
+                <p class="rx-card-desc">ACFE's 2026 study found billing schemes in 21% of cases, with a typical case running 12 months before anyone caught it.</p>
+              </div>
+            </a></li>
+
+            <li><a class="rx-card" href="#payments-fraud-2025">
+              <div class="fd-tile kit-ph" data-hue="violet">
+                <span class="kit-ph-tag">Piece to render · check pad</span>
+                <svg class="kit-ph-obj" viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+                  <!-- a pad of checks: a violet block, an off-white top sheet with two lines and an amount box -->
+                  <polygon class="shd" points="100,172 200,222 112,246 22,200"/>
+                  <polygon class="hue-dk" points="100,150 200,200 200,224 100,174"/>
+                  <polygon class="hue" points="200,200 300,150 300,174 200,224"/>
+                  <polygon class="hue-lt" points="100,150 200,100 300,150 200,200"/>
+                  <polygon class="sec-sh" points="100,145 200,195 200,200 100,150"/>
+                  <polygon class="sec-md" points="200,195 300,145 300,150 200,200"/>
+                  <polygon class="sec" points="100,145 200,95 300,145 200,195"/>
+                  <path d="M142 136 190 160M162 126 235 162.5" fill="none" style="stroke:var(--hue);stroke-width:5;stroke-linecap:round"/>
+                  <polygon class="hue" points="224,143 244,133 272,147 252,157"/>
+                </svg>
+              </div>
+              <div class="rx-card-body">
+                <p class="rx-card-src">Survey · AFP · FBI IC3</p>
+                <h3 class="rx-card-title">Payments fraud in 2025</h3>
+                <svg class="rx-card-go" aria-hidden="true"><use href="#i-arrow-ur"/></svg>
+                <p class="rx-card-desc">76% of organizations faced attempted or actual payments fraud, per AFP. Checks were the most targeted method by a wide margin.</p>
+              </div>
+            </a></li>
+
+            <li><a class="rx-card" href="#improper-payments">
+              <div class="fd-tile" data-ex="overflow"><img src="../../../landing-site/media/exhibits/overflow/still.webp" alt=""></div>
+              <div class="rx-card-body">
+                <p class="rx-card-src">Report · GAO</p>
+                <h3 class="rx-card-title">$186 billion in improper payments</h3>
+                <svg class="rx-card-go" aria-hidden="true"><use href="#i-arrow-ur"/></svg>
+                <p class="rx-card-desc">GAO counted about $186 billion in improper federal payments in fiscal 2025. About $153 billion of that was overpayments.</p>
+              </div>
+            </a></li>
+          </ul>
+
+        </div>
+      </section>
+
+    </div>
+  </div>
+
+<!-- FOOTER: the last rounded card, rising over the white above it the way the page's other sections open -->
+  <div class="rounded-section shouldAnimate ft-card" theme="black" style="clip-path:inset(0)">
+    <div class="bg bg-top" theme="white"></div>
+    <div class="bg bg-bottom" theme="black"></div>
+    <div class="nav-slot" data-theme="black"></div>
+    <div class="rs-scale" theme="black">
+  <footer class="the-footer" theme="black">
+    <div class="the-container">
+      <div class="ft-top">
+        <div class="ft-about">
+          <a href="how-it-works.html" class="hx-logo" aria-label="Reclaim home"><svg class="wheel" viewBox="0 0 26 23" fill="currentColor"><use href="#hx-wheel"/></svg><span class="word"><span class="letter">R</span><span class="letter">e</span><span class="letter">c</span><span class="letter">l</span><span class="letter">a</span><span class="letter">i</span><span class="letter">m</span></span></a>
+          <p class="ft-line">Finds duplicate payments, overpayments and forgotten credits in your books, and helps you get the money back.</p>
+          <a href="mailto:reclaimbusiness1@gmail.com" class="ft-mail">reclaimbusiness1@gmail.com</a>
+        </div>
+        <nav class="ft-cols" aria-label="Footer">
+          <div class="ft-group"><div class="ft-label type-mono">Product</div><ul><li><a href="how-it-works.html">How It Works</a></li><li><a href="what-it-checks.html">What It Checks</a></li><li><a href="pricing.html">Pricing</a></li></ul></div>
+          <div class="ft-group"><div class="ft-label type-mono">Resources</div><ul><li><a href="research.html">Research</a></li><li><a href="guides.html">Guides</a></li><li><a href="security.html">Security</a></li></ul></div>
+          <div class="ft-group"><div class="ft-label type-mono">Company</div><ul><li><a href="about.html">About</a></li><li><a href="#contact" data-modal="talk">Contact</a></li></ul></div>
+          <div class="ft-group"><div class="ft-label type-mono">Legal</div><ul><li><a href="#">Privacy Policy</a></li><li><a href="#">Terms of Service</a></li></ul></div>
+        </nav>
+      </div>
+      <div class="ft-bottom">
+        <div class="ft-legal"><span>© 2026 Reclaim</span><a href="#">Log in</a></div>
+        <a href="#" class="cta-scroll">Back to top<svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a>
+      </div>
+    </div>
+  </footer>
+    </div>
+  </div>
+
+</main>
+</body>
+</html>
