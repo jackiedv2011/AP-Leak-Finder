@@ -23,7 +23,6 @@ import {
   X,
 } from 'lucide-react'
 import { useOptionalAuth } from '@/lib/auth/AuthContext'
-import { TutorialTour, type TutorialStep } from '@/components/tutorial/TutorialTour'
 import { CustomizeSheet } from './Customize'
 import { WorkspaceTour } from './WorkspaceTour'
 import { PreferencesProvider, usePreferences } from './preferences'
@@ -91,15 +90,6 @@ export function WorkspaceShell(props: WorkspaceShellProps) {
     </PreferencesProvider>
   )
 }
-
-const DASHBOARD_TOUR: TutorialStep[] = [
-  { id: 'welcome', title: 'Welcome to Reclaim', body: 'A quick look around: where findings land, how recoveries are tracked, and where to start a new audit.' },
-  { id: 'overview', title: 'Overview', body: 'Your money-owed picture at a glance: totals, what needs verifying, and what is already recovered.', target: '[data-tour="nav-dashboard"]', placement: 'bottom' },
-  { id: 'findings', title: 'Findings', body: 'Every flagged payment, with the evidence behind it. Open one to review and decide what to do.', target: '[data-tour="nav-findings"]', placement: 'bottom' },
-  { id: 'recoveries', title: 'Recoveries', body: 'Once you act on a finding it becomes a case here, coloured by who holds the ball.', target: '[data-tour="nav-recoveries"]', placement: 'bottom' },
-  { id: 'audits', title: 'Audits', body: 'Each ledger you upload is an audit. Switch between them or start a new one here.', target: '[data-tour="nav-audits"]', placement: 'bottom' },
-  { id: 'find', title: 'Find anything', body: 'Press F to jump to a page, vendor or finding.', target: '[data-tour="find"]', placement: 'bottom' },
-]
 
 function Shell({ mode, onModeChange, auditCount, findingCount, recoveryCount, workspaceLabel, workspaceId, availableWorkspaces, onOpenWorkspace, searchableFindings = [], onOpenFinding, title, finding = null, actions, children }: WorkspaceShellProps) {
   const auth = useOptionalAuth()
@@ -238,7 +228,6 @@ function Shell({ mode, onModeChange, auditCount, findingCount, recoveryCount, wo
         {children}
       </main>
     </div>
-    <TutorialTour tourId="dashboard" steps={DASHBOARD_TOUR} />
     <CustomizeSheet open={customizeOpen} onOpenChange={setCustomizeOpen} />
     {user ? <WorkspaceTour mode={mode} caseOpen={finding !== null} onModeChange={onModeChange} onMobileNav={setMobileNavOpen} /> : null}
     {findOpen ? <div className="wk-command-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) closeFind() }}><section className="wk-command" role="dialog" aria-modal="true" aria-labelledby="wk-command-title">
