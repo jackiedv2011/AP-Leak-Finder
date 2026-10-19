@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react'
+import { parseCurrency, parseDate } from '@/lib/format'
 import * as DialogPrimitive from '@radix-ui/react-dialog'
 import { AlertCircle, AlertTriangle, CheckCircle2, Download, FileText, HelpCircle, ShieldCheck, Sparkles, Upload, X } from 'lucide-react'
 import { parseCsv } from '@/lib/csv'
@@ -15,6 +16,27 @@ export interface QuickBooksImportContext {
 }
 import '@/workspace/workspace.css'
 import '@/workspace/reclaim.css'
+
+/** Why a row was left out, in the words of the spreadsheet it came from. */
+function skipReason(raw: Record<string, string> | null): string {
+  const cell = (key: string) => (raw?.[key] ?? '').trim()
+  const missing: string[] = []
+  if (!cell('vendor')) missing.push('no vendor name')
+  if (!cell('payment_date')) missing.push('no payment date')
+  else if (!parseDate(cell('payment_date'))) missing.push(`“${cell('payment_date')}” isn’t a date`)
+  if (!cell('amount_paid')) missing.push('no amount paid')
+  else if (parseCurrency(cell('amount_paid')) === null) missing.push(`“${cell('amount_paid')}” isn’t an amount`)
+  return missing.length ? missing.join(', ') : 'missing a vendor, payment date or amount paid'
+}
+
+const COLUMN_WORDS: Record<string, string> = {
+  vendor: 'a vendor (or payee) name',
+  payment_date: 'a payment date',
+  amount_paid: 'the amount paid',
+  invoice_number: 'an invoice number',
+  invoice_date: 'an invoice date',
+  invoice_amount: 'the invoice amount',
+}
 
 export interface ImportInput {
   file: File
@@ -105,14 +127,13 @@ export function ImportPanel({ allowSample, animateEntry = false, autoFocusUpload
       if (parsed.records.length === 0 && !(quickbooks && parsed.skippedCount === 0)) {
         const guidance = assessFatalFile(parsed)
         if (guidance.missingRequiredColumns.length > 0) {
+          // Column names in words a person would recognise from their own spreadsheet, not the parser's keys.
+          const words = (columns: string[]) => columns.map((c) => COLUMN_WORDS[c] ?? c.replaceAll('_', ' '))
+          const list = (items: string[]) => (items.length <= 2 ? items.join(' and ') : `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`)
           setParseError(
             guidance.detectedColumns.length > 0
-              ? `We recognized ${guidance.detectedColumns.join(', ')}, but couldn't find ${guidance.missingRequiredColumns.join(
-                  ', '
-                )}. Reclaim needs those to run an audit.`
-              : `We couldn't recognize any expected columns in this file's header row. Reclaim needs ${guidance.missingRequiredColumns.join(
-                  ', '
-                )} at minimum.`
+              ? `Reclaim found ${list(words(guidance.detectedColumns))}, but not ${list(words(guidance.missingRequiredColumns))}. Add ${guidance.missingRequiredColumns.length === 1 ? 'that column' : 'those columns'} to the file and upload it again.`
+              : `Reclaim couldn’t match this file’s column headings. Every payment row needs at least ${list(words(guidance.missingRequiredColumns))}. Rename your headings to match, or start from the sample CSV.`
           )
         } else {
           setParseError(
@@ -195,9 +216,18 @@ export function ImportPanel({ allowSample, animateEntry = false, autoFocusUpload
         {skipped > 0 && (
           <div className="wk-callout" data-tone="warn">
             <AlertTriangle aria-hidden="true" />
-            <p>
-              {skipped} row{skipped === 1 ? '' : 's'} {skipped === 1 ? 'needs' : 'need'} attention and will be skipped
-            </p>
+            <div className="wk-callout-body">
+              <p>
+                {skipped} row{skipped === 1 ? '' : 's'} {skipped === 1 ? 'needs' : 'need'} attention and will be skipped
+              </p>
+              {/* Which rows, and why, so the file can be fixed rather than guessed at. */}
+              <ul className="wk-skipped-rows">
+                {(pending.parsed.rowResults ?? []).filter((row) => row.status === 'rejected').slice(0, 6).map((row) => (
+                  <li key={row.rowNumber}>Row {row.rowNumber}: {skipReason(row.raw)}</li>
+                ))}
+                {skipped > 6 ? <li>…and {skipped - 6} more</li> : null}
+              </ul>
+            </div>
           </div>
         )}
 
@@ -308,7 +338,7 @@ export function ImportPanel({ allowSample, animateEntry = false, autoFocusUpload
         </div>
       )}
 
-      <div className="wk-import-links">
+      {shownError ? null : <div className="wk-import-links">
         <a className="wk-link" href="/sample-ledger.csv" download>
           <Download aria-hidden="true" />
           Download sample CSV
@@ -317,7 +347,7 @@ export function ImportPanel({ allowSample, animateEntry = false, autoFocusUpload
           <HelpCircle aria-hidden="true" />
           See required format
         </button>
-      </div>
+      </div>}
 
       {allowSample && onRunSample && (
         <div className="wk-import-sample">

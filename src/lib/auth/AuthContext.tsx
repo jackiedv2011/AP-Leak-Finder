@@ -12,12 +12,15 @@ import { readProfile, type OnboardingProfile } from '../../../server/onboarding.
 // A guest lives for the tab, so its onboarding does too.
 const GUEST_SEEN_KEY = 'reclaim.tour.seen'
 const GUEST_PROFILE_KEY = 'reclaim.onboarding.v1'
+const GUEST_TOUR_KEY = 'reclaim.dashboard-tour.seen'
 
 function withGuestOnboarding(user: AuthUser): AuthUser {
   try {
     const seen = window.sessionStorage.getItem(GUEST_SEEN_KEY) === '1'
     const profile = readProfile(window.sessionStorage.getItem(GUEST_PROFILE_KEY))
-    return seen ? { ...user, onboardingSeenAt: user.onboardingSeenAt ?? Date.now(), onboardingProfile: profile } : user
+    const tourSeen = window.sessionStorage.getItem(GUEST_TOUR_KEY) === '1'
+    const withTour = tourSeen ? { ...user, tourSeenAt: user.tourSeenAt ?? Date.now() } : user
+    return seen ? { ...withTour, onboardingSeenAt: user.onboardingSeenAt ?? Date.now(), onboardingProfile: profile } : withTour
   } catch {
     return user
   }
@@ -41,6 +44,8 @@ interface AuthContextValue {
    */
   refreshAccount: () => Promise<void>
   markOnboardingSeen: () => Promise<void>
+  /** The dashboard tour was finished or skipped: on the account (once, everywhere), or in the tab for a guest. */
+  markTourSeen: () => Promise<void>
   /** Stores onboarding's answers (on the account, or in the tab for a guest) and marks it done. */
   saveOnboarding: (profile: OnboardingProfile) => Promise<void>
   /** Development only: flip the account's plan. */
@@ -159,6 +164,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     const next = await api.markOnboardingSeen()
     if (next) setUser(next)
+  }, [user])
+
+  const markTourSeen = useCallback(async () => {
+    if (!user || user.tourSeenAt) return
+    // Shown as seen at once, so the tour never reopens while the request is in flight.
+    setUser({ ...user, tourSeenAt: Date.now() })
+    if (user.isGuest) {
+      try {
+        window.sessionStorage.setItem(GUEST_TOUR_KEY, '1')
+      } catch {
+        /* storage refused: it still holds for this tab */
+      }
+      return
+    }
+    const next = await api.markTourSeen()
+    if (next && mounted.current) setUser(next)
   }, [user])
 
   const saveOnboarding = useCallback(
@@ -291,6 +312,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       refreshEntitlements,
       refreshAccount,
       markOnboardingSeen,
+      markTourSeen,
       saveOnboarding,
       setDevPlan,
       signUp,
@@ -305,7 +327,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       deleteAccount,
       acceptTerms,
     }),
-    [user, status, providers, entitlements, refreshEntitlements, refreshAccount, markOnboardingSeen, saveOnboarding, setDevPlan, signUp, verifyEmail, logIn, continueAsGuest, logOut, resetPassword, exportAccountData, deleteAccount, acceptTerms]
+    [user, status, providers, entitlements, refreshEntitlements, refreshAccount, markOnboardingSeen, markTourSeen, saveOnboarding, setDevPlan, signUp, verifyEmail, logIn, continueAsGuest, logOut, resetPassword, exportAccountData, deleteAccount, acceptTerms]
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

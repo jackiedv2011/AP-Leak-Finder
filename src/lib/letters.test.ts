@@ -67,7 +67,7 @@ describe('letter generator — adversarial', () => {
   it('a partial request lowers the ask but never rewrites what the records show', () => {
     const dup = eligibleDuplicate()
     const { subject, body } = generateLetter(dup, undefined, 'refund', 2500)
-    expect(body).toContain(`supported excess is ${formatCurrency(6800)}`)
+    expect(body).toContain(`extra payment comes to ${formatCurrency(6800)}`)
     expect(body).toContain(`a refund of ${formatCurrency(2500)}`)
     expect(body).not.toContain(`a refund of ${formatCurrency(6800)}`)
     expect(subject).toContain('INV-1001')

@@ -144,10 +144,10 @@ export function Findings({ env, visible, onOpenCase }: FindingsProps) {
     </div>
     <div className="wk-toolbar">
       <label className="wk-search"><Search aria-hidden="true" /><input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search vendor, invoice or type…" aria-label="Search findings" /></label>
-      <label className="wk-select"><SlidersHorizontal aria-hidden="true" /><span className="wk-sr-only">Filter by decision</span><select value={status} onChange={(event) => setStatus(event.target.value as Status)}><option value="all">Any decision</option><option value="unreviewed">Not reviewed</option><option value="confirmed">Confirmed</option><option value="needs_info">Needs information</option><option value="expected">Expected</option></select></label>
-      <label className="wk-select"><span className="wk-sr-only">Sort findings</span><select value={sort} onChange={(event) => setSort(event.target.value as Sort)}><option value="priority">Sort: priority</option><option value="amount-desc">Sort: largest first</option><option value="amount-asc">Sort: smallest first</option><option value="vendor">Sort: vendor A–Z</option></select></label>
+      <label className="wk-select" data-tour="findings-filter"><SlidersHorizontal aria-hidden="true" /><span className="wk-sr-only">Filter by decision</span><select value={status} onChange={(event) => setStatus(event.target.value as Status)}><option value="all">Any decision</option><option value="unreviewed">Not reviewed</option><option value="confirmed">Confirmed</option><option value="needs_info">Needs information</option><option value="expected">Expected</option></select></label>
+      <label className="wk-select" data-tour="findings-sort"><span className="wk-sr-only">Sort findings</span><select value={sort} onChange={(event) => setSort(event.target.value as Sort)}><option value="priority">Sort: priority</option><option value="amount-desc">Sort: largest first</option><option value="amount-asc">Sort: smallest first</option><option value="vendor">Sort: vendor A–Z</option></select></label>
       <span className="wk-toolbar-spacer" />
-      <button type="button" className="wk-btn" data-variant="outline" onClick={() => exportCsv(ordered.filter((o) => visible.has(o.finding.id)))}><Download aria-hidden="true" />Export CSV</button>
+      <button type="button" className="wk-btn" data-variant="outline" data-tour="findings-export" onClick={() => exportCsv(ordered.filter((o) => visible.has(o.finding.id)))}><Download aria-hidden="true" />Export CSV</button>
     </div>
 
     <div className="wk-grid-table" aria-label="Finding results">

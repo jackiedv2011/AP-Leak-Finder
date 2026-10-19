@@ -20,6 +20,8 @@ export interface AuthUser {
   onboardingSeenAt?: number | null
   /** What onboarding learned (server/onboarding.ts). Null when skipped or never answered. */
   onboardingProfile?: import('../../../server/onboarding.ts').OnboardingProfile | null
+  /** When the dashboard tour was finished or skipped; null or missing means it has not been shown yet. */
+  tourSeenAt?: number | null
 }
 
 export interface AuthResult {

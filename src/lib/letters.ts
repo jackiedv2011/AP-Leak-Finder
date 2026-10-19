@@ -97,6 +97,16 @@ function internalNote(f: Finding, subject: string, bodyLines: string[], sender?:
  * much was paid twice, how much over the invoice — always come from the
  * finding itself, so lowering the ask never rewrites what the records show.
  */
+/** "$3,240.00 on Mar 4, 2026 and $3,240.00 on Mar 18, 2026" — the payments, in the order they were made. */
+function paymentList(finding: Finding): string {
+  const parts = [...finding.relatedRecords]
+    // Saved findings carry dates as ISO strings, fresh ones as Dates: read both the same way.
+    .map((r) => ({ amount: r.amountPaid, at: new Date(r.paymentDate) }))
+    .sort((a, b) => a.at.getTime() - b.at.getTime())
+    .map((r) => `${formatCurrency(r.amount)} on ${formatDate(r.at)}`)
+  return parts.length <= 2 ? parts.join(' and ') : `${parts.slice(0, -1).join(', ')} and ${parts[parts.length - 1]}`
+}
+
 export function generateLetter(
   finding: Finding,
   sender?: SenderProfile,
@@ -114,7 +124,7 @@ export function generateLetter(
     const amount = Math.min(ask, gate.potentialAmountMinor! / 100)
     const invoices=invoiceList(finding)
     return letter(`Request for ${resolutionNoun(method)} — duplicate payment on ${invoices}`, [
-      `Our reviewed payment traces show ${finding.vendor} received separate settled payments relating to ${invoices}. The supported excess is ${formatCurrency(gate.potentialAmountMinor! / 100)}.`,
+      `Our records show we paid ${finding.vendor} more than once for ${invoices}: ${paymentList(finding)}. Each payment cleared our bank, and none has been refunded or credited back. The extra payment comes to ${formatCurrency(gate.potentialAmountMinor! / 100)}.`,
       `We request ${resolutionAsk(method, amount)} for the duplicate payment.`,
     ])
   }

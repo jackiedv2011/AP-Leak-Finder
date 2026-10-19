@@ -84,7 +84,7 @@ it('lets a reconciled case correct its accounting note without reopening settlem
   const onReconcile = vi.fn()
   render(<RecoveryAccountingPanel finding={finding} state={reconciled} onReconcile={onReconcile} />)
   fireEvent.click(screen.getByRole('button', { name: 'Edit reconciliation' }))
-  fireEvent.change(screen.getByLabelText('Accounting entry or reconciliation note'), { target: { value: 'Corrected entry' } })
+  fireEvent.change(screen.getByLabelText('Where it’s recorded in your books'), { target: { value: 'Corrected entry' } })
   fireEvent.click(screen.getByRole('button', { name: 'Save reconciliation' }))
   expect(onReconcile).toHaveBeenCalledWith(finding.id, 'Corrected entry', 'Payment retry')
 })

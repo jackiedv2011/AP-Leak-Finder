@@ -26,7 +26,7 @@ describe('upload guard rails', () => {
   it('an empty CSV explains what is missing', async () => {
     const { upload } = mount()
     upload(new File([''], 'empty.csv'))
-    expect(await screen.findByRole('alert')).toHaveTextContent(/vendor, payment_date, amount_paid/)
+    expect(await screen.findByRole('alert')).toHaveTextContent(/a vendor \(or payee\) name, a payment date and the amount paid/)
   })
 
   it('a file over the size limit is refused before it is read', async () => {

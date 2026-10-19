@@ -122,6 +122,15 @@ export function SettingsView({ env, onClear, onEditOnboarding, theme, resolvedTh
                 {user?.onboardingProfile ? 'Edit answers' : 'Answer them'}
               </button>
             </li>
+            <li>
+              <div>
+                <div style={{ fontWeight: 500 }}>Dashboard tour</div>
+                <div className="wk-table-sub">A walk through every part of the sidebar and what each page is for.</div>
+              </div>
+              <button type="button" className="wk-btn" data-variant="outline" data-size="sm" onClick={() => window.dispatchEvent(new Event('reclaim:tour'))}>
+                Take the tour again
+              </button>
+            </li>
           </ul>
         </div>
       </section>

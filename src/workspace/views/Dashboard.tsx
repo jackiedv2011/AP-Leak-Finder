@@ -188,7 +188,7 @@ export function Dashboard({ env, visible, auditLabel, onOpenCase, onSeeAllFindin
           <div className="wk-panelcard-head">
             <div>
               <h2 id="ov-next">Up next</h2>
-              <p>{undecided.length === 0 ? 'Every finding has a decision.' : `${undecided.length} ${plural(undecided.length, 'finding')} waiting on your decision, most worth your time first`}</p>
+              <p>{all.length === 0 ? 'Nothing to review.' : undecided.length === 0 ? 'Every finding has a decision.' : `${undecided.length} ${plural(undecided.length, 'finding')} waiting on your decision, most worth your time first`}</p>
             </div>
             <button type="button" className="wk-more" onClick={onSeeAllFindings}>All findings <ArrowRight aria-hidden="true" /></button>
           </div>
@@ -210,8 +210,14 @@ export function Dashboard({ env, visible, auditLabel, onOpenCase, onSeeAllFindin
             </div>
           ) : (
             <div className="wk-queue-empty">
-              <p>Nothing is waiting on you. Confirmed findings move to Recoveries.</p>
-              <button type="button" className="wk-btn" data-variant="outline" data-size="sm" onClick={() => onNavigate('recoveries')}>Open Recoveries</button>
+              {all.length === 0 ? (
+                <p>No duplicate payments, overpayments or other problems turned up in these payments. Upload another export any time with Start an audit.</p>
+              ) : (
+                <>
+                  <p>Nothing is waiting on you. Confirmed findings move to Recoveries.</p>
+                  <button type="button" className="wk-btn" data-variant="outline" data-size="sm" onClick={() => onNavigate('recoveries')}>Open Recoveries</button>
+                </>
+              )}
             </div>
           )}
           {lockedCount > 0 ? (
@@ -405,7 +411,9 @@ export function Dashboard({ env, visible, auditLabel, onOpenCase, onSeeAllFindin
             {l.counts.potential === 0
               ? undecided.length
                 ? `Every check ran against ${auditLabel}. ${undecided.length} ${plural(undecided.length, 'finding')} ${undecided.length === 1 ? 'is' : 'are'} waiting on your review; none is a confirmed recovery candidate yet.`
-                : `Every check ran against ${auditLabel} and nothing is still open.`
+                : all.length === 0
+                  ? `Every check ran against ${auditLabel} and found nothing wrong.`
+                  : `Every check ran against ${auditLabel}, and every finding has a decision.`
               : <>{l.counts.potential} recovery {plural(l.counts.potential, 'candidate')} worth {money(l.potential)} in {auditLabel}. {l.verified > 0 ? <>{money(l.verified)} of it has confirmed evidence and is waiting for your approval.</> : null}</>}
           </p>
         </div>

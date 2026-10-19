@@ -274,8 +274,8 @@ export function recoveryNextAction(state: CaseState, now = Date.now(), internal 
   }
   if (state.recoveryStage === 'recovered') {
     if (verifiedReturned(state) <= 0) return { label: 'Record missing return', detail: 'This older case has no verified return. Reopen it and record the settlement before reconciliation.' }
-    if (!state.reconciledAt) return { label: 'Reconcile in accounting', detail: 'Match the settled return to the original payable and record the root cause.' }
-    return { label: 'Case complete', detail: 'Returned value and accounting reconciliation have been recorded.' }
+    if (!state.reconciledAt) return { label: 'Record it in your books', detail: 'Note where the money shows up in your accounting, and what caused the mistake, so the case can close.' }
+    return { label: 'Case complete', detail: 'The money is back and recorded in your books. Nothing left to do.' }
   }
   return { label: 'Case closed', detail: 'No returned value was recorded.' }
 }
