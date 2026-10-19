@@ -1,0 +1,554 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>What It Checks — mockup 002</title>
+<meta name="description" content="Mockup for plan 002: What It Checks in the new sub page template (grey hero, ink index of the five checks, each check on paper with its exhibit piece and its examples as a ruled list, the data promises as the trust strip, ruled FAQ).">
+<link rel="icon" type="image/svg+xml" href="../../../landing-site/assets/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400..700&family=Geist+Mono:wght@400;500&family=JetBrains+Mono:wght@400;500&family=Schibsted+Grotesk:ital,wght@0,400..800;1,400..800&display=block" rel="stylesheet">
+<link rel="stylesheet" href="../../../landing-site/styles.css">
+<link rel="stylesheet" href="../../../landing-site/pages.css">
+<link rel="stylesheet" href="kit.css">
+<style>
+  /* What It Checks — page bits on top of kit.css */
+  /* the ink index: five checks, five columns (kit-cols-4 handles phones) */
+  @media (min-width: 1024px) {
+    .content-columns .columns.kit-cols-4.wic-cols-5 { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4rem; }
+    .wic-cols-5 .heading.type-h4 { font-size: 3.2rem; padding-right: 2.4rem; }
+  }
+  /* each check: copy + piece, then the examples */
+  .wic-check .kit-step-fig .fd-tile > img { aspect-ratio: 5 / 4; object-fit: cover; }
+  .wic-check .kit-step-fig .kit-ph-obj { aspect-ratio: 5 / 4; }
+  .wic-check .kit-step-wide { margin-top: 8.8rem; }
+  .wic-ex-head { display: flex; justify-content: space-between; gap: 2.4rem; padding-bottom: 1.6rem; color: var(--cl-grey-500); font: 400 1.2rem/1.3 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; }
+  .wic-ex .kit-ruled > li { padding-block: 2.4rem; }
+  .wic-ex .kit-ruled-title { font-size: 2.4rem; }
+  .wic-ex .kit-ruled-desc { font-size: 1.6rem; }
+  .wic-more > summary { display: inline-flex; align-items: center; gap: 1rem; margin-top: 2.4rem; height: 4.8rem; padding: 0 2rem 0 1.8rem; border-radius: 1.2rem; background: var(--cl-grey-100); cursor: pointer; list-style: none; font-size: 1.6rem; font-weight: 500; letter-spacing: -.02em; }
+  .wic-more > summary::-webkit-details-marker { display: none; }
+  .wic-more > summary::before { content: ""; width: 1.2rem; height: 1.2rem; background: linear-gradient(currentColor, currentColor) center / 100% 1.5px no-repeat, linear-gradient(currentColor, currentColor) center / 1.5px 100% no-repeat; transition: transform .3s var(--e-out); }
+  .wic-more[open] > summary::before { transform: rotate(45deg); }
+  .wic-more .wic-more-close, .wic-more[open] .wic-more-open { display: none; }
+  .wic-more[open] .wic-more-close { display: inline; }
+  .wic-more[open] > summary { order: 2; }
+  .wic-more[open] { display: flex; flex-direction: column; align-items: flex-start; }
+  .wic-more[open] > .kit-ruled { width: 100%; border-top: 0; }
+  .wic-more[open] > .kit-ruled > li:first-child { border-top: 0; }
+  .wic-ex > .kit-ruled { border-bottom: 1px solid var(--cl-grey-300); }
+  /* the six data promises: the trust strip, three to a row */
+  .wic-data .closing-promises.kit-trust { row-gap: 4.8rem; padding-top: 4rem; }
+  @media (max-width: 1023px) {
+    .wic-check .kit-step-wide { margin-top: 4.8rem; }
+    .wic-ex .kit-ruled-title { font-size: 2rem; }
+    .wic-ex .kit-ruled-desc { font-size: 1.5rem; }
+    .wic-ex-head { font-size: 1rem; }
+    .wic-data .closing-promises.kit-trust { row-gap: 2.8rem; padding-top: 2.8rem; }
+  }
+</style>
+</head>
+<body class="kit" data-folder="what-it-checks">
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-arrow" viewBox="0 0 16 16"><path d="M8 13.5V2.5M3 7.5 8 2.5l5 5" fill="none" stroke="currentColor" stroke-width="1.5"/></symbol>
+  <symbol id="i-arrow-ur" viewBox="0 0 40 40"><path d="M11 29 29 11M13.5 11H29v15.5" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
+  <symbol id="i-close" viewBox="0 0 16 16"><path d="M3.5 3.5l9 9M12.5 3.5l-9 9" fill="none" stroke="currentColor" stroke-width="1.33" stroke-linecap="round"/></symbol>
+  <symbol id="i-check-circle" viewBox="0 0 48 48"><circle cx="24" cy="24" r="24" fill="#00fd74"/><path d="M14.5 24.5l6.5 6.5 12.5-13.5" fill="none" stroke="#000" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-arrow-dr" viewBox="0 0 40 40"><path d="M11 11l18 18M29 13.5V29H13.5" fill="none" stroke="currentColor" stroke-width="2"/></symbol>
+  <symbol id="i-tile-upload" viewBox="0 0 50 50"><rect width="50" height="50" rx="12" fill="#00fd74"/><g fill="none" stroke="#000" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M25 33V15M17.5 22.5 25 15l7.5 7.5M15 36h20"/></g></symbol>
+  <symbol id="i-tile-find" viewBox="0 0 50 50"><rect width="50" height="50" rx="12" fill="#00fd74"/><g fill="none" stroke="#000" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="22.5" cy="22.5" r="8.5"/><path d="m29 29 7.5 7.5"/></g></symbol>
+  <symbol id="i-tile-evidence" viewBox="0 0 50 50"><rect width="50" height="50" rx="12" fill="#00fd74"/><g fill="none" stroke="#000" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M17 13.5h11l6 6V36.5H17z"/><path d="M28 13.5v6h6M21.5 28l3 3 5.5-6"/></g></symbol>
+  <!-- what it finds: one tile per finding type -->
+  <symbol id="i-type-duplicate-payments" viewBox="0 0 50 50"><rect width="50" height="50" rx="12" fill="#00fd74"/><g fill="none" stroke="#000" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="11" y="20" width="22" height="14" rx="2"/><path d="M17 20v-3.5a2 2 0 0 1 2-2h18a2 2 0 0 1 2 2V27a2 2 0 0 1-2 2h-4"/><circle cx="22" cy="27" r="2.5"/></g></symbol>
+  <symbol id="i-type-duplicate-bills" viewBox="0 0 50 50"><rect width="50" height="50" rx="12" fill="#00fd74"/><g fill="none" stroke="#000" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M13 18h11l5 5v15H13z"/><path d="M20 18v-6h10l5 5v15h-6M18 29h6M18 33h4"/></g></symbol>
+  <symbol id="i-type-overpayments" viewBox="0 0 50 50"><rect width="50" height="50" rx="12" fill="#00fd74"/><g fill="none" stroke="#000" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="22" cy="27" r="10"/><path d="M22 22.5v9M17.5 27h9M33 11v9M28.5 15.5h9"/></g></symbol>
+  <symbol id="i-type-unused-credits" viewBox="0 0 50 50"><rect width="50" height="50" rx="12" fill="#00fd74"/><g fill="none" stroke="#000" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M13 25.5V14.5a1.5 1.5 0 0 1 1.5-1.5h11L37 24.5 24.5 37z"/><circle cx="19.5" cy="19.5" r="2"/></g></symbol>
+  <symbol id="i-type-payment-mismatches" viewBox="0 0 50 50"><rect width="50" height="50" rx="12" fill="#00fd74"/><g fill="none" stroke="#000" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M14 21h22M14 29h22M29.5 13l-9 24"/></g></symbol>
+  <!-- file handling tiles -->
+  <symbol id="i-tile-files" viewBox="0 0 50 50"><rect width="50" height="50" rx="12" fill="#00fd74"/><g fill="none" stroke="#000" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M17 13.5h11l6 6V36.5H17z"/><path d="M28 13.5v6h6M21.5 27h9M21.5 31.5h6"/></g></symbol>
+  <symbol id="i-tile-unlinked" viewBox="0 0 50 50"><rect width="50" height="50" rx="12" fill="#00fd74"/><g fill="none" stroke="#000" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 25h5M25 22h5M25 28h5"/><rect x="14" y="18.5" width="11" height="13" rx="2.5"/><rect x="35" y="16.5" width="5" height="17" rx="1.5"/></g></symbol>
+  <symbol id="i-tile-view" viewBox="0 0 50 50"><rect width="50" height="50" rx="12" fill="#00fd74"/><g fill="none" stroke="#000" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M11 25s5-8.5 14-8.5S39 25 39 25s-5 8.5-14 8.5S11 25 11 25z"/><circle cx="25" cy="25" r="3.5"/></g></symbol>
+  <symbol id="i-tile-nomoney" viewBox="0 0 50 50"><rect width="50" height="50" rx="12" fill="#00fd74"/><g fill="none" stroke="#000" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="11" y="17.5" width="28" height="15" rx="2"/><circle cx="25" cy="25" r="3"/><path d="m13 37 24-24"/></g></symbol>
+  <symbol id="i-tile-row" viewBox="0 0 50 50"><rect width="50" height="50" rx="12" fill="#00fd74"/><g fill="none" stroke="#000" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="12" y="14" width="26" height="22" rx="2"/><path d="M12 21h26M12 28.5h26M20 14v22"/></g><rect x="20" y="21" width="18" height="7.5" fill="#000"/></symbol>
+  <symbol id="i-tile-decide" viewBox="0 0 50 50"><rect width="50" height="50" rx="12" fill="#00fd74"/><g fill="none" stroke="#000" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M17 38V12M17 13h17l-3.5 6 3.5 6H17"/></g></symbol>
+  <!-- small outline marks used beside the numbers in an article -->
+  <symbol id="i-mark-chart" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16"/><path d="M6.5 20v-7M12 20V6M17.5 20v-10"/></g></symbol>
+  <symbol id="i-mark-flag" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 21V4M6 4h11l-2.5 4L17 12H6"/></g></symbol>
+  <symbol id="i-mark-coin" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><path d="M12 7.5v9M14.5 9.8c-.6-.8-1.6-1.1-2.7-1.1-1.4 0-2.3.7-2.3 1.7 0 2.4 5 1.2 5 3.6 0 1.1-1 1.8-2.4 1.8-1.2 0-2.2-.4-2.8-1.2"/></g></symbol>
+  <symbol id="i-mark-clock" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><path d="M12 7.5V12l3 2"/></g></symbol>
+  <symbol id="i-mark-doc" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.5h7l5 5V20.5H6z"/><path d="M13 3.5v5h5M9 13h6M9 16.5h4"/></g></symbol>
+  <symbol id="i-mark-alert" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4 21 20H3z"/><path d="M12 10v4.5M12 17.4v.1"/></g></symbol>
+  <symbol id="i-mark-eye" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 12S6 6 12 6s9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6z"/><circle cx="12" cy="12" r="2.6"/></g></symbol>
+  <symbol id="i-mark-scale" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v16M7 20h10M5 8h14M5 8l-2.5 5.5h5zM19 8l2.5 5.5h-5z"/></g></symbol>
+  <symbol id="i-mail" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-9.47 5.7a2 2 0 0 1-2.06 0L2 7"/></g></symbol>
+  <symbol id="i-shield" viewBox="0 0 16 16"><g fill="none" stroke="currentColor" stroke-width="1.33" stroke-linecap="round" stroke-linejoin="round"><path d="M13.33 8.67c0 3.33-2.33 5-5.1 5.97a.67.67 0 0 1-.46 0c-2.77-.97-5.1-2.64-5.1-5.97V4a.67.67 0 0 1 .66-.67c1.34 0 3-.8 4.16-1.81a.68.68 0 0 1 .88 0C9.54 2.54 11.2 3.33 12.53 3.33A.67.67 0 0 1 13.2 4z"/><path d="m6 8 1.33 1.33L10 6.67"/></g></symbol>
+  <symbol id="i-search" viewBox="0 0 16 16"><path d="m14 14-2.867-2.867m1.534-3.8A5.333 5.333 0 1 1 2 7.333a5.333 5.333 0 0 1 10.667 0" fill="none" stroke="currentColor" stroke-width="1.33" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-chevron" viewBox="0 0 16 16"><path d="m4 6 4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.33" stroke-linecap="round" stroke-linejoin="round" opacity=".5"/></symbol>
+  <symbol id="hx-wheel" viewBox="-13 -11.5 26 23">
+    <path d="M-2.056,-4.6 L-5.751,-11 L5.751,-11 L2.056,-4.6 Z"/><path d="M2.956,-4.081 L6.651,-10.481 L12.402,-0.520 L5.012,-0.520 Z"/><path d="M5.012,0.520 L12.402,0.520 L6.651,10.481 L2.956,4.081 Z"/><path d="M2.056,4.6 L5.751,11 L-5.751,11 L-2.056,4.6 Z"/><path d="M-2.956,4.081 L-6.651,10.481 L-12.402,0.520 L-5.012,0.520 Z"/><path d="M-5.012,-0.520 L-12.402,-0.520 L-6.651,-10.481 L-2.956,-4.081 Z"/>
+  </symbol>
+  <!-- dashboard mock-ups: the lucide icons the workspace uses (src/workspace/WorkspaceShell.tsx) -->
+  <symbol id="d-grid" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></g></symbol>
+  <symbol id="d-search" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></g></symbol>
+  <symbol id="d-banknote" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></g></symbol>
+  <symbol id="d-report" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4M8 18v-2M12 18v-4M16 18v-6"/></g></symbol>
+  <symbol id="d-folder" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M10.7 20H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H20a2 2 0 0 1 2 2v4.1"/><circle cx="17" cy="17" r="3"/><path d="m21 21-1.9-1.9"/></g></symbol>
+  <symbol id="d-settings" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></g></symbol>
+  <symbol id="d-sliders" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 4h-7M10 4H3M21 12h-9M8 12H3M21 20h-5M12 20H3M14 2v4M8 10v4M16 18v4"/></g></symbol>
+  <symbol id="d-panel" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18M16 15l-3-3 3-3"/></g></symbol>
+  <symbol id="d-moon" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></g></symbol>
+  <symbol id="d-chev-r" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="d-chev-d" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="d-arrow-r" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="d-plus" viewBox="0 0 24 24"><path d="M5 12h14M12 5v14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+  <symbol id="d-clock" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></g></symbol>
+  <symbol id="d-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="d-send" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z"/><path d="m21.854 2.147-10.94 10.939"/></g></symbol>
+  <symbol id="d-upload" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5M12 3v12"/></g></symbol>
+  <symbol id="d-mail" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></g></symbol>
+
+<div class="kit-mock-label">Mockup · 002 · What It Checks</div>
+
+<!-- NAV (partials/nav.html without its <template>, in its light state on the grey hero) -->
+<header class="the-nav" theme="grey">
+  <div class="the-container">
+    <div class="left">
+      <a href="how-it-works.html" class="hx-logo" aria-label="Reclaim home"><svg class="wheel" viewBox="0 0 26 23" fill="currentColor"><use href="#hx-wheel"/></svg><span class="word"><span class="letter">R</span><span class="letter">e</span><span class="letter">c</span><span class="letter">l</span><span class="letter">a</span><span class="letter">i</span><span class="letter">m</span></span></a>
+    </div>
+    <nav class="center" aria-label="Main">
+      <ul class="nav-bar type-body-xs inFolder">
+        <li class="group" data-folder="how-it-works"><a class="link" href="how-it-works.html"><span class="label">How It Works</span></a></li>
+        <li class="group current" data-folder="what-it-checks"><a class="link" href="what-it-checks.html"><span class="label">What It Checks</span></a></li>
+        <li class="group" data-folder="pricing"><a class="link" href="pricing.html"><span class="label">Pricing</span></a></li>
+        <li class="group" data-folder="research"><a class="link" href="research.html"><span class="label">Research</span></a></li>
+        <li class="group" data-folder="guides"><a class="link" href="guides.html"><span class="label">Guides</span></a></li>
+        <li class="group" data-folder="security"><a class="link" href="security.html"><span class="label">Security</span></a></li>
+        <li class="group" data-folder="about"><a class="link" href="about.html"><span class="label">About</span></a></li>
+      </ul>
+    </nav>
+    <div class="right">
+      <a href="#" class="nav-login type-body-xs">Log in</a>
+      <a href="#" class="cta cta-button" size="small" theme="black"><span class="hover-loop"><span class="inner">Get Started</span></span></a>
+      <button type="button" class="menu-toggle" aria-label="Open menu"><span class="bar"></span><span class="bar"></span></button>
+    </div>
+  </div>
+</header>
+
+<main class="page">
+
+  <!-- HERO — grey, ink type, one <em>, the record stack on its own floor at right (as the landing) -->
+  <section class="hero-home kit-hero" theme="grey">
+    <div class="bg">
+      <div class="bg-wrap the-grid"><div class="wrap"><video class="hero-film" autoplay loop muted playsinline preload="auto" poster="../../../landing-site/media/hero/first.webp" aria-hidden="true"><source src="../../../landing-site/media/hero/d.mp4" type="video/mp4"></video></div></div>
+    </div>
+    <div class="content the-grid">
+      <p class="kit-eyebrow kit-hero-eyebrow">What it checks</p>
+      <h1 class="heading heading1 type-h1">Five checks.<br>Every <em>payment.</em></h1>
+      <div class="desc">
+        <p class="type-body-large">Duplicate payments, duplicate bills, overpayments, unused vendor credits, and payments that don’t match what was billed. Every result comes with the records that show it.</p>
+        <div class="hero-ctas">
+          <a href="#" class="cta cta-button" size="large" theme="black"><span class="hover-loop"><span class="inner">Run a free audit</span></span></a>
+          <a href="how-it-works.html" class="cta cta-button has-arrow" size="large" theme="none"><span class="hover-loop"><span class="inner">How it works<svg class="icon"><use href="#i-arrow"/></svg></span></span></a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- INK — the five checks as the landing's numbered columns. Replaces the old hero anchor list: each column jumps to its check. -->
+  <div class="rounded-section kit-ink" theme="black">
+    <div class="bg bg-top" theme="grey"></div>
+    <div class="bg bg-bottom" theme="black"></div>
+    <div class="rs-scale" theme="black">
+      <section class="section content-columns" theme="black">
+        <div class="the-grid">
+          <div class="columns kit-cols-4 wic-cols-5">
+            <a href="#duplicate-payments" class="content-column"><span class="step-no type-mono">01</span><svg class="kit-col-arrow" aria-hidden="true"><use href="#i-arrow"/></svg><h3 class="heading type-h4">Duplicate payments.</h3><p class="desc type-body-medium">The same invoice paid twice: by check and ACH, on a card and as a bill.</p></a>
+            <a href="#duplicate-bills" class="content-column"><span class="step-no type-mono">02</span><svg class="kit-col-arrow" aria-hidden="true"><use href="#i-arrow"/></svg><h3 class="heading type-h4">Duplicate bills.</h3><p class="desc type-body-medium">A bill entered twice is one approval away from being paid twice.</p></a>
+            <a href="#overpayments" class="content-column"><span class="step-no type-mono">03</span><svg class="kit-col-arrow" aria-hidden="true"><use href="#i-arrow"/></svg><h3 class="heading type-h4">Overpayments.</h3><p class="desc type-body-medium">Payments above the invoice, deposits paid again, estimates paid instead of the final bill.</p></a>
+            <a href="#unused-credits" class="content-column"><span class="step-no type-mono">04</span><svg class="kit-col-arrow" aria-hidden="true"><use href="#i-arrow"/></svg><h3 class="heading type-h4">Unused credits.</h3><p class="desc type-body-medium">Returns, rebates, and price corrections come back to you as credits.</p></a>
+            <a href="#payment-mismatches" class="content-column"><span class="step-no type-mono">05</span><svg class="kit-col-arrow" aria-hidden="true"><use href="#i-arrow"/></svg><h3 class="heading type-h4">Payment mismatches.</h3><p class="desc type-body-medium">A transposed digit, the wrong invoice, a payee that doesn’t match the bill.</p></a>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <!-- PAPER — rises over the ink. The five checks, each with its piece; the data promises; the FAQ. -->
+  <div class="rounded-section kit-paper" theme="white">
+    <div class="bg bg-top" theme="black"></div>
+    <div class="bg bg-bottom" theme="white"></div>
+    <div class="rs-scale" theme="white">
+
+      <!-- 01 Duplicate payments: copy and its piece side by side, then the examples as a ruled list (first 5, the rest behind "Show all") -->
+      <section class="section kit-step wic-check" theme="white" id="duplicate-payments">
+        <div class="the-grid kit-step-row">
+          <div class="kit-step-copy">
+            <p class="kit-eyebrow">01 · Duplicate payments</p>
+            <h2 class="heading type-h3">Paid once. Then paid again.</h2>
+            <p class="kit-step-lead">The same invoice paid twice: by check and ACH, on a card and as a bill, or in a payment run that went out again. Reclaim finds each one, with the records that show it.</p>
+            <p class="kit-step-body">Reclaim compares each payment with the bills and payments around it: vendor, amount, invoice number, reference, and date. Here are examples of what it turns up.</p>
+          </div>
+          <div class="kit-step-fig">
+            <div class="fd-tile" data-ex="echo"><img src="../../../landing-site/media/exhibits/echo/still.webp" srcset="../../../landing-site/media/exhibits/echo/still-m.webp 1600w, ../../../landing-site/media/exhibits/echo/still.webp 2560w" sizes="(max-width: 1023px) 100vw, 50vw" width="2560" height="1440" alt="" decoding="async"><span class="fd-cap"><span class="fd-title">One payment. Made twice.</span><span class="fd-meta">Duplicate payment · $4,280</span></span></div>
+          </div>
+          <div class="kit-step-wide">
+            <div class="wic-ex">
+              <div class="wic-ex-head"><span>What it turns up · examples</span><span>22 examples</span></div>
+              <ol class="kit-ruled">
+                <li><span class="kit-ruled-no">01</span><div><h3 class="kit-ruled-title">Was invoice #4471 from the packaging supplier paid twice?</h3><p class="kit-ruled-desc">Yes. $2,640 by ACH on Mar 3, then by check on Mar 11.</p></div><span class="kit-ruled-meta">Check + ACH</span></li>
+                <li><span class="kit-ruled-no">02</span><div><h3 class="kit-ruled-title">Did any invoice number get paid more than once this year?</h3><p class="kit-ruled-desc">3 invoices, $9,315 in total, all from two vendors.</p></div><span class="kit-ruled-meta">Same invoice</span></li>
+                <li><span class="kit-ruled-no">03</span><div><h3 class="kit-ruled-title">Was the software renewal paid on a card and as a bill?</h3><p class="kit-ruled-desc">Yes. $4,800 on the company card, then again by ACH six days later.</p></div><span class="kit-ruled-meta">Card + bill</span></li>
+                <li><span class="kit-ruled-no">04</span><div><h3 class="kit-ruled-title">Did a resent invoice get paid as a new one?</h3><p class="kit-ruled-desc">Yes. Invoice 7719 came back as 7719-A and was paid again: $1,150.</p></div><span class="kit-ruled-meta">Resent invoice</span></li>
+                <li><span class="kit-ruled-no">05</span><div><h3 class="kit-ruled-title">Is the same vendor set up under two names?</h3><p class="kit-ruled-desc">Yes. The office supplier exists with and without "Inc." Two invoices were paid under both.</p></div><span class="kit-ruled-meta">Vendor record</span></li>
+              </ol>
+              <details class="wic-more">
+                <summary><span class="wic-more-open">Show all 22 examples</span><span class="wic-more-close">Show fewer</span></summary>
+                <ol class="kit-ruled">
+                <li><span class="kit-ruled-no">06</span><div><h3 class="kit-ruled-title">Two $6,500 payments to the landlord in April?</h3><p class="kit-ruled-desc">Not a duplicate. The second matches a separate invoice for the deposit.</p></div><span class="kit-ruled-meta">Rent</span></li>
+                <li><span class="kit-ruled-no">07</span><div><h3 class="kit-ruled-title">Did a voided check and its replacement both clear?</h3><p class="kit-ruled-desc">Yes. Check #20417 cleared, and so did its replacement, #20455: $3,210.</p></div><span class="kit-ruled-meta">Reissued check</span></li>
+                <li><span class="kit-ruled-no">08</span><div><h3 class="kit-ruled-title">Any wires that repeat an ACH to the same vendor?</h3><p class="kit-ruled-desc">1 match: $18,000 to the equipment lessor, sent both ways on May 30.</p></div><span class="kit-ruled-meta">Wire + ACH</span></li>
+                <li><span class="kit-ruled-no">09</span><div><h3 class="kit-ruled-title">Payments with the same vendor, amount, and date?</h3><p class="kit-ruled-desc">4 pairs. 3 are duplicates. 1 matches two separate invoices.</p></div><span class="kit-ruled-meta">Same amount</span></li>
+                <li><span class="kit-ruled-no">10</span><div><h3 class="kit-ruled-title">Were any freight bills paid twice?</h3><p class="kit-ruled-desc">2 bills, $1,940 in total, each paid once from AP and once on a card.</p></div><span class="kit-ruled-meta">Freight</span></li>
+                <li><span class="kit-ruled-no">11</span><div><h3 class="kit-ruled-title">Was the electric bill paid twice in any month?</h3><p class="kit-ruled-desc">Yes, in January: autopay on the 12th, a manual payment on the 14th. $1,318.</p></div><span class="kit-ruled-meta">Utilities</span></li>
+                <li><span class="kit-ruled-no">12</span><div><h3 class="kit-ruled-title">Was a contractor paid twice for the same week?</h3><p class="kit-ruled-desc">1 contractor, week of Jun 9: two payments of $2,400.</p></div><span class="kit-ruled-meta">Contractors</span></li>
+                <li><span class="kit-ruled-no">13</span><div><h3 class="kit-ruled-title">Was a prepaid order paid again when the invoice came?</h3><p class="kit-ruled-desc">Yes. Paid upfront on Feb 2, then again from the invoice: $7,450.</p></div><span class="kit-ruled-meta">Prepaid order</span></li>
+                <li><span class="kit-ruled-no">14</span><div><h3 class="kit-ruled-title">Any duplicates around the year-end close?</h3><p class="kit-ruled-desc">2 payments from the last week of December, $6,020, repeated in January.</p></div><span class="kit-ruled-meta">Year-end</span></li>
+                <li><span class="kit-ruled-no">15</span><div><h3 class="kit-ruled-title">Same invoice paid under two different references?</h3><p class="kit-ruled-desc">Yes. "INV 5521" and "5521" were paid three weeks apart: $980.</p></div><span class="kit-ruled-meta">References</span></li>
+                <li><span class="kit-ruled-no">16</span><div><h3 class="kit-ruled-title">Was one invoice paid from two bank accounts?</h3><p class="kit-ruled-desc">Yes. The insurance premium, paid from both operating accounts: $12,400.</p></div><span class="kit-ruled-meta">Two accounts</span></li>
+                <li><span class="kit-ruled-no">17</span><div><h3 class="kit-ruled-title">Did a payment run go out twice?</h3><p class="kit-ruled-desc">Yes. The Apr 28 run went out again on Apr 29: 6 vendors, $14,230.</p></div><span class="kit-ruled-meta">Payment run</span></li>
+                <li><span class="kit-ruled-no">18</span><div><h3 class="kit-ruled-title">Any duplicates under $100?</h3><p class="kit-ruled-desc">11 of them, $640 in total, from the same 2 vendors.</p></div><span class="kit-ruled-meta">Small amounts</span></li>
+                <li><span class="kit-ruled-no">19</span><div><h3 class="kit-ruled-title">Was the payroll service fee paid twice in Q1?</h3><p class="kit-ruled-desc">No. One payment per invoice in all three months.</p></div><span class="kit-ruled-meta">Payroll service</span></li>
+                <li><span class="kit-ruled-no">20</span><div><h3 class="kit-ruled-title">Two $450 payments to the cleaning contractor in June?</h3><p class="kit-ruled-desc">Not a duplicate. They match two invoices, #0611 and #0625.</p></div><span class="kit-ruled-meta">Cleaning</span></li>
+                <li><span class="kit-ruled-no">21</span><div><h3 class="kit-ruled-title">Was a card statement paid twice?</h3><p class="kit-ruled-desc">Yes. The May statement was paid on the 20th and again on the 27th: $3,775.</p></div><span class="kit-ruled-meta">Card statement</span></li>
+                <li><span class="kit-ruled-no">22</span><div><h3 class="kit-ruled-title">How much went out in duplicate payments this year?</h3><p class="kit-ruled-desc">14 duplicates, $61,480, across 9 vendors, each with its records.</p></div><span class="kit-ruled-meta">All vendors</span></li>
+                </ol>
+              </details>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 02 Duplicate bills: copy and its piece side by side, then the examples as a ruled list (first 5, the rest behind "Show all") -->
+      <section class="section kit-step wic-check is-flip" theme="white" id="duplicate-bills">
+        <div class="the-grid kit-step-row">
+          <div class="kit-step-copy">
+            <p class="kit-eyebrow">02 · Duplicate bills</p>
+            <h2 class="heading type-h3">One invoice. Entered twice.</h2>
+            <p class="kit-step-lead">A bill entered twice is one approval away from being paid twice. Reclaim finds repeats by number, vendor, amount, and date, even when a typo or a renamed vendor hides them.</p>
+            <p class="kit-step-body">Reclaim compares every bill with the other bills from the same vendor, allowing for typos, extra zeros, and renamed vendors. Here are examples of what it turns up.</p>
+          </div>
+          <div class="kit-step-fig">
+            <div class="fd-tile" data-ex="shadow"><img src="../../../landing-site/media/exhibits/shadow/still.webp" srcset="../../../landing-site/media/exhibits/shadow/still-m.webp 1600w, ../../../landing-site/media/exhibits/shadow/still.webp 2560w" sizes="(max-width: 1023px) 100vw, 50vw" width="2560" height="1440" alt="" decoding="async"><span class="fd-cap"><span class="fd-title">Two bills. One purchase.</span><span class="fd-meta">Duplicate bill · $2,640</span></span></div>
+          </div>
+          <div class="kit-step-wide">
+            <div class="wic-ex">
+              <div class="wic-ex-head"><span>What it turns up · examples</span><span>22 examples</span></div>
+              <ol class="kit-ruled">
+                <li><span class="kit-ruled-no">01</span><div><h3 class="kit-ruled-title">Was invoice #3310 entered twice?</h3><p class="kit-ruled-desc">Yes. Once on Feb 4 and again on Feb 18, both approved: $5,120.</p></div><span class="kit-ruled-meta">Same number</span></li>
+                <li><span class="kit-ruled-no">02</span><div><h3 class="kit-ruled-title">Was a vendor's reminder entered as a new bill?</h3><p class="kit-ruled-desc">Yes. The reminder copy of #8812 became a second bill for $760.</p></div><span class="kit-ruled-meta">Reminder email</span></li>
+                <li><span class="kit-ruled-no">03</span><div><h3 class="kit-ruled-title">Are bills "00417" and "417" the same invoice?</h3><p class="kit-ruled-desc">Yes. Same vendor, date, and amount, entered as two bills.</p></div><span class="kit-ruled-meta">Leading zeros</span></li>
+                <li><span class="kit-ruled-no">04</span><div><h3 class="kit-ruled-title">Bills whose numbers differ by one character?</h3><p class="kit-ruled-desc">3 pairs, like INV-2291 and INV-2219. 2 are repeats: $4,430.</p></div><span class="kit-ruled-meta">Typos</span></li>
+                <li><span class="kit-ruled-no">05</span><div><h3 class="kit-ruled-title">Was a line from a vendor statement entered as a bill?</h3><p class="kit-ruled-desc">Yes. The March statement line for #6120 became a new $1,875 bill.</p></div><span class="kit-ruled-meta">Statement line</span></li>
+              </ol>
+              <details class="wic-more">
+                <summary><span class="wic-more-open">Show all 22 examples</span><span class="wic-more-close">Show fewer</span></summary>
+                <ol class="kit-ruled">
+                <li><span class="kit-ruled-no">06</span><div><h3 class="kit-ruled-title">Bills with no invoice number, same vendor and amount?</h3><p class="kit-ruled-desc">5 bills. 3 look like repeats of each other: $2,190.</p></div><span class="kit-ruled-meta">No number</span></li>
+                <li><span class="kit-ruled-no">07</span><div><h3 class="kit-ruled-title">Was the same invoice entered from paper and from a PDF?</h3><p class="kit-ruled-desc">Yes, for the printing vendor: $3,460, entered 9 days apart.</p></div><span class="kit-ruled-meta">Paper + PDF</span></li>
+                <li><span class="kit-ruled-no">08</span><div><h3 class="kit-ruled-title">Are any open bills repeats of paid ones?</h3><p class="kit-ruled-desc">4 open bills, $7,905, match invoices that were already paid.</p></div><span class="kit-ruled-meta">Already paid</span></li>
+                <li><span class="kit-ruled-no">09</span><div><h3 class="kit-ruled-title">Was one invoice entered under two different dates?</h3><p class="kit-ruled-desc">Yes. Invoice date on one, due date on the other: $1,340.</p></div><span class="kit-ruled-meta">Two dates</span></li>
+                <li><span class="kit-ruled-no">10</span><div><h3 class="kit-ruled-title">Did two people enter the same bill?</h3><p class="kit-ruled-desc">2 bills, entered by different team members on the same day: $2,980.</p></div><span class="kit-ruled-meta">Two people</span></li>
+                <li><span class="kit-ruled-no">11</span><div><h3 class="kit-ruled-title">Two identical bills from the landscaping vendor?</h3><p class="kit-ruled-desc">Not a repeat. Same amount, but for May and June service.</p></div><span class="kit-ruled-meta">Landscaping</span></li>
+                <li><span class="kit-ruled-no">12</span><div><h3 class="kit-ruled-title">Is a revised invoice open next to the original?</h3><p class="kit-ruled-desc">Yes. #5504 and #5504-R are both open. Only the revised $3,050 is due.</p></div><span class="kit-ruled-meta">Revised invoice</span></li>
+                <li><span class="kit-ruled-no">13</span><div><h3 class="kit-ruled-title">Was one bill entered through two systems?</h3><p class="kit-ruled-desc">Yes. The software license, $9,600, came in through both.</p></div><span class="kit-ruled-meta">Two systems</span></li>
+                <li><span class="kit-ruled-no">14</span><div><h3 class="kit-ruled-title">Freight bills entered by hand and from the portal?</h3><p class="kit-ruled-desc">6 bills, $2,215, entered both ways.</p></div><span class="kit-ruled-meta">Carrier portal</span></li>
+                <li><span class="kit-ruled-no">15</span><div><h3 class="kit-ruled-title">Was a scanned invoice uploaded twice?</h3><p class="kit-ruled-desc">Yes. The same file, uploaded Tuesday and Thursday: $890.</p></div><span class="kit-ruled-meta">Uploaded twice</span></li>
+                <li><span class="kit-ruled-no">16</span><div><h3 class="kit-ruled-title">Was the March cleaning invoice entered twice?</h3><p class="kit-ruled-desc">No. One bill, matched to one invoice number.</p></div><span class="kit-ruled-meta">Cleaning</span></li>
+                <li><span class="kit-ruled-no">17</span><div><h3 class="kit-ruled-title">Bills that match once you round the amount?</h3><p class="kit-ruled-desc">2 pairs: $1,249.99 and $1,250.00 for the same order.</p></div><span class="kit-ruled-meta">Rounding</span></li>
+                <li><span class="kit-ruled-no">18</span><div><h3 class="kit-ruled-title">Two bills against the same purchase order line?</h3><p class="kit-ruled-desc">Yes. PO 3381, line 2, was billed twice: $4,700.</p></div><span class="kit-ruled-meta">Purchase order</span></li>
+                <li><span class="kit-ruled-no">19</span><div><h3 class="kit-ruled-title">Is one bill filed under two vendor records?</h3><p class="kit-ruled-desc">Yes. The electrician is set up twice, and invoice 12-044 sits under both.</p></div><span class="kit-ruled-meta">Vendor record</span></li>
+                <li><span class="kit-ruled-no">20</span><div><h3 class="kit-ruled-title">Bills entered twice during the year-end close?</h3><p class="kit-ruled-desc">3 bills, $5,560, all entered in the last week of December.</p></div><span class="kit-ruled-meta">Year-end</span></li>
+                <li><span class="kit-ruled-no">21</span><div><h3 class="kit-ruled-title">Card purchases also entered as bills?</h3><p class="kit-ruled-desc">7 purchases, $3,120, already on the card statement.</p></div><span class="kit-ruled-meta">Card purchases</span></li>
+                <li><span class="kit-ruled-no">22</span><div><h3 class="kit-ruled-title">How many repeated bills are still unpaid?</h3><p class="kit-ruled-desc">9 bills, $16,340, each shown next to the bill it repeats.</p></div><span class="kit-ruled-meta">Still unpaid</span></li>
+                </ol>
+              </details>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 03 Overpayments: copy and its piece side by side, then the examples as a ruled list (first 5, the rest behind "Show all") -->
+      <section class="section kit-step wic-check" theme="white" id="overpayments">
+        <div class="the-grid kit-step-row">
+          <div class="kit-step-copy">
+            <p class="kit-eyebrow">03 · Overpayments</p>
+            <h2 class="heading type-h3">Paid more than you owed.</h2>
+            <p class="kit-step-lead">Payments above the invoice, deposits paid again, estimates paid instead of the final bill. Reclaim finds where more went out than was owed, with the bill and payment side by side.</p>
+            <p class="kit-step-body">Reclaim adds up what was billed and what was paid for each invoice, including deposits, fees, and split payments. Here are examples of what it turns up.</p>
+          </div>
+          <div class="kit-step-fig">
+            <div class="fd-tile" data-ex="overflow"><img src="../../../landing-site/media/exhibits/overflow/still.webp" srcset="../../../landing-site/media/exhibits/overflow/still-m.webp 1600w, ../../../landing-site/media/exhibits/overflow/still.webp 2560w" sizes="(max-width: 1023px) 100vw, 50vw" width="2560" height="1440" alt="" decoding="async"><span class="fd-cap"><span class="fd-title">More than the bill asked for.</span><span class="fd-meta">Overpayment · $1,200</span></span></div>
+          </div>
+          <div class="kit-step-wide">
+            <div class="wic-ex">
+              <div class="wic-ex-head"><span>What it turns up · examples</span><span>22 examples</span></div>
+              <ol class="kit-ruled">
+                <li><span class="kit-ruled-no">01</span><div><h3 class="kit-ruled-title">Were any payments larger than their invoice?</h3><p class="kit-ruled-desc">6 payments, $4,915 over in total. The largest was $1,200 over.</p></div><span class="kit-ruled-meta">Over the invoice</span></li>
+                <li><span class="kit-ruled-no">02</span><div><h3 class="kit-ruled-title">Was a deposit left out of the final payment?</h3><p class="kit-ruled-desc">Yes. $1,000 deposit, then the full $5,600 invoice paid anyway.</p></div><span class="kit-ruled-meta">Deposit</span></li>
+                <li><span class="kit-ruled-no">03</span><div><h3 class="kit-ruled-title">Paid for 120 units on an invoice for 100?</h3><p class="kit-ruled-desc">Yes. $1,640 over, on the April packaging order.</p></div><span class="kit-ruled-meta">Quantity</span></li>
+                <li><span class="kit-ruled-no">04</span><div><h3 class="kit-ruled-title">Was shipping paid twice on one order?</h3><p class="kit-ruled-desc">Yes. Once on the product invoice and again on the freight bill: $285.</p></div><span class="kit-ruled-meta">Shipping</span></li>
+                <li><span class="kit-ruled-no">05</span><div><h3 class="kit-ruled-title">Did split payments add up to more than the invoice?</h3><p class="kit-ruled-desc">Yes. Three payments on #2208 came to $6,450 against a $5,900 bill.</p></div><span class="kit-ruled-meta">Split payments</span></li>
+              </ol>
+              <details class="wic-more">
+                <summary><span class="wic-more-open">Show all 22 examples</span><span class="wic-more-close">Show fewer</span></summary>
+                <ol class="kit-ruled">
+                <li><span class="kit-ruled-no">06</span><div><h3 class="kit-ruled-title">Was a late fee paid on an invoice paid on time?</h3><p class="kit-ruled-desc">Yes. A $75 fee on #4410, which was paid 3 days before it was due.</p></div><span class="kit-ruled-meta">Late fee</span></li>
+                <li><span class="kit-ruled-no">07</span><div><h3 class="kit-ruled-title">Monthly retainer paid at the old rate?</h3><p class="kit-ruled-desc">Yes. Invoices dropped to $2,000 in March. Payments stayed at $2,500.</p></div><span class="kit-ruled-meta">Retainer</span></li>
+                <li><span class="kit-ruled-no">08</span><div><h3 class="kit-ruled-title">Was the June equipment payment more than billed?</h3><p class="kit-ruled-desc">No. $12,480 billed, $12,480 paid.</p></div><span class="kit-ruled-meta">Equipment</span></li>
+                <li><span class="kit-ruled-no">09</span><div><h3 class="kit-ruled-title">Payments with no bill behind them?</h3><p class="kit-ruled-desc">3 payments, $2,640. Two went to a vendor whose last invoice was in March.</p></div><span class="kit-ruled-meta">No bill</span></li>
+                <li><span class="kit-ruled-no">10</span><div><h3 class="kit-ruled-title">Payments rounded up past the invoice amount?</h3><p class="kit-ruled-desc">7 payments to the same contractor, $412 over in total.</p></div><span class="kit-ruled-meta">Rounded up</span></li>
+                <li><span class="kit-ruled-no">11</span><div><h3 class="kit-ruled-title">Was an annual plan also charged monthly?</h3><p class="kit-ruled-desc">Yes. A $2,400 annual plan, plus 4 monthly charges of $240.</p></div><span class="kit-ruled-meta">Annual plan</span></li>
+                <li><span class="kit-ruled-no">12</span><div><h3 class="kit-ruled-title">Paid the original amount after a bill was reduced?</h3><p class="kit-ruled-desc">Yes. Reduced to $3,300 after a short shipment. $3,800 was paid.</p></div><span class="kit-ruled-meta">Adjusted bill</span></li>
+                <li><span class="kit-ruled-no">13</span><div><h3 class="kit-ruled-title">Contractor paid for more hours than invoiced?</h3><p class="kit-ruled-desc">Yes. Invoiced for 32 hours, paid for 40: $760 over.</p></div><span class="kit-ruled-meta">Hours</span></li>
+                <li><span class="kit-ruled-no">14</span><div><h3 class="kit-ruled-title">Overpayments under $50?</h3><p class="kit-ruled-desc">23 payments, $512 in total, mostly to 2 utilities.</p></div><span class="kit-ruled-meta">Small amounts</span></li>
+                <li><span class="kit-ruled-no">15</span><div><h3 class="kit-ruled-title">Is the extra $180 on invoice #7702 an overpayment?</h3><p class="kit-ruled-desc">No. The payment also covers a separate $180 invoice from that week.</p></div><span class="kit-ruled-meta">Explained</span></li>
+                <li><span class="kit-ruled-no">16</span><div><h3 class="kit-ruled-title">Was a card fee added on top of a fee already billed?</h3><p class="kit-ruled-desc">Yes. The 3% fee was added twice on #1566: $138 over.</p></div><span class="kit-ruled-meta">Card fees</span></li>
+                <li><span class="kit-ruled-no">17</span><div><h3 class="kit-ruled-title">Was an estimate paid instead of the final invoice?</h3><p class="kit-ruled-desc">Yes. The $9,500 estimate was paid. The final invoice was $8,740.</p></div><span class="kit-ruled-meta">Estimate</span></li>
+                <li><span class="kit-ruled-no">18</span><div><h3 class="kit-ruled-title">Was a bill paid in full after part of it was credited?</h3><p class="kit-ruled-desc">Yes. $450 of a $3,600 bill was credited, and the full $3,600 was paid.</p></div><span class="kit-ruled-meta">Partial credit</span></li>
+                <li><span class="kit-ruled-no">19</span><div><h3 class="kit-ruled-title">Overpayments to vendors added this year?</h3><p class="kit-ruled-desc">5 payments, $2,310 over, to 3 new vendors.</p></div><span class="kit-ruled-meta">New vendors</span></li>
+                <li><span class="kit-ruled-no">20</span><div><h3 class="kit-ruled-title">Vendors paid more than they billed all year?</h3><p class="kit-ruled-desc">4 vendors. Payments exceed bills by $6,275 in total.</p></div><span class="kit-ruled-meta">Vendor totals</span></li>
+                <li><span class="kit-ruled-no">21</span><div><h3 class="kit-ruled-title">Paid the old price after the invoice price dropped?</h3><p class="kit-ruled-desc">Yes. Invoices moved to $12.80 a unit in May. Payments stayed at $14.20.</p></div><span class="kit-ruled-meta">Price change</span></li>
+                <li><span class="kit-ruled-no">22</span><div><h3 class="kit-ruled-title">How much was overpaid this year?</h3><p class="kit-ruled-desc">$11,860 across 19 payments, each with its bill and payment.</p></div><span class="kit-ruled-meta">All vendors</span></li>
+                </ol>
+              </details>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 04 Unused credits: copy and its piece side by side, then the examples as a ruled list (first 5, the rest behind "Show all") -->
+      <section class="section kit-step wic-check is-flip" theme="white" id="unused-credits">
+        <div class="the-grid kit-step-row">
+          <div class="kit-step-copy">
+            <p class="kit-eyebrow">04 · Unused credits</p>
+            <h2 class="heading type-h3">Credits you had. Never used.</h2>
+            <p class="kit-step-lead">Returns, rebates, and price corrections come back to you as credits. Reclaim finds the ones still sitting open while invoices from the same vendor were paid in full anyway.</p>
+            <p class="kit-step-body">Reclaim tracks credit memos and returns against the bills paid after them, so an open credit doesn't go unnoticed. Once it can read supplier statements, it also finds credits your vendor shows that your books never recorded. Here are examples of what it turns up.</p>
+          </div>
+          <div class="kit-step-fig">
+            <div class="fd-tile" data-ex="piece"><img src="../../../landing-site/media/exhibits/piece/still.webp" srcset="../../../landing-site/media/exhibits/piece/still-m.webp 1600w, ../../../landing-site/media/exhibits/piece/still.webp 2560w" sizes="(max-width: 1023px) 100vw, 50vw" width="2560" height="1440" alt="" decoding="async"><span class="fd-cap"><span class="fd-title">It was yours the whole time.</span><span class="fd-meta">Unused credit · $850</span></span></div>
+          </div>
+          <div class="kit-step-wide">
+            <div class="wic-ex">
+              <div class="wic-ex-head"><span>What it turns up · examples</span><span>22 examples</span></div>
+              <ol class="kit-ruled">
+                <li><span class="kit-ruled-no">01</span><div><h3 class="kit-ruled-title">Any credit memos that were never applied?</h3><p class="kit-ruled-desc">5 credits, $3,480, still open with 4 vendors.</p></div><span class="kit-ruled-meta">Credit memos</span></li>
+                <li><span class="kit-ruled-no">02</span><div><h3 class="kit-ruled-title">Was a return credited but never used?</h3><p class="kit-ruled-desc">Yes. A $1,260 credit for returned chairs, open since February.</p></div><span class="kit-ruled-meta">Returns</span></li>
+                <li><span class="kit-ruled-no">03</span><div><h3 class="kit-ruled-title">Does a vendor statement show a credit you haven't used?</h3><p class="kit-ruled-desc">Yes. The paper supplier's statement shows $640 in your favor.</p></div><span class="kit-ruled-meta">Statements</span></li>
+                <li><span class="kit-ruled-no">04</span><div><h3 class="kit-ruled-title">Open credits more than a year old?</h3><p class="kit-ruled-desc">3 credits, $2,115. The oldest is 19 months old.</p></div><span class="kit-ruled-meta">Older credits</span></li>
+                <li><span class="kit-ruled-no">05</span><div><h3 class="kit-ruled-title">Was an invoice paid in full while a credit was open?</h3><p class="kit-ruled-desc">Yes. An $850 credit was open when #3304 was paid in full: $4,200.</p></div><span class="kit-ruled-meta">Paid in full</span></li>
+              </ol>
+              <details class="wic-more">
+                <summary><span class="wic-more-open">Show all 22 examples</span><span class="wic-more-close">Show fewer</span></summary>
+                <ol class="kit-ruled">
+                <li><span class="kit-ruled-no">06</span><div><h3 class="kit-ruled-title">Credits with vendors you no longer use?</h3><p class="kit-ruled-desc">2 vendors, $1,730 in open credits, no bills in 8 months.</p></div><span class="kit-ruled-meta">Past vendors</span></li>
+                <li><span class="kit-ruled-no">07</span><div><h3 class="kit-ruled-title">Was a volume rebate issued as a credit and left open?</h3><p class="kit-ruled-desc">Yes. A $2,000 rebate credit from the distributor, never applied.</p></div><span class="kit-ruled-meta">Rebates</span></li>
+                <li><span class="kit-ruled-no">08</span><div><h3 class="kit-ruled-title">Credits from price corrections that were never applied?</h3><p class="kit-ruled-desc">4 credits, $920, issued after a pricing error in May.</p></div><span class="kit-ruled-meta">Price fixes</span></li>
+                <li><span class="kit-ruled-no">09</span><div><h3 class="kit-ruled-title">Was a credit for a damaged shipment ever used?</h3><p class="kit-ruled-desc">No. The $415 credit for damaged boxes is still open.</p></div><span class="kit-ruled-meta">Damaged goods</span></li>
+                <li><span class="kit-ruled-no">10</span><div><h3 class="kit-ruled-title">Is the $300 credit from the printer still open?</h3><p class="kit-ruled-desc">No. It was applied to invoice #5518 in April.</p></div><span class="kit-ruled-meta">Checked</span></li>
+                <li><span class="kit-ruled-no">11</span><div><h3 class="kit-ruled-title">Credits entered as negative bills?</h3><p class="kit-ruled-desc">6 negative bills, $1,090, never matched to a payment or invoice.</p></div><span class="kit-ruled-meta">Negative bills</span></li>
+                <li><span class="kit-ruled-no">12</span><div><h3 class="kit-ruled-title">Deposits still sitting as credits?</h3><p class="kit-ruled-desc">Yes. A $1,500 venue deposit was never applied to the final bill.</p></div><span class="kit-ruled-meta">Deposits</span></li>
+                <li><span class="kit-ruled-no">13</span><div><h3 class="kit-ruled-title">Was a cancelled order credited and left open?</h3><p class="kit-ruled-desc">Yes. $3,300 credited in March, not applied or refunded since.</p></div><span class="kit-ruled-meta">Cancelled order</span></li>
+                <li><span class="kit-ruled-no">14</span><div><h3 class="kit-ruled-title">Service credits for outages left unused?</h3><p class="kit-ruled-desc">Yes. 2 credits from the phone provider, $260 in total.</p></div><span class="kit-ruled-meta">Service credits</span></li>
+                <li><span class="kit-ruled-no">15</span><div><h3 class="kit-ruled-title">Which vendor holds the most in open credits?</h3><p class="kit-ruled-desc">The equipment supplier: $4,150 across 3 credit memos.</p></div><span class="kit-ruled-meta">Largest</span></li>
+                <li><span class="kit-ruled-no">16</span><div><h3 class="kit-ruled-title">Credits on vendor statements missing from your records?</h3><p class="kit-ruled-desc">3 credits, $1,020, on statements but not in your books.</p></div><span class="kit-ruled-meta">Not in your books</span></li>
+                <li><span class="kit-ruled-no">17</span><div><h3 class="kit-ruled-title">Credits that were only partly used?</h3><p class="kit-ruled-desc">2 credits, with $780 left over after partial use.</p></div><span class="kit-ruled-meta">Partly used</span></li>
+                <li><span class="kit-ruled-no">18</span><div><h3 class="kit-ruled-title">Was a credit for a late delivery ever used?</h3><p class="kit-ruled-desc">No. The $540 credit from the carrier is still open.</p></div><span class="kit-ruled-meta">Late delivery</span></li>
+                <li><span class="kit-ruled-no">19</span><div><h3 class="kit-ruled-title">Open credits carried into the new year?</h3><p class="kit-ruled-desc">11 credits, $6,870, still open on January 1.</p></div><span class="kit-ruled-meta">Year-end</span></li>
+                <li><span class="kit-ruled-no">20</span><div><h3 class="kit-ruled-title">Credits created by your own overpayments?</h3><p class="kit-ruled-desc">2 credits, $1,150, from payments that went over the invoice.</p></div><span class="kit-ruled-meta">From overpaying</span></li>
+                <li><span class="kit-ruled-no">21</span><div><h3 class="kit-ruled-title">A credit on one vendor record while the other paid in full?</h3><p class="kit-ruled-desc">Yes. $980 credited under one record, the full invoice paid under the other.</p></div><span class="kit-ruled-meta">Two records</span></li>
+                <li><span class="kit-ruled-no">22</span><div><h3 class="kit-ruled-title">How much is sitting in open vendor credits?</h3><p class="kit-ruled-desc">$9,640 across 14 credits and 9 vendors, each with its memo.</p></div><span class="kit-ruled-meta">All vendors</span></li>
+                </ol>
+              </details>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 05 Payment mismatches: copy and its piece side by side, then the examples as a ruled list (first 5, the rest behind "Show all") -->
+      <section class="section kit-step wic-check" theme="white" id="payment-mismatches">
+        <div class="the-grid kit-step-row">
+          <div class="kit-step-copy">
+            <p class="kit-eyebrow">05 · Payment mismatches</p>
+            <h2 class="heading type-h3">Billed one amount. Paid another.</h2>
+            <p class="kit-step-lead">A transposed digit, the wrong invoice, a payee that doesn't match the bill. Reclaim lines up every payment with what was billed and shows exactly where the two differ.</p>
+            <p class="kit-step-body">Reclaim matches each payment to the bill it paid, then checks the amount, the payee, the invoice number, and the dates. Here are examples of what it turns up.</p>
+          </div>
+          <div class="kit-step-fig">
+            <div class="fd-tile kit-ph" data-hue="green">
+              <span class="kit-ph-tag">Piece to render · payment mismatch</span>
+              <svg class="kit-ph-obj" viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+                <!-- a disc too big for its socket: the payment that doesn't fit the bill -->
+                <ellipse class="shd" cx="128" cy="206" rx="96" ry="24" transform="rotate(-8 128 206)"/>
+                <path class="sec-sh" d="M102 190v26a78 26 0 0 0 156 0v-26z"/>
+                <ellipse class="sec" cx="180" cy="190" rx="78" ry="26"/>
+                <ellipse class="sec-dk" cx="180" cy="191" rx="42" ry="13"/>
+                <ellipse class="shd" cx="196" cy="176" rx="50" ry="11" style="opacity:.55"/>
+                <path class="hue-dk" d="M194 116v18a58 19 0 0 0 116 0v-18z"/>
+                <ellipse class="hue" cx="252" cy="116" rx="58" ry="19"/>
+                <ellipse class="hue-lt" cx="252" cy="115" rx="45" ry="14"/>
+                <ellipse class="hue" cx="252" cy="116.5" rx="41.5" ry="12.6"/>
+              </svg>
+              <span class="fd-cap"><span class="fd-title">Billed $2,090. Paid $2,900.</span><span class="fd-meta">Payment mismatch · INV-6612</span></span>
+            </div>
+          </div>
+          <div class="kit-step-wide">
+            <div class="wic-ex">
+              <div class="wic-ex-head"><span>What it turns up · examples</span><span>22 examples</span></div>
+              <ol class="kit-ruled">
+                <li><span class="kit-ruled-no">01</span><div><h3 class="kit-ruled-title">Payments that don't match their invoice amount?</h3><p class="kit-ruled-desc">7 payments. 4 under, 3 over, $3,210 apart in total.</p></div><span class="kit-ruled-meta">Amount</span></li>
+                <li><span class="kit-ruled-no">02</span><div><h3 class="kit-ruled-title">Was a $2,090 invoice paid as $2,900?</h3><p class="kit-ruled-desc">Yes. Invoice #6612 for $2,090 was paid as $2,900.</p></div><span class="kit-ruled-meta">Transposed</span></li>
+                <li><span class="kit-ruled-no">03</span><div><h3 class="kit-ruled-title">Was an invoice paid to the wrong vendor?</h3><p class="kit-ruled-desc">Yes. Invoice #410 from the print shop was paid to another vendor with a #410.</p></div><span class="kit-ruled-meta">Wrong vendor</span></li>
+                <li><span class="kit-ruled-no">04</span><div><h3 class="kit-ruled-title">Payments to bank details that changed recently?</h3><p class="kit-ruled-desc">2 payments, $11,300, to an account changed a week earlier.</p></div><span class="kit-ruled-meta">Bank details</span></li>
+                <li><span class="kit-ruled-no">05</span><div><h3 class="kit-ruled-title">Does a payment reference the wrong invoice?</h3><p class="kit-ruled-desc">Yes. The $760 payment cites #8120 but matches #8210.</p></div><span class="kit-ruled-meta">Wrong invoice</span></li>
+              </ol>
+              <details class="wic-more">
+                <summary><span class="wic-more-open">Show all 22 examples</span><span class="wic-more-close">Show fewer</span></summary>
+                <ol class="kit-ruled">
+                <li><span class="kit-ruled-no">06</span><div><h3 class="kit-ruled-title">A euro invoice paid as the same number in dollars?</h3><p class="kit-ruled-desc">Yes. A €3,200 invoice was paid as $3,200.</p></div><span class="kit-ruled-meta">Currency</span></li>
+                <li><span class="kit-ruled-no">07</span><div><h3 class="kit-ruled-title">Payments with no matching bill?</h3><p class="kit-ruled-desc">4 payments, $5,870, with no bill anywhere in your records.</p></div><span class="kit-ruled-meta">No bill</span></li>
+                <li><span class="kit-ruled-no">08</span><div><h3 class="kit-ruled-title">Payee names that don't match the bill's vendor?</h3><p class="kit-ruled-desc">3 payments. 2 use the vendor's trade name. 1 doesn't match.</p></div><span class="kit-ruled-meta">Payee name</span></li>
+                <li><span class="kit-ruled-no">09</span><div><h3 class="kit-ruled-title">Does the $4,025 payment match its bill?</h3><p class="kit-ruled-desc">Yes. It matches #3391 after a $75 credit.</p></div><span class="kit-ruled-meta">Checked</span></li>
+                <li><span class="kit-ruled-no">10</span><div><h3 class="kit-ruled-title">Payments made before the invoice date?</h3><p class="kit-ruled-desc">Yes. $1,900 paid 12 days before invoice #2230 was issued.</p></div><span class="kit-ruled-meta">Dates</span></li>
+                <li><span class="kit-ruled-no">11</span><div><h3 class="kit-ruled-title">A check that cleared for a different amount?</h3><p class="kit-ruled-desc">Yes. Check #20391 was written for $415 and cleared for $4,150.</p></div><span class="kit-ruled-meta">Check amount</span></li>
+                <li><span class="kit-ruled-no">12</span><div><h3 class="kit-ruled-title">Invoices marked paid but paid short?</h3><p class="kit-ruled-desc">2 invoices, $640 short, both closed as paid.</p></div><span class="kit-ruled-meta">Short paid</span></li>
+                <li><span class="kit-ruled-no">13</span><div><h3 class="kit-ruled-title">Payment includes tax the invoice didn't charge?</h3><p class="kit-ruled-desc">Yes. $231 in sales tax added to a tax-exempt order.</p></div><span class="kit-ruled-meta">Sales tax</span></li>
+                <li><span class="kit-ruled-no">14</span><div><h3 class="kit-ruled-title">Bills and payments under different vendor IDs?</h3><p class="kit-ruled-desc">5 pairs. The same vendor exists under 2 IDs.</p></div><span class="kit-ruled-meta">Vendor IDs</span></li>
+                <li><span class="kit-ruled-no">15</span><div><h3 class="kit-ruled-title">A payment memo that doesn't match the bill?</h3><p class="kit-ruled-desc">Yes. The memo says April rent. The bill it paid is for May.</p></div><span class="kit-ruled-meta">Memo</span></li>
+                <li><span class="kit-ruled-no">16</span><div><h3 class="kit-ruled-title">Split payments that don't add up to the bill?</h3><p class="kit-ruled-desc">Yes. 2 payments total $4,600 against a $4,060 bill.</p></div><span class="kit-ruled-meta">Split payments</span></li>
+                <li><span class="kit-ruled-no">17</span><div><h3 class="kit-ruled-title">Does a payment match a different vendor's bill?</h3><p class="kit-ruled-desc">Yes. $1,125 to the caterer matches the florist's open bill exactly.</p></div><span class="kit-ruled-meta">Crossed bills</span></li>
+                <li><span class="kit-ruled-no">18</span><div><h3 class="kit-ruled-title">Payment runs that don't match their bills?</h3><p class="kit-ruled-desc">1 run: $38,410 paid against $37,960 in bills.</p></div><span class="kit-ruled-meta">Payment run</span></li>
+                <li><span class="kit-ruled-no">19</span><div><h3 class="kit-ruled-title">Is the $12,000 wire to the landlord a mismatch?</h3><p class="kit-ruled-desc">No. It covers 2 months, and both invoices are in your records.</p></div><span class="kit-ruled-meta">Explained</span></li>
+                <li><span class="kit-ruled-no">20</span><div><h3 class="kit-ruled-title">Card charges that don't match any bill?</h3><p class="kit-ruled-desc">6 charges, $1,390, with no bill in the uploaded files.</p></div><span class="kit-ruled-meta">Card charges</span></li>
+                <li><span class="kit-ruled-no">21</span><div><h3 class="kit-ruled-title">Hourly invoices paid at a different rate?</h3><p class="kit-ruled-desc">Yes. Billed at $85 an hour, paid at $95 for 30 hours: $300.</p></div><span class="kit-ruled-meta">Hourly rate</span></li>
+                <li><span class="kit-ruled-no">22</span><div><h3 class="kit-ruled-title">How many payments don't match what was billed?</h3><p class="kit-ruled-desc">12 payments, $8,940 apart in total, each next to its bill.</p></div><span class="kit-ruled-meta">All vendors</span></li>
+                </ol>
+              </details>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- the old green 6-tile grid (partials/finds-files.html) as the landing's trust strip: line icons, no green -->
+      <section class="section kit-block wic-data" theme="white" id="your-files">
+        <div class="the-grid">
+          <div class="kit-block-head">
+            <p class="kit-eyebrow">Your data</p>
+            <h2 class="heading type-h3">Built around the data you choose to share.</h2>
+          </div>
+          <div class="kit-block-body">
+            <ul class="closing-promises kit-trust">
+              <li><span class="closing-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 3.5h7l4 4v13H7z"/><path d="M14 3.5v4h4M10 13h5M10 16.5h3.5"/></svg></span><h3>You choose the source</h3><p>Reclaim works from files you upload.</p></li>
+              <li><span class="closing-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M2.5 12H6"/><rect x="6" y="8" width="7" height="8" rx="1.5"/><path d="M13 10.5h3M13 13.5h3"/><rect x="18.5" y="7" width="3" height="10" rx="1"/></svg></span><h3>No link to your accounts</h3><p>It has no access to your accounting system.</p></li>
+              <li><span class="closing-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/></svg></span><h3>Never changes your books</h3><p>It cannot alter your ledger.</p></li>
+              <li><span class="closing-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="10" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M4.5 19.5 19.5 4.5"/></svg></span><h3>Never moves money</h3><p>It cannot move money. Refunds go directly to you.</p></li>
+              <li><span class="closing-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="14" rx="2"/><path d="M4 10h16M4 14.5h16M9.5 5v14"/></svg></span><h3>Every result traced to a record</h3><p>Every finding lists the records it is based on.</p></li>
+              <li><span class="closing-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 21V4M6 4.5h11l-2.5 4 2.5 4H6"/></svg></span><h3>You approve what goes out</h3><p>Nothing is sent to a vendor without your approval.</p></li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- FAQ (partials/faq.html, restyled as a ruled list) -->
+      <section class="section kit-faq" theme="white" id="faq">
+        <div class="the-grid">
+          <div class="kit-faq-head">
+            <p class="kit-eyebrow">FAQ</p>
+            <h2 class="heading type-h3">Questions, answered.</h2>
+            <p class="kit-faq-note">Not sure where to start? <a href="#">Talk to us</a></p>
+          </div>
+          <ul class="kit-faq-list">
+            <li><details open><summary>What records does Reclaim need?</summary><p>Your bills, the payments against them, your vendors, and your vendor credits. You upload them as CSV exports. Our <a href="guides.html">export guides</a> show where to find them in common accounting tools.</p></details></li>
+            <li><details><summary>Do I need to connect my accounting system?</summary><p>No. You can start with files you export yourself. Direct connections are in development. Nothing needs to be installed.</p></details></li>
+            <li><details><summary>What does Reclaim look for?</summary><p>Duplicate payments, duplicate bills, overpayments, unused vendor credits, and payments that don't match what was billed. Each one has its own section above, with examples.</p></details></li>
+            <li><details><summary>How does Reclaim decide something is a mistake?</summary><p>It compares records against each other: vendors, amounts, invoice numbers, dates, and references. A finding is raised when the records themselves show the problem, and every finding lists the records it is based on.</p></details></li>
+            <li><details><summary>Can a finding turn out to be fine?</summary><p>Yes. A partial payment, a deposit, or a credit applied outside your export can look like a mistake. That's why every finding shows its records, and why you review it before treating it as one.</p></details></li>
+            <li><details><summary>Which accounting tools does it work with?</summary><p>Reclaim works from exported records, so it isn't tied to one tool, and direct connections are in development. We have export guides for QuickBooks Online, Xero, NetSuite, and Bill.</p></details></li>
+            <li><details><summary>Does Reclaim contact my vendors?</summary><p>Only once you approve a recovery. Reclaim then sends the request with the evidence attached, tracks the reply and follows up. A dispute, or anything unclear, comes back to you, and you can mark any vendor Do Not Contact.</p></details></li>
+            <li><details><summary>How is my data handled?</summary><p>Our <a href="security.html">Security page</a> covers what Reclaim reads, what it can never do, and how AI is kept to the minimum each task needs.</p></details></li>
+            <li><details><summary>Who is Reclaim for?</summary><p>Businesses that pay a lot of vendors, without a team to chase every mistake: finance and AP teams, operators, and founders.</p></details></li>
+          </ul>
+        </div>
+      </section>
+
+    </div>
+  </div>
+
+  <!-- CLOSING (white): the one stack, put right; one action, the three promises under it -->
+  <section class="section closing" theme="white" data-closing>
+    <div class="nav-slot" data-theme="white"></div>
+    <div class="the-container">
+      <img class="closing-object" src="../../../landing-site/media/closing/coins-720.webp" srcset="../../../landing-site/media/closing/coins-720.webp 720w, ../../../landing-site/media/closing/coins-1200.webp 1200w" sizes="(max-width: 1023px) 72vw, 34rem" width="720" height="509" alt="" decoding="async" data-closing-object>
+      <h2 class="heading type-h2" data-split="h2">Don't just find the money.<br><em>Reclaim it.</em></h2>
+      <p class="closing-lede" data-closing-in>Upload an export and see what your own records show.</p>
+      <div class="closing-actions" data-closing-in>
+        <a href="#" class="cta cta-button" size="large" theme="green"><span class="hover-loop"><span class="inner">Run a free audit</span></span></a>
+        <a href="#contact" class="closing-talk" data-modal="talk">Not sure where to start? <span>Talk to us</span></a>
+      </div>
+      <ul class="closing-promises">
+        <li data-closing-in>
+          <span class="closing-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"/></svg></span>
+          <h3>Never changes your books</h3>
+          <p>Reclaim works from the records you give it. It cannot move money or alter your ledger.</p>
+        </li>
+        <li data-closing-in>
+          <span class="closing-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 12.5 20 4l-4 16-4.5-6.5z"/><path d="m11.5 13.5 3-3"/></svg></span>
+          <h3>Nothing sent without you</h3>
+          <p>Every message to a vendor waits for your approval. Nothing reaches a vendor until you say so.</p>
+        </li>
+        <li data-closing-in>
+          <span class="closing-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 7.5v9M14.5 9.8c-.6-.8-1.6-1.1-2.7-1.1-1.4 0-2.3.7-2.3 1.7 0 2.4 5 1.2 5 3.6 0 1.1-1 1.8-2.4 1.8-1.2 0-2.2-.4-2.8-1.2"/></svg></span>
+          <h3>Refunds come to you</h3>
+          <p>Refunds and credits go straight to you. Reclaim never holds recovered funds.</p>
+        </li>
+      </ul>
+    </div>
+  </section>
+
+
+  <!-- FOOTER: the last rounded card, rising over the white above it the way the page's other sections open -->
+  <div class="rounded-section shouldAnimate ft-card" theme="black" style="clip-path:inset(0)">
+    <div class="bg bg-top" theme="white"></div>
+    <div class="bg bg-bottom" theme="black"></div>
+    <div class="nav-slot" data-theme="black"></div>
+    <div class="rs-scale" theme="black">
+  <footer class="the-footer" theme="black">
+    <div class="the-container">
+      <div class="ft-top">
+        <div class="ft-about">
+          <a href="how-it-works.html" class="hx-logo" aria-label="Reclaim home"><svg class="wheel" viewBox="0 0 26 23" fill="currentColor"><use href="#hx-wheel"/></svg><span class="word"><span class="letter">R</span><span class="letter">e</span><span class="letter">c</span><span class="letter">l</span><span class="letter">a</span><span class="letter">i</span><span class="letter">m</span></span></a>
+          <p class="ft-line">Finds duplicate payments, overpayments and forgotten credits in your books, and helps you get the money back.</p>
+          <a href="mailto:reclaimbusiness1@gmail.com" class="ft-mail">reclaimbusiness1@gmail.com</a>
+        </div>
+        <nav class="ft-cols" aria-label="Footer">
+          <div class="ft-group"><div class="ft-label type-mono">Product</div><ul><li><a href="how-it-works.html">How It Works</a></li><li><a href="what-it-checks.html">What It Checks</a></li><li><a href="pricing.html">Pricing</a></li></ul></div>
+          <div class="ft-group"><div class="ft-label type-mono">Resources</div><ul><li><a href="research.html">Research</a></li><li><a href="guides.html">Guides</a></li><li><a href="security.html">Security</a></li></ul></div>
+          <div class="ft-group"><div class="ft-label type-mono">Company</div><ul><li><a href="about.html">About</a></li><li><a href="#contact" data-modal="talk">Contact</a></li></ul></div>
+          <div class="ft-group"><div class="ft-label type-mono">Legal</div><ul><li><a href="#">Privacy Policy</a></li><li><a href="#">Terms of Service</a></li></ul></div>
+        </nav>
+      </div>
+      <div class="ft-bottom">
+        <div class="ft-legal"><span>© 2026 Reclaim</span><a href="#">Log in</a></div>
+        <a href="#" class="cta-scroll">Back to top<svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></a>
+      </div>
+    </div>
+  </footer>
+    </div>
+  </div>
+
+
+</main>
+</body>
+</html>
