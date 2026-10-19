@@ -74,8 +74,11 @@ async function openAttestedCase() {
 }
 
 /** Every open signal's involved amount that is not suppressed. It is never money owed. */
+/** Open review signals in USD (a row without a currency is read as USD). */
 function sumFlagged(findings: Finding[]): number {
-  return findings.filter((f) => !f.suppressionReason && f.currency === 'USD').reduce((total, f) => total + Math.round((f.flaggedAmount ?? f.dollarImpact) * 100), 0) / 100
+  return findings
+    .filter((f) => f.classification === 'review_needed' && !f.suppressionReason && (f.currency ?? 'USD') === 'USD')
+    .reduce((total, f) => total + Math.round((f.flaggedAmount ?? f.dollarImpact) * 100), 0) / 100
 }
 
 function workspace() {
@@ -260,6 +263,24 @@ describe('AuditApp', () => {
     expect(findingsFact().audits).toBe('1')
   })
 
+  it('Overview, Findings and Reports show the same flagged-for-review total for the sample', async () => {
+    await runSampleFromLaunch()
+    const expected = formatCurrency(sumFlagged(sampleFindings()))
+    expect(expected).not.toBe(formatCurrency(0))
+    const tile = document.querySelector<HTMLElement>('.wk-total[data-total="review"]')!
+    expect(formatCurrency(Number(tile.dataset.amount))).toBe(expected)
+    expect(flaggedValue()).toBe(expected)
+
+    goToMode('Findings')
+    await waitFor(() => expect(document.querySelector('.wk-grid-foot')).toBeInTheDocument())
+    expect(document.querySelector('.wk-grid-foot')!.textContent).toContain(`${expected} flagged for review`)
+
+    goToMode('Reports')
+    await waitFor(() => expect(fact('Open flagged value (USD)')).toBe(expected))
+    expect(fact('Flagged exposure · USD')).toBe(expected)
+    expect(fact('Flagged exposure · Unknown')).toBe('')
+  })
+
   it('offers exactly the seven sections, in order', async () => {
     await runSampleFromLaunch()
     expect(navLabels()).toEqual(['Overview', 'Findings', 'Recoveries', 'Reports', 'Audits', 'Plans', 'Settings'])
@@ -381,14 +402,15 @@ describe('AuditApp', () => {
     await runSampleFromLaunch()
     const [topRow] = dashboardRows()
     const value = rowMoney(topRow)
-    const impact = sampleFindings().find((f) => formatCurrency(f.dollarImpact) === value)!.dollarImpact
+    const dismissed = sampleFindings().find((f) => formatCurrency(f.dollarImpact) === value)!
+    const impact = dismissed.dollarImpact
     fireEvent.click(topRow)
     await decide('Not an issue')
     await waitFor(() => expect(screen.getAllByText('Expected').length).toBeGreaterThan(0))
 
     goToMode('Overview')
     expect(potentialValue()).toBe(formatCurrency(0))
-    expect(flaggedValue()).toBe(formatCurrency(sumFlagged(sampleFindings())))
+    expect(flaggedValue()).toBe(formatCurrency(sumFlagged(sampleFindings().filter((f) => f.id !== dismissed.id))))
     expect(findingsFact().findings).toBe(String(sampleFindings().length - 1))
     const causes = Array.from(document.querySelectorAll<HTMLElement>('.wk-bars-row[data-amount]')).map((n) => Number(n.dataset.amount))
     const dupTotal = sumImpact(sampleFindings().filter((f) => f.type === 'exact_duplicate')) - impact
@@ -625,7 +647,7 @@ describe('AuditApp', () => {
     render(<AuditApp />)
     await waitFor(DASHBOARD_READY)
     fireEvent.click(dashboardRows()[0])
-    fireEvent.click(await screen.findByRole('button', { name: /^This is real/ }))
+    fireEvent.click(await screen.findByRole('button', { name: /^Not an issue/ }))
     const dialog = await screen.findByTestId('decision-dialog')
     fireEvent.click(within(dialog).getByLabelText(/^Not an issue/))
     fireEvent.change(within(dialog).getByLabelText('Why is it expected?'), { target: { value: 'known_vendor_exception' } })

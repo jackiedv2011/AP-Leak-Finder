@@ -18,6 +18,15 @@ export interface VendorUpdate {
   method?: RecoveryMethod
   expectedAt?: number
 }
+/** A request that Gmail accepted, sent from the customer's own address. */
+export interface SentEmail {
+  channel: 'gmail'
+  messageId: string
+  from: string
+  to: string
+  cc: string[]
+  sentAt: number
+}
 export interface RecoveryVerification {
   amount: number
   method: RecoveryMethod
@@ -88,6 +97,12 @@ export interface CaseState {
   recoveryRecipientEmail?: string | null
   requestedResolution?: RecoveryMethod | null
   recoveryRequestedAt?: number | null
+  /** Set only from Gmail's own acceptance of the message; a request sent by hand has none. */
+  recoverySentEmail?: SentEmail | null
+  /** Follow-ups Gmail accepted, oldest first. */
+  recoveryFollowUps?: SentEmail[] | null
+  /** Offer a follow-up when there's no vendor reply this many days after the last email. Default 7. */
+  followUpAfterDays?: number | null
   recoveryResolvedAt?: number | null
   recoveredAmount?: number | null
   /** Preserved from old cases when a later verified settlement replaces an unproved total. */
@@ -203,6 +218,11 @@ export function recordRecoveryOutcome(
   }
 }
 
+/** How a Gmail send reads in the case history: who sent it, to whom, and Gmail's id for it. */
+export function sentEmailNote(sent: SentEmail): string {
+  return `From ${sent.from} to ${sent.to}${sent.cc.length ? `, cc ${sent.cc.join(', ')}` : ''}. Gmail message ID ${sent.messageId}`
+}
+
 /**
  * Compare two states and, if anything that matters changed, append an audit
  * event describing it. Called by the one place that persists case state, so
@@ -220,9 +240,10 @@ export function withHistory(previous: CaseState, next: CaseState, actor: string 
   const settlementsChanged = (previous.recoverySettlements?.length ?? 0) !== (next.recoverySettlements?.length ?? 0)
   const settlementAdded = (next.recoverySettlements?.length ?? 0) > (previous.recoverySettlements?.length ?? 0)
   const followUpChanged = (previous.nextFollowUpAt ?? null) !== (next.nextFollowUpAt ?? null)
+  const followUpSent = (next.recoveryFollowUps?.length ?? 0) > (previous.recoveryFollowUps?.length ?? 0)
   const reconciliationChanged = (previous.reconciledAt ?? null) !== (next.reconciledAt ?? null)
   const reconciliationDetailsChanged = (previous.reconciliationNote ?? null) !== (next.reconciliationNote ?? null) || (previous.rootCause ?? null) !== (next.rootCause ?? null)
-  if (!decisionChanged && !stageChanged && !amountChanged && !requestedChanged && !approvalChanged && !attributionChanged && !holdChanged && !vendorChanged && !settlementsChanged && !followUpChanged && !reconciliationChanged && !reconciliationDetailsChanged) return next
+  if (!decisionChanged && !stageChanged && !amountChanged && !requestedChanged && !approvalChanged && !attributionChanged && !holdChanged && !vendorChanged && !settlementsChanged && !followUpChanged && !followUpSent && !reconciliationChanged && !reconciliationDetailsChanged) return next
 
   let action: string
   let summary: string
@@ -246,7 +267,7 @@ export function withHistory(previous: CaseState, next: CaseState, actor: string 
     summary = 'Closed without recovery'
   } else if (stageChanged && next.recoveryStage === 'requested') {
     action = 'stage:requested'
-    summary = 'Recovery request sent'
+    summary = next.recoverySentEmail ? 'Recovery request sent from Gmail' : 'Recovery request sent'
   } else if ((approvalChanged || attributionChanged) && next.approvedAt) {
     action = 'recovery:approved'
     summary = 'Customer approved recovery outreach'
@@ -263,6 +284,9 @@ export function withHistory(previous: CaseState, next: CaseState, actor: string 
   } else if (next.reconciledAt && (reconciliationChanged || reconciliationDetailsChanged)) {
     action = 'accounting:corrected'
     summary = 'Accounting reconciliation updated'
+  } else if (followUpSent) {
+    action = 'recovery:followup_sent'
+    summary = 'Follow-up sent from Gmail'
   } else if (followUpChanged) {
     action = 'recovery:followup_changed'
     summary = next.nextFollowUpAt ? 'Follow-up scheduled' : 'Follow-up cleared'
@@ -307,6 +331,8 @@ export function withHistory(previous: CaseState, next: CaseState, actor: string 
   else if (action.startsWith('accounting:')) eventNote = next.reconciliationNote ?? null
   else if (action.startsWith('vendor:')) eventNote = lastVendorUpdate?.note ?? null
   else if (action === 'recovery:contact_held') eventNote = next.contactHold ?? null
+  else if (action === 'stage:requested' && next.recoverySentEmail) eventNote = sentEmailNote(next.recoverySentEmail)
+  else if (action === 'recovery:followup_sent' && next.recoveryFollowUps?.length) eventNote = sentEmailNote(next.recoveryFollowUps[next.recoveryFollowUps.length - 1])
   else if (action === 'recovery:followup_changed' && next.nextFollowUpAt) eventNote = new Date(next.nextFollowUpAt).toLocaleDateString()
   else if (action === 'recovery:approved') eventNote = next.knownBeforeReclaim ? `Known before Reclaim: ${next.knownBeforeNote ?? 'No explanation recorded'}` : 'Newly identified by Reclaim'
   else if (action === 'recovery:remainder_closed' || action === 'outcome:not_recovered' || action === 'outcome:recovered' || action === 'review:closed') eventNote = next.recoveryOutcomeNote ?? null
@@ -317,6 +343,7 @@ export function withHistory(previous: CaseState, next: CaseState, actor: string 
   else if ((reconciliationChanged || reconciliationDetailsChanged) && next.reconciledAt) eventAt = next.reconciledAt
   else if (approvalChanged && next.approvedAt) eventAt = next.approvedAt
   else if (vendorChanged && lastVendorUpdate?.at) eventAt = lastVendorUpdate.at
+  else if (followUpSent && next.recoveryFollowUps?.length) eventAt = next.recoveryFollowUps[next.recoveryFollowUps.length - 1].sentAt
   else if (stageChanged && previous.recoveryStage === 'confirmed' && next.recoveryStage === 'requested' && next.recoveryRequestedAt) eventAt = next.recoveryRequestedAt
   else if (stageChanged && (next.recoveryStage === 'recovered' || next.recoveryStage === 'not_recovered') && next.recoveryResolvedAt) eventAt = next.recoveryResolvedAt
   const event: CaseEvent = {

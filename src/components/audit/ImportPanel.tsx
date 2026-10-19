@@ -1,18 +1,50 @@
 import { useRef, useState } from 'react'
+import { parseCurrency, parseDate } from '@/lib/format'
 import * as DialogPrimitive from '@radix-ui/react-dialog'
-import { AlertCircle, AlertTriangle, Download, FileText, HelpCircle, ShieldCheck, Sparkles, Upload, X } from 'lucide-react'
+import { AlertCircle, AlertTriangle, CheckCircle2, Download, FileText, HelpCircle, ShieldCheck, Sparkles, Upload, X } from 'lucide-react'
 import { parseCsv } from '@/lib/csv'
 import type { ParseResult } from '@/types'
 import { assessDataReadiness, assessFatalFile } from '@/audit/dataReadiness'
 import { QuickBooksImport } from './QuickBooksSource'
+import type { QuickBooksFacts } from '../../../server/quickbooksFacts.ts'
+import { describeQuickBooksSync, type QuickBooksSyncSummary } from '@/ledger/quickbooksSync'
+
+/** What the app knows about QuickBooks imports: when a company was last pulled, and what an import would change. */
+export interface QuickBooksImportContext {
+  sinceFor: (companyName: string) => number | null
+  preview: (parsed: ParseResult, facts: QuickBooksFacts) => { summary: QuickBooksSyncSummary; targetName: string | null; targetId: string | null }
+}
 import '@/workspace/workspace.css'
 import '@/workspace/reclaim.css'
+
+/** Why a row was left out, in the words of the spreadsheet it came from. */
+function skipReason(raw: Record<string, string> | null): string {
+  const cell = (key: string) => (raw?.[key] ?? '').trim()
+  const missing: string[] = []
+  if (!cell('vendor')) missing.push('no vendor name')
+  if (!cell('payment_date')) missing.push('no payment date')
+  else if (!parseDate(cell('payment_date'))) missing.push(`“${cell('payment_date')}” isn’t a date`)
+  if (!cell('amount_paid')) missing.push('no amount paid')
+  else if (parseCurrency(cell('amount_paid')) === null) missing.push(`“${cell('amount_paid')}” isn’t an amount`)
+  return missing.length ? missing.join(', ') : 'missing a vendor, payment date or amount paid'
+}
+
+const COLUMN_WORDS: Record<string, string> = {
+  vendor: 'a vendor (or payee) name',
+  payment_date: 'a payment date',
+  amount_paid: 'the amount paid',
+  invoice_number: 'an invoice number',
+  invoice_date: 'an invoice date',
+  invoice_amount: 'the invoice amount',
+}
 
 export interface ImportInput {
   file: File
   parsed: ParseResult
   sourceLabel: string
   mode: 'upload'
+  /** Set when the file came from QuickBooks: the source facts behind its rows. */
+  quickbooks?: QuickBooksFacts
 }
 
 interface ImportPanelProps {
@@ -25,6 +57,7 @@ interface ImportPanelProps {
   onRunSample?: () => void
   intro: string
   confirmLabel: string
+  quickbooks?: QuickBooksImportContext
 }
 
 const REQUIRED_COLUMNS: { name: string; description: string }[] = [
@@ -45,6 +78,8 @@ const MAX_UPLOAD_BYTES = 50 * 1024 * 1024
 interface PendingUpload {
   file: File
   parsed: ParseResult
+  quickbooks?: QuickBooksFacts
+  quickbooksPreview?: ReturnType<QuickBooksImportContext['preview']>
 }
 
 function formatFileSize(bytes: number): string {
@@ -63,14 +98,14 @@ function formatFileSize(bytes: number): string {
  * section): it carries `wk` so it holds the tokens wherever it is mounted,
  * including inside a portalled `.wk-panel`, which is outside `.wk` in the DOM.
  */
-export function ImportPanel({ allowSample, animateEntry = false, autoFocusUpload, error, onImport, onRunSample, intro, confirmLabel }: ImportPanelProps) {
+export function ImportPanel({ allowSample, animateEntry = false, autoFocusUpload, error, onImport, onRunSample, intro, confirmLabel, quickbooks: quickbooksContext }: ImportPanelProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [formatOpen, setFormatOpen] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
   const [pending, setPending] = useState<PendingUpload | null>(null)
   const [parseError, setParseError] = useState<string | null>(null)
 
-  async function handleFile(file: File) {
+  async function handleFile(file: File, quickbooks?: QuickBooksFacts) {
     setParseError(null)
     if (/\.(xlsx|xlsm|xls|numbers|ods)$/i.test(file.name)) {
       setParseError('Spreadsheet files can’t be read directly yet. In Excel or Sheets, use File → Save As / Download → CSV, then upload that file.')
@@ -88,17 +123,17 @@ export function ImportPanel({ allowSample, animateEntry = false, autoFocusUpload
         return
       }
       const parsed = parseCsv(text)
-      if (parsed.records.length === 0) {
+      // A QuickBooks change pull can carry no payment rows (nothing changed, or only voids); that is still an answer.
+      if (parsed.records.length === 0 && !(quickbooks && parsed.skippedCount === 0)) {
         const guidance = assessFatalFile(parsed)
         if (guidance.missingRequiredColumns.length > 0) {
+          // Column names in words a person would recognise from their own spreadsheet, not the parser's keys.
+          const words = (columns: string[]) => columns.map((c) => COLUMN_WORDS[c] ?? c.replaceAll('_', ' '))
+          const list = (items: string[]) => (items.length <= 2 ? items.join(' and ') : `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`)
           setParseError(
             guidance.detectedColumns.length > 0
-              ? `We recognized ${guidance.detectedColumns.join(', ')}, but couldn't find ${guidance.missingRequiredColumns.join(
-                  ', '
-                )}. Reclaim needs those to run an audit.`
-              : `We couldn't recognize any expected columns in this file's header row. Reclaim needs ${guidance.missingRequiredColumns.join(
-                  ', '
-                )} at minimum.`
+              ? `Reclaim found ${list(words(guidance.detectedColumns))}, but not ${list(words(guidance.missingRequiredColumns))}. Add ${guidance.missingRequiredColumns.length === 1 ? 'that column' : 'those columns'} to the file and upload it again.`
+              : `Reclaim couldn’t match this file’s column headings. Every payment row needs at least ${list(words(guidance.missingRequiredColumns))}. Rename your headings to match, or start from the sample CSV.`
           )
         } else {
           setParseError(
@@ -107,7 +142,7 @@ export function ImportPanel({ allowSample, animateEntry = false, autoFocusUpload
         }
         return
       }
-      setPending({ file, parsed })
+      setPending({ file, parsed, ...(quickbooks ? { quickbooks, ...(quickbooksContext ? { quickbooksPreview: quickbooksContext.preview(parsed, quickbooks) } : {}) } : {}) })
     } catch {
       setParseError('Could not read that file. Please upload a valid CSV.')
     }
@@ -164,12 +199,35 @@ export function ImportPanel({ allowSample, animateEntry = false, autoFocusUpload
           ) : null}
         </dl>
 
+        {pending.quickbooksPreview ? (
+          <div className="wk-callout" data-tone="done" role="status" data-testid="quickbooks-sync-preview">
+            <CheckCircle2 aria-hidden="true" />
+            <div className="wk-callout-body">
+              <p>
+                <strong>From QuickBooks:</strong> {describeQuickBooksSync(pending.quickbooksPreview.summary)}.
+              </p>
+              {pending.quickbooksPreview.targetName && pending.quickbooksPreview.summary.mode !== 'first' ? (
+                <p className="wk-table-sub">Updates “{pending.quickbooksPreview.targetName}”, the audit that already has this company. Payments already reviewed keep their findings and cases.</p>
+              ) : null}
+            </div>
+          </div>
+        ) : null}
+
         {skipped > 0 && (
           <div className="wk-callout" data-tone="warn">
             <AlertTriangle aria-hidden="true" />
-            <p>
-              {skipped} row{skipped === 1 ? '' : 's'} {skipped === 1 ? 'needs' : 'need'} attention and will be skipped
-            </p>
+            <div className="wk-callout-body">
+              <p>
+                {skipped} row{skipped === 1 ? '' : 's'} {skipped === 1 ? 'needs' : 'need'} attention and will be skipped
+              </p>
+              {/* Which rows, and why, so the file can be fixed rather than guessed at. */}
+              <ul className="wk-skipped-rows">
+                {(pending.parsed.rowResults ?? []).filter((row) => row.status === 'rejected').slice(0, 6).map((row) => (
+                  <li key={row.rowNumber}>Row {row.rowNumber}: {skipReason(row.raw)}</li>
+                ))}
+                {skipped > 6 ? <li>…and {skipped - 6} more</li> : null}
+              </ul>
+            </div>
           </div>
         )}
 
@@ -200,10 +258,10 @@ export function ImportPanel({ allowSample, animateEntry = false, autoFocusUpload
             className="wk-btn"
             data-variant="primary"
             onClick={() =>
-              onImport({ file: pending.file, parsed: pending.parsed, sourceLabel: pending.file.name, mode: 'upload' })
+              onImport({ file: pending.file, parsed: pending.parsed, sourceLabel: pending.file.name, mode: 'upload', ...(pending.quickbooks ? { quickbooks: pending.quickbooks } : {}) })
             }
           >
-            {confirmLabel}
+            {pending.quickbooksPreview?.targetId && pending.quickbooksPreview.summary.mode !== 'first' ? 'Update the audit' : confirmLabel}
           </button>
         </div>
       </div>
@@ -257,7 +315,7 @@ export function ImportPanel({ allowSample, animateEntry = false, autoFocusUpload
         </button>
       </div>
 
-      <QuickBooksImport onFile={(file) => void handleFile(file)} />
+      <QuickBooksImport onFile={(file, facts) => void handleFile(file, facts ?? undefined)} sinceFor={quickbooksContext?.sinceFor} />
 
       {shownError && (
         <div className="wk-callout" data-tone="danger" role="alert">
@@ -280,7 +338,7 @@ export function ImportPanel({ allowSample, animateEntry = false, autoFocusUpload
         </div>
       )}
 
-      <div className="wk-import-links">
+      {shownError ? null : <div className="wk-import-links">
         <a className="wk-link" href="/sample-ledger.csv" download>
           <Download aria-hidden="true" />
           Download sample CSV
@@ -289,7 +347,7 @@ export function ImportPanel({ allowSample, animateEntry = false, autoFocusUpload
           <HelpCircle aria-hidden="true" />
           See required format
         </button>
-      </div>
+      </div>}
 
       {allowSample && onRunSample && (
         <div className="wk-import-sample">

@@ -1,0 +1,57 @@
+/* The dashboard tour (WorkspaceTour.tsx). Rendered inside .wk, so it takes the workspace's own tokens
+   and follows light and dark mode with the rest of the app. */
+.wk-tour { position: fixed; inset: 0; z-index: 400; pointer-events: none; }
+.wk-tour-block { position: fixed; pointer-events: auto; background: rgb(8 10 9 / .5); }
+.wk-tour-spot {
+  position: fixed;
+  border-radius: 12px;
+  outline: 2px solid var(--accent);
+  outline-offset: 0;
+  pointer-events: none;
+  transition: top .25s var(--ease-out), left .25s var(--ease-out), width .25s var(--ease-out), height .25s var(--ease-out);
+}
+/* Only a sidebar step lets a click through the spotlight, onto the button it's waiting for. */
+.wk-tour-spot[data-blocking] { pointer-events: auto; }
+/* A sidebar step waits on a click: the outline breathes so the button reads as the thing to press. */
+.wk-tour-spot[data-kind='nav'] { animation: wk-tour-pulse 1.6s ease-in-out infinite; }
+@keyframes wk-tour-pulse { 50% { outline-offset: 4px; } }
+
+.wk-tour-card {
+  position: fixed;
+  display: grid;
+  gap: 10px;
+  padding: 18px 20px 16px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow-pop), 0 24px 60px rgb(0 0 0 / .28);
+  pointer-events: auto;
+  outline: none;
+  transition: top .25s var(--ease-out), left .25s var(--ease-out);
+}
+.wk-tour-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.wk-tour-count { color: var(--text-muted); font: 600 11px/1 var(--f-text); letter-spacing: .06em; text-transform: uppercase; }
+.wk-tour-skip { border: 0; background: none; padding: 4px 0; color: var(--text-muted); font: 500 13px var(--f-text); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.wk-tour-skip:hover { color: var(--text); }
+.wk-tour-card h2 { margin: 0; font: 600 18px/1.25 var(--f-text); letter-spacing: -.01em; }
+.wk-tour-card p { margin: 0; color: var(--text-muted); font-size: 14px; line-height: 1.5; }
+.wk-tour-card ul { margin: 0; padding-left: 18px; display: grid; gap: 6px; font-size: 14px; line-height: 1.45; }
+.wk-tour-do { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-radius: 10px; background: var(--surface-sunk); }
+.wk-tour-card .wk-tour-do { color: var(--text); }
+.wk-tour-do svg { width: 16px; height: 16px; flex: none; color: var(--accent-ink); }
+.wk-tour-progress { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 2px; }
+.wk-tour-progress i { background: var(--line-strong); }
+.wk-tour-progress i[data-done] { background: var(--text-dim); }
+.wk-tour-progress i[data-on] { background: var(--accent); }
+.wk-tour-actions { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 2px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .wk-tour-spot, .wk-tour-card { transition: none; }
+  .wk-tour-spot[data-kind='nav'] { animation: none; }
+}
+
+.wk-tour-skips { display: inline-flex; gap: 14px; }
+.wk-tour-sections { margin: 0; padding: 10px 12px 10px 32px; border-radius: 10px; background: var(--surface-sunk); display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 16px; font-size: 13px; color: var(--text); }
+.wk-tour-progress i { width: 18px; height: 4px; border-radius: 2px; }
+.wk-tour-progress i[data-on] { width: 28px; }

@@ -24,6 +24,8 @@ export interface PublicUser {
   onboardingSeenAt: number | null
   /** What onboarding learned; null if it was skipped or never answered. */
   onboardingProfile: OnboardingProfile | null
+  /** Null until the person has finished or skipped the dashboard tour, which shows once per account. */
+  tourSeenAt: number | null
 }
 
 const VERIFY_TTL_MS = 24 * 60 * 60 * 1000
@@ -74,6 +76,7 @@ export class AuthService {
       plan: planOf(row.plan),
       onboardingSeenAt: row.onboarding_seen_at,
       onboardingProfile: readProfile(row.onboarding_profile),
+      tourSeenAt: row.tour_seen_at ?? null,
     }
   }
 
@@ -83,6 +86,10 @@ export class AuthService {
 
   markOnboardingSeen(userId: string): void {
     this.db.prepare('UPDATE users SET onboarding_seen_at = ? WHERE id = ?').run(Date.now(), userId)
+  }
+
+  markTourSeen(userId: string): void {
+    this.db.prepare('UPDATE users SET tour_seen_at = ? WHERE id = ? AND tour_seen_at IS NULL').run(Date.now(), userId)
   }
 
   /** Stores onboarding's answers and marks onboarding as done in the same write. */
@@ -182,6 +189,8 @@ export class AuthService {
   // ---------- log-in ----------
 
   async logIn(email: string, password: string): Promise<UserRow> {
+    // Sign-up caps passwords at 256 characters; anything far longer is not a password, just hashing work.
+    if (password.length > 1024) throw new HttpError(401, "That email and password don't match.", 'invalid_credentials')
     const user = this.findUserByEmail(email)
     const ok = await verifyPassword(password, user?.password_hash ?? null)
     if (!user || !ok) throw new HttpError(401, "That email and password don't match.", 'invalid_credentials')
@@ -241,12 +250,15 @@ export class AuthService {
   async resetPassword(token: string, password: string, confirmPassword: string): Promise<UserRow> {
     const errors: Record<string, string> = {}
     if (typeof password !== 'string' || password.length < 8) errors.password = 'Use at least 8 characters.'
+    else if (password.length > 256) errors.password = 'That password is too long.'
     if (confirmPassword !== password) errors.confirmPassword = 'The passwords do not match.'
     if (Object.keys(errors).length) throw new HttpError(400, 'Check the highlighted fields.', 'validation', errors)
     const row = this.consumeToken(token, 'reset')
     this.db.prepare('UPDATE users SET password_hash = ?, email_verified = 1 WHERE id = ?').run(await hashPassword(password), row.user_id)
-    // A reset means "someone else may have had my password" — every other session goes.
+    // A reset means "someone else may have had my password" — every other session goes,
+    // and so does every other reset link already sent.
     this.revokeAllSessions(row.user_id)
+    this.db.prepare("UPDATE tokens SET used_at = ? WHERE user_id = ? AND kind = 'reset' AND used_at IS NULL").run(Date.now(), row.user_id)
     return this.findUserById(row.user_id)!
   }
 
@@ -288,7 +300,12 @@ export class AuthService {
         .run(id, email, identity.givenName, identity.familyName, now, now, termsVersion)
       user = this.findUserById(id)!
     } else if (user.email_verified !== 1) {
-      this.db.prepare('UPDATE users SET email_verified = 1 WHERE id = ?').run(user.id)
+      // Nobody ever proved they own this address: whoever signed up with it may
+      // not be the person Google just verified. Their password and sessions go,
+      // so a stranger who registered someone else's address first can't keep a
+      // way into the account the real owner now signs in to.
+      this.db.prepare('UPDATE users SET email_verified = 1, password_hash = NULL WHERE id = ?').run(user.id)
+      this.revokeAllSessions(user.id)
       user = this.findUserById(user.id)!
     }
     this.db.prepare("INSERT INTO identities (provider, subject, user_id, email, created_at) VALUES ('google', ?, ?, ?, ?)").run(identity.sub, user.id, email, now)

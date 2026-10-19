@@ -31,6 +31,7 @@ export interface ServerUser {
   plan: Plan
   onboardingSeenAt: number | null
   onboardingProfile: OnboardingProfile | null
+  tourSeenAt?: number | null
 }
 
 export type SignUpResult = { ok: true; requiresVerification: true; email: string } | { ok: true; requiresVerification: false; user: AuthUser } | AuthError
@@ -46,7 +47,8 @@ export function toAuthUser(user: ServerUser): AuthUser {
   return { ...user, isGuest: false }
 }
 
-async function call<T>(path: string, init: RequestInit & { json?: unknown } = {}): Promise<{ status: number; body: T }> {
+/** Same-origin JSON call through the current fetch (tests swap it via setFetch). */
+export async function call<T>(path: string, init: RequestInit & { json?: unknown } = {}): Promise<{ status: number; body: T }> {
   const headers = new Headers(init.headers)
   if (init.json !== undefined) headers.set('Content-Type', 'application/json')
   const res = await fetchImpl(path, { ...init, headers, credentials: 'same-origin', body: init.json !== undefined ? JSON.stringify(init.json) : init.body })
@@ -153,6 +155,12 @@ export async function markOnboardingSeen(): Promise<AuthUser | null> {
   return status === 200 ? toAuthUser(body.user) : null
 }
 
+/** Records that the dashboard tour was finished or skipped, so it never opens again for this account. */
+export async function markTourSeen(): Promise<AuthUser | null> {
+  const { status, body } = await call<{ user: ServerUser }>('/api/account/tour-seen', { method: 'POST' })
+  return status === 200 ? toAuthUser(body.user) : null
+}
+
 /** Saves onboarding's answers on the account; also marks onboarding as done. */
 export async function saveOnboarding(profile: OnboardingProfile): Promise<AuthUser | null> {
   const { status, body } = await call<{ user: ServerUser }>('/api/account/onboarding', { method: 'POST', json: profile })
@@ -169,4 +177,21 @@ export async function requestUpgrade(): Promise<{ ok: boolean; message: string }
 export async function setDevPlan(plan: Plan): Promise<AuthUser | null> {
   const { status, body } = await call<{ user: ServerUser }>('/api/dev/plan', { method: 'POST', json: { plan } })
   return status === 200 ? toAuthUser(body.user) : null
+}
+
+/** Same-origin download of everything the account holds, as JSON (the server sets the filename). */
+export const ACCOUNT_EXPORT_URL = '/api/account/export'
+
+/** Deletes the account and all its data. The server checks the typed email; the session ends with it. */
+export async function deleteAccount(confirmEmail: string): Promise<{ ok: true } | AuthError> {
+  const { status, body } = await call<Failure>('/api/account/delete', { method: 'POST', json: { confirmEmail } })
+  if (status !== 200) return failure(body, 'Could not delete the account. Nothing was deleted.')
+  return { ok: true }
+}
+
+/** Records acceptance of the Terms and Privacy Policy version shown to the person. */
+export async function acceptTerms(termsVersion: string): Promise<AuthOutcome> {
+  const { status, body } = await call<{ user: ServerUser } & Failure>('/api/account/accept-terms', { method: 'POST', json: { termsVersion } })
+  if (status !== 200) return failure(body, 'Could not record your acceptance. Try again.')
+  return { ok: true, user: toAuthUser(body.user) }
 }

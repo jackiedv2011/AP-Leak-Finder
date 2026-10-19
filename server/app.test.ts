@@ -319,7 +319,7 @@ describe('plans and entitlements', () => {
     expect(user.onboardingSeenAt).toBeNull()
     const ent = await c.get('/api/account/entitlements')
     expect(ent.status).toBe(200)
-    expect(ent.body).toMatchObject({ plan: 'free', limits: { auditsPerMonth: null, findingsVisible: 3, blocksRepeatUploads: true, aiDrafts: false, fullLetters: false, fullRecoveryWorkflow: false, advancedReports: false }, usage: { auditsThisMonth: 0 }, canStartAudit: true })
+    expect(ent.body).toMatchObject({ plan: 'free', limits: { auditsPerMonth: null, findingsVisible: 3, blocksRepeatUploads: true, aiDrafts: false, fullLetters: true, gmailSending: true, fullRecoveryWorkflow: false, advancedReports: false }, usage: { auditsThisMonth: 0 }, canStartAudit: true })
     expect((await new Client().get('/api/account/entitlements')).status).toBe(401)
   })
 
@@ -375,6 +375,17 @@ describe('plans and entitlements', () => {
     const res = await c.post('/api/account/onboarding-seen')
     expect(res.body.user.onboardingSeenAt).toBeTypeOf('number')
     expect((await c.get('/api/auth/me')).body.user.onboardingSeenAt).toBeTypeOf('number')
+  })
+
+  it('the dashboard tour shows once per account: the first finish or skip is kept', async () => {
+    const c = new Client()
+    await signUpAndVerify(c, alice)
+    expect((await c.get('/api/auth/me')).body.user.tourSeenAt).toBeNull()
+    const first = (await c.post('/api/account/tour-seen')).body.user.tourSeenAt
+    expect(first).toBeTypeOf('number')
+    expect((await c.post('/api/account/tour-seen')).body.user.tourSeenAt).toBe(first)
+    expect((await c.get('/api/auth/me')).body.user.tourSeenAt).toBe(first)
+    expect((await new Client().post('/api/account/tour-seen')).status).toBe(401)
   })
 
   it('onboarding answers are saved on the account, and malformed ones are refused', async () => {

@@ -26,7 +26,7 @@ describe('checkout', () => {
     expect(summary).toHaveTextContent('Due today$15.00')
     expect(summary).toHaveTextContent('10% of money recovered')
     expect(summary).toHaveTextContent('never on findings, promises or unused credits')
-    expect(screen.getByTestId('checkout-test-mode')).toHaveTextContent('no card will be charged')
+    expect(screen.getByTestId('checkout-test-mode')).toHaveTextContent('No real card is charged')
   })
 
   it('Flat has no success fee', async () => {

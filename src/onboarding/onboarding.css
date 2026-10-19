@@ -209,6 +209,17 @@
 .wk.ob[data-zoom='finale'] .ob-head { align-items: flex-start; }
 .wk.ob[data-zoom='finale'] .ob-title { max-width: 13ch; }
 .wk.ob[data-zoom='finale'] .ob-field { width: 100%; }
+/* The still shown under reduced motion is the stage element itself; place it like the video layers. */
+.wk.ob img.ob-finale-stage { width: 100%; height: 100%; object-fit: cover; object-position: 72% 50%; }
+/* The title takes focus so each step is announced; it isn't a control, so it shows no focus ring. */
+.wk.ob .ob-title:focus, .wk.ob .ob-title:focus-visible { outline: none; }
+/* Keep the art clear of the answer box on wide screens, and the hint readable where it crosses the art. */
+@media (min-width: 901px) {
+  .wk.ob .ob-finale-stage { left: clamp(0px, 10vw, 180px); }
+  /* An img is sized by width, not by its insets, so take the shift off its width. */
+  .wk.ob img.ob-finale-stage { width: calc(100% - clamp(0px, 10vw, 180px)); }
+  .wk.ob[data-zoom='finale'] .ob-next-hint { padding: 4px 10px; border-radius: 999px; background: color-mix(in srgb, var(--bg) 82%, transparent); color: var(--text-dim); }
+}
 
 /* ---------- choice cards (goals, autonomy): each carries its own small loop ---------- */
 .wk.ob .ob-cards { display: grid; width: 100%; gap: 12px; margin-top: 10px; }
@@ -452,7 +463,7 @@ html[data-surface='workspace'] .wk.ob .ob-path:hover:not(:disabled) .ob-path-go[
   .wk.ob .ob-cards[data-count='3'] .ob-badge { position: static; align-self: flex-start; order: 3; display: none; }
   .wk.ob .ob-finale-stage { position: relative; inset: auto; width: 100%; height: 34vh; }
   .wk.ob[data-zoom='finale'] .ob-step > * { max-width: 100%; }
-  .wk.ob .ob-reel-layer { object-fit: contain; object-position: 70% 50%; }
+  .wk.ob .ob-reel-layer, .wk.ob img.ob-finale-stage { object-fit: contain; object-position: 70% 50%; }
 }
 @media (max-width: 720px) {
   html[data-surface='workspace'] .wk.ob { --gutter: 16px; }

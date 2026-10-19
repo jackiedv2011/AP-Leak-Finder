@@ -7,7 +7,8 @@
    The lid opening is scrubbed by the scroll; then the walkthrough moves in whole steps, one per scroll gesture:
    five steps (each caption names the screen to show and what to frame), then the close, the view pulled back to
    the whole open laptop over its line and the call to action. Each move is a tween from what is on show straight
-   to the step asked for, so the step bar's jumps (and Skip, to the close) are one clean move.
+   to the step asked for, so the step bar's jumps are one clean move. A Skip button comes up as the section reaches
+   the screen, before the steps take the scroll, and carries the page clear past the laptop, the way it was heading.
    Registered as a page module: main.js runs it with its shared helpers. */
 (window.reclaimModules = window.reclaimModules || []).push(({ $, $$, gsap, ScrollTrigger, lenis, rem, calm, docTop }) => {
   const sec = $('[data-walkthrough]');
@@ -16,7 +17,7 @@
   const stage = $('.wt-stage', sec), canvas = $('.wt-frames', sec), still = $('.wt-still', sec);
   const screen = $('.wt-screen', sec), spot = $('.wt-spot', sec);
   const shots = $$('.wt-shot', sec), caps = $$('.wt-cap', sec);
-  const pill = $('.wt-pill', sec), pills = $$('button:not(.wt-skip)', pill), end = $('.wt-end', sec);
+  const pill = $('.wt-pill', sec), pills = $$('button', pill), end = $('.wt-end', sec);
   const phone = matchMedia('(max-width: 1023px)').matches;   // picked once: the frame set does not swap on resize
   const dir = '/media/macbook/', set = phone ? 'm/' : 'd/';
   const stillUrl = dir + (phone ? 'still-m' : 'still') + '.webp';
@@ -319,7 +320,7 @@
   let held = false, lastWheel = 0, touchY = null, touchUsed = false;
   const hold = ev => {
     if (ev.type === 'touchstart') { touchY = ev.touches[0].clientY; touchUsed = false; return; }
-    if (ev.type === 'keydown' && !KEYS.has(ev.key)) return;
+    if (ev.type === 'keydown' && (!KEYS.has(ev.key) || ev.target === skipper)) return;
     ev.preventDefault();
     const now = performance.now();
     let way = 0;
@@ -368,9 +369,46 @@
   // landed somewhere without stepping (a reload, the scrollbar, an anchor): show that step as it is
   const jump = k => { at = k; holdOn(k >= 1 && k <= 5); apply(k, 0); };
 
-  // ---------- the step bar: each step a jump to it, and Skip, to the close ----------
+  // ---------- the step bar: each step a jump to it ----------
   pills.forEach((b, i) => b.addEventListener('click', () => go(i + 1)));
-  $('.wt-skip', pill)?.addEventListener('click', () => go(CLOSE));
+
+  // ---------- Skip: past the whole laptop, without stepping through it ----------
+  // Up from the moment the section starts to come on screen (from above or below), so it can be taken before the
+  // steps hold the scroll; kept up through them. It points the way the page was heading when it appeared: arriving
+  // from above it carries on to what follows, arriving from below it goes back to what came before. The
+  // walkthrough is set to the end it is being left by, so coming back to it later starts from that side.
+  const skipper = document.createElement('button');
+  skipper.type = 'button';
+  skipper.className = 'wt-skipper';
+  skipper.innerHTML = '<span>Skip<span class="wt-skipper-long"> the walkthrough</span></span><svg aria-hidden="true"><use href="#i-arrow"/></svg>';
+  document.body.append(skipper);
+  let skipWay = 0, skipping = false;   // skipWay: 1 down, -1 up, 0 hidden
+  const ZONE_IN = -.75, ZONE_OUT = () => LEN + .85;   // in screens from the section's top: where it shows
+  const showSkip = way => {
+    if (way === skipWay) return;
+    skipWay = way;
+    skipper.classList.toggle('is-shown', !!way);
+    if (way) {
+      skipper.dataset.way = way > 0 ? 'down' : 'up';
+      skipper.setAttribute('aria-label', way > 0 ? 'Skip the laptop walkthrough and continue down the page' : 'Skip the laptop walkthrough and go back up the page');
+    }
+  };
+  const onSkipZone = () => {
+    if (skipping) return;
+    const p = pos();
+    if (p <= ZONE_IN || p >= ZONE_OUT()) return showSkip(0);
+    if (!skipWay) showSkip(p < LEN / 2 ? 1 : -1);   // arriving: from above the top half, from below the bottom
+  };
+  addEventListener('scroll', onSkipZone, { passive: true });
+  skipper.addEventListener('click', () => {
+    const way = skipWay || 1;
+    skipping = true;
+    showSkip(0);
+    jump(way > 0 ? CLOSE : 0);   // lets go of the scroll, and leaves the walkthrough at the end it is left by
+    busy = true;
+    const y = way > 0 ? docTop(sec) + sec.offsetHeight : docTop(sec) - innerHeight;
+    lenis.scrollTo(y, { duration: 1, force: true, lock: true, onComplete: () => { busy = false; skipping = false; onSkipZone(); } });
+  });
 
   sec.style.setProperty('--wt-len', LEN.toFixed(3));
   sec.classList.add('is-live');
@@ -378,7 +416,7 @@
   layout();
   Object.assign(cam, base);
   gsap.set([...caps, pill, outro, end], { autoAlpha: 0 });
-  gsap.set(pill, { x: 0, xPercent: -50, y: rem() * .8 });   // centred by gsap from here, so its rise and the centring share one transform
+  gsap.set(pill, { x: 0, xPercent: phone ? 0 : -50, y: rem() * .8 });   // centred by gsap from here, so its rise and the centring share one transform (phones: left-aligned, beside Skip)
   shots.forEach(s => gsap.set(s, { opacity: s.dataset.shot === 'overview' ? 1 : 0, visibility: s.dataset.shot === 'overview' ? 'visible' : 'hidden' }));
 
   const onScroll = () => {

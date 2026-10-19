@@ -1,9 +1,9 @@
-import { REDACTED_MONEY } from '../planGates'
+import { REDACTED_MONEY, REDACTED_VENDOR } from '../planGates'
 import { useEffect, useState } from 'react'
 import { ArrowRight, Download, Lock, Search, SlidersHorizontal } from 'lucide-react'
 import { formatCurrency, formatDate, plural } from '@/lib/format'
 import { DECISION_LABEL, type DecisionValue } from '@/ledger/caseState'
-import { evaluateEligibility } from '@/recovery/eligibility'
+import { evaluateEligibility, type EvidenceState } from '@/recovery/eligibility'
 import { nextActionLabel } from './findingText'
 import { recoveryStatusLabel } from '@/recovery/model'
 import type { LedgerEnvironment } from '@/ledger/store'
@@ -78,13 +78,23 @@ function exportCsv(rows: Opportunity[]) {
   setTimeout(() => URL.revokeObjectURL(url), 1000)
 }
 
+/** One plain status for where a finding stands, instead of the engine's evidence states. */
+function evidenceStatus(finding: Opportunity['finding'], state: EvidenceState): string {
+  if (state === 'eligible') return 'Ready to claim'
+  if (state === 'customer_confirmed') return 'You confirmed it'
+  if (state === 'contradicted') return 'Records conflict'
+  if (state === 'suppressed') return 'Likely expected'
+  if (finding.classification === 'future_savings') return 'Prevention only'
+  if (finding.classification === 'preventive_security') return 'Security check'
+  return finding.type === 'exact_duplicate' || finding.type === 'near_duplicate' ? 'Needs your evidence' : 'Check inside the business'
+}
+
 function EvidenceCell({ finding, findings }: { finding: Opportunity['finding']; findings: Opportunity['finding'][] }) {
   const gate = evaluateEligibility(finding, finding.evidence, findings)
   const reason = finding.suppressionReason ?? gate.contradictoryEvidence[0]
   return <span className="wk-cell-main">
-    <strong>{gate.evidenceState.replaceAll('_', ' ')}</strong>
-    <small>{gate.eligible ? 'Evidence gate passed' : `${gate.missingEvidence.length} evidence ${plural(gate.missingEvidence.length, 'item')} missing`}{reason ? ` Â· ${reason}` : ''}</small>
-    <small>{finding.ruleId ?? finding.type} v{finding.ruleVersion ?? 1} Â· {nextActionLabel(finding, gate.eligible)}</small>
+    <strong>{evidenceStatus(finding, gate.evidenceState)}</strong>
+    <small>{reason ?? `Next: ${nextActionLabel(finding, gate.eligible)}`}</small>
   </span>
 }
 
@@ -134,10 +144,10 @@ export function Findings({ env, visible, onOpenCase }: FindingsProps) {
     </div>
     <div className="wk-toolbar">
       <label className="wk-search"><Search aria-hidden="true" /><input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search vendor, invoice or type…" aria-label="Search findings" /></label>
-      <label className="wk-select"><SlidersHorizontal aria-hidden="true" /><span className="wk-sr-only">Filter by decision</span><select value={status} onChange={(event) => setStatus(event.target.value as Status)}><option value="all">Any decision</option><option value="unreviewed">Not reviewed</option><option value="confirmed">Confirmed</option><option value="needs_info">Needs information</option><option value="expected">Expected</option></select></label>
-      <label className="wk-select"><span className="wk-sr-only">Sort findings</span><select value={sort} onChange={(event) => setSort(event.target.value as Sort)}><option value="priority">Sort: priority</option><option value="amount-desc">Sort: largest first</option><option value="amount-asc">Sort: smallest first</option><option value="vendor">Sort: vendor A–Z</option></select></label>
+      <label className="wk-select" data-tour="findings-filter"><SlidersHorizontal aria-hidden="true" /><span className="wk-sr-only">Filter by decision</span><select value={status} onChange={(event) => setStatus(event.target.value as Status)}><option value="all">Any decision</option><option value="unreviewed">Not reviewed</option><option value="confirmed">Confirmed</option><option value="needs_info">Needs information</option><option value="expected">Expected</option></select></label>
+      <label className="wk-select" data-tour="findings-sort"><span className="wk-sr-only">Sort findings</span><select value={sort} onChange={(event) => setSort(event.target.value as Sort)}><option value="priority">Sort: priority</option><option value="amount-desc">Sort: largest first</option><option value="amount-asc">Sort: smallest first</option><option value="vendor">Sort: vendor A–Z</option></select></label>
       <span className="wk-toolbar-spacer" />
-      <button type="button" className="wk-btn" data-variant="outline" onClick={() => exportCsv(ordered.filter((o) => visible.has(o.finding.id)))}><Download aria-hidden="true" />Export CSV</button>
+      <button type="button" className="wk-btn" data-variant="outline" data-tour="findings-export" onClick={() => exportCsv(ordered.filter((o) => visible.has(o.finding.id)))}><Download aria-hidden="true" />Export CSV</button>
     </div>
 
     <div className="wk-grid-table" aria-label="Finding results">
@@ -146,7 +156,7 @@ export function Findings({ env, visible, onOpenCase }: FindingsProps) {
         // A locked row carries no vendor, invoice or amount: hiding them with CSS is not access control.
         const locked = !visible.has(o.finding.id)
         return <button type="button" className="wk-grid-row wk-finding-row" key={o.finding.id} data-amount={locked ? undefined : o.finding.dollarImpact} data-locked={locked || undefined} onClick={() => (locked ? setUpgradeOpen(true) : onOpenCase(o.finding.id))} aria-label={locked ? `${o.typeLabel}, part of Growth and Flat` : `${o.typeLabel}, ${o.finding.vendor}, ${formatCurrency(o.finding.dollarImpact)}`}>
-          <span className="wk-cell-main">{locked ? <><strong style={{ color: 'var(--text-muted)' }}>Shown on Growth and Flat</strong><small>Vendor and invoices hidden on Free</small></> : <><strong>{o.finding.vendor}</strong><small>{findingReference(o.finding)}</small></>}<span className="wk-mobile-meta" aria-hidden="true"><KindChip finding={o.finding} label={o.typeLabel} />{decisionChip(o)}</span></span>
+          <span className="wk-cell-main">{locked ? <strong style={{ color: 'var(--text-muted)' }}>{REDACTED_VENDOR}</strong> : <><strong>{o.finding.vendor}</strong><small>{findingReference(o.finding)}</small></>}<span className="wk-mobile-meta" aria-hidden="true"><KindChip finding={o.finding} label={o.typeLabel} />{decisionChip(o)}</span></span>
           <span><KindChip finding={o.finding} label={o.typeLabel} /></span>
           <span className="wk-finding-state">{locked ? <Strength level={o.evidence} /> : <EvidenceCell finding={o.finding} findings={all.map((x) => x.finding)} />}</span>
           <span>{decisionChip(o)}</span>
@@ -155,9 +165,9 @@ export function Findings({ env, visible, onOpenCase }: FindingsProps) {
         </button>
       })}
       {ordered.length === 0 ? <div className="wk-grid-empty">No findings match. <button type="button" className="wk-link" onClick={() => { setCategory('all'); setQuery(''); setStatus('all') }}>Clear filters</button></div> : null}
-      {lockedCount > 0 ? <div className="wk-upsell"><p><Lock aria-hidden="true" style={{ display: 'inline', verticalAlign: '-2px', marginRight: 8 }} /><strong>{lockedCount} of {ordered.length}</strong> are shown in full on Growth and Flat. Free shows the {entitlements.limits.findingsVisible} lowest-value findings.</p><button type="button" className="wk-btn" data-variant="primary" data-size="sm" onClick={() => setUpgradeOpen(true)}>See Pro</button></div> : null}
+      {lockedCount > 0 ? <div className="wk-upsell"><p><Lock aria-hidden="true" style={{ display: 'inline', verticalAlign: '-2px', marginRight: 8 }} /><strong>{lockedCount} of {ordered.length}</strong> are shown in full on Growth and Flat. Free shows the {entitlements.limits.findingsVisible} lowest-value findings.</p><button type="button" className="wk-btn" data-variant="primary" data-size="sm" onClick={() => setUpgradeOpen(true)}>See plans</button></div> : null}
     </div>
-    <div className="wk-grid-foot"><span>{matching.length} of {all.length} {plural(all.length, 'finding')}</span><span>{decided} reviewed · {formatCurrency(l.flagged)} flagged for review Â· {formatCurrency(l.awaitingDecision)} eligible and waiting on you</span></div>
+    <div className="wk-grid-foot"><span>{matching.length} of {all.length} {plural(all.length, 'finding')}</span><span>{decided} reviewed · {formatCurrency(l.flagged)} flagged for review · {formatCurrency(l.awaitingDecision)} eligible and waiting on you</span></div>
     <UpgradeDialog open={upgradeOpen} onOpenChange={setUpgradeOpen} reason="Growth and Flat show every finding in full, with its vendor and invoices." />
   </>
 }

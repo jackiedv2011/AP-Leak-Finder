@@ -1,4 +1,4 @@
-import { markRecoveryRequested, recordRecoveryOutcome, type CaseState, type RecoveryMethod, type RecoveryVerification, type VendorUpdate } from '@/ledger/caseState'
+import { markRecoveryRequested, recordRecoveryOutcome, type CaseState, type RecoveryMethod, type RecoveryVerification, type SentEmail, type VendorUpdate } from '@/ledger/caseState'
 import { normalizeVendor } from '@/lib/format'
 import type { APRecord, Finding } from '@/types'
 import { latestVendorPosition, VENDOR_STATUS } from './vendorStatus'
@@ -47,6 +47,79 @@ export function startRecoveryRequest(state: CaseState, amount: number, at = Date
     recoveredAmount: null,
     nextFollowUpAt: addBusinessDays(at, 5),
   }
+}
+
+/**
+ * Gmail accepted the request: record it as sent, at Gmail's time, with its
+ * message id. This records a fact that already happened, so unlike
+ * `startRecoveryRequest` it does not re-ask for approval (the server checked
+ * that before sending); it only refuses a case that isn't waiting to be sent.
+ */
+export function recordEmailSent(state: CaseState, sent: SentEmail, amount: number): CaseState {
+  if (state.recoveryStage !== 'confirmed') throw new Error('Only a request waiting to be sent can be recorded as sent.')
+  if (!sent.messageId || !Number.isFinite(sent.sentAt)) throw new Error('A sent email needs Gmail’s message id and time.')
+  if (!Number.isFinite(amount) || amount <= 0) throw new Error('The requested amount must be greater than zero.')
+  return {
+    ...markRecoveryRequested(state, amount),
+    recoveryRequestedAt: sent.sentAt,
+    recoveryRecipientEmail: sent.to,
+    recoverySentEmail: sent,
+    recoveredAmount: null,
+    nextFollowUpAt: sent.sentAt + followUpAfterDays(state) * DAY,
+  }
+}
+
+export const DEFAULT_FOLLOW_UP_DAYS = 7
+export const followUpAfterDays = (state: CaseState) => state.followUpAfterDays ?? DEFAULT_FOLLOW_UP_DAYS
+
+/** The last email on the case: the request, a Gmail follow-up, or a follow-up the customer recorded sending. */
+export function lastOutreachAt(state: CaseState): number | null {
+  const times = [
+    state.recoverySentEmail?.sentAt ?? state.recoveryRequestedAt ?? null,
+    ...(state.recoveryFollowUps ?? []).map((f) => f.sentAt),
+    ...(state.vendorUpdates ?? []).filter((u) => u.status === 'followed_up').map((u) => u.at),
+  ].filter((t): t is number => typeof t === 'number' && Number.isFinite(t))
+  return times.length ? Math.max(...times) : null
+}
+
+export interface FollowUpStatus {
+  /** When the last email went out. */
+  lastOutreachAt: number
+  /** When a follow-up is offered if nothing comes back. */
+  dueAt: number
+  /** A vendor reply recorded since the last email: no follow-up is offered. */
+  repliedAt: number | null
+  due: boolean
+  /** Which follow-up this would be: 1 for the first. */
+  sequence: number
+}
+
+/**
+ * Whether to offer a follow-up on an open request. A reply is any vendor
+ * update that moves the case (not "no response yet", not "I sent a
+ * follow-up"). Only ever an offer: nothing here sends anything.
+ */
+export function followUpStatus(state: CaseState, now = Date.now()): FollowUpStatus | null {
+  if (state.recoveryStage !== 'requested' || state.contactHold) return null
+  const last = lastOutreachAt(state)
+  if (last === null) return null
+  const reply = (state.vendorUpdates ?? []).filter((u) => VENDOR_STATUS[u.status].progress && u.at >= last).at(-1) ?? null
+  const dueAt = state.nextFollowUpAt ?? last + followUpAfterDays(state) * DAY
+  return { lastOutreachAt: last, dueAt, repliedAt: reply?.at ?? null, due: !reply && now >= dueAt, sequence: (state.recoveryFollowUps?.length ?? 0) + 1 }
+}
+
+/** "Follow up after N days": moves the next follow-up to N days after the last email. */
+export function setFollowUpAfterDays(state: CaseState, days: number): CaseState {
+  if (!Number.isInteger(days) || days < 1 || days > 90) throw new Error('Choose between 1 and 90 days.')
+  const last = lastOutreachAt(state)
+  return { ...state, followUpAfterDays: days, nextFollowUpAt: state.recoveryStage === 'requested' && last !== null ? last + days * DAY : state.nextFollowUpAt ?? null }
+}
+
+/** Gmail accepted a follow-up: add it to the case and restart the clock from it. */
+export function recordFollowUpSent(state: CaseState, sent: SentEmail): CaseState {
+  if (state.recoveryStage !== 'requested') throw new Error('Only an open request can be followed up.')
+  if (!sent.messageId || !Number.isFinite(sent.sentAt)) throw new Error('A sent email needs Gmail’s message id and time.')
+  return { ...state, recoveryFollowUps: [...(state.recoveryFollowUps ?? []), sent], nextFollowUpAt: sent.sentAt + followUpAfterDays(state) * DAY }
 }
 
 export function setNextFollowUp(state: CaseState, at: number | null): CaseState {
@@ -201,8 +274,8 @@ export function recoveryNextAction(state: CaseState, now = Date.now(), internal 
   }
   if (state.recoveryStage === 'recovered') {
     if (verifiedReturned(state) <= 0) return { label: 'Record missing return', detail: 'This older case has no verified return. Reopen it and record the settlement before reconciliation.' }
-    if (!state.reconciledAt) return { label: 'Reconcile in accounting', detail: 'Match the settled return to the original payable and record the root cause.' }
-    return { label: 'Case complete', detail: 'Returned value and accounting reconciliation have been recorded.' }
+    if (!state.reconciledAt) return { label: 'Record it in your books', detail: 'Note where the money shows up in your accounting, and what caused the mistake, so the case can close.' }
+    return { label: 'Case complete', detail: 'The money is back and recorded in your books. Nothing left to do.' }
   }
   return { label: 'Case closed', detail: 'No returned value was recorded.' }
 }

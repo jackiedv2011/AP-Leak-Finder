@@ -1020,8 +1020,8 @@ html[data-theme-transition] .wk-panel {
 .wk-plans-card .wk-plan-features { margin-bottom: 18px; }
 .wk-plans-card .wk-plans-note { margin-bottom: 18px; }
 .wk-plans-compare td:not(:first-child), .wk-plans-compare th:not(:first-child) { text-align: center; }
-.wk-plans-yes { width: 16px; height: 16px; color: var(--accent-ink); }
-.wk-plans-no { width: 16px; height: 16px; color: var(--text-muted); opacity: .6; }
+.wk-plans-yes { display: inline-block; vertical-align: middle; width: 16px; height: 16px; color: var(--accent-ink); }
+.wk-plans-no { display: inline-block; vertical-align: middle; width: 16px; height: 16px; color: var(--text-muted); opacity: .6; }
 .wk-plans-badge { width: 28px; height: 28px; color: var(--accent-ink); margin-bottom: 10px; }
 
 /* ---------- checkout ---------- */

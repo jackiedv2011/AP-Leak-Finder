@@ -6,6 +6,10 @@ import {
   approveRecovery,
   canRecordRequest,
   closeWithoutRecovery,
+  followUpStatus,
+  recordEmailSent,
+  recordFollowUpSent,
+  setFollowUpAfterDays,
   recordVendorUpdate,
   requiresCustomerAction,
   recommendRecoveryMethod,
@@ -154,7 +158,7 @@ describe('recovery lifecycle', () => {
     expect(fullyReturned.recoveredAmount).toBe(1000)
     expect(fullyReturned.recoveryStage).toBe('recovered')
     expect(fullyReturned.recoverySettlements).toHaveLength(2)
-    expect(recoveryNextAction(fullyReturned, monday).label).toMatch(/reconcil/i)
+    expect(recoveryNextAction(fullyReturned, monday).label).toMatch(/in your books/i)
     expect(reconcileRecovery(fullyReturned, { note: 'Cleared vendor payable', rootCause: 'Invoice entered twice', at: monday }).reconciledAt).toBe(monday)
     const reopened = reopenOutcome(fullyReturned)
     expect(reopened.recoverySettlements).toBeNull()
@@ -311,4 +315,68 @@ describe('case history keeps every fact from one change', () => {
   function requested() {
     return startRecoveryRequest(approveRecovery(confirmCase(null), { at: monday, knownBeforeReclaim: false }), 1000, monday)
   }
+})
+
+describe('recording a Gmail send', () => {
+  const sent = { channel: 'gmail' as const, messageId: 'msg-9', from: 'owner@gmail.com', to: 'ap@vendor.test', cc: [], sentAt: Date.UTC(2026, 9, 14, 15) }
+
+  it('records the request at Gmail’s time, with its id, and schedules the follow-up from it', () => {
+    const approved = approveRecovery(confirmCase(null), { knownBeforeReclaim: false })
+    const next = recordEmailSent(approved, sent, 500)
+    expect(next).toMatchObject({ recoveryStage: 'requested', requestedAmount: 500, recoveryRequestedAt: sent.sentAt, recoveryRecipientEmail: 'ap@vendor.test', recoverySentEmail: sent })
+    expect(next.nextFollowUpAt).toBe(sent.sentAt + 7 * 86_400_000)
+    const event = withHistory(approved, next, 'Alice').history!.at(-1)!
+    expect(event).toMatchObject({ action: 'stage:requested', summary: 'Recovery request sent from Gmail', at: sent.sentAt, amount: 500 })
+    expect(event.note).toBe('From owner@gmail.com to ap@vendor.test. Gmail message ID msg-9')
+  })
+
+  it('refuses a case that is not waiting to be sent, or a send without Gmail’s id', () => {
+    const approved = approveRecovery(confirmCase(null), { knownBeforeReclaim: false })
+    expect(() => recordEmailSent(recordEmailSent(approved, sent, 500), sent, 500)).toThrow()
+    expect(() => recordEmailSent(approved, { ...sent, messageId: '' }, 500)).toThrow()
+  })
+
+  it('a request sent by hand carries no Gmail record', () => {
+    const approved = approveRecovery(confirmCase(null), { knownBeforeReclaim: false })
+    const next = startRecoveryRequest(approved, 500)
+    expect(next.recoverySentEmail).toBeUndefined()
+    expect(withHistory(approved, next, null).history!.at(-1)!).toMatchObject({ summary: 'Recovery request sent', note: null })
+  })
+})
+
+describe('when a follow-up is offered', () => {
+  const DAY = 86_400_000
+  const t0 = Date.UTC(2026, 9, 1, 15)
+  const sent = { channel: 'gmail' as const, messageId: 'm1', from: 'o@gmail.com', to: 'ap@v.test', cc: [], sentAt: t0 }
+  const requested = () => recordEmailSent(approveRecovery(confirmCase(null), { knownBeforeReclaim: false }), sent, 500)
+
+  it('after 7 days without a reply, counting from the last email, and never for a held or closed case', () => {
+    const state = requested()
+    expect(followUpStatus(state, t0 + 6 * DAY)).toMatchObject({ due: false, dueAt: t0 + 7 * DAY, sequence: 1 })
+    expect(followUpStatus(state, t0 + 7 * DAY)!.due).toBe(true)
+    const after = recordFollowUpSent(state, { ...sent, messageId: 'm2', sentAt: t0 + 8 * DAY })
+    expect(followUpStatus(after, t0 + 14 * DAY)).toMatchObject({ due: false, lastOutreachAt: t0 + 8 * DAY, sequence: 2 })
+    expect(followUpStatus(after, t0 + 15 * DAY)!.due).toBe(true)
+    expect(followUpStatus({ ...state, contactHold: 'Paused' }, t0 + 30 * DAY)).toBeNull()
+    expect(followUpStatus({ ...state, recoveryStage: 'recovered' }, t0 + 30 * DAY)).toBeNull()
+  })
+
+  it('a vendor reply stops it; "no response yet" and a follow-up sent by hand do not count as replies', () => {
+    const state = requested()
+    const replied = recordVendorUpdate(state, { status: 'acknowledged', note: 'On it', at: t0 + 2 * DAY }, t0 + 2 * DAY)
+    expect(followUpStatus(replied, t0 + 30 * DAY)).toMatchObject({ due: false, repliedAt: t0 + 2 * DAY })
+    const silent = recordVendorUpdate(state, { status: 'no_response', note: 'Nothing yet', at: t0 + 2 * DAY }, t0 + 2 * DAY)
+    expect(followUpStatus(silent, t0 + 7 * DAY)!.due).toBe(true)
+    const byHand = recordVendorUpdate(state, { status: 'followed_up', note: 'Called them', at: t0 + 3 * DAY }, t0 + 3 * DAY)
+    expect(followUpStatus(byHand, t0 + 30 * DAY)!.lastOutreachAt).toBe(t0 + 3 * DAY)
+  })
+
+  it('the number of days is set per case and moves the next follow-up with it', () => {
+    const state = setFollowUpAfterDays(requested(), 3)
+    expect(state).toMatchObject({ followUpAfterDays: 3, nextFollowUpAt: t0 + 3 * DAY })
+    expect(followUpStatus(state, t0 + 3 * DAY)!.due).toBe(true)
+    expect(() => setFollowUpAfterDays(state, 0)).toThrow()
+    expect(() => setFollowUpAfterDays(state, 2.5)).toThrow()
+    expect(withHistory(requested(), recordFollowUpSent(requested(), { ...sent, messageId: 'm2', sentAt: t0 + 8 * DAY }), null).history!.at(-1)).toMatchObject({ action: 'recovery:followup_sent', at: t0 + 8 * DAY, note: 'From o@gmail.com to ap@v.test. Gmail message ID m2' })
+  })
 })

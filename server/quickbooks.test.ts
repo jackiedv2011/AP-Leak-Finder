@@ -6,7 +6,7 @@ import { loadConfig } from './config.ts'
 import { openDatabase } from './db.ts'
 import { DevMailer } from './mailer.ts'
 import { openSecret, sealSecret } from './crypto.ts'
-import { createQuickBooksClient, pullLedger, QuickBooksReconnectError, SANDBOX_API_BASE, type QuickBooksClient, type QuickBooksTokens } from './quickbooks.ts'
+import { createQuickBooksClient, pullLedger, QuickBooksReconnectError, PRODUCTION_API_BASE, SANDBOX_API_BASE, type QuickBooksClient, type QuickBooksTokens } from './quickbooks.ts'
 
 const tokenKey = randomBytes(32)
 const config = loadConfig({
@@ -38,7 +38,7 @@ function fakeQuickBooks() {
     issued += 1
     return { accessToken: `access-${issued}-SECRET`, refreshToken: `refresh-${issued}-SECRET`, accessExpiresAt: Date.now() + (expired ? -1 : 3_600_000), refreshExpiresAt: Date.now() + 8_640_000_000 }
   }
-  const state = { expireFirst: false, refused: false, revoked: [] as string[] }
+  const state = { expireFirst: false, refused: false, revoked: [] as string[], cdc: { CDCResponse: [{ QueryResponse: [] }] } as Record<string, unknown> }
   const client: QuickBooksClient = {
     environment: 'sandbox',
     authorizationUrl: ({ redirectUri, state: s }) => `https://appcenter.intuit.test/connect?redirect_uri=${encodeURIComponent(redirectUri)}&state=${s}`,
@@ -63,7 +63,12 @@ function fakeQuickBooks() {
     query: async (_realmId, accessToken, statement) => {
       calls.push(`query:${accessToken}`)
       const entity = statement.match(/from (\w+)/)![1] as keyof typeof SAMPLE.entities
-      return { QueryResponse: { [entity]: SAMPLE.entities[entity] } }
+      const ids = statement.match(/where Id in \(([^)]*)\)/)?.[1].replace(/'/g, '').split(',')
+      return { QueryResponse: { [entity]: (SAMPLE.entities[entity] as Array<{ Id: string }>).filter((row) => !ids || ids.includes(row.Id)) } }
+    },
+    changes: async (_realmId, _accessToken, entities, since) => {
+      calls.push(`cdc:${entities.join(',')}:${since.toISOString()}`)
+      return state.cdc
     },
   }
   return { client, calls, state }
@@ -111,11 +116,11 @@ async function signedIn(first: string, email: string) {
 }
 
 /** Runs the whole connect round trip the way a browser would. */
-async function connect(c: Client, code = 'good-code') {
+async function connect(c: Client, code = 'good-code', realmId = REALM) {
   const start = await c.get('/api/integrations/quickbooks/connect')
   expect(start.status).toBe(302)
   const state = new URL(start.headers.get('location')!).searchParams.get('state')!
-  return c.get(`/api/integrations/quickbooks/callback?code=${code}&state=${state}&realmId=${REALM}`)
+  return c.get(`/api/integrations/quickbooks/callback?code=${code}&state=${state}&realmId=${realmId}`)
 }
 
 const outcome = (res: { headers: Headers }) => new URL(res.headers.get('location')!, 'http://x').searchParams.get('quickbooks')
@@ -206,6 +211,40 @@ describe('connecting QuickBooks', () => {
   })
 })
 
+describe('the audit a connection keeps up to date', () => {
+  const status = async (c: Client) => (await c.get('/api/integrations/quickbooks')).body
+
+  it('is stored with the connection, kept on reconnecting the same company, and cleared for another company or on disconnect', async () => {
+    const alice = await signedIn('Alice', 'alice@example.com')
+    expect((await alice.post('/api/integrations/quickbooks/link', { auditId: 'project_1' })).status).toBe(409)
+    await connect(alice)
+    expect((await status(alice)).linkedAuditId).toBeNull()
+    expect((await alice.post('/api/integrations/quickbooks/link', { auditId: 'project_1' })).body).toEqual({ ok: true, linkedAuditId: 'project_1' })
+    expect((await status(alice)).linkedAuditId).toBe('project_1')
+
+    await connect(alice)
+    expect((await status(alice)).linkedAuditId).toBe('project_1')
+    await connect(alice, 'good-code', '1234567890')
+    expect((await status(alice)).linkedAuditId).toBeNull()
+
+    await alice.post('/api/integrations/quickbooks/link', { auditId: 'project_2' })
+    await alice.post('/api/integrations/quickbooks/disconnect')
+    await connect(alice, 'good-code', '1234567890')
+    expect((await status(alice)).linkedAuditId).toBeNull()
+  })
+
+  it('accepts only an audit id, and only from its own account', async () => {
+    const alice = await signedIn('Alice', 'alice@example.com')
+    await connect(alice)
+    expect((await alice.post('/api/integrations/quickbooks/link', { auditId: '../x' })).status).toBe(400)
+    expect((await alice.post('/api/integrations/quickbooks/link', {})).status).toBe(400)
+    expect((await new Client().post('/api/integrations/quickbooks/link', { auditId: 'project_1' })).status).toBe(401)
+    const bob = await signedIn('Bob', 'bob@example.com')
+    expect((await bob.post('/api/integrations/quickbooks/link', { auditId: 'project_9' })).status).toBe(409)
+    expect((await status(alice)).linkedAuditId).toBeNull()
+  })
+})
+
 describe('importing and disconnecting', () => {
   it('imports the ledger as CSV the normal parser accepts', async () => {
     const alice = await signedIn('Alice', 'alice@example.com')
@@ -216,7 +255,50 @@ describe('importing and disconnecting', () => {
     const [header, ...rows] = (res.body.csv as string).trim().split('\n')
     expect(header).toBe('vendor,invoice_number,invoice_date,invoice_amount,payment_date,amount_paid,terms,category,currency,transaction_id,company,source_account,transaction_type')
     expect(rows).toHaveLength(3)
+    // Beside the CSV, the links it can't carry: both payments paid Bill 101.
+    expect(res.body.facts.schemaVersion).toBe(1)
+    expect(res.body.facts.payments['qbo:BillPayment:202'].bill).toEqual({ txnType: 'Bill', id: '101', txnDate: '2026-08-01', amountMinor: 125000, docNumber: 'INV-7781' })
+    expect(Object.keys(res.body.facts.payments)).toEqual(['qbo:BillPayment:201', 'qbo:BillPayment:202', 'qbo:Purchase:401'])
     expect((await alice.get('/api/integrations/quickbooks')).body.lastSyncAt).toEqual(expect.any(Number))
+  })
+
+  it('after a recent import, reads only what changed, and fetches the bills changed payments link to', async () => {
+    const alice = await signedIn('Alice', 'alice@example.com')
+    await connect(alice)
+    qbo.state.cdc = { CDCResponse: [{ QueryResponse: [
+      { BillPayment: [
+        { Id: '202', TxnDate: '2026-08-23', TotalAmt: 1200, PayType: 'Check', VendorRef: { value: '56', name: 'Acme Supply' }, MetaData: { CreateTime: '2026-08-23T10:00:00Z' }, Line: [{ Amount: 1200, LinkedTxn: [{ TxnId: '101', TxnType: 'Bill' }] }] },
+        { Id: '203', status: 'Deleted', MetaData: { LastUpdatedTime: '2026-10-10T10:00:00Z' } },
+      ] },
+      { Purchase: [{ Id: '402', TxnDate: '2026-10-12', TotalAmt: 45, PaymentType: 'Cash', EntityRef: { type: 'Vendor', value: '56', name: 'Acme Supply' }, MetaData: { CreateTime: new Date().toISOString() } }] },
+    ] }] }
+    const since = Date.now() - 3 * 86_400_000
+    const res = await alice.call('/api/integrations/quickbooks/sync', { method: 'POST', json: { since } })
+    expect(res.status).toBe(200)
+    expect(qbo.calls).toContain(`cdc:Vendor,Bill,BillPayment,VendorCredit,Deposit,Purchase:${new Date(since).toISOString()}`)
+    expect(res.body.facts.sync).toEqual({ realmId: REALM, mode: 'changes', since, touched: ['BillPayment:202', 'BillPayment:203', 'Purchase:402'], removed: [{ txnType: 'BillPayment', id: '203' }] })
+    const rows = (res.body.csv as string).trim().split('\n').slice(1)
+    // Bill 101 didn't change, but was fetched by id so the payment still names its invoice.
+    expect(rows).toEqual([expect.stringMatching(/^Acme Supply,INV-7781,2026-08-01,1250,2026-08-23,1200,.*qbo:BillPayment:202,/), expect.stringContaining('qbo:Purchase:402')])
+    expect(res.body.facts.searched).toEqual({ vendorCredits: 0, deposits: 0, purchases: 1, billPayments: 0 })
+  })
+
+  it('pulls the whole ledger when the last import is older than QuickBooks keeps changes', async () => {
+    const alice = await signedIn('Alice', 'alice@example.com')
+    await connect(alice)
+    const res = await alice.call('/api/integrations/quickbooks/sync', { method: 'POST', json: { since: Date.now() - 31 * 86_400_000 } })
+    expect(res.body.facts.sync.mode).toBe('full')
+    expect(qbo.calls.some((c) => c.startsWith('cdc:'))).toBe(false)
+    expect((res.body.csv as string).trim().split('\n')).toHaveLength(4)
+  })
+
+  it('pulls the whole ledger when a change set is too large to be complete', async () => {
+    const alice = await signedIn('Alice', 'alice@example.com')
+    await connect(alice)
+    qbo.state.cdc = { CDCResponse: [{ QueryResponse: [{ Purchase: Array.from({ length: 1000 }, (_, i) => ({ Id: String(i + 1) })) }] }] }
+    const res = await alice.call('/api/integrations/quickbooks/sync', { method: 'POST', json: { since: Date.now() - 86_400_000 } })
+    expect(res.body.facts.sync.mode).toBe('full')
+    expect(qbo.calls.some((c) => c.startsWith('cdc:'))).toBe(true)
   })
 
   it('refreshes an expired access token and re-seals the new one', async () => {
@@ -283,29 +365,53 @@ describe('importing and disconnecting', () => {
   })
 })
 
-describe('the QuickBooks client is read-only', () => {
-  it('reads company data only with GET, only from the sandbox API, only with SELECT', async () => {
+describe.each([
+  ['sandbox', SANDBOX_API_BASE],
+  ['production', PRODUCTION_API_BASE],
+] as const)('the QuickBooks client is read-only (%s)', (environment, API_HOST) => {
+  it(`reads company data only with GET, only from ${API_HOST}, only with SELECT`, async () => {
     const seen: Array<{ method: string; url: URL }> = []
     const fakeFetch = (async (input: string | URL | Request, init?: RequestInit) => {
       const url = new URL(String(input))
       seen.push({ method: init?.method ?? 'GET', url })
       if (url.pathname.endsWith('/tokens/bearer')) return Response.json({ access_token: 'a', refresh_token: 'r', expires_in: 3600, x_refresh_token_expires_in: 8_640_000 })
       if (url.pathname.includes('/companyinfo/')) return Response.json({ CompanyInfo: SAMPLE.company })
+      if (url.pathname.endsWith('/cdc')) return Response.json({ CDCResponse: [{ QueryResponse: [] }] })
       const entity = url.searchParams.get('query')!.match(/from (\w+)/)![1] as keyof typeof SAMPLE.entities
       return Response.json({ QueryResponse: { [entity]: SAMPLE.entities[entity] } })
     }) as typeof fetch
-    const client = createQuickBooksClient('id', 'secret', fakeFetch)
+    const client = createQuickBooksClient('id', 'secret', fakeFetch, environment)
+    expect(client.environment).toBe(environment)
     const tokens = await client.exchangeCode({ code: 'c', redirectUri: 'http://localhost/cb' })
     await pullLedger(client, REALM, tokens.accessToken)
 
-    const data = seen.filter((s) => s.url.origin === SANDBOX_API_BASE)
+    // Every company-data request went to this environment's host, and nowhere else.
+    expect(seen.filter((s) => s.url.hostname.includes('quickbooks.api.intuit.com')).every((s) => s.url.origin === API_HOST)).toBe(true)
+    const data = seen.filter((s) => s.url.origin === API_HOST)
     expect(data.length).toBeGreaterThan(5)
     expect(data.every((s) => s.method === 'GET')).toBe(true)
     // Anything sent with another method went to Intuit's sign-in service, never to company data.
     expect(seen.filter((s) => s.method !== 'GET').every((s) => s.url.hostname === 'oauth.platform.intuit.com')).toBe(true)
     expect(data.map((s) => s.url.searchParams.get('query')).filter(Boolean).every((q) => /^select \* from (Vendor|Bill|BillPayment|VendorCredit|Deposit|Purchase) /.test(q!))).toBe(true)
 
+    seen.length = 0
+    await client.changes(REALM, tokens.accessToken, ['BillPayment', 'Purchase'], new Date('2026-10-01T00:00:00Z'))
+    expect(seen).toHaveLength(1)
+    expect(seen[0].method).toBe('GET')
+    expect(seen[0].url.origin + seen[0].url.pathname).toBe(`${API_HOST}/v3/company/${REALM}/cdc`)
+    expect(seen[0].url.searchParams.get('entities')).toBe('BillPayment,Purchase')
+    expect(seen[0].url.searchParams.get('changedSince')).toBe('2026-10-01T00:00:00.000Z')
+    await expect(client.changes(REALM, 'a', ['Invoice'], new Date())).rejects.toThrow(/ledger entities/)
+
     await expect(client.query(REALM, 'a', 'delete from Bill where Id = 1')).rejects.toThrow(/Only SELECT/)
+    await expect(client.query(REALM, 'a', 'select * from Customer')).rejects.toThrow(/ledger entities/)
+    await expect(client.query(REALM, 'a', 'select * from Invoice where Id = 1')).rejects.toThrow(/ledger entities/)
+    await expect(client.query(REALM, 'a', 'select count(*) from Employee')).rejects.toThrow(/ledger entities/)
+
+    // A failed read names Intuit's trace id, for their support, and never the response body.
+    const failing = createQuickBooksClient('id', 'secret', (async () => new Response('{"Fault":"access-SECRET"}', { status: 500, headers: { intuit_tid: '1-abc-123' } })) as typeof fetch, environment)
+    const err = await failing.query(REALM, 'a', 'select * from Bill').catch((e: Error) => e)
+    expect(err.message).toBe('QuickBooks read failed (500, intuit_tid 1-abc-123).')
     await expect(client.companyInfo('../../v3/company/1/bill', 'a')).rejects.toThrow(/company id/)
   })
 })

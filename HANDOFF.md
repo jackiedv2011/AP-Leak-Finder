@@ -23,8 +23,9 @@ npm run dev            # Vite — VITE_PORT=5174, proxies /api to the API
 - The owner's real account (`j…@gmail.com`, Free) is signed in on this Mac. **Don't run test uploads in it** — use a guest session, or an isolated production copy:
   ```bash
   npm run build
-  NODE_ENV=production SESSION_COOKIE_SECURE_OK=1 PORT=8799 APP_ORIGIN=http://localhost:8799 DATABASE_PATH=/tmp/reclaim-qa.sqlite node server/index.ts
+  env -i PATH="$PATH" HOME="$HOME" NODE_ENV=production SESSION_COOKIE_SECURE_OK=1 PORT=8799 APP_ORIGIN=http://localhost:8799 DATABASE_PATH=/tmp/reclaim-qa.sqlite RESEND_API_KEY=re_not_real EMAIL_FROM=qa@localhost DATA_KEY="$(openssl rand -base64 32)" node server/index.ts
   ```
+  Production refuses to start without an email provider or `DATA_KEY`; the dummy Resend key gets past that check (sends fail), and a fresh key needs a fresh database. Deploying for real: `docs/deploy.md`.
 
 Checks (all passing at handoff):
 
@@ -66,17 +67,17 @@ Their commit adds: customer approval before outreach (with contact hold and "alr
 | Price | $0 | $15/mo + 10% of what's recovered | $50/mo, no fee |
 | Uploads | Unlimited | Unlimited, re-audits allowed | same as Growth |
 | Findings | 3 lowest-value per upload | all | all |
-| Extras | — | AI drafts, full recovery workflow, reports, "Gmail sending — coming soon" | same as Growth |
+| Extras | Editable letters, send from own Gmail | AI drafts, full recovery workflow, reports, send from own Gmail | same as Growth |
 
 - **Free repeat-upload rule** (`server/uploads.ts`, shared by server and browser): each payment row is fingerprinted (vendor, invoice, date, amount). An upload is a repeat when ≥50% of its rows already went to a *different* audit → flagged before it runs and refused by the server (`409 repeat_upload`). Catches renamed copies, reordered rows, trimmed pieces, delete-and-reupload, and the import endpoint. A new month with a little overlap is allowed. Guests get the browser check only (`src/ledger/uploadRegistry.ts`).
 - The old 3-audits-a-month cap is gone. Old `pro` accounts migrate to `growth`. `FLAT_BREAK_EVEN` = $533.40/month recovered.
-- **"Automatic Gmail sending" does not exist** — it is always labelled "coming soon". Don't remove that label unless it's built.
+- **Gmail sending** (all plans): `server/gmail.ts` (routes, `gmail.send` scope only, sealed refresh token under `GMAIL_TOKEN_KEY`, one send per case in `gmail_sends`), `src/components/gmail/Gmail.tsx` (Settings card + the send step on a case). Google Cloud setup: `docs/deploy.md` §4a. A case is marked sent only from Gmail's receipt (`recordEmailSent` in `src/recovery/model.ts`).
 - Pitch copy: `src/lib/plans.ts` (`PLAN_PITCH`), public page `landing-site/src/pages/pricing.html` (rebuilt with `node landing-site/build.cjs`; old $99/$249/$599 tiers and claims about accounting connections, SSO, vendor outreach removed).
 
 ### Plans section and checkout
 - Sidebar → **Plans** (`src/workspace/views/Plans.tsx`): three cards + comparison table; works even before a first audit. Free → "You're all set on Free" confirmation; Growth/Flat → `/checkout?plan=…` (guests go via sign-up with `next=`).
 - **`/checkout`** (`src/pages/CheckoutPage.tsx`): order summary, contact, card (Stripe's hosted field — the card number never touches Reclaim), country/ZIP, consent, Subscribe. Test-mode banner. A verified card shows "nothing was charged, your plan hasn't changed". Invalid plan → back to Plans.
-- **No real billing exists.** To go live: set `VITE_STRIPE_PUBLISHABLE_KEY`, then build a server endpoint holding `STRIPE_SECRET_KEY` that creates the subscription, plus a webhook that sets `users.plan` from Stripe events (never from the client). Growth's 15% fee is calculated and shown (Settings) but not billed. `src/billing/*` and `src/components/billing/*` are older unused prototypes.
+- **Billing (Stripe, test mode):** `server/billing.ts` — subscribe, 3-D Secure confirm, Growth ↔ Flat, cancel at period end, signature-checked webhook as the source of truth for `users.plan`, and Growth's 10% billed as one invoice item per recorded settlement. Settings → Your plan shows plan, next bill date, Change plan / Cancel. Setup: docs/deploy.md §7a. `src/billing/entitlement.ts`, `useEntitlement.ts` and `src/components/billing/*` are older unused prototypes.
 
 ### Testing done
 456 automated tests (from 279), including adversarial suites for the engine, parser, letters and server, and a seeded random walk over the recovery workflow (12k actions per run; also run once at 60k). A browser stress run of 130 rounds (127 generated messy uploads, 313 cases, 1,125 recovery actions) produced zero JS errors and zero inconsistent cases. Account email: `reclaimbusiness1@gmail.com` is now the public contact (footer, Terms/Privacy).
@@ -84,9 +85,9 @@ Their commit adds: customer approval before outreach (with contact hold and "alr
 ## 4. Open items, in priority order
 
 1. **Owner decision: commit & push** this work (see §0).
-2. **Before real users:** configure Resend with a domain; build real Stripe billing (§3); decide deployment (none exists yet — the production server path is `npm start`, which needs `NODE_ENV=production` and an `https` `APP_ORIGIN`).
+2. **Before real users:** configure Resend with a domain; add Stripe keys and prices (docs/deploy.md §7a); decide deployment (none exists yet — the production server path is `npm start`, which needs `NODE_ENV=production` and an `https` `APP_ORIGIN`).
 3. Test "Draft with AI" once with a real `ANTHROPIC_API_KEY`.
-4. Gmail sending — build it, or keep it labelled "coming soon".
+4. Gmail sending is built; it needs the Google Cloud steps in `docs/deploy.md` §4a and Google's verification of `gmail.send` before public use.
 5. Pro-only (now Growth/Flat) UI flows were tested by automated tests, not by clicking — a manual pass on a paid dev account (Settings → "Dev: switch to Growth") is worthwhile.
 6. Smaller: no Content-Security-Policy (marketing pages use inline scripts); near-duplicates have no path to a vendor letter; daily same-amount orders can still flag as near-duplicates; guests lose audits over ~10k rows on reload; "Seven checks" in marketing vs eight in the app; `demo/` build has no npm script; the stray `.MOV`.
 

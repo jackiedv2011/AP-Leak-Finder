@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
-import { AlertCircle, CheckCircle2, ShieldCheck } from 'lucide-react'
+import { AlertCircle, CheckCircle2, RefreshCw, ShieldCheck } from 'lucide-react'
 import { useOptionalAuth } from '@/lib/auth/AuthContext'
+import type { QuickBooksFacts } from '../../../server/quickbooksFacts.ts'
+import { autoSyncLabel, relativeTime, type QuickBooksAutoSyncState } from '@/ledger/quickbooksAutoSync'
 import { QUICKBOOKS_CONNECT_URL, connectOutcome, disconnectQuickBooks, fetchQuickBooksStatus, importFromQuickBooks, type QuickBooksStatus } from '@/lib/quickbooksApi'
 
 const READ_ONLY_NOTE = 'Read-only: Reclaim reads bills, bill payments, vendors and credits. It never changes anything in QuickBooks.'
@@ -26,6 +28,15 @@ function useQuickBooksStatus() {
   return { status: guest ? null : status, refresh }
 }
 
+/** "Sandbox" while the server reads Intuit's test companies; nothing once it reads real ones. */
+function EnvironmentChip({ environment }: { environment?: QuickBooksStatus['environment'] }) {
+  return environment === 'production' ? null : (
+    <span className="wk-chip" data-tone="quiet" data-testid="quickbooks-environment">
+      Sandbox
+    </span>
+  )
+}
+
 /** Read once, on first render: the import dialog opens before the router tidies the URL. */
 function initialOutcome() {
   if (typeof window === 'undefined') return null
@@ -37,7 +48,7 @@ function initialOutcome() {
  * company's ledger as a CSV that goes through the same review as an upload.
  * Renders nothing for guests or when the server has no QuickBooks keys.
  */
-export function QuickBooksImport({ onFile }: { onFile: (file: File) => void }) {
+export function QuickBooksImport({ onFile, sinceFor }: { onFile: (file: File, facts: QuickBooksFacts | null) => void; sinceFor?: (companyName: string) => number | null }) {
   const { status, refresh } = useQuickBooksStatus()
   const [outcome] = useState(initialOutcome)
   const [busy, setBusy] = useState(false)
@@ -48,10 +59,10 @@ export function QuickBooksImport({ onFile }: { onFile: (file: File) => void }) {
   async function runImport() {
     setBusy(true)
     setError(null)
-    const result = await importFromQuickBooks()
+    const result = await importFromQuickBooks(status?.companyName && sinceFor ? sinceFor(status.companyName) : null)
     setBusy(false)
     if (result.ok) {
-      onFile(result.file)
+      onFile(result.file, result.facts)
       void refresh()
     } else {
       setError(result.message)
@@ -73,7 +84,7 @@ export function QuickBooksImport({ onFile }: { onFile: (file: File) => void }) {
         <div style={{ minWidth: 0 }}>
           <p style={{ fontWeight: 500 }}>
             {status.connected ? `QuickBooks Online · ${status.companyName || 'connected company'}` : 'Or connect QuickBooks Online'}{' '}
-            <span className="wk-chip" data-tone="quiet">Sandbox</span>
+            <EnvironmentChip environment={status.environment} />
           </p>
           <p className="wk-table-sub" style={{ marginTop: 4 }}>
             {status.connected && status.lastSyncAt ? `Last imported ${dateTime.format(status.lastSyncAt)}. ` : ''}
@@ -103,7 +114,8 @@ export function QuickBooksImport({ onFile }: { onFile: (file: File) => void }) {
 }
 
 /** Settings → Connected accounts: who is connected, and a way to end it. */
-export function QuickBooksSettings() {
+/** `bare`: just the card, for a Connected accounts section that also lists Gmail. */
+export function QuickBooksSettings({ bare = false }: { bare?: boolean } = {}) {
   const { status, refresh } = useQuickBooksStatus()
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -119,41 +131,76 @@ export function QuickBooksSettings() {
     void refresh()
   }
 
+  const card = (
+    <div className="wk-card" data-testid="quickbooks-settings">
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 24, flexWrap: 'wrap', alignItems: 'flex-start' }}>
+        <div style={{ maxWidth: 560 }}>
+          <p style={{ fontSize: 15, fontWeight: 500 }}>
+            QuickBooks Online <EnvironmentChip environment={status.environment} />
+          </p>
+          <p className="wk-dim" style={{ marginTop: 4, fontSize: 13 }}>
+            {status.connected
+              ? `Connected to ${status.companyName || 'a QuickBooks company'}${status.connectedAt ? ` since ${dateTime.format(status.connectedAt)}` : ''}.`
+              : 'Not connected.'}
+          </p>
+          <p className="wk-table-sub" style={{ marginTop: 8, display: 'flex', gap: 6, alignItems: 'flex-start' }}>
+            <ShieldCheck aria-hidden="true" style={{ width: 14, height: 14, flex: 'none', marginTop: 2 }} />
+            {READ_ONLY_NOTE} Access is stored encrypted, and disconnecting cancels it with Intuit and deletes it here.
+          </p>
+        </div>
+        {status.connected ? (
+          <button type="button" className="wk-btn" data-variant="outline" data-size="sm" onClick={() => void disconnect()} disabled={busy}>
+            {busy ? 'Disconnecting…' : 'Disconnect QuickBooks'}
+          </button>
+        ) : (
+          <a className="wk-btn" data-variant="outline" data-size="sm" href={QUICKBOOKS_CONNECT_URL}>
+            Connect QuickBooks
+          </a>
+        )}
+      </div>
+      {error ? (
+        <p className="wk-table-sub" role="alert" style={{ marginTop: 10, color: 'var(--danger)' }}>
+          {error}
+        </p>
+      ) : null}
+    </div>
+  )
+  if (bare) return card
   return (
     <section className="wk-section" data-testid="connected-accounts">
       <h2 className="wk-display wk-h2">Connected accounts</h2>
-      <div className="wk-card">
-        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 24, flexWrap: 'wrap', alignItems: 'flex-start' }}>
-          <div style={{ maxWidth: 560 }}>
-            <p style={{ fontSize: 15, fontWeight: 500 }}>
-              QuickBooks Online <span className="wk-chip" data-tone="quiet">Sandbox</span>
-            </p>
-            <p className="wk-dim" style={{ marginTop: 4, fontSize: 13 }}>
-              {status.connected
-                ? `Connected to ${status.companyName || 'a QuickBooks company'}${status.connectedAt ? ` since ${dateTime.format(status.connectedAt)}` : ''}.`
-                : 'Not connected.'}
-            </p>
-            <p className="wk-table-sub" style={{ marginTop: 8, display: 'flex', gap: 6, alignItems: 'flex-start' }}>
-              <ShieldCheck aria-hidden="true" style={{ width: 14, height: 14, flex: 'none', marginTop: 2 }} />
-              {READ_ONLY_NOTE} Access is stored encrypted, and disconnecting cancels it with Intuit and deletes it here.
-            </p>
-          </div>
-          {status.connected ? (
-            <button type="button" className="wk-btn" data-variant="outline" data-size="sm" onClick={() => void disconnect()} disabled={busy}>
-              {busy ? 'Disconnecting…' : 'Disconnect QuickBooks'}
-            </button>
-          ) : (
-            <a className="wk-btn" data-variant="outline" data-size="sm" href={QUICKBOOKS_CONNECT_URL}>
-              Connect QuickBooks
-            </a>
-          )}
-        </div>
-        {error ? (
-          <p className="wk-table-sub" role="alert" style={{ marginTop: 10, color: 'var(--danger)' }}>
-            {error}
-          </p>
-        ) : null}
-      </div>
+      {card}
     </section>
+  )
+}
+
+/** One quiet line: "Checked 3 new QuickBooks payments · just now  Sync now". Never blocks anything around it. */
+export function QuickBooksSyncStatus({ state, onSyncNow }: { state: QuickBooksAutoSyncState; onSyncNow: () => void }) {
+  // Re-render every 30 s so "2 min ago" keeps up; the time itself is read fresh on each render.
+  const [, tick] = useState(0)
+  useEffect(() => {
+    const timer = window.setInterval(() => tick((n) => n + 1), 30_000)
+    return () => window.clearInterval(timer)
+  }, [])
+  const label = autoSyncLabel(state)
+  if (!label) return null
+  const when = state.kind === 'synced' || state.kind === 'up_to_date' ? ` · ${relativeTime(state.at)}` : ''
+  return (
+    <p className="wk-table-sub" role="status" data-testid="quickbooks-sync-status" data-state={state.kind} style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
+      {state.kind === 'error' || state.kind === 'reconnect' ? <AlertCircle aria-hidden="true" style={{ width: 14, height: 14 }} /> : <RefreshCw aria-hidden="true" style={{ width: 14, height: 14 }} />}
+      <span>
+        {label}
+        {when}
+      </span>
+      {state.kind === 'reconnect' ? (
+        <a className="wk-linklike" href={QUICKBOOKS_CONNECT_URL}>
+          Reconnect QuickBooks
+        </a>
+      ) : state.kind !== 'checking' ? (
+        <button type="button" className="wk-linklike" onClick={onSyncNow}>
+          {state.kind === 'error' ? 'Retry' : 'Sync now'}
+        </button>
+      ) : null}
+    </p>
   )
 }

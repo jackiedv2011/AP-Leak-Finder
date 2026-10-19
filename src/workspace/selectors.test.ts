@@ -20,7 +20,7 @@ import { parseCsv } from '@/lib/csv'
 import { mergeImport, setCaseState, type LedgerEnvironment } from '@/ledger/store'
 import { confirmCase, markExpected, markNeedsInfo, markRecoveryRequested as legacyRequest, recordRecoveryOutcome, EMPTY_CASE_STATE } from '@/ledger/caseState'
 import { verifyRecovery } from '@/recovery/model'
-import { internalReviews, ladder, opportunities, recentReturns, recoveries, recoveryAging, recordedRootCauses, rootCauses, timelineFor, vendorCommitments, vendors } from '@/workspace/selectors'
+import { exposureCurrencyOf, internalReviews, isFlaggedForReview, ladder, opportunities, recentReturns, recoveries, recoveryAging, recordedRootCauses, rootCauses, timelineFor, vendorCommitments, vendors } from '@/workspace/selectors'
 import { approveRecovery, recordVendorUpdate, startRecoveryRequest } from '@/recovery/model'
 
 function markRecoveryRequested(state: Parameters<typeof legacyRequest>[0], amount = 1000) {
@@ -119,14 +119,16 @@ describe('ladder — fresh audit', () => {
     expect(timelineFor(finding, EMPTY_CASE_STATE, importedAt)[0].when).toBe(new Date(importedAt!).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }))
     expect(timelineFor(finding, EMPTY_CASE_STATE)[0].when).toBe('—')
   })
-  it('counts eligible duplicates as potential and keeps security and savings only in flagged exposure', () => {
+  it('counts eligible duplicates as potential, and none of potential, security alerts or savings as flagged for review', () => {
     const l = ladder(baseline())
     expect(l.openCount).toBe(5)
-    expect(l.flaggedCount).toBe(5)
+    expect(l.flaggedCount).toBe(0)
+    expect(l.flagged).toBe(0)
     expect(l.counts.potential).toBe(3)
     expect(l.potential).toBe(1750)
-    expect(l.atRisk).toBe(0)
-    expect(l.atRiskByCurrency.Unknown).toBe(720)
+    // The file has no currency column, so the bank-change alert is read as USD.
+    expect(l.atRisk).toBe(720)
+    expect(l.atRiskByCurrency).toEqual({ USD: 720 })
     expect(l.counts.verified).toBe(3)
     expect(l.verified).toBe(1750)
     expect(l.awaitingDecision).toBe(1750)
@@ -316,8 +318,7 @@ describe('ladder — the recovery lifecycle moves money along, never duplicating
     expect(l.recovered).toBe(1750)
     expect(l.potential).toBe(0)
     expect(l.verified).toBe(0)
-    expect(l.atRisk).toBe(0)
-    expect(l.atRiskByCurrency.Unknown).toBe(720)
+    expect(l.atRisk).toBe(720)
     // A missed discount is a future saving, not a prevented payment: protected stays zero.
     expect(l.protected).toBe(0)
     expect(l.potential + l.recovered).toBe(1750)
@@ -386,4 +387,72 @@ it('groups actual customer-recorded root causes by recovered value', () => {
   env = setCaseState(env, alpha.id, { ...verifiedOutcome(markRecoveryRequested(confirmCase(null), 1000), 600), rootCause: 'Payment retry', reconciledAt: 100 })
   env = setCaseState(env, beta.id, { ...verifiedOutcome(markRecoveryRequested(confirmCase(null), 500), 400), rootCause: 'Payment retry', reconciledAt: 200 })
   expect(recordedRootCauses(env)).toEqual([{ label: 'Payment retry', count: 2, recovered: 1000 }])
+})
+
+describe('flagged for review — one definition for every screen', () => {
+  // Two review signals ($400 same vendor and amount, $300 overpayment), one bank change, one missed discount.
+  const ROWS = [
+    'Kappa,K-100,2025-01-01,2025-01-10,400,400,,1111',
+    'Kappa,K-207,2025-01-05,2025-01-20,400,400,,1111',
+    'Lambda,L-1,2025-01-01,2025-01-15,900,1200,,2222',
+    'Mu,M-1,2025-01-01,2025-01-10,700,700,,3333',
+    'Mu,M-2,2025-02-01,2025-02-10,720,720,,4444',
+    'Nu,N-1,2025-03-01,2025-03-25,1000,1000,2/10 net 30,5555',
+  ]
+
+  it('counts open review signals only, in USD when the file has no currency column', () => {
+    const env = envFrom(ROWS)
+    const l = ladder(env)
+    expect(l.flaggedCount).toBe(2)
+    expect(l.flagged).toBe(700)
+    expect(l.flaggedByCurrency).toEqual({ USD: 700 })
+    expect(l.flagged).toBe(
+      opportunities(env).filter((o) => isFlaggedForReview(o.finding, o.state)).reduce((s, o) => s + (o.finding.flaggedAmount ?? o.finding.dollarImpact), 0)
+    )
+  })
+
+  it('drops a signal once it is dismissed, and keeps a suppressed one out', () => {
+    let env = envFrom(ROWS)
+    const overpayment = env.result.findings.find((f) => f.type === 'overpayment')!
+    env = setCaseState(env, overpayment.id, markExpected(null))
+    expect(ladder(env).flagged).toBe(400)
+    env.result.findings = env.result.findings.map((f) => (f.type === 'near_duplicate' ? { ...f, suppressionReason: 'Source records changed.' } : f))
+    expect(ladder(env).flagged).toBe(0)
+  })
+
+  it('reads a known currency as given, and calls rows that disagree Unknown rather than USD', () => {
+    const env = mergeImport(null, {
+      sourceLabel: 'fx.csv',
+      mode: 'upload',
+      parsed: parseCsv(
+        [
+          'vendor,invoice_number,payment_date,invoice_amount,amount_paid,currency',
+          'Euro Co,E-1,2025-01-10,900,1200,EUR',
+          'Mixed Co,X-100,2025-01-10,,400,EUR',
+          'Mixed Co,X-207,2025-01-20,,400,',
+        ].join('\n')
+      ),
+    })
+    const l = ladder(env)
+    expect(l.flagged).toBe(0)
+    expect(l.flaggedByCurrency).toEqual({ EUR: 300, Unknown: 400 })
+    const mixed = env.result.findings.find((f) => f.vendor === 'Mixed Co')!
+    expect(exposureCurrencyOf(mixed)).toBe('Unknown')
+  })
+})
+
+describe('in recovery — a known currency never opens a back door', () => {
+  it('keeps a USD review signal with a stored request out of in-recovery, unless an import superseded an authorized case', () => {
+    let env = mergeImport(null, {
+      sourceLabel: 'usd.csv',
+      mode: 'upload',
+      parsed: parseCsv(['vendor,invoice_number,payment_date,invoice_amount,amount_paid,currency', 'Lambda,L-1,2025-01-15,900,1200,USD'].join('\n')),
+    })
+    const overpayment = env.result.findings.find((f) => f.type === 'overpayment')!
+    expect(overpayment.currency).toBe('USD')
+    env = setCaseState(env, overpayment.id, markRecoveryRequested(confirmCase(null), 300))
+    expect(ladder(env).inRecovery).toBe(0)
+    env = setCaseState(env, overpayment.id, { ...env.caseStates[overpayment.id], requiresRevalidation: true })
+    expect(ladder(env).inRecovery).toBe(300)
+  })
 })

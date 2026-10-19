@@ -8,6 +8,7 @@ import { DecisionDialog } from '@/components/audit/DecisionDialog'
 import { Locked } from '@/components/plan/Locked'
 import { useEntitlements } from '@/lib/auth/AuthContext'
 import type { CaseState } from '@/ledger/caseState'
+import type { ImportBatch } from '@/ledger/store'
 import type { SenderProfile } from '@/lib/senderProfile'
 import type { APRecord, Finding } from '@/types'
 import { FINDING_TYPE_LABELS } from '@/lib/labels'
@@ -18,6 +19,8 @@ import { playbookFor } from '@/recovery/playbooks'
 import { evidenceOf, openQuestion, timelineFor } from '../selectors'
 import { StatusChip } from './StatusChip'
 import { InternalReviewPanel, METHOD_LABEL, RecoveryRequestPanel, type RequestPackage } from './RecoveryPanels'
+import type { GmailSendReceipt } from '@/lib/gmailApi'
+import { GmailFollowUp } from '@/components/gmail/Gmail'
 import { RecoveryAccountingPanel, RecoveryProgressPanel } from './RecoveryJourney'
 import { KIND_LABEL, KindChip } from './KindChip'
 import { Strength } from './Strength'
@@ -30,6 +33,8 @@ interface CaseDetailProps {
   onSaveEvidence?: (findingId: string, evidence: RecoveryEvidence) => void
   state: CaseState
   records: APRecord[]
+  /** The ledger's import batches: a QuickBooks import's credit, refund and void searches pre-fill evidence. */
+  imports?: ImportBatch[]
   discoveredAt: number | null
   sender: SenderProfile
   onDecide: (findingId: string, decision: DecisionValue, reason: string | null, dismissalTag?: DismissalTag | null) => void
@@ -40,6 +45,12 @@ interface CaseDetailProps {
   onReopenBalance: (findingId: string) => void
   onApproveRecovery: (findingId: string, pkg: RequestPackage, knownBeforeReclaim: boolean, knownBeforeNote: string | null) => void
   onApproveAndSend?: (findingId: string, pkg: RequestPackage, knownBeforeReclaim: boolean, knownBeforeNote: string | null) => void
+  /** Gmail accepted the request; record it as sent. */
+  onEmailSent?: (findingId: string, pkg: RequestPackage, receipt: GmailSendReceipt) => void
+  /** Gmail accepted a follow-up the customer confirmed; record it. */
+  onFollowUpSent?: (findingId: string, receipt: GmailSendReceipt) => void
+  /** "Follow up if there's no reply after N days" changed. */
+  onFollowUpDays?: (findingId: string, days: number) => void
   onContactHold: (findingId: string, reason: string | null) => void
   onVendorUpdate: (findingId: string, update: VendorUpdate) => void
   onFollowUp: (findingId: string, at: number | null) => void
@@ -67,10 +78,10 @@ const COLUMNS: Column[] = [
 ]
 
 /** The records behind the finding. Values repeated across rows are what made them match, so they are marked. */
-function Evidence({ finding }: { finding: Finding }) {
+function Evidence({ finding, checklist = true }: { finding: Finding; checklist?: boolean }) {
   const records = finding.relatedRecords
   const showVendor = new Set(records.map((r) => r.vendor.trim().toLowerCase())).size > 1
-  const playbook = finding.class === 'recoverable' ? playbookFor(finding) : null
+  const playbook = checklist && finding.class === 'recoverable' ? playbookFor(finding) : null
   const repeated = (column: Column, record: APRecord) => {
     if (records.length < 2) return false
     const key = column.key(record)
@@ -170,7 +181,7 @@ function RecoveryFacts({ finding, state }: { finding: Finding; state: CaseState 
   )
 }
 
-const STEPS = ['Review evidence', 'Approve request', 'Contact vendor', 'Verify return', 'Reconcile'] as const
+const STEPS = ['Prove it', 'Approve the request', 'Send it to the vendor', 'Money comes back', 'Record it in your books'] as const
 
 function historicalRecoveryClaim(finding: Finding, state: CaseState): boolean {
   return finding.class === 'recoverable' || (['exact_duplicate', 'near_duplicate'].includes(finding.type) &&
@@ -190,11 +201,12 @@ function stepsDone(state: CaseState): boolean[] {
 
 /** §29 — what happened and the work in front of you, the decision and money alongside. */
 export function CaseDetail(props: CaseDetailProps) {
-  const { finding, findings = [], projectId, onSaveEvidence, state, records, discoveredAt, sender, onDecide, onMarkRequested, onRecordOutcome, onReopen, onReopenBalance, onApproveRecovery, onApproveAndSend, onContactHold, onVendorUpdate, onFollowUp, onVerifyRecovery, onCloseRecovery, onReconcileRecovery } = props
+  const { finding, findings = [], imports, projectId, onSaveEvidence, state, records, discoveredAt, sender, onDecide, onMarkRequested, onRecordOutcome, onReopen, onReopenBalance, onApproveRecovery, onApproveAndSend, onEmailSent, onFollowUpSent, onFollowUpDays, onContactHold, onVendorUpdate, onFollowUp, onVerifyRecovery, onCloseRecovery, onReconcileRecovery } = props
   const gate = evaluateEligibility(finding, finding.evidence, findings)
   const entitlements = useEntitlements()
   const [deciding, setDeciding] = useState<DecisionValue | null>(null)
   const internal = !historicalRecoveryClaim(finding, state)
+  const duplicate = finding.type === 'exact_duplicate' || finding.type === 'near_duplicate'
   const canChangeDecision = state.decision !== null && (state.recoveryStage === null || state.recoveryStage === 'confirmed')
   const canReopenOutcome = state.recoveryStage === 'recovered' || state.recoveryStage === 'not_recovered'
   const hasClosedRemainder = !internal && state.recoveryStage === 'recovered' && verifiedReturned(state) > 0 && Math.round((state.requestedAmount ?? 0) * 100) > Math.round(verifiedReturned(state) * 100)
@@ -265,11 +277,17 @@ export function CaseDetail(props: CaseDetailProps) {
         onMarkRequested={(pkg) => onMarkRequested(finding.id, pkg)}
         onApprove={(pkg, known, note) => onApproveRecovery(finding.id, pkg, known, note)}
         onApproveAndSend={onApproveAndSend ? (pkg, known, note) => onApproveAndSend(finding.id, pkg, known, note) : undefined}
+        onEmailSent={onEmailSent ? (pkg, receipt) => onEmailSent(finding.id, pkg, receipt) : undefined}
         onContactHold={(reason) => onContactHold(finding.id, reason)}
         recommendation={internal ? undefined : recommendRecoveryMethod(finding, records)}
       />
     ) : state.recoveryStage === 'requested' && !internal ? (
-      <RecoveryProgressPanel key={finding.id} finding={finding} state={state} onVendorUpdate={onVendorUpdate} onFollowUp={onFollowUp} onVerify={onVerifyRecovery} onClose={onCloseRecovery} />
+      <>
+        {onFollowUpSent && onFollowUpDays ? (
+          <GmailFollowUp key={`follow-up-${finding.id}`} finding={finding} state={state} projectId={projectId} sender={sender} onSent={(receipt) => onFollowUpSent(finding.id, receipt)} onChangeDays={(days) => onFollowUpDays(finding.id, days)} />
+        ) : null}
+        <RecoveryProgressPanel key={finding.id} finding={finding} state={state} onVendorUpdate={onVendorUpdate} onFollowUp={onFollowUp} onVerify={onVerifyRecovery} onClose={onCloseRecovery} />
+      </>
     ) : state.recoveryStage === 'requested' && internal ? (
       <InternalReviewPanel key={finding.id} onClose={(note) => onRecordOutcome(finding.id, 'not_recovered', null, note, null)} />
     ) : null
@@ -315,9 +333,10 @@ export function CaseDetail(props: CaseDetailProps) {
           {state.requiresRevalidation ? <p className="wk-field-hint" role="status">This existing recovery needs its evidence revalidated before any further outreach. Recorded returns stay preserved.</p> : null}
 
           {/* Only duplicate rules have a recovery gate; savings and security findings never collect recovery evidence. */}
-          {onSaveEvidence && (finding.type === 'exact_duplicate' || finding.type === 'near_duplicate') ? <EvidencePanel key={`evidence-${finding.id}`} finding={finding} findings={findings} onSave={(evidence) => onSaveEvidence(finding.id, evidence)} /> : null}
+          {/* Duplicates ask these checks in the evidence questions below, so the short checklist would repeat them. */}
+          <Evidence finding={finding} checklist={!(onSaveEvidence && (finding.type === 'exact_duplicate' || finding.type === 'near_duplicate'))} />
 
-          <Evidence finding={finding} />
+          {onSaveEvidence && (finding.type === 'exact_duplicate' || finding.type === 'near_duplicate') ? <EvidencePanel key={`evidence-${finding.id}`} finding={finding} findings={findings} imports={imports} onSave={(evidence) => onSaveEvidence(finding.id, evidence)} /> : null}
 
           {!internal ? <RecoveryAccountingPanel finding={finding} state={state} onReconcile={onReconcileRecovery} /> : null}
 
@@ -385,18 +404,25 @@ export function CaseDetail(props: CaseDetailProps) {
             <div className="wk-panelcard-head">
               <div>
                 <h2 id="case-decision">{state.decision === null ? 'Your decision' : 'Decision'}</h2>
-                <p>{state.decision === null ? <>Next: <strong>{nextActionLabel(finding, gate.eligible)}</strong>. {internal ? 'This signal is reviewed inside your business; it is not money owed until the evidence gate passes.' : 'Nothing is sent to a vendor until you authorize it.'}</> : 'Recorded on this finding.'}</p>
+                <p>{state.decision === null ? <>Next: <strong>{nextActionLabel(finding, gate.eligible)}</strong>. {!internal ? 'Nothing is sent to a vendor until you authorize it.' : duplicate ? 'Fill in “Confirm the evidence” and save, and this becomes money you can ask the vendor for. If it’s clearly not a duplicate, choose Not an issue.' : 'This is checked inside your business. It is not money owed by a vendor.'}</> : 'Recorded on this finding.'}</p>
               </div>
             </div>
             <div className="wk-panelcard-body">
               {state.decision === null ? (
                 <div className="wk-decide" role="group" aria-label="Review this finding">
-                  {CHOICES.map(({ value, title, detail, internal: internalDetail, icon: Icon }) => (
-                    <button key={value} type="button" className="wk-decide-btn" data-primary={value === 'confirmed' || undefined} onClick={() => setDeciding(value)}>
+                  {CHOICES.map(({ value, title, detail, internal: internalDetail, icon: Icon }) => {
+                    // An unproven duplicate becomes a claim through the evidence questions, not an internal review.
+                    const toEvidence = value === 'confirmed' && internal && duplicate && onSaveEvidence !== undefined
+                    return <button key={value} type="button" className="wk-decide-btn" onClick={() => {
+                      if (!toEvidence) return setDeciding(value)
+                      const form = document.getElementById('evidence-review')
+                      form?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                      form?.querySelector<HTMLInputElement>('input:not([type=checkbox])')?.focus({ preventScroll: true })
+                    }}>
                       <Icon aria-hidden="true" />
-                      <span><strong>{title}</strong><small>{internal ? internalDetail : detail}</small></span>
+                      <span><strong>{title}</strong><small>{toEvidence ? 'Answer the evidence questions to turn it into a claim.' : internal ? internalDetail : detail}</small></span>
                     </button>
-                  ))}
+                  })}
                 </div>
               ) : (
                 <div className="wk-stack">

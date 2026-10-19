@@ -51,7 +51,7 @@ export function PrivacyPage() {
       </section>
 
       <section>
-        <h2>5. Connected QuickBooks Online</h2>
+        <h2>5. Connected accounts: QuickBooks Online and Gmail</h2>
         <p>
           Instead of uploading a file you can connect QuickBooks Online. During testing this works only with Intuit's
           sandbox (test) companies. You approve the connection on Intuit's own page; Reclaim never sees your Intuit
@@ -76,6 +76,41 @@ export function PrivacyPage() {
           <b>Reclaim only reads from QuickBooks.</b> Intuit's permission for accounting data also allows changes, but
           Reclaim's software only ever requests to read, and never creates, changes or deletes anything in your books.
           Reclaim is not affiliated with or endorsed by Intuit.
+        </p>
+        <p>
+          <b>Gmail, sending only.</b> On any plan you can connect a Gmail account so that recovery requests you approve are sent from your own
+          address. This is a separate Google consent from signing in. You approve it on Google's own page; Reclaim
+          never sees your Google password.
+        </p>
+        <p>
+          <b>Reclaim asks Google only for permission to send email</b> (the <code>gmail.send</code> permission), plus
+          your email address (<code>openid</code> and <code>email</code>) so it can show which account is connected.
+          <b> Reclaim never reads, searches, lists, labels or deletes anything in your inbox</b>, and the permission it
+          holds does not allow it to.
+        </p>
+        <p>When you connect Gmail, Reclaim keeps:</p>
+        <ul>
+          <li>A refresh token from Google, encrypted (section 8), which lets Reclaim send email as you until you disconnect</li>
+          <li>The connected Gmail address and Google's account ID for it, and the date you connected</li>
+        </ul>
+        <p>
+          <b>Reclaim sends only the emails you approve.</b> A recovery request goes out only after you approve it and
+          then confirm the send, and only with the recipient, subject and message you approved, plus any Cc addresses
+          you add.
+        </p>
+        <p>
+          <b>Follow-ups are never sent automatically.</b> When a request you sent has no recorded reply after the
+          number of days you choose (7 unless you change it), Reclaim offers a follow-up and drafts one from the facts
+          already on the case, quoting your original request. It goes out only if you open it, edit it as you like and
+          confirm the send, in the same Gmail conversation as your request. Reclaim sends at most one follow-up a day
+          and five per case.
+        </p>
+        <p>
+          For each email sent, request or follow-up, Reclaim keeps the Gmail message ID and conversation ID, the time,
+          the sender and the recipients, and adds them to that case's history; for a request it also keeps the amount
+          requested. The text of a follow-up is not stored by Reclaim. Sent emails stay in your Gmail Sent folder;
+          Reclaim does not keep a separate copy beyond the letter already saved on the case. The download under Settings → Your data
+          lists every email sent this way.
         </p>
       </section>
 
@@ -123,10 +158,10 @@ export function PrivacyPage() {
         <p>
           Passwords are never stored in plain text; they are hashed with scrypt and a per-account salt before being
           saved, and never leave the server. If you sign in with Google, Reclaim receives only your name, email address
-          and Google account identifier — it does not request access to your Gmail or any other Google data. Sessions
-          are kept in an HttpOnly cookie that page scripts cannot read. QuickBooks access tokens are encrypted
-          (AES-256-GCM) with a key kept outside the database, are never shown to your browser, and are never written
-          to logs. The security of your data also depends on the security of your device and browser profile.
+          and Google account identifier — signing in does not give Reclaim access to your Gmail or any other Google
+          data. Sessions are kept in an HttpOnly cookie that page scripts cannot read. QuickBooks tokens and the Gmail
+          refresh token are encrypted (AES-256-GCM) with keys kept outside the database, are never shown to your
+          browser, and are never written to logs. The security of your data also depends on the security of your device and browser profile.
         </p>
         <p>
           <Placeholder>
@@ -153,6 +188,12 @@ export function PrivacyPage() {
             <b>Intuit QuickBooks Online (optional).</b> If you connect QuickBooks, Intuit learns that your company
             authorised Reclaim, and Reclaim reads the records described in section 5. Intuit's own privacy statement
             covers what Intuit does with your data.
+          </li>
+          <li>
+            <b>Gmail (optional, sending only).</b> If you connect Gmail, Google learns that you authorised Reclaim to
+            send email for you, and each recovery request you approve and send is delivered by Gmail from your address
+            to the recipients you chose (section 5). Google's own privacy policy covers what Google does with your
+            email.
           </li>
           <li>
             <b>Anthropic (AI drafting, paid plans).</b> Receives the facts of a single case when you ask for an AI
@@ -194,6 +235,7 @@ export function PrivacyPage() {
         <ul>
           <li>You can delete any audit from its Settings page, which removes every record, finding and decision in it.</li>
           <li>You can disconnect QuickBooks at any time from Settings → Connected accounts. Reclaim asks Intuit to cancel its access and deletes the stored tokens; audits you already imported stay until you delete them. You can also remove Reclaim from the connected apps in your QuickBooks account.</li>
+          <li>You can disconnect Gmail at any time from Settings → Connected accounts. Reclaim asks Google to cancel its access and deletes the stored token and address. You can also remove Reclaim from the third-party apps in your Google account. Emails already sent stay in your Gmail and in the case history.</li>
           <li>You can log out at any time, which ends your session on that device and removes the working copy of your audits from it.</li>
           <li>Clearing your browser's site data for Reclaim removes the working copy and any guest-session data; your account and its audits remain on the server until you delete them or ask us to.</li>
           <li>

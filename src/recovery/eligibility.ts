@@ -11,12 +11,16 @@ export const EVIDENCE_CHECKS = [
   ['customerConfirmation', 'Customer confirms the duplicate payment'],
 ] as const
 export type EvidenceCheck = typeof EVIDENCE_CHECKS[number][0]
+/** A field filled from a source system rather than typed. It informs the reviewer; it never counts as an attestation. */
+export interface EvidenceAutofill { source: 'quickbooks'; pulledAt: number; txnIds: string[] }
 export interface RecoveryEvidence {
   payments: Array<EvidenceReference & { recordId: string; paymentId: string; amountMinor: number; currency: string; settled: boolean; obligationId: string }>
   obligation: EvidenceReference & { obligationId: string; amountMinor: number; currency: string }
   checks: Partial<Record<EvidenceCheck, EvidenceConfirmation>>
   contradictions: string[]
   notes: string
+  /** Keyed by field (see autofillKey in quickbooksEvidence.ts). Absent for evidence a person typed. */
+  autofilled?: Record<string, EvidenceAutofill>
 }
 const attested = (item: EvidenceReference | undefined) => Boolean(item && typeof item.reference === 'string' && item.reference.trim() && typeof item.confirmedBy === 'string' && item.confirmedBy.trim() && Number.isFinite(item.confirmedAt) && item.confirmedAt > 0)
 const minor = (n: number) => Number.isSafeInteger(n) && n > 0

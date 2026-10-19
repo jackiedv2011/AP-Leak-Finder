@@ -1,4 +1,5 @@
 import type { RecoveryEvidence } from './recovery/eligibility.ts'
+import type { QuickBooksPaymentFact } from '../server/quickbooksFacts.ts'
 
 export type ImportRowStatus = 'newly_imported' | 'exact_duplicate' | 'possible_overlap' | 'rejected' | 'missing_identification_fields'
 export interface SourceProvenance {
@@ -31,6 +32,8 @@ export interface APRecord {
   rowFingerprint?: string
   identityKey?: string
   importStatus?: ImportRowStatus
+  /** Present when the row came from QuickBooks: the bill it paid and the credits and refunds applied with it. */
+  quickbooks?: QuickBooksPaymentFact
   /**
    * Stable identity, unique for the life of the record in the ledger.
    * Assigned by the ledger store when a parsed record is merged into the

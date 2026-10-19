@@ -3,7 +3,7 @@ import { isClaim } from '@/lib/claims'
 import { checkRepeatUpload, rememberUpload } from '@/ledger/uploadRegistry'
 import { repeatMessage } from '../server/uploads.ts'
 import { useTheme } from '@/workspace/theme'
-import { ArrowLeft, Plus } from 'lucide-react'
+import { ArrowLeft, CheckCircle2, Plus } from 'lucide-react'
 import { ImportDialog, type ImportIntent } from '@/components/audit/ImportDialog'
 import { ClearLedgerDialog } from '@/components/audit/ClearLedgerDialog'
 import { LegacyImportDialog } from '@/components/audit/LegacyImportDialog'
@@ -60,7 +60,8 @@ import {
   type RecoveryVerification,
   type VendorUpdate,
 } from '@/ledger/caseState'
-import { approveRecovery, closeWithoutRecovery, recordVendorUpdate, reconcileRecovery, reopenRemainingBalance, setContactHold, setNextFollowUp, startRecoveryRequest, verifyRecovery } from '@/recovery/model'
+import { approveRecovery, closeWithoutRecovery, recordVendorUpdate, reconcileRecovery, recordEmailSent, recordFollowUpSent, reopenRemainingBalance, setFollowUpAfterDays, setContactHold, setNextFollowUp, startRecoveryRequest, verifyRecovery } from '@/recovery/model'
+import type { GmailSendReceipt } from '@/lib/gmailApi'
 import { assertRecoveryEligible, type RecoveryEvidence } from '@/recovery/eligibility'
 import { useEntitlements, useOptionalAuth } from '@/lib/auth/AuthContext'
 import { Locked } from '@/components/plan/Locked'
@@ -73,7 +74,11 @@ import type { SenderProfile } from '@/lib/senderProfile'
 import type { RequestPackage } from '@/workspace/views/RecoveryPanels'
 import { overviewSummary, findCaseView } from '@/ledger/views'
 import { getSampleLedger } from '@/data/sampleLedger'
-import type { ImportInput } from '@/components/audit/ImportPanel'
+import type { ImportInput, QuickBooksImportContext } from '@/components/audit/ImportPanel'
+import { describeQuickBooksSync, lastQuickBooksPull, mergeQuickBooksSync, planQuickBooksSync } from '@/ledger/quickbooksSync'
+import { QuickBooksSyncStatus } from '@/components/audit/QuickBooksSource'
+import { useQuickBooksAutoSync } from '@/components/audit/useQuickBooksAutoSync'
+import { linkQuickBooksAudit } from '@/lib/quickbooksApi'
 
 const TITLES: Record<RouteMode, string> = {
   dashboard: 'Overview',
@@ -130,12 +135,16 @@ export function AuditApp() {
   const [importDialogOpen, setImportDialogOpen] = useState(() => route.entry === 'upload')
   const [importIntent, setImportIntent] = useState<ImportIntent>('new')
   const [clearDialogOpen, setClearDialogOpen] = useState(false)
+  /** What the last QuickBooks import did ("12 new payments, 1 changed, 30 already in this audit"). */
+  const [importNotice, setImportNotice] = useState<string | null>(null)
   const [sampleSession, setSampleSession] = useState(false)
   const [legacy, setLegacy] = useState<LegacySummary | null>(() => legacyProjectsPresent())
 
   const environmentRef = useRef(environment)
   const projectRef = useRef(project)
   const runActiveRef = useRef(false)
+  /** Set once the QuickBooks auto-sync hook exists (it is declared after runImport). */
+  const quickBooksRecheck = useRef<(() => void) | null>(null)
   environmentRef.current = environment
   projectRef.current = project
   const caseOriginRef = useRef<{ mode: RouteMode; y: number }>({ mode: route.mode, y: 0 })
@@ -156,7 +165,7 @@ export function AuditApp() {
   )
 
   const runImport = useCallback(
-    async (input: MergeImportInput, options: { replaceEnvironment?: boolean; persist?: boolean } = {}) => {
+    async (input: MergeImportInput, options: { replaceEnvironment?: boolean; persist?: boolean; targetProjectId?: string } = {}) => {
       if (runActiveRef.current) return
       runActiveRef.current = true
       setEntryError(null)
@@ -168,13 +177,40 @@ export function AuditApp() {
       // since rAF doesn't fire reliably in a backgrounded or non-compositing tab.
       await new Promise((resolve) => setTimeout(resolve, 0))
       try {
-        const inspection = inspectImport(options.replaceEnvironment ? null : environmentRef.current, input)
-        if (inspection.duplicateFile) {
-          setEntryError('This exact file is already in this audit. No records were added.')
-          setImportDialogOpen(true)
-          return
+        // A QuickBooks company already in another audit is synced into that audit, not started again.
+        if (options.targetProjectId && options.targetProjectId !== projectRef.current?.id) {
+          const target = loadProject(options.targetProjectId)
+          if (target) {
+            projectRef.current = target
+            environmentRef.current = target.environment
+          }
         }
-        const next = mergeImport(options.replaceEnvironment ? null : environmentRef.current, input)
+        const base = options.replaceEnvironment ? null : environmentRef.current
+        let next: LedgerEnvironment
+        if (input.quickbooks) {
+          // QuickBooks names every payment, so a repeat import is a sync: no duplicate-file refusal.
+          const synced = mergeQuickBooksSync(base, { ...input, quickbooks: input.quickbooks })
+          next = synced.env
+          setImportNotice(`QuickBooks import: ${describeQuickBooksSync(synced.summary)}.`)
+          if (base && next === base) {
+            const current = projectRef.current
+            if (current) {
+              setProject(current)
+              navigate({ projectId: current.id, mode: 'dashboard', caseId: null, draft: false, entry: null }, { replace: true })
+            }
+            setEnvironment(base)
+            return
+          }
+        } else {
+          const inspection = inspectImport(base, input)
+          if (inspection.duplicateFile) {
+            setEntryError('This exact file is already in this audit. No records were added.')
+            setImportDialogOpen(true)
+            return
+          }
+          next = mergeImport(base, input)
+          setImportNotice(null)
+        }
         if (options.persist !== false) {
           const current = projectRef.current
           const latestImport = next.imports.at(-1)
@@ -189,6 +225,8 @@ export function AuditApp() {
           projectRef.current = saved
           setProject(saved)
           if (input.mode === 'upload') rememberUpload(input.parsed.records, saved.id)
+          // This audit is now the one signing in keeps current with that QuickBooks company.
+          if (input.quickbooks && account) void linkQuickBooksAudit(saved.id).then(() => quickBooksRecheck.current?.())
           refreshProjects()
           // A new audit counts against the plan once the server has it.
           if (!current || options.replaceEnvironment) void projectSync.flush().then(() => auth?.refreshEntitlements())
@@ -207,7 +245,7 @@ export function AuditApp() {
         setRunning(false)
       }
     },
-    [navigate, refreshProjects, auth]
+    [navigate, refreshProjects, auth, account]
   )
 
   const runSampleAudit = useCallback(() => {
@@ -395,6 +433,24 @@ export function AuditApp() {
     })
   }, [persistCaseState, recoveryBlocked])
 
+  // Gmail accepted the message: the request went out, so it is recorded even
+  // if the case changed in the meantime. Nothing else marks a Gmail send.
+  const handleEmailSent = useCallback((findingId: string, pkg: RequestPackage, receipt: GmailSendReceipt) => {
+    persistCaseState(findingId, (current) => current.recoveryStage === 'confirmed'
+      ? recordEmailSent(current, { channel: 'gmail', messageId: receipt.messageId, from: receipt.from, to: receipt.to, cc: receipt.cc, sentAt: receipt.sentAt }, pkg.requestedAmount)
+      : current)
+  }, [persistCaseState])
+
+  const handleFollowUpSent = useCallback((findingId: string, receipt: GmailSendReceipt) => {
+    persistCaseState(findingId, (current) => current.recoveryStage === 'requested'
+      ? recordFollowUpSent(current, { channel: 'gmail', messageId: receipt.messageId, from: receipt.from, to: receipt.to, cc: receipt.cc, sentAt: receipt.sentAt })
+      : current)
+  }, [persistCaseState])
+
+  const handleFollowUpDays = useCallback((findingId: string, days: number) => {
+    persistCaseState(findingId, (current) => setFollowUpAfterDays(current, days))
+  }, [persistCaseState])
+
   const handleContactHold = useCallback((findingId: string, reason: string | null) => {
     persistCaseState(findingId, (current) => setContactHold(current, reason))
   }, [persistCaseState])
@@ -446,22 +502,67 @@ export function AuditApp() {
     persistCaseState(findingId, (current) => reopenRemainingBalance(current))
   }, [persistCaseState])
 
+  /**
+   * Where a QuickBooks import of this company goes: the open audit when adding
+   * records to it, otherwise the audit that already holds this company, if any.
+   */
+  const quickBooksTarget = useCallback(
+    (companyName: string): { id: string; name: string; environment: LedgerEnvironment } | null => {
+      const open = projectRef.current
+      const adding = importIntent === 'add' && route.entry !== 'upload'
+      if (adding && open) return { id: open.id, name: open.name, environment: open.environment }
+      const holds = (env: LedgerEnvironment | null | undefined) => Boolean(env?.imports.some((b) => b.quickbooks?.companyName === companyName))
+      if (open && holds(open.environment)) return { id: open.id, name: open.name, environment: open.environment }
+      for (const summary of listProjects()) {
+        const candidate = loadProject(summary.id)
+        if (candidate && holds(candidate.environment)) return { id: candidate.id, name: candidate.name, environment: candidate.environment }
+      }
+      return null
+    },
+    [importIntent, route.entry]
+  )
+
+  // Signed-in accounts only: guests and the sample never reach QuickBooks.
+  const quickBooksAutoSync = useQuickBooksAutoSync(Boolean(account) && !sampleSession, (synced) => {
+    refreshProjects()
+    if (synced.id !== projectRef.current?.id || runActiveRef.current) return
+    projectRef.current = synced
+    environmentRef.current = synced.environment
+    setProject(synced)
+    setEnvironment(synced.environment)
+  })
+
+  quickBooksRecheck.current = quickBooksAutoSync.recheck
+
+  const quickBooksContext = useMemo<QuickBooksImportContext>(
+    () => ({
+      sinceFor: (companyName) => lastQuickBooksPull(quickBooksTarget(companyName)?.environment ?? null, companyName),
+      preview: (parsed, facts) => {
+        const target = quickBooksTarget(facts.companyName)
+        return { summary: planQuickBooksSync(target?.environment ?? null, parsed, facts).summary, targetName: target?.name ?? null, targetId: target?.id ?? null }
+      },
+    }),
+    [quickBooksTarget]
+  )
+
   const handleImport = useCallback(
     (input: ImportInput) => {
-      const replaceEnvironment = importIntent === 'new' || route.entry === 'upload'
+      const target = input.quickbooks ? quickBooksTarget(input.quickbooks.companyName) : null
+      const replaceEnvironment = !target && (importIntent === 'new' || route.entry === 'upload')
       // Free: each ledger is audited once. A repeat — the same file, a renamed
       // copy, or a trimmed piece of it — is flagged here, before anything runs.
+      // Re-importing a QuickBooks company into its own audit is a sync, never a repeat.
       if (entitlements.limits.blocksRepeatUploads) {
-        const check = checkRepeatUpload(input.parsed.records, replaceEnvironment ? null : projectRef.current?.id ?? null)
+        const check = checkRepeatUpload(input.parsed.records, target?.id ?? (replaceEnvironment ? null : projectRef.current?.id ?? null))
         if (check.repeat) {
           setEntryError(repeatMessage(check))
           return
         }
       }
       setEntryError(null)
-      return runImport({ sourceLabel: input.sourceLabel, mode: input.mode, parsed: input.parsed }, { replaceEnvironment })
+      return runImport({ sourceLabel: input.sourceLabel, mode: input.mode, parsed: input.parsed, ...(input.quickbooks ? { quickbooks: input.quickbooks } : {}) }, { replaceEnvironment, ...(target ? { targetProjectId: target.id } : {}) })
     },
-    [importIntent, route.entry, runImport, entitlements.limits.blocksRepeatUploads]
+    [importIntent, route.entry, runImport, entitlements.limits.blocksRepeatUploads, quickBooksTarget]
   )
 
   const handleOpenProject = useCallback(
@@ -572,7 +673,7 @@ export function AuditApp() {
         >
           <Plans onStartAudit={() => openImport('new')} />
         </WorkspaceShell>
-        <ImportDialog open={importDialogOpen} onOpenChange={setImportDialogOpen} onImport={handleImport} error={entryError} intent="new" />
+        <ImportDialog open={importDialogOpen} onOpenChange={setImportDialogOpen} onImport={handleImport} error={entryError} intent="new" quickbooks={quickBooksContext} />
       </>
     )
   }
@@ -590,7 +691,7 @@ export function AuditApp() {
           onOpenChange={setLimitDialog}
           reason={`You've used ${entitlements.usage.auditsThisMonth} of ${entitlements.limits.auditsPerMonth ?? '∞'} audits this month on the Free plan.`}
         />
-        <ImportDialog open={importDialogOpen} onOpenChange={setImportDialogOpen} onImport={handleImport} error={entryError} intent="new" />
+        <ImportDialog open={importDialogOpen} onOpenChange={setImportDialogOpen} onImport={handleImport} error={entryError} intent="new" quickbooks={quickBooksContext} />
       </PreferencesProvider>
     )
   }
@@ -644,6 +745,20 @@ export function AuditApp() {
           )
         }
       >
+        {route.mode === 'dashboard' && !activeFinding ? <QuickBooksSyncStatus state={quickBooksAutoSync.state} onSyncNow={quickBooksAutoSync.syncNow} /> : null}
+        {importNotice ? (
+          <div className="wk-callout" data-tone="done" role="status" data-testid="import-notice" style={{ marginBottom: 20 }}>
+            <CheckCircle2 aria-hidden="true" />
+            <div className="wk-callout-body">
+              <p>
+                {importNotice}{' '}
+                <button type="button" className="wk-linklike" onClick={() => setImportNotice(null)}>
+                  Dismiss
+                </button>
+              </p>
+            </div>
+          </div>
+        ) : null}
         {hasMemoryOnlyProjects() ? (
           <div className="wk-alert" role="status" data-testid="storage-notice" style={{ marginBottom: 20 }}>
             <p>
@@ -674,6 +789,7 @@ export function AuditApp() {
               onSaveEvidence={handleSaveEvidence}
               state={activeCase.state}
               records={environment.records}
+              imports={environment.imports}
               discoveredAt={activeDiscoveredAt}
               sender={sender}
               onDecide={handleDecide}
@@ -683,6 +799,9 @@ export function AuditApp() {
               onReopenBalance={handleReopenBalance}
               onApproveRecovery={handleApproveRecovery}
               onApproveAndSend={handleApproveAndSend}
+              onEmailSent={handleEmailSent}
+              onFollowUpSent={handleFollowUpSent}
+              onFollowUpDays={handleFollowUpDays}
               onContactHold={handleContactHold}
               onVendorUpdate={handleVendorUpdate}
               onFollowUp={handleFollowUp}
@@ -738,6 +857,7 @@ export function AuditApp() {
         onImport={handleImport}
         error={entryError}
         intent={importIntent}
+        quickbooks={quickBooksContext}
       />
       <ClearLedgerDialog open={clearDialogOpen} onOpenChange={setClearDialogOpen} onConfirm={handleClearLedger} />
       <UpgradeDialog

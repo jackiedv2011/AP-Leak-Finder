@@ -3,17 +3,22 @@ import { readFileSync, existsSync, statSync } from 'node:fs'
 import { extname, join, normalize, resolve, sep } from 'node:path'
 import type { DatabaseSync } from 'node:sqlite'
 import { openDatabase } from './db.ts'
+import { ProjectStore } from './projectStore.ts'
+import { accountRoutes } from './account.ts'
 import { AuthService, normalizeEmail } from './auth.ts'
 import { DevMailer, GmailMailer, ResendMailer, type Mailer } from './mailer.ts'
 import { createGoogleClient, type GoogleClient } from './google.ts'
 import { createDraftService, DraftError, DraftRequestSchema, unsupportedAmounts, type DraftService } from './ai.ts'
 import type { ServerConfig } from './config.ts'
-import { HttpError, RateLimiter, empty, json, redirect, serializeCookie, toRequest, writeResponse, type Request, type Response } from './http.ts'
+import { HttpError, RateLimiter, empty, isCrossSiteWrite, json, redirect, serializeCookie, toRequest, writeResponse, type Request, type Response } from './http.ts'
 import { newToken, openSecret, sealSecret } from './crypto.ts'
-import { createQuickBooksClient, pullLedger, toLedgerCsv, QuickBooksReconnectError, QuickBooksUnauthorizedError, type QuickBooksClient, type QuickBooksTokens } from './quickbooks.ts'
+import { createQuickBooksClient, migrateQuickBooksLink, syncLedger, QuickBooksReconnectError, QuickBooksUnauthorizedError, type QuickBooksClient, type QuickBooksTokens } from './quickbooks.ts'
 import { entitlementsFor, isPlan, monthStart, planOf, PLAN_LIMITS, type Plan } from './plans.ts'
 import { checkRepeat, repeatMessage, rowFingerprint } from './uploads.ts'
 import { authorizedDraftFacts } from './caseFacts.ts'
+import { createBilling } from './billing.ts'
+import { createStripeClient, type StripeApi } from './stripe.ts'
+import { createGmailClient, createGmailRoutes, type GmailClient } from './gmail.ts'
 import { OnboardingProfileSchema } from './onboarding.ts'
 
 const SESSION_COOKIE = 'reclaim_session'
@@ -28,6 +33,11 @@ export interface AppDependencies {
   google?: GoogleClient | null
   drafts?: DraftService | null
   quickbooks?: QuickBooksClient | null
+  /** Stripe (tests pass FakeStripe). Defaults to the REST client when STRIPE_SECRET_KEY is set. */
+  stripe?: StripeApi | null
+  gmail?: GmailClient | null
+  /** The clock Gmail follow-ups are timed by (tests). */
+  now?: () => number
   /** Directory of built static files to serve alongside the API (production). */
   staticDir?: string | null
 }
@@ -37,6 +47,8 @@ export interface App {
   db: DatabaseSync
   auth: AuthService
   mailer: Mailer
+  /** Resolves when background success-fee billing has caught up (tests). */
+  billingIdle(): Promise<void>
   listen(port?: number): Promise<number>
   close(): Promise<void>
 }
@@ -67,10 +79,13 @@ const MIME: Record<string, string> = {
 export function createApp(deps: AppDependencies): App {
   const { config } = deps
   const db = deps.db ?? openDatabase(config.databasePath)
+  const projects = new ProjectStore(db, config.dataKeys)
+  const sealedNow = projects.migrate()
+  if (sealedNow) console.log(`  encrypted ${sealedNow} stored audits at rest`)
   const mailer = deps.mailer ?? (config.resend ? new ResendMailer(config.resend.apiKey, config.resend.from) : config.gmail ? new GmailMailer(config.gmail.user, config.gmail.appPassword) : new DevMailer(db))
   const google = deps.google !== undefined ? deps.google : config.google ? createGoogleClient(config.google.clientId, config.google.clientSecret) : null
   const drafts = deps.drafts !== undefined ? deps.drafts : config.anthropicApiKey ? createDraftService(config.anthropicApiKey, config.anthropicModel) : null
-  const quickbooks = deps.quickbooks !== undefined ? deps.quickbooks : config.quickbooks ? createQuickBooksClient(config.quickbooks.clientId, config.quickbooks.clientSecret) : null
+  const quickbooks = deps.quickbooks !== undefined ? deps.quickbooks : config.quickbooks ? createQuickBooksClient(config.quickbooks.clientId, config.quickbooks.clientSecret, fetch, config.quickbooks.environment) : null
   const auth = new AuthService(db, mailer, {
     appOrigin: config.appOrigin,
     requireEmailVerification: config.requireEmailVerification,
@@ -78,9 +93,16 @@ export function createApp(deps: AppDependencies): App {
     rememberMeMs: config.rememberMeDays * 24 * 60 * 60 * 1000,
   })
   const credentialLimiter = new RateLimiter(20, 60 * 1000)
+  // Per address, whatever IP asks: stops password guessing spread over many IPs,
+  // and stops anyone using Reclaim to flood someone's inbox with its emails.
+  const loginEmailLimiter = new RateLimiter(10, 15 * 60 * 1000)
+  const mailLimiter = new RateLimiter(5, 60 * 60 * 1000)
   const draftLimiter = new RateLimiter(30, 60 * 60 * 1000)
   const contactLimiter = new RateLimiter(5, 60 * 60 * 1000)
   const quickbooksSyncLimiter = new RateLimiter(20, 60 * 60 * 1000)
+  const gmailSendLimiter = new RateLimiter(30, 60 * 60 * 1000)
+  const gmailClient = deps.gmail !== undefined ? deps.gmail : config.gmailSend ? createGmailClient(config.gmailSend.clientId, config.gmailSend.clientSecret) : null
+  const gmailRoutes = createGmailRoutes({ db, appOrigin: config.appOrigin, production: config.production, gmail: gmailClient && config.gmailSend ? { client: gmailClient, tokenKey: config.gmailSend.tokenKey } : null, userFor: (req) => auth.userForSession(req.cookies[SESSION_COOKIE]), getProject: (userId, projectId) => projects.get(userId, projectId), allowSend: (id) => gmailSendLimiter.check(`gmail:${id}`), now: deps.now })
 
   const sessionCookie = (token: string, maxAge: number) => serializeCookie(SESSION_COOKIE, token, { maxAge, secure: config.production })
   const clearSessionCookie = () => serializeCookie(SESSION_COOKIE, '', { maxAge: 0, secure: config.production })
@@ -128,14 +150,15 @@ export function createApp(deps: AppDependencies): App {
     if (!limiter.check(key)) throw new HttpError(429, 'Too many attempts. Wait a minute and try again.', 'rate_limited')
   }
 
-  // QuickBooks Online (sandbox, read-only). Tokens are sealed at rest under a
+  // QuickBooks Online (read-only; sandbox or production per QBO_ENVIRONMENT). Tokens are sealed at rest under a
   // key from the environment; they are never logged and never sent to the browser.
   const qbo = quickbooks && config.quickbooks ? { client: quickbooks, key: config.quickbooks.tokenKey } : null
   const qboRedirectUri = `${config.appOrigin}${QBO_PATH}/callback`
-  type ConnectionRow = { realm_id: string; company_name: string; tokens_sealed: string; connected_at: number; last_sync_at: number | null }
+  migrateQuickBooksLink(db)
+  type ConnectionRow = { realm_id: string; company_name: string; tokens_sealed: string; connected_at: number; last_sync_at: number | null; linked_project_id: string | null }
   const sealContext = (userId: string, realmId: string) => `quickbooks:${userId}:${realmId}`
   const qboConnection = (userId: string) =>
-    db.prepare("SELECT realm_id, company_name, tokens_sealed, connected_at, last_sync_at FROM integration_connections WHERE user_id = ? AND provider = 'quickbooks'").get(userId) as ConnectionRow | undefined
+    db.prepare("SELECT realm_id, company_name, tokens_sealed, connected_at, last_sync_at, linked_project_id FROM integration_connections WHERE user_id = ? AND provider = 'quickbooks'").get(userId) as ConnectionRow | undefined
   const dropQboConnection = (userId: string) => db.prepare("DELETE FROM integration_connections WHERE user_id = ? AND provider = 'quickbooks'").run(userId)
   const qboTokens = (userId: string, row: ConnectionRow): QuickBooksTokens => {
     try {
@@ -145,6 +168,22 @@ export function createApp(deps: AppDependencies): App {
       throw new QuickBooksReconnectError('Stored QuickBooks tokens could not be opened.')
     }
   }
+  /** Tells Intuit to cancel the connection. Deleting the sealed tokens afterwards still ends Reclaim's access if this fails. */
+  const revokeQuickBooks = async (userId: string) => {
+    const row = qboConnection(userId)
+    if (!row || !qbo) return
+    try {
+      await qbo.client.revoke(qboTokens(userId, row).refreshToken)
+    } catch (err) {
+      console.error('quickbooks revoke failed:', err instanceof Error ? err.message : 'unknown error')
+    }
+  }
+  const billing = createBilling({ db, auth, requireUser, stripe: deps.stripe !== undefined ? deps.stripe : config.stripe ? createStripeClient(config.stripe.secretKey) : null, webhookSecret: config.stripe?.webhookSecret ?? null })
+  const revokeIntegrations = async (userId: string) => {
+    await revokeQuickBooks(userId)
+    await gmailRoutes.revoke(userId)
+  }
+  const accountContext = { db, projects, requireUser, publicUser, clearSessionCookie, revokeIntegrations, endSubscription: billing.closeAccount }
   /** A usable access token, refreshed and re-sealed when it is about to expire (or when `force`d after a 401). */
   async function qboAccessToken(userId: string, row: ConnectionRow, force = false): Promise<string> {
     const tokens = qboTokens(userId, row)
@@ -158,6 +197,7 @@ export function createApp(deps: AppDependencies): App {
   async function route(req: Request): Promise<Response> {
     const path = req.url.pathname
     const method = req.method
+    if (isCrossSiteWrite(req, config.appOrigin, config.production)) throw new HttpError(403, 'This request came from another site.', 'cross_site')
 
     // ---------- discovery ----------
     if (path === '/api/auth/providers' && method === 'GET') {
@@ -199,6 +239,7 @@ export function createApp(deps: AppDependencies): App {
       const body = await req.json<Record<string, unknown>>()
       const fields = auth.validateSignUp(body)
       if (Object.keys(fields).length) return json(400, { message: 'Check the highlighted fields.', code: 'validation', fields })
+      limit(mailLimiter, `signup:${normalizeEmail(body.email as string)}`)
       const result = await auth.signUp({
         firstName: body.firstName as string,
         lastName: body.lastName as string,
@@ -226,7 +267,8 @@ export function createApp(deps: AppDependencies): App {
       requireJson(req)
       limit(credentialLimiter, `resend:${req.ip}`)
       const { email } = await req.json<{ email?: string }>()
-      if (typeof email === 'string') await auth.resendVerification(email)
+      // Over the per-address limit nothing is sent, and the answer is the same.
+      if (typeof email === 'string' && mailLimiter.check(`resend:${normalizeEmail(email)}`)) await auth.resendVerification(email)
       return json(200, { ok: true })
     }
 
@@ -235,6 +277,7 @@ export function createApp(deps: AppDependencies): App {
       limit(credentialLimiter, `login:${req.ip}`)
       const { email, password, rememberMe } = await req.json<{ email?: string; password?: string; rememberMe?: boolean }>()
       if (typeof email !== 'string' || typeof password !== 'string') throw new HttpError(400, 'Enter your email and password.')
+      limit(loginEmailLimiter, `login:${normalizeEmail(email)}`)
       const user = await auth.logIn(email, password)
       const session = auth.createSession(user.id, rememberMe === true)
       return json(200, { user: publicUser(user) }, { 'Set-Cookie': sessionCookie(session.token, session.maxAgeSeconds) })
@@ -255,7 +298,7 @@ export function createApp(deps: AppDependencies): App {
       requireJson(req)
       limit(credentialLimiter, `forgot:${req.ip}`)
       const { email } = await req.json<{ email?: string }>()
-      if (typeof email === 'string' && email.trim()) await auth.requestPasswordReset(email)
+      if (typeof email === 'string' && email.trim() && mailLimiter.check(`forgot:${normalizeEmail(email)}`)) await auth.requestPasswordReset(email)
       // Same answer whether or not the address is registered.
       return json(200, { ok: true })
     }
@@ -295,17 +338,17 @@ export function createApp(deps: AppDependencies): App {
         return redirect('/audit', { 'Set-Cookie': [sessionCookie(session.token, session.maxAgeSeconds), clearState] })
       } catch (err) {
         if (err instanceof HttpError && err.code === 'google_email_unverified') return back('google_email_unverified')
-        console.error('google sign-in failed:', err instanceof Error ? err.message : err)
+        console.error('google sign-in failed:', err instanceof Error ? err.message : 'unknown error')
         return back('google_failed')
       }
     }
 
-    // ---------- QuickBooks Online (sandbox, read-only) ----------
+    // ---------- QuickBooks Online (read-only) ----------
     if (path === QBO_PATH && method === 'GET') {
       const user = requireUser(req)
       if (!qbo) return json(200, { available: false })
       const row = qboConnection(user.id)
-      return json(200, { available: true, environment: qbo.client.environment, connected: Boolean(row), companyName: row?.company_name ?? null, connectedAt: row?.connected_at ?? null, lastSyncAt: row?.last_sync_at ?? null })
+      return json(200, { available: true, environment: qbo.client.environment, connected: Boolean(row), companyName: row?.company_name ?? null, connectedAt: row?.connected_at ?? null, lastSyncAt: row?.last_sync_at ?? null, linkedAuditId: row?.linked_project_id ?? null })
     }
 
     if (path === `${QBO_PATH}/connect` && method === 'GET') {
@@ -338,7 +381,10 @@ export function createApp(deps: AppDependencies): App {
         const companyName = typeof company.CompanyName === 'string' ? company.CompanyName.slice(0, 200) : ''
         db.prepare(`INSERT INTO integration_connections (user_id, provider, realm_id, company_name, tokens_sealed, connected_at, last_sync_at)
           VALUES (?, 'quickbooks', ?, ?, ?, ?, NULL)
-          ON CONFLICT(user_id, provider) DO UPDATE SET realm_id = excluded.realm_id, company_name = excluded.company_name,
+          ON CONFLICT(user_id, provider) DO UPDATE SET
+            -- Reconnecting the same company keeps its audit; a different company starts unlinked.
+            linked_project_id = CASE WHEN integration_connections.realm_id = excluded.realm_id THEN integration_connections.linked_project_id ELSE NULL END,
+            realm_id = excluded.realm_id, company_name = excluded.company_name,
             tokens_sealed = excluded.tokens_sealed, connected_at = excluded.connected_at, last_sync_at = NULL`)
           .run(user.id, realmId, companyName, sealSecret(JSON.stringify(tokens), qbo.key, sealContext(user.id, realmId)), Date.now())
         return back('connected')
@@ -354,18 +400,23 @@ export function createApp(deps: AppDependencies): App {
       limit(quickbooksSyncLimiter, user.id)
       const row = qboConnection(user.id)
       if (!row) throw new HttpError(409, 'Connect QuickBooks first.', 'quickbooks_not_connected')
+      // The client says when it last pulled this company into the audit it is importing into; recent enough means only changes.
+      const body = await req.json<{ since?: unknown }>().catch(() => ({}) as { since?: unknown })
+      const since = typeof body.since === 'number' && Number.isFinite(body.since) ? body.since : null
+      // Taken before reading, so anything changed during the pull is picked up next time.
+      const pulledAt = Date.now()
       try {
         let accessToken = await qboAccessToken(user.id, row)
-        let pull
+        let result
         try {
-          pull = await pullLedger(qbo.client, row.realm_id, accessToken)
+          result = await syncLedger(qbo.client, row.realm_id, accessToken, since, pulledAt)
         } catch (err) {
           if (!(err instanceof QuickBooksUnauthorizedError)) throw err
           accessToken = await qboAccessToken(user.id, qboConnection(user.id)!, true)
-          pull = await pullLedger(qbo.client, row.realm_id, accessToken)
+          result = await syncLedger(qbo.client, row.realm_id, accessToken, since, pulledAt)
         }
         db.prepare("UPDATE integration_connections SET last_sync_at = ? WHERE user_id = ? AND provider = 'quickbooks'").run(Date.now(), user.id)
-        return json(200, { companyName: row.company_name, csv: toLedgerCsv(pull) })
+        return json(200, { companyName: row.company_name, ...result })
       } catch (err) {
         if (err instanceof QuickBooksReconnectError || err instanceof QuickBooksUnauthorizedError) {
           dropQboConnection(user.id)
@@ -376,20 +427,31 @@ export function createApp(deps: AppDependencies): App {
       }
     }
 
+    // Which audit this connection keeps up to date when the user signs in.
+    if (path === `${QBO_PATH}/link` && method === 'POST') {
+      const user = requireUser(req)
+      requireJson(req)
+      const { auditId } = await req.json<{ auditId?: unknown }>()
+      if (typeof auditId !== 'string' || !/^[\w-]{1,100}$/.test(auditId)) throw new HttpError(400, 'Send the audit to link.')
+      if (!qboConnection(user.id)) throw new HttpError(409, 'Connect QuickBooks first.', 'quickbooks_not_connected')
+      db.prepare("UPDATE integration_connections SET linked_project_id = ? WHERE user_id = ? AND provider = 'quickbooks'").run(auditId, user.id)
+      return json(200, { ok: true, linkedAuditId: auditId })
+    }
+
     if (path === `${QBO_PATH}/disconnect` && method === 'POST') {
       const user = requireUser(req)
-      const row = qboConnection(user.id)
-      if (row && qbo) {
-        try {
-          await qbo.client.revoke(qboTokens(user.id, row).refreshToken)
-        } catch (err) {
-          // Deleting the sealed tokens below still ends Reclaim's access.
-          console.error('quickbooks revoke failed:', err instanceof Error ? err.message : 'unknown error')
-        }
-      }
+      await revokeQuickBooks(user.id)
       dropQboConnection(user.id)
       return json(200, { ok: true })
     }
+
+    // ---------- billing (server/billing.ts) ----------
+    const billed = await billing.route(req)
+    if (billed) return billed
+
+    // ---------- data rights: export, delete account, accept changed terms (account.ts) ----------
+    const accountResponse = await accountRoutes(req, accountContext)
+    if (accountResponse) return accountResponse
 
     // ---------- plan / entitlements ----------
     if (path === '/api/account/entitlements' && method === 'GET') {
@@ -400,6 +462,12 @@ export function createApp(deps: AppDependencies): App {
     if (path === '/api/account/onboarding-seen' && method === 'POST') {
       const user = requireUser(req)
       auth.markOnboardingSeen(user.id)
+      return json(200, { user: publicUser(auth.findUserById(user.id)!) })
+    }
+
+    if (path === '/api/account/tour-seen' && method === 'POST') {
+      const user = requireUser(req)
+      auth.markTourSeen(user.id)
       return json(200, { user: publicUser(auth.findUserById(user.id)!) })
     }
 
@@ -433,8 +501,7 @@ export function createApp(deps: AppDependencies): App {
     // ---------- account data ----------
     if (path === '/api/projects' && method === 'GET') {
       const user = requireUser(req)
-      const rows = db.prepare('SELECT payload FROM projects WHERE user_id = ? ORDER BY updated_at DESC').all(user.id) as Array<{ payload: string }>
-      return json(200, { projects: rows.map((r) => JSON.parse(r.payload)) })
+      return json(200, { projects: projects.list(user.id) })
     }
 
     const projectMatch = path.match(/^\/api\/projects\/([\w-]+)$/)
@@ -445,7 +512,7 @@ export function createApp(deps: AppDependencies): App {
       if (project.id !== projectMatch[1] || !isProjectShape(project)) throw new HttpError(400, 'Malformed project.')
       // Check, count and store with no await in between, so two concurrent
       // uploads cannot both slip under the limit.
-      const isNew = !db.prepare('SELECT 1 FROM projects WHERE user_id = ? AND id = ?').get(user.id, project.id)
+      const isNew = !projects.exists(user.id, project.id as string)
       if (isNew && !entitlements(user).canStartAudit) {
         const limit = PLAN_LIMITS[planOf(user.plan)].auditsPerMonth
         throw new HttpError(402, `The Free plan includes ${limit} audits a month. Upgrade to Pro for unlimited audits.`, 'plan_limit', { feature: 'audits' })
@@ -453,34 +520,34 @@ export function createApp(deps: AppDependencies): App {
       const fingerprints = projectFingerprints(project)
       assertNotRepeat(user, project.id as string, fingerprints)
       if (isNew) recordAuditStart(user.id, project.id as string)
-      upsertProject(db, user.id, project)
+      projects.upsert(user.id, project)
       rememberUpload(user.id, project.id as string, fingerprints)
+      billing.recordRecoveries(user.id, project)
       return json(200, { ok: true })
     }
     if (projectMatch && method === 'DELETE') {
       const user = requireUser(req)
-      db.prepare('DELETE FROM projects WHERE user_id = ? AND id = ?').run(user.id, projectMatch[1])
+      projects.delete(user.id, projectMatch[1])
       return json(200, { ok: true })
     }
 
     if (path === '/api/projects/import' && method === 'POST') {
       const user = requireUser(req)
       requireJson(req)
-      const { projects } = await req.json<{ projects?: Array<Record<string, unknown>> }>()
-      if (!Array.isArray(projects)) throw new HttpError(400, 'Send projects to import.')
+      const { projects: incoming } = await req.json<{ projects?: Array<Record<string, unknown>> }>()
+      if (!Array.isArray(incoming)) throw new HttpError(400, 'Send projects to import.')
       const imported: string[] = []
       const skipped: string[] = []
       // Past the plan's monthly limit: not stored, and reported so the client keeps its local copy.
       const blocked: string[] = []
-      for (const project of projects) {
+      for (const project of incoming) {
         if (typeof project.id !== 'string' || !/^[\w-]+$/.test(project.id) || !isProjectShape(project)) {
           throw new HttpError(400, 'Malformed project.')
         }
       }
-      for (const project of projects) {
+      for (const project of incoming) {
         const id = project.id as string
-        const exists = db.prepare('SELECT 1 FROM projects WHERE user_id = ? AND id = ?').get(user.id, id)
-        if (exists) {
+        if (projects.exists(user.id, id)) {
           skipped.push(id)
           continue
         }
@@ -496,8 +563,9 @@ export function createApp(deps: AppDependencies): App {
           continue
         }
         recordAuditStart(user.id, id)
-        upsertProject(db, user.id, project)
+        projects.upsert(user.id, project)
         rememberUpload(user.id, id, fingerprints)
+        billing.recordRecoveries(user.id, project, { imported: true })
         imported.push(id)
       }
       return json(200, { imported, skipped, blocked })
@@ -513,8 +581,7 @@ export function createApp(deps: AppDependencies): App {
       const parsed = DraftRequestSchema.safeParse(await req.json())
       if (!parsed.success) throw new HttpError(400, 'The case data is malformed.', 'validation')
       const { projectId, findingId, ...clientFacts } = parsed.data
-      const stored = db.prepare('SELECT payload FROM projects WHERE user_id = ? AND id = ?').get(user.id, projectId) as { payload: string } | undefined
-      const facts = authorizedDraftFacts(stored ? JSON.parse(stored.payload) : null, findingId, clientFacts.amountRequested)
+      const facts = authorizedDraftFacts(projects.get(user.id, projectId), findingId, clientFacts.amountRequested)
       if (!facts.ok) throw new HttpError(403, facts.reason, 'recovery_not_authorized')
       // Only the reviewer's tone/context and sender may come from the browser.
       const request = { ...facts.facts, userContext: clientFacts.userContext, sender: clientFacts.sender }
@@ -541,6 +608,9 @@ export function createApp(deps: AppDependencies): App {
       return json(200, { messages: rows })
     }
 
+    const gmailResponse = await gmailRoutes.route(req)
+    if (gmailResponse) return gmailResponse
+
     if (path.startsWith('/api/')) throw new HttpError(404, 'Not found.')
 
     // ---------- static site (production) ----------
@@ -551,7 +621,7 @@ export function createApp(deps: AppDependencies): App {
   const server = createServer(async (rawReq, rawRes) => {
     const options = { noStore: (rawReq.url ?? '').startsWith('/api/'), hsts: config.production }
     try {
-      const req = await toRequest(rawReq)
+      const req = await toRequest(rawReq, { trustProxy: config.trustProxy })
       const response = await route(req)
       writeResponse(rawRes, response, options)
     } catch (err) {
@@ -570,6 +640,7 @@ export function createApp(deps: AppDependencies): App {
     db,
     auth,
     mailer,
+    billingIdle: () => billing.idle(),
     listen(port = config.port) {
       return new Promise((resolve) => server.listen(port, () => resolve((server.address() as { port: number }).port)))
     },
@@ -590,24 +661,6 @@ function isProjectShape(project: Record<string, unknown>): boolean {
   if (!env || typeof env !== 'object' || Array.isArray(env)) return false
   const result = env.result as Record<string, unknown> | null
   return Array.isArray(env.records) && !!result && typeof result === 'object' && Array.isArray(result.findings)
-}
-
-function upsertProject(db: DatabaseSync, userId: string, project: Record<string, unknown>): void {
-  const now = Date.now()
-  db.prepare(
-    `INSERT INTO projects (user_id, id, name, source_label, mode, created_at, updated_at, payload) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-     ON CONFLICT(user_id, id) DO UPDATE SET name = excluded.name, source_label = excluded.source_label, mode = excluded.mode, updated_at = excluded.updated_at, payload = excluded.payload`
-  ).run(
-    userId,
-    project.id as string,
-    project.name as string,
-    typeof project.sourceLabel === 'string' ? project.sourceLabel : '',
-    project.mode === 'sample' ? 'sample' : 'upload',
-    // Server time: created_at is when this server first stored the audit, whatever the client claims.
-    now,
-    typeof project.updatedAt === 'number' ? project.updatedAt : now,
-    JSON.stringify(project)
-  )
 }
 
 function serveStatic(root: string, urlPath: string): Response {

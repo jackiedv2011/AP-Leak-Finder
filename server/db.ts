@@ -99,6 +99,7 @@ export function openDatabase(path: string): DatabaseSync {
   if (!columns.has('plan_updated_at')) db.exec('ALTER TABLE users ADD COLUMN plan_updated_at INTEGER')
   if (!columns.has('onboarding_seen_at')) db.exec('ALTER TABLE users ADD COLUMN onboarding_seen_at INTEGER')
   if (!columns.has('onboarding_profile')) db.exec('ALTER TABLE users ADD COLUMN onboarding_profile TEXT')
+  if (!columns.has('tour_seen_at')) db.exec('ALTER TABLE users ADD COLUMN tour_seen_at INTEGER')
   // The single paid plan became Growth when the three tracks were introduced.
   db.exec("UPDATE users SET plan = 'growth' WHERE plan = 'pro'")
   // audit_starts is the plan-usage ledger (see app.ts). Databases from before it
@@ -138,4 +139,6 @@ export interface UserRow {
   onboarding_seen_at: number | null
   /** JSON, see server/onboarding.ts. Null until onboarding has been answered. */
   onboarding_profile?: string | null
+  /** When the dashboard tour was finished or skipped. Null until then. */
+  tour_seen_at?: number | null
 }

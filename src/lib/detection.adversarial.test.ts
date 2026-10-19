@@ -6,7 +6,8 @@
  *   EDGE — boundary, precision or malformed input
  */
 import { describe, expect, it } from 'vitest'
-import { detectFindings } from '@/lib/detection'
+import { detectFindings, recurringSeriesOf } from '@/lib/detection'
+import { referenceStrength } from '@/lib/sourceIdentity'
 import type { APRecord, Finding, FindingType } from '@/types'
 
 let seq = 0
@@ -37,7 +38,7 @@ const cents = (n: number) => Math.round(n * 100)
 
 describe('every finding is a sane money figure', () => {
   it('EDGE: an empty ledger and a one-row ledger produce nothing and zero totals', () => {
-    expect(detectFindings([])).toEqual({ findings: [], recoverableTotal: 0, reviewTotal: 0, opportunityTotal: 0 })
+    expect(detectFindings([])).toEqual({ findings: [], recoverableTotal: 0, reviewTotal: 0, opportunityTotal: 0, recurringSeries: [] })
     const one = detectFindings([rec({ vendor: 'Solo', amountPaid: 100, invoiceNumber: 'S1', invoiceAmount: 100 })])
     expect(one.findings).toHaveLength(0)
   })
@@ -136,6 +137,64 @@ describe('Rule 1 — exact duplicates: overlap and refunds', () => {
     ])
     expect(findings).toHaveLength(0)
   })
+
+  it('FP: a one-character reference shared by payments of different amounts is not one invoice (QuickBooks check numbers)', () => {
+    const findings = run([
+      rec({ vendor: "Chin's Gas and Oil", invoiceNumber: '1', amountPaid: 65, paymentDate: d(2026, 9, 4) }),
+      rec({ vendor: "Chin's Gas and Oil", invoiceNumber: '1', amountPaid: 52.56, paymentDate: d(2026, 9, 19) }),
+    ])
+    expect(findings).toHaveLength(0)
+  })
+
+  it('POS: a short reference paid twice at the same amount is still an exact duplicate', () => {
+    const findings = run([
+      rec({ vendor: 'Small Shop', invoiceNumber: '12', amountPaid: 1250, paymentDate: d(2025, 4, 1) }),
+      rec({ vendor: 'Small Shop', invoiceNumber: '12', amountPaid: 1250, paymentDate: d(2025, 4, 9) }),
+      rec({ vendor: 'Small Shop', invoiceNumber: '12', amountPaid: 80, paymentDate: d(2025, 4, 20) }),
+    ])
+    const exact = ofType(findings, 'exact_duplicate')
+    expect(exact).toHaveLength(1)
+    expect(exact[0].ruleId).toBe('exact_repeated_payment_v1')
+    expect(exact[0].relatedRecords.map((r) => r.amountPaid)).toEqual([1250, 1250])
+  })
+
+  it('POS: a row whose short reference is shared at another amount can still pair with a same-amount payment', () => {
+    const later = rec({ vendor: 'Fuel Stop', amountPaid: 52.56, paymentDate: d(2026, 9, 21) })
+    const findings = run([
+      rec({ vendor: 'Fuel Stop', invoiceNumber: '1', amountPaid: 65, paymentDate: d(2026, 9, 4) }),
+      rec({ vendor: 'Fuel Stop', invoiceNumber: '1', amountPaid: 52.56, paymentDate: d(2026, 9, 19) }),
+      later,
+    ])
+    expect(ofType(findings, 'exact_duplicate')).toHaveLength(0)
+    const near = ofType(findings, 'near_duplicate')
+    expect(near).toHaveLength(1)
+    expect(near[0].relatedRecords.map((r) => r.id)).toContain(later.id)
+  })
+
+  it('NEG: a placeholder such as "Debit" or "N/A" in the reference column is no reference at all', () => {
+    const findings = run([
+      rec({ vendor: 'Card Co', invoiceNumber: 'Debit', amountPaid: 40, paymentDate: d(2025, 5, 1) }),
+      rec({ vendor: 'Card Co', invoiceNumber: 'Debit', amountPaid: 75, paymentDate: d(2025, 5, 8) }),
+      rec({ vendor: 'Card Co', invoiceNumber: 'N/A', amountPaid: 40, paymentDate: d(2025, 5, 3) }),
+    ])
+    expect(ofType(findings, 'exact_duplicate')).toHaveLength(0)
+    // The two $40 rows are still a same-amount pair, at the weaker review level.
+    const near = ofType(findings, 'near_duplicate')
+    expect(near).toHaveLength(1)
+    expect(near[0].ruleId).toBe('same_vendor_amount_near_duplicate_v1')
+  })
+
+  it('EDGE: reference strength', () => {
+    expect(referenceStrength(null)).toBe('none')
+    expect(referenceStrength('  ')).toBe('none')
+    expect(referenceStrength('Debit')).toBe('none')
+    expect(referenceStrength('n/a')).toBe('none')
+    expect(referenceStrength('0000')).toBe('none')
+    expect(referenceStrength('1')).toBe('short')
+    expect(referenceStrength('INV-12')).toBe('short')
+    expect(referenceStrength('108')).toBe('strong')
+    expect(referenceStrength('INV-3305')).toBe('strong')
+  })
 })
 
 describe('Rule 2 — near duplicates', () => {
@@ -169,6 +228,131 @@ describe('Rule 2 — near duplicates', () => {
       rec({ vendor: 'Omega Bakery', invoiceNumber: 'A-101', amountPaid: 250, paymentDate: d(2025, 1, 3) }),
     ])
     expect(ofType(findings, 'near_duplicate')).toHaveLength(0)
+  })
+
+  it('FP: a weekly card charge with no invoice reference is recurring, not three near-duplicates (QuickBooks car wash)', () => {
+    const findings = run([
+      rec({ vendor: 'Squeaky Kleen Car Wash', amountPaid: 19.99, paymentDate: d(2026, 9, 10) }),
+      rec({ vendor: 'Squeaky Kleen Car Wash', invoiceNumber: 'Debit', amountPaid: 19.99, paymentDate: d(2026, 9, 17) }),
+      rec({ vendor: 'Squeaky Kleen Car Wash', amountPaid: 19.99, paymentDate: d(2026, 9, 24) }),
+      rec({ vendor: 'Squeaky Kleen Car Wash', amountPaid: 19.99, paymentDate: d(2026, 10, 1) }),
+    ])
+    expect(findings).toHaveLength(0)
+  })
+
+  it('EDGE: a recurring series left out of near-duplicates is reported on the result', () => {
+    const records = [
+      rec({ id: 'cw1', vendor: 'Squeaky Kleen Car Wash', amountPaid: 19.99, paymentDate: d(2026, 9, 10) }),
+      rec({ id: 'cw2', vendor: 'Squeaky Kleen Car Wash', amountPaid: 19.99, paymentDate: d(2026, 9, 17) }),
+      rec({ id: 'cw3', vendor: 'Squeaky Kleen Car Wash', amountPaid: 19.99, paymentDate: d(2026, 9, 24) }),
+      rec({ id: 'cw4', vendor: 'Squeaky Kleen Car Wash', amountPaid: 19.99, paymentDate: d(2026, 10, 1) }),
+      rec({ id: 'extra', vendor: 'Squeaky Kleen Car Wash', amountPaid: 19.99, paymentDate: d(2026, 9, 11) }),
+    ]
+    const result = detectFindings(records)
+    expect(result.recurringSeries).toEqual([
+      { vendor: 'Squeaky Kleen Car Wash', amount: 19.99, currency: null, cadenceDays: 7, paymentCount: 4, firstPaymentDate: '2026-09-10', lastPaymentDate: '2026-10-01', recordIds: ['cw1', 'cw2', 'cw3', 'cw4'] },
+    ])
+    // The off-series charge is still flagged, and is not part of the series.
+    expect(ofType(result.findings, 'near_duplicate').map((f) => f.relatedRecords.map((r) => r.id))).toEqual([['cw1', 'extra']])
+    expect(recurringSeriesOf(result)).toBe(result.recurringSeries)
+    expect(recurringSeriesOf({ findings: [], recoverableTotal: 0, reviewTotal: 0, opportunityTotal: 0 })).toEqual([])
+  })
+
+  it('POS: a second charge the day after a weekly no-reference charge is still caught', () => {
+    const weekly = [10, 17, 24].map((day) => rec({ vendor: 'Squeaky Kleen Car Wash', amountPaid: 19.99, paymentDate: d(2026, 9, day) }))
+    const extra = rec({ vendor: 'Squeaky Kleen Car Wash', amountPaid: 19.99, paymentDate: d(2026, 9, 11) })
+    const near = ofType(run([...weekly, extra]), 'near_duplicate')
+    expect(near).toHaveLength(1)
+    expect(near[0].relatedRecords.map((r) => r.id)).toContain(extra.id)
+  })
+
+  it('NEG: two payments with no reference are not recurring when they are only two', () => {
+    const near = ofType(
+      run([
+        rec({ vendor: 'Two Times', amountPaid: 19.99, paymentDate: d(2026, 9, 10) }),
+        rec({ vendor: 'Two Times', amountPaid: 19.99, paymentDate: d(2026, 9, 17) }),
+      ]),
+      'near_duplicate'
+    )
+    expect(near).toHaveLength(1)
+  })
+
+  it('FP: two round-amount card purchases three weeks apart, neither with a reference, are not near-duplicates', () => {
+    const findings = run([
+      rec({ vendor: 'Corner Fuel', amountPaid: 50, paymentDate: d(2026, 9, 1) }),
+      rec({ vendor: 'Corner Fuel', invoiceNumber: 'Debit', amountPaid: 50, paymentDate: d(2026, 9, 21) }),
+    ])
+    expect(ofType(findings, 'near_duplicate')).toHaveLength(0)
+  })
+
+  it('POS: the same two card purchases three days apart are still a near-duplicate, and say which window applied', () => {
+    const near = ofType(
+      run([
+        rec({ vendor: 'Corner Fuel', amountPaid: 50, paymentDate: d(2026, 9, 1) }),
+        rec({ vendor: 'Corner Fuel', amountPaid: 50, paymentDate: d(2026, 9, 4) }),
+      ]),
+      'near_duplicate'
+    )
+    expect(near).toHaveLength(1)
+    expect(near[0].explanation).toContain('within 14 days')
+  })
+
+  it('POS: when one of the two payments has a reference, the full 45-day window still applies', () => {
+    const near = ofType(
+      run([
+        rec({ vendor: 'Hicks Hardware', invoiceNumber: 'HH-2041', amountPaid: 228.75, paymentDate: d(2026, 8, 20) }),
+        rec({ vendor: 'Hicks Hardware', amountPaid: 228.75, paymentDate: d(2026, 9, 19) }),
+      ]),
+      'near_duplicate'
+    )
+    expect(near).toHaveLength(1)
+    expect(near[0].explanation).toContain('within 45 days')
+  })
+
+  it('FP: a twice-weekly standing order, each delivery with its own invoice, is recurring', () => {
+    const deliveries = Array.from({ length: 16 }, (_, i) =>
+      rec({ vendor: 'Sunrise Bakery', invoiceNumber: `SB${String(i + 1).padStart(4, '0')}`, amountPaid: 186.4, paymentDate: d(2025, 1, 7 + Math.floor(i / 2) * 7 + (i % 2) * 3) })
+    )
+    const result = detectFindings(deliveries)
+    expect(ofType(result.findings, 'near_duplicate')).toHaveLength(0)
+    expect(result.recurringSeries).toHaveLength(1)
+  })
+
+  it('FP: fuel fill-ups at the same few prices, no reference and no schedule, are routine', () => {
+    const fortyDays = [2, 4, 13, 14, 31, 33, 52, 70, 71]
+    const seventyFiveDays = [5, 6, 20, 41, 44, 45, 66, 90]
+    const fills = [
+      ...fortyDays.map((n) => rec({ vendor: 'Chevron', amountPaid: 40, paymentDate: d(2025, 1, n) })),
+      ...seventyFiveDays.map((n) => rec({ vendor: 'Chevron', amountPaid: 75, paymentDate: d(2025, 1, n) })),
+    ]
+    const result = detectFindings(fills)
+    expect(ofType(result.findings, 'near_duplicate')).toHaveLength(0)
+    expect(result.recurringSeries).toHaveLength(0)
+  })
+
+  it('POS: an unusual amount charged twice at a vendor with routine prices is still caught', () => {
+    const fills = [2, 9, 16, 21, 30].map((n) => rec({ vendor: 'Chevron', amountPaid: 40, paymentDate: d(2025, 1, n) }))
+    const repair = rec({ vendor: 'Chevron', amountPaid: 312.48, paymentDate: d(2025, 1, 12) })
+    const again = rec({ vendor: 'Chevron', amountPaid: 312.48, paymentDate: d(2025, 1, 13) })
+    const near = ofType(run([...fills, repair, again]), 'near_duplicate')
+    expect(near).toHaveLength(1)
+    expect(near[0].relatedRecords.map((r) => r.id)).toEqual([repair.id, again.id])
+  })
+
+  it('NEG (accepted trade-off): a routine price charged twice in a row is not flagged', () => {
+    const fills = [2, 4, 13, 31, 52].map((n) => rec({ vendor: 'Chevron', amountPaid: 40, paymentDate: d(2025, 1, n) }))
+    const doubled = rec({ vendor: 'Chevron', amountPaid: 40, paymentDate: d(2025, 1, 14) })
+    expect(ofType(run([...fills, doubled]), 'near_duplicate')).toHaveLength(0)
+  })
+
+  it('POS: a bill paid by check and again by card with no reference is caught', () => {
+    const card = rec({ vendor: 'Hicks Hardware', amountPaid: 228.75, paymentDate: d(2026, 9, 19) })
+    const near = ofType(
+      run([rec({ vendor: 'Hicks Hardware', invoiceNumber: 'QBO-Bill-2', invoiceAmount: 228.75, amountPaid: 228.75, paymentDate: d(2026, 9, 15) }), card]),
+      'near_duplicate'
+    )
+    expect(near).toHaveLength(1)
+    expect(near[0].relatedRecords.map((r) => r.id)).toContain(card.id)
   })
 })
 
@@ -361,6 +545,16 @@ describe('Rule 8 — shared invoice numbers', () => {
     const findings = run([
       rec({ vendor: 'Vendor One', invoiceNumber: '1001', amountPaid: 100 }),
       rec({ vendor: 'Vendor Two', invoiceNumber: '1001', amountPaid: -100, paymentDate: d(2025, 1, 4) }),
+    ])
+    expect(ofType(findings, 'shared_invoice_number')).toHaveLength(0)
+  })
+
+  it('NEG: two vendors whose payments both carry check number "1" or "12" are not sharing an invoice number', () => {
+    const findings = run([
+      rec({ vendor: "Chin's Gas and Oil", invoiceNumber: '1', amountPaid: 65 }),
+      rec({ vendor: 'Hicks Hardware', invoiceNumber: '1', amountPaid: 88.09, paymentDate: d(2025, 1, 4) }),
+      rec({ vendor: 'Robertson & Associates', invoiceNumber: '12', amountPaid: 250, paymentDate: d(2025, 1, 6) }),
+      rec({ vendor: 'Books by Bessie', invoiceNumber: '12', amountPaid: 55, paymentDate: d(2025, 1, 8) }),
     ])
     expect(ofType(findings, 'shared_invoice_number')).toHaveLength(0)
   })

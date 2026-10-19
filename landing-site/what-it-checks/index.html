@@ -794,7 +794,7 @@
     </section>
 
     <!-- YOUR DATA (shared by the What It Checks page).
-         States only the control model (spec §33): a read-only connection or files you upload, no writes to
+         States only the control model (spec §33): files you upload, no connection to
          your books, no payment rights, results traced to records, your approval before outreach.
          Storage, encryption, retention and deletion specifics are not described here. -->
     <section class="rounded-section hide-nav" id="your-files" theme="white">
@@ -816,7 +816,7 @@
               <div class="the-grid">
                 <ul class="items">
                   <li class="type-article-columns-item-security item-wrap"><div class="article-columns-item-security item"><div class="card-wrap"><div class="card"><div class="front"><svg class="icon" aria-hidden="true"><use href="#i-tile-files"/></svg><div class="heading type-h5">You choose the source</div></div></div></div></div></li>
-                  <li class="type-article-columns-item-security item-wrap"><div class="article-columns-item-security item"><div class="card-wrap"><div class="card"><div class="front"><svg class="icon" aria-hidden="true"><use href="#i-tile-unlinked"/></svg><div class="heading type-h5">Read-only access</div></div></div></div></div></li>
+                  <li class="type-article-columns-item-security item-wrap"><div class="article-columns-item-security item"><div class="card-wrap"><div class="card"><div class="front"><svg class="icon" aria-hidden="true"><use href="#i-tile-unlinked"/></svg><div class="heading type-h5">No link to your accounts</div></div></div></div></div></li>
                   <li class="type-article-columns-item-security item-wrap"><div class="article-columns-item-security item"><div class="card-wrap"><div class="card"><div class="front"><svg class="icon" aria-hidden="true"><use href="#i-tile-view"/></svg><div class="heading type-h5">Never changes your books</div></div></div></div></div></li>
                   <li class="type-article-columns-item-security item-wrap"><div class="article-columns-item-security item"><div class="card-wrap"><div class="card"><div class="front"><svg class="icon" aria-hidden="true"><use href="#i-tile-nomoney"/></svg><div class="heading type-h5">Never moves money</div></div></div></div></div></li>
                   <li class="type-article-columns-item-security item-wrap"><div class="article-columns-item-security item"><div class="card-wrap"><div class="card"><div class="front"><svg class="icon" aria-hidden="true"><use href="#i-tile-row"/></svg><div class="heading type-h5">Every result traced to a record</div></div></div></div></div></li>
@@ -848,12 +848,12 @@
               <div class="the-grid">
                 <div class="the-col">
                   <ul class="items">
-                    <li><details><summary class="type-body-medium">What records does Reclaim need?</summary><p class="desc type-body-small">Your bills, the payments against them, your vendors, and your vendor credits. Connect QuickBooks Online or Xero and Reclaim reads them directly, or upload them as CSV exports. Our <a href="/guides">export guides</a> show where to find them in common accounting tools.</p></details></li>
-                    <li><details><summary class="type-body-medium">Do I need to connect my accounting system?</summary><p class="desc type-body-small">No. You can start with files you export yourself. Direct connections to QuickBooks Online and Xero, with read-only access you can revoke at any time, are coming soon. Nothing needs to be installed.</p></details></li>
+                    <li><details><summary class="type-body-medium">What records does Reclaim need?</summary><p class="desc type-body-small">Your bills, the payments against them, your vendors, and your vendor credits. You upload them as CSV exports. Our <a href="/guides">export guides</a> show where to find them in common accounting tools.</p></details></li>
+                    <li><details><summary class="type-body-medium">Do I need to connect my accounting system?</summary><p class="desc type-body-small">No. You can start with files you export yourself. Direct connections are in development. Nothing needs to be installed.</p></details></li>
                     <li><details><summary class="type-body-medium">What does Reclaim look for?</summary><p class="desc type-body-small">Duplicate payments, duplicate bills, overpayments, unused vendor credits, and payments that don't match what was billed. Each one has its own section above, with examples.</p></details></li>
                     <li><details><summary class="type-body-medium">How does Reclaim decide something is a mistake?</summary><p class="desc type-body-small">It compares records against each other: vendors, amounts, invoice numbers, dates, and references. A finding is raised when the records themselves show the problem, and every finding lists the records it is based on.</p></details></li>
                     <li><details><summary class="type-body-medium">Can a finding turn out to be fine?</summary><p class="desc type-body-small">Yes. A partial payment, a deposit, or a credit applied outside your export can look like a mistake. That's why every finding shows its records, and why you review it before treating it as one.</p></details></li>
-                    <li><details><summary class="type-body-medium">Which accounting tools does it work with?</summary><p class="desc type-body-small">Reclaim works from exported records, so it isn't tied to one tool, and direct connections to QuickBooks Online and Xero are coming soon. We have export guides for QuickBooks Online, Xero, NetSuite, and Bill.</p></details></li>
+                    <li><details><summary class="type-body-medium">Which accounting tools does it work with?</summary><p class="desc type-body-small">Reclaim works from exported records, so it isn't tied to one tool, and direct connections are in development. We have export guides for QuickBooks Online, Xero, NetSuite, and Bill.</p></details></li>
                     <li><details><summary class="type-body-medium">Does Reclaim contact my vendors?</summary><p class="desc type-body-small">Only once you approve a recovery. Reclaim then sends the request with the evidence attached, tracks the reply and follows up. A dispute, or anything unclear, comes back to you, and you can mark any vendor Do Not Contact.</p></details></li>
                     <li><details><summary class="type-body-medium">How is my data handled?</summary><p class="desc type-body-small">Our <a href="/security">Security page</a> covers what Reclaim reads, what it can never do, and how AI is kept to the minimum each task needs.</p></details></li>
                     <li><details><summary class="type-body-medium">Who is Reclaim for?</summary><p class="desc type-body-small">Businesses that pay a lot of vendors, without a team to chase every mistake: finance and AP teams, operators, and founders.</p></details></li>
@@ -874,7 +874,7 @@
     <div class="the-container">
       <img class="closing-object" src="/media/closing/coins-720.webp" srcset="/media/closing/coins-720.webp 720w, /media/closing/coins-1200.webp 1200w" sizes="(max-width: 1023px) 72vw, 34rem" width="720" height="509" alt="" loading="lazy" decoding="async" data-closing-object>
       <h2 class="heading type-h2" data-split="h2">Don't just find the money.<br><em>Reclaim it.</em></h2>
-      <p class="closing-lede" data-closing-in>Connect your books or upload an export, and see what your own records show.</p>
+      <p class="closing-lede" data-closing-in>Upload an export and see what your own records show.</p>
       <div class="closing-actions" data-closing-in>
         <a href="/audit?entry=sample" class="cta cta-button" size="large" theme="green"><span class="hover-loop"><span class="inner">Run a free audit</span></span></a>
         <a href="#contact" class="closing-talk" data-modal="talk">Not sure where to start? <span>Talk to us</span></a>
@@ -882,8 +882,8 @@
       <ul class="closing-promises">
         <li data-closing-in>
           <span class="closing-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"/></svg></span>
-          <h3>Read-only access</h3>
-          <p>Reclaim cannot move money or alter your ledger, and you can revoke the connection at any time.</p>
+          <h3>Never changes your books</h3>
+          <p>Reclaim works from the records you give it. It cannot move money or alter your ledger.</p>
         </li>
         <li data-closing-in>
           <span class="closing-ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 12.5 20 4l-4 16-4.5-6.5z"/><path d="m11.5 13.5 3-3"/></svg></span>
@@ -1011,7 +1011,7 @@
             <button type="button" class="hover-loop cta-button-square close" theme="outline" size="medium" aria-label="Close"><span class="inner"><svg class="icon"><use href="#i-close"/></svg></span></button>
             <svg class="icon-check" aria-hidden="true"><use href="#i-check-circle"/></svg>
             <h2 class="heading" id="modal-success-heading">Thanks,<br>we have it</h2>
-            <p class="desc">We'll email you about next steps, including how to connect your books or which records to export.</p>
+            <p class="desc">We'll email you about next steps, including which records to export.</p>
             <button type="button" class="hover-loop cta-button submit done" theme="black" size="large"><span class="inner">Back to the site</span></button>
           </div>
         </div>

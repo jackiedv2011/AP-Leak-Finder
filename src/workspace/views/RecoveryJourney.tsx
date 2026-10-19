@@ -143,7 +143,7 @@ export function RecoveryProgressPanel({ finding, state, onVendorUpdate, onFollow
               ))}
           </ol>
         ) : (
-          <p className="wk-field-hint">Nothing recorded yet. Log the vendor's reply here when it arrives; Reclaim does not read or send email.</p>
+          <p className="wk-field-hint">Nothing recorded yet. When the vendor replies, log it here. Reclaim never reads your inbox, so replies only show up once you add them.</p>
         )}
 
         <div className="wk-followup">
@@ -308,11 +308,11 @@ export function RecoveryAccountingPanel({ finding, state, onReconcile }: { findi
             </ul>
             <div className="wk-fields">
               <div className="wk-field" data-wide="true">
-                <label htmlFor="reconciliation-note">Accounting entry or reconciliation note</label>
-                <textarea id="reconciliation-note" className="wk-input" rows={3} value={note} onChange={(e) => setNote(e.target.value)} placeholder="For example, cleared vendor overpayment against bank refund" />
+                <label htmlFor="reconciliation-note">Where it’s recorded in your books</label>
+                <textarea id="reconciliation-note" className="wk-input" rows={3} value={note} onChange={(e) => setNote(e.target.value)} placeholder="For example: credit CM-88812 applied to bill INV-0460 in QuickBooks" />
               </div>
               <div className="wk-field">
-                <label htmlFor="root-cause">Root cause (optional)</label>
+                <label htmlFor="root-cause">What caused it? (optional)</label>
                 <select id="root-cause" className="wk-input" value={rootCause} onChange={(e) => setRootCause(e.target.value)}>
                   <option value="">Choose a cause</option>
                   {ROOT_CAUSES.map((cause) => <option key={cause}>{cause}</option>)}
@@ -321,10 +321,10 @@ export function RecoveryAccountingPanel({ finding, state, onReconcile }: { findi
             </div>
             {error ? <p className="wk-field-error" role="alert">{error}</p> : null}
             <div className="wk-actions">
-              <button type="button" className="wk-btn" data-variant="primary" data-size="sm" onClick={() => { if (!note.trim()) { setError('Describe the reconciliation entry.'); return } setError(''); onReconcile(finding.id, note.trim(), rootCause); setEditing(false) }}>
+              <button type="button" className="wk-btn" data-variant="primary" data-size="sm" onClick={() => { if (!note.trim()) { setError('Say where the money is recorded in your books.'); return } setError(''); onReconcile(finding.id, note.trim(), rootCause); setEditing(false) }}>
                 {state.reconciledAt ? 'Save reconciliation' : 'Mark reconciled'}
               </button>
-              <span className="wk-field-hint">Record the closeout you made in your accounting system. Reclaim does not change your books.</span>
+              <span className="wk-field-hint">Write down what you did in your accounting system. Reclaim never changes your books.</span>
             </div>
           </>
         )}

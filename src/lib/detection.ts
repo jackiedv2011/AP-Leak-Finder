@@ -1,22 +1,49 @@
 import type { APRecord, Finding, FindingClass, DetectionResult } from '@/types'
 import { normalizeVendor, normalizeAccountLast4, daysBetween, parseTerms, formatCurrency, formatDate, plural, toCents } from '@/lib/format'
-import { normalizeReference } from '@/lib/sourceIdentity'
+import { normalizeReference, referenceStrength } from '@/lib/sourceIdentity'
 import { reviewMetadata } from '@/lib/findingMetadata'
 
 /** The review window for same-vendor, same-amount signals. It selects rows to review; it is not a recovery threshold. */
 export const DEFAULT_REVIEW_WINDOW_DAYS = 45
+/**
+ * When neither payment carries a reference (card and cash purchases), vendor and
+ * amount are all that link them, and a round amount at a shop the business uses
+ * every few weeks repeats by chance. A double charge lands within days, so such
+ * pairs are only matched inside this shorter window.
+ */
+export const NO_REFERENCE_WINDOW_DAYS = 14
 
 const EPSILON = 0.01
 /**
  * Rule 2 treats three or more identically priced payments to one vendor on a
  * steady cadence (weekly standing orders, rent, subscriptions, retainers) as a
  * recurring charge rather than a run of duplicates. The cadence is the median
- * gap; it must be at least a few days (daily deliveries are indistinguishable
- * from a burst of duplicates), and a payment that lands well inside the cadence
- * is off-series and still assessed as a possible duplicate.
+ * gap; it must be at least a few days (without invoice numbers, daily payments
+ * are indistinguishable from a burst of duplicates), and a payment that lands
+ * well inside the cadence is off-series and still assessed as a possible
+ * duplicate. When every payment carries its own invoice number, each one was
+ * billed separately, so a twice-weekly or daily standing order is a series too.
  */
 const RECURRING_MIN_CADENCE_DAYS = 5
+const INVOICED_RECURRING_MIN_CADENCE_DAYS = 1
 const RECURRING_MAX_TOLERANCE_DAYS = 10
+const RECURRING_ON_CADENCE_SHARE = 3 / 4
+/**
+ * A price paid to a vendor this many times or more with no reference and no
+ * steady cadence (fuel fill-ups, postage, a usual coffee order) is routine:
+ * two such payments within the window are expected, not a sign of a double
+ * charge. A recurring series that explains most of the price's payments is
+ * different: there, an extra off-schedule payment is still assessed.
+ */
+const ROUTINE_PRICE_MIN_PAYMENTS = 4
+const ROUTINE_RECURRING_SHARE = 0.75
+/**
+ * Rule 8: references this short after normalization ("1007", "INV-9001")
+ * come from simple sequential numbering, so two vendors share them by chance.
+ * Such a shared number is only flagged when the vendors were also paid the
+ * same amount on it.
+ */
+const DISTINCTIVE_REFERENCE_MIN_LENGTH = 6
 /** A one-cent difference is rounding, not an overpayment. */
 const OVERPAYMENT_MIN_CENTS = 2
 /**
@@ -49,10 +76,15 @@ function invoiceKey(r: APRecord): string {
   return `${normalizeVendor(r.vendor)}|${reference}`
 }
 
+/** A placeholder such as "Debit" or "N/A" in the reference column is no reference at all. */
+function hasReference(r: APRecord): boolean {
+  return referenceStrength(r.invoiceNumber) !== 'none'
+}
+
 function buildRefundPool(records: APRecord[]): RefundPool {
   const pool: RefundPool = new Map()
   for (const r of records) {
-    if (r.invoiceNumber === null || r.amountPaid >= 0) continue
+    if (!hasReference(r) || r.amountPaid >= 0) continue
     const key = invoiceKey(r)
     pool.set(key, (pool.get(key) ?? 0) + toCents(-r.amountPaid))
   }
@@ -128,14 +160,21 @@ function detectExactDuplicates(records: APRecord[], refundPool: RefundPool): {
   const findings: FindingWithImpactRows[] = []
   const allGroupedRecordIds = new Set<string>()
 
-  const withInvoice = records.filter((r) => r.invoiceNumber !== null)
+  const withInvoice = records.filter(hasReference)
   const groups = groupBy(withInvoice, invoiceKey)
 
   for (const [key, allRows] of groups) {
     const group = allRows.filter(isPayment)
     if (group.length < 2) continue
     const sorted = [...group].sort((a, b) => a.paymentDate.getTime() - b.paymentDate.getTime())
-    sorted.forEach((r) => allGroupedRecordIds.add(r.id))
+    // A one- or two-character reference ("1", a check number) is shared by
+    // unrelated payments all the time. It ties rows to one invoice only when the
+    // amount repeats too; rows with other amounts stay free for Rule 2.
+    const shortReference = referenceStrength(sorted[0].invoiceNumber) === 'short'
+    const amountClusters = Array.from(groupBy(sorted, (r) => toCents(r.amountPaid).toString()).values())
+    for (const cluster of amountClusters) {
+      if (!shortReference || cluster.length > 1) cluster.forEach((r) => allGroupedRecordIds.add(r.id))
+    }
 
     const invoiceNumber = sorted[0].invoiceNumber
     const vendor = sorted[0].vendor
@@ -151,7 +190,6 @@ function detectExactDuplicates(records: APRecord[], refundPool: RefundPool): {
     // duplicated amounts must never claim the same overshoot twice.
     let budgetCents = invoiceAmount === null ? Infinity : totalPaidCents - toCents(invoiceAmount)
 
-    const amountClusters = Array.from(groupBy(sorted, (r) => toCents(r.amountPaid).toString()).values())
     const duplicateClusters = amountClusters
       .filter((cluster) => cluster.length > 1)
       .sort((a, b) => toCents(b[0].amountPaid) * (b.length - 1) - toCents(a[0].amountPaid) * (a.length - 1))
@@ -185,7 +223,7 @@ function detectExactDuplicates(records: APRecord[], refundPool: RefundPool): {
       })
     }
 
-    if (singlePaymentRows.length > 0) {
+    if (singlePaymentRows.length > 0 && !shortReference) {
       const reviewRows = duplicateClusters.length > 0 ? singlePaymentRows : sorted.slice(1)
       const reviewCents = reviewRows.reduce((sum, r) => sum + toCents(r.amountPaid), 0)
       const grossCents = Math.min(reviewCents, budgetCents)
@@ -218,9 +256,10 @@ function detectExactDuplicates(records: APRecord[], refundPool: RefundPool): {
 }
 
 /**
- * Records that belong to a recurring series for this vendor: three or more
- * payments of the same amount, each with its own invoice number, on a steady
- * cadence. One vendor can have several such series (two subscriptions).
+ * The recurring series for this vendor, each as its on-cadence rows: three or more
+ * payments of the same amount on a steady cadence, no two sharing an invoice
+ * number. Rows without a reference count (card and check purchases rarely
+ * carry one). One vendor can have several such series (two subscriptions).
  *
  * The cadence is the median gap. Walking the series in date order, a payment
  * that arrives well before the next one is due is off-series — that is what a
@@ -229,20 +268,19 @@ function detectExactDuplicates(records: APRecord[], refundPool: RefundPool): {
  * the series going. If too little of the series keeps to the cadence, none of
  * it is treated as recurring.
  */
-function recurringRecordIds(sortedByDate: APRecord[]): Set<string> {
-  const recurring = new Set<string>()
-  const byAmount = groupBy(
-    sortedByDate.filter((r) => r.invoiceNumber !== null),
-    (r) => toCents(r.amountPaid).toString()
-  )
+function recurringRuns(sortedByDate: APRecord[]): APRecord[][] {
+  const runs: APRecord[][] = []
+  const byAmount = groupBy(sortedByDate, (r) => toCents(r.amountPaid).toString())
   for (const series of byAmount.values()) {
     if (series.length < 3) continue
-    const invoiceNumbers = new Set(series.map((r) => normalizeInvoiceNumber(r.invoiceNumber!)))
-    if (invoiceNumbers.size !== series.length) continue
+    const referenced = series.filter(hasReference)
+    const invoiceNumbers = new Set(referenced.map((r) => normalizeInvoiceNumber(r.invoiceNumber!)))
+    if (invoiceNumbers.size !== referenced.length) continue
     const gaps: number[] = []
     for (let i = 1; i < series.length; i++) gaps.push(daysBetween(series[i - 1].paymentDate, series[i].paymentDate))
     const cadence = median(gaps)
-    if (cadence < RECURRING_MIN_CADENCE_DAYS) continue
+    const everyRowInvoiced = series.every((r) => referenceStrength(r.invoiceNumber) === 'strong')
+    if (cadence < (everyRowInvoiced ? INVOICED_RECURRING_MIN_CADENCE_DAYS : RECURRING_MIN_CADENCE_DAYS)) continue
     const tolerance = Math.min(RECURRING_MAX_TOLERANCE_DAYS, Math.max(2, Math.floor(cadence * 0.35)))
 
     const onCadence = [series[0]]
@@ -251,9 +289,59 @@ function recurringRecordIds(sortedByDate: APRecord[]): Set<string> {
       if (gap >= cadence - tolerance) onCadence.push(r)
     }
     if (onCadence.length < 3 || onCadence.length < Math.ceil(series.length * 0.6)) continue
-    onCadence.forEach((r) => recurring.add(r.id))
+    // Most steps must actually land on the cadence. Frequent irregular payments of one
+    // price (fuel fill-ups) clear the "not early" test above by chance, but their gaps
+    // scatter; a real schedule's gaps cluster, with only the odd skipped week.
+    const steps = onCadence.slice(1).map((r, i) => daysBetween(onCadence[i].paymentDate, r.paymentDate))
+    if (steps.filter((gap) => Math.abs(gap - cadence) <= tolerance).length < Math.ceil(steps.length * RECURRING_ON_CADENCE_SHARE)) continue
+    runs.push(onCadence)
   }
-  return recurring
+  return runs
+}
+
+/**
+ * A run of payments recognised as a recurring charge and therefore not flagged
+ * as near-duplicates of each other. Plain JSON (no Date objects) so it survives
+ * saving and reloading an audit.
+ */
+export interface RecurringSeries {
+  vendor: string
+  amount: number
+  /** The rows' currency when they agree, else null. */
+  currency: string | null
+  /** Median days between payments. */
+  cadenceDays: number
+  paymentCount: number
+  /** Local calendar dates, YYYY-MM-DD. */
+  firstPaymentDate: string
+  lastPaymentDate: string
+  recordIds: string[]
+}
+
+export type DetectionResultWithRecurring = DetectionResult & { recurringSeries: RecurringSeries[] }
+
+/** Recurring series on a detection result; [] for audits saved before the field existed. */
+export function recurringSeriesOf(result: DetectionResult): RecurringSeries[] {
+  const series = (result as Partial<DetectionResultWithRecurring>).recurringSeries
+  return Array.isArray(series) ? series : []
+}
+
+const localDate = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+
+function toRecurringSeries(rows: APRecord[]): RecurringSeries {
+  const currencies = new Set(rows.map((r) => r.currency ?? null))
+  // Measured over the series itself, so an off-series extra payment doesn't skew it.
+  const gaps = rows.slice(1).map((r, i) => daysBetween(rows[i].paymentDate, r.paymentDate))
+  return {
+    vendor: rows[0].vendor,
+    amount: centsToDollars(toCents(rows[0].amountPaid)),
+    currency: currencies.size === 1 ? [...currencies][0] : null,
+    cadenceDays: median(gaps),
+    paymentCount: rows.length,
+    firstPaymentDate: localDate(rows[0].paymentDate),
+    lastPaymentDate: localDate(rows[rows.length - 1].paymentDate),
+    recordIds: rows.map((r) => r.id),
+  }
 }
 
 /** Only deterministic reference normalization establishes a variant; typos remain general near-match review. */
@@ -268,24 +356,48 @@ function incompatible(a: APRecord, b: APRecord): boolean {
   return Boolean(a.currency && b.currency && a.currency !== b.currency)
 }
 
+/** Amounts (in cents) this vendor is routinely paid with no reference and no steady cadence. */
+function routinePrices(sortedByDate: APRecord[], recurring: Set<string>): Set<number> {
+  const routine = new Set<number>()
+  const unreferenced = groupBy(sortedByDate.filter((r) => !hasReference(r)), (r) => toCents(r.amountPaid).toString())
+  for (const [cents, rows] of unreferenced) {
+    if (rows.length < ROUTINE_PRICE_MIN_PAYMENTS) continue
+    const onSchedule = rows.filter((r) => recurring.has(r.id)).length
+    if (onSchedule >= rows.length * ROUTINE_RECURRING_SHARE) continue
+    routine.add(Number(cents))
+  }
+  return routine
+}
+
+function pairWindow(a: APRecord, b: APRecord, windowDays: number): number {
+  return hasReference(a) || hasReference(b) ? windowDays : Math.min(windowDays, NO_REFERENCE_WINDOW_DAYS)
+}
+
 // Rule 2 — invoice_reference_variant_v1 and same_vendor_amount_near_duplicate_v1 (review signals only)
 function detectNearDuplicates(
   records: APRecord[],
   excludeRecordIds: Set<string>,
   windowDays = DEFAULT_REVIEW_WINDOW_DAYS
-): FindingWithImpactRows[] {
+): { findings: FindingWithImpactRows[]; recurringSeries: RecurringSeries[] } {
   const findings: FindingWithImpactRows[] = []
+  const recurringSeries: RecurringSeries[] = []
   const eligible = records.filter((r) => isPayment(r) && !excludeRecordIds.has(r.id))
   const groups = groupBy(eligible, (r) => normalizeVendor(r.vendor))
   const usedAsLater = new Set<string>()
 
   for (const group of groups.values()) {
     const sorted = [...group].sort((a, b) => a.paymentDate.getTime() - b.paymentDate.getTime())
-    const recurring = recurringRecordIds(sorted)
+    const runs = recurringRuns(sorted)
+    recurringSeries.push(...runs.map(toRecurringSeries))
+    const recurring = new Set(runs.flatMap((rows) => rows.map((r) => r.id)))
+    const routine = routinePrices(sorted, recurring)
 
     for (let i = 1; i < sorted.length; i++) {
       const later = sorted[i]
-      if (usedAsLater.has(later.id)) continue
+      // A payment that keeps to a recurring cadence is the series, never the suspect. An
+      // off-series payment always has an earlier row to be matched against, so it is
+      // flagged once rather than again by every later payment in the series.
+      if (usedAsLater.has(later.id) || recurring.has(later.id)) continue
 
       // A reference variant is the stronger signal; otherwise the nearest same-amount payment in the window.
       let variant: APRecord | null = null
@@ -295,13 +407,15 @@ function detectNearDuplicates(
 
       for (let j = 0; j < i; j++) {
         const earlier = sorted[j]
-        // Two payments that both keep to a recurring cadence are the series, not a duplicate of each other.
-        if (recurring.has(earlier.id) && recurring.has(later.id)) continue
         if (toCents(earlier.amountPaid) !== toCents(later.amountPaid) || incompatible(earlier, later)) continue
-        if (earlier.invoiceNumber !== null && earlier.invoiceNumber === later.invoiceNumber) continue
+        if (hasReference(earlier) && earlier.invoiceNumber === later.invoiceNumber) continue
+        if (!hasReference(earlier) && !hasReference(later) && routine.has(toCents(later.amountPaid))) continue
         const gap = Math.abs(daysBetween(earlier.paymentDate, later.paymentDate))
-        if (gap > windowDays) continue
-        const isVariant = earlier.invoiceNumber !== null && later.invoiceNumber !== null && referenceVariant(earlier.invoiceNumber, later.invoiceNumber)
+        if (gap > pairWindow(earlier, later, windowDays)) continue
+        const isVariant =
+          referenceStrength(earlier.invoiceNumber) === 'strong' &&
+          referenceStrength(later.invoiceNumber) === 'strong' &&
+          referenceVariant(earlier.invoiceNumber!, later.invoiceNumber!)
         if (isVariant && gap < variantGap) {
           variantGap = gap
           variant = earlier
@@ -328,7 +442,7 @@ function detectNearDuplicates(
           title: variant ? `Invoice reference variant: ${later.vendor}` : `Same vendor and amount: ${later.vendor}`,
           explanation: variant
             ? `${later.vendor} was paid ${formatCurrency(later.amountPaid)} for invoice ${match.invoiceNumber} and again for invoice ${later.invoiceNumber}, ${gap} ${plural(gap, 'day')} apart. The references match after normalization or differ by a character or two. A similar reference is not proof of a duplicate payment.`
-            : `${later.vendor} was paid ${formatCurrency(later.amountPaid)} twice within ${windowDays} days (${refs(match)} and ${refs(later)}, ${formatDate(later.paymentDate)}), ${gap} ${plural(gap, 'day')} apart. The date window only selects these rows for review; it does not establish that anything is owed.`,
+            : `${later.vendor} was paid ${formatCurrency(later.amountPaid)} twice within ${pairWindow(match, later, windowDays)} days (${refs(match)} and ${refs(later)}, ${formatDate(later.paymentDate)}), ${gap} ${plural(gap, 'day')} apart. The date window only selects these rows for review; it does not establish that anything is owed.`,
           relatedRecords: [match, later],
         }),
         impactRecordIds: [later.id],
@@ -336,7 +450,7 @@ function detectNearDuplicates(
     }
   }
 
-  return findings
+  return { findings, recurringSeries }
 }
 
 // Rule 3 — Overpayment vs invoice (recoverable, high)
@@ -348,7 +462,7 @@ function detectOverpayments(records: APRecord[], refundPool: RefundPool): Findin
     const overCents = toCents(r.amountPaid) - toCents(r.invoiceAmount)
     if (overCents >= OVERPAYMENT_MIN_CENTS) {
       // A refund already booked against this invoice has given some (or all) of it back.
-      const refundedCents = r.invoiceNumber === null ? 0 : drawRefund(refundPool, invoiceKey(r), overCents)
+      const refundedCents = hasReference(r) ? drawRefund(refundPool, invoiceKey(r), overCents) : 0
       if (overCents - refundedCents < OVERPAYMENT_MIN_CENTS) continue
       const dollarImpact = centsToDollars(overCents - refundedCents)
       findings.push({
@@ -554,12 +668,19 @@ function detectAmountOutliers(records: APRecord[]): Finding[] {
 // Rule 8 — Invoice number reused across different vendors (review, high)
 function detectSharedInvoiceNumbers(records: APRecord[]): Finding[] {
   const findings: Finding[] = []
-  const withInvoice = records.filter((r) => isPayment(r) && r.invoiceNumber !== null)
+  // Two vendors both using "1" or "12" is coincidence, not a vendor-identity question.
+  const withInvoice = records.filter((r) => isPayment(r) && referenceStrength(r.invoiceNumber) === 'strong')
   const groups = groupBy(withInvoice, (r) => normalizeInvoiceNumber(r.invoiceNumber!))
 
   for (const group of groups.values()) {
     const vendorsInGroup = groupBy(group, (r) => normalizeVendor(r.vendor))
     if (vendorsInGroup.size < 2) continue
+    const distinctive = (normalizeReference(group[0].invoiceNumber).value ?? '').length >= DISTINCTIVE_REFERENCE_MIN_LENGTH
+    if (!distinctive) {
+      const vendorsByAmount = groupBy(group, (r) => toCents(r.amountPaid).toString())
+      const sharedAmount = [...vendorsByAmount.values()].some((rows) => new Set(rows.map((r) => normalizeVendor(r.vendor))).size > 1)
+      if (!sharedAmount) continue
+    }
 
     const sorted = [...group].sort((a, b) => a.paymentDate.getTime() - b.paymentDate.getTime())
     const vendorNames = Array.from(new Set(sorted.map((r) => r.vendor))).join(', ')
@@ -603,10 +724,10 @@ function dedupeRecoverable(candidates: FindingWithImpactRows[]): Finding[] {
 
 const SEVERITY_RANK: Record<Finding['severity'], number> = { high: 0, medium: 1, low: 2 }
 
-export function detectFindings(records: APRecord[]): DetectionResult {
+export function detectFindings(records: APRecord[]): DetectionResultWithRecurring {
   const refundPool = buildRefundPool(records)
   const { findings: exactDuplicates, allGroupedRecordIds } = detectExactDuplicates(records, refundPool)
-  const nearDuplicates = detectNearDuplicates(records, allGroupedRecordIds)
+  const { findings: nearDuplicates, recurringSeries } = detectNearDuplicates(records, allGroupedRecordIds)
   const overpayments = detectOverpayments(records, refundPool)
   const unclaimedDiscounts = detectUnclaimedDiscounts(records)
 
@@ -644,6 +765,7 @@ export function detectFindings(records: APRecord[]): DetectionResult {
     centsToDollars(findings.filter((f) => f.class === cls).reduce((sum, f) => sum + toCents(f.dollarImpact), 0))
 
   return {
+    recurringSeries,
     findings,
     recoverableTotal: sumBy('recoverable'),
     reviewTotal: sumBy('review'),

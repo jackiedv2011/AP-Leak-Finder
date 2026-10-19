@@ -6,7 +6,8 @@
  *
  *   Free    — unlimited uploads; the 3 lowest-value findings of each upload in
  *             full. The same file (or a trimmed copy of one) cannot be uploaded
- *             again to see different findings.
+ *             again to see different findings. Letters are editable and can be
+ *             sent from the customer's own Gmail; AI drafting is paid.
  *   Growth  — $15 a month plus 10% of what is actually recovered.
  *   Flat    — $50 a month, no success fee. Same features as Growth.
  *
@@ -26,8 +27,10 @@ export interface PlanLimits {
   blocksRepeatUploads: boolean
   /** "Draft with AI" on a recovery request. */
   aiDrafts: boolean
-  /** Edit, download and steer the generated letter (free: read and copy). */
+  /** Edit and download the generated letter. */
   fullLetters: boolean
+  /** Send an approved recovery request from the customer's own connected Gmail. */
+  gmailSending: boolean
   /** Partial amounts, recovery method and the case history (free: full-or-nothing outcome). */
   fullRecoveryWorkflow: boolean
   /** The every-vendor table on Reports (free: the audit summary and by-check breakdown). */
@@ -40,6 +43,7 @@ const PAID: PlanLimits = {
   blocksRepeatUploads: false,
   aiDrafts: true,
   fullLetters: true,
+  gmailSending: true,
   fullRecoveryWorkflow: true,
   advancedReports: true,
 }
@@ -50,7 +54,8 @@ export const PLAN_LIMITS: Record<Plan, PlanLimits> = {
     findingsVisible: 3,
     blocksRepeatUploads: true,
     aiDrafts: false,
-    fullLetters: false,
+    fullLetters: true,
+    gmailSending: true,
     fullRecoveryWorkflow: false,
     advancedReports: false,
   },
