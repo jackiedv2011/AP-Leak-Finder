@@ -1,0 +1,73 @@
+# Checks every push and pull request. Nothing here deploys, publishes or
+# needs a secret: the container job runs with throwaway values.
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: Types, tests, lint, builds
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Type-check
+        run: npx tsc -b
+      - name: Tests
+        # .claude/ holds other sessions' worktrees on a developer's Mac; never run their copies.
+        run: npx vitest run --exclude '.claude/**'
+      - name: Lint
+        run: npx oxlint
+      - name: Landing site build
+        run: node landing-site/build.cjs
+      - name: App build (React app plus landing site into dist/)
+        run: npx vite build
+
+  container:
+    name: Docker image builds and answers /healthz
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build the image
+        run: docker build -t reclaim:ci .
+      - name: The image holds no .env or data
+        run: |
+          if docker run --rm --entrypoint sh reclaim:ci -c 'ls -a /app; test ! -e /app/.env && test ! -e /app/data'; then echo ok; else echo "secrets or data baked into the image"; exit 1; fi
+      - name: Refuses to start without production settings
+        run: |
+          if docker run --rm reclaim:ci; then echo "started without required settings"; exit 1; fi
+      - name: Starts on a fresh volume and answers /healthz
+        run: |
+          docker volume create reclaim-ci
+          # Throwaway values: the Resend key is fake, so nothing can be emailed.
+          docker run -d --name reclaim -p 8787:8787 -v reclaim-ci:/data \
+            -e APP_ORIGIN=https://ci.reclaim.invalid \
+            -e RESEND_API_KEY=re_ci_not_real -e EMAIL_FROM=ci@reclaim.invalid \
+            -e DATA_KEY="$(openssl rand -base64 32)" \
+            reclaim:ci
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:8787/healthz; then echo; break; fi
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1:8787/healthz | grep -q '"ok":true'
+          curl -fsS -o /dev/null http://127.0.0.1:8787/
+          curl -fsS -o /dev/null http://127.0.0.1:8787/audit
+          docker exec reclaim node server/backup.ts
+      - name: Server log
+        if: always()
+        run: docker logs reclaim || true
