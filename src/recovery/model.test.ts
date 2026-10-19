@@ -158,7 +158,7 @@ describe('recovery lifecycle', () => {
     expect(fullyReturned.recoveredAmount).toBe(1000)
     expect(fullyReturned.recoveryStage).toBe('recovered')
     expect(fullyReturned.recoverySettlements).toHaveLength(2)
-    expect(recoveryNextAction(fullyReturned, monday).label).toMatch(/reconcil/i)
+    expect(recoveryNextAction(fullyReturned, monday).label).toMatch(/in your books/i)
     expect(reconcileRecovery(fullyReturned, { note: 'Cleared vendor payable', rootCause: 'Invoice entered twice', at: monday }).reconciledAt).toBe(monday)
     const reopened = reopenOutcome(fullyReturned)
     expect(reopened.recoverySettlements).toBeNull()

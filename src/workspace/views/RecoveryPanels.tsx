@@ -302,15 +302,16 @@ export function RecoveryRequestPanel({
             {approvedForCurrent ? (
               <button type="button" className="wk-btn" data-variant="outline" data-size="sm" data-state="done" disabled><CircleCheck aria-hidden="true" />Approved for outreach</button>
             ) : (
-              <button type="button" className="wk-btn" data-variant="outline" data-size="sm" disabled={!canApprove} onClick={() => { if (knownBeforeReclaim !== null) onApprove(pkg, knownBeforeReclaim, disclosureNote) }}>
+              <button type="button" className="wk-btn" data-variant="primary" data-size="sm" disabled={!canApprove} onClick={() => { if (knownBeforeReclaim !== null) onApprove(pkg, knownBeforeReclaim, disclosureNote) }}>
                 Approve recovery request
               </button>
             )}
-            <button type="button" className="wk-btn" data-variant="primary" data-size="sm" disabled={Boolean(amountError) || !approvedForCurrent} onClick={() => onMarkRequested(pkg)}>
+            {/* The next step is the green one: approve first, then mark it sent once it has gone out. */}
+            <button type="button" className="wk-btn" data-variant={approvedForCurrent ? 'primary' : 'outline'} data-size="sm" disabled={Boolean(amountError) || !approvedForCurrent} onClick={() => onMarkRequested(pkg)}>
               Mark request sent
             </button>
             {!approvedForCurrent && onApproveAndSend ? (
-              <button type="button" className="wk-btn" data-variant="ghost" data-size="sm" disabled={!canApprove} onClick={() => { if (knownBeforeReclaim !== null) onApproveAndSend(pkg, knownBeforeReclaim, disclosureNote) }}>
+              <button type="button" className="wk-btn" data-variant="ghost" data-size="sm" disabled={!canApprove} title="Already sent it yourself? Approve it and record it as sent in one step." onClick={() => { if (knownBeforeReclaim !== null) onApproveAndSend(pkg, knownBeforeReclaim, disclosureNote) }}>
                 Approve and mark sent
               </button>
             ) : null}
@@ -320,7 +321,9 @@ export function RecoveryRequestPanel({
               ? 'Answer the question above first, so the case records who identified the issue.'
               : state.approvedAt && !approvedForCurrent && !state.contactHold
                 ? 'The request changed after approval. Review and approve this version.'
-                : 'Mark it sent only after you have sent it yourself.'}
+                : approvedForCurrent
+                  ? 'Approved. Now send it from your email (Copy puts the message on your clipboard), then press Mark request sent.'
+                  : 'First approve the request. Then send it and mark it sent. Already sent it yourself? Use Approve and mark sent.'}
           </p>
 
           <div className="wk-disclosure">

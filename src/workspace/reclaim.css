@@ -1055,6 +1055,7 @@ html[data-surface='workspace'] .wk-launch-progress::after { content: ''; positio
 html[data-surface='workspace'] .wk-callout[data-tone='danger'] { border-color: color-mix(in srgb, var(--danger) 32%, transparent); background: var(--danger-soft); color: var(--text); }
 html[data-surface='workspace'] .wk-callout[data-tone='danger'] > svg { color: var(--danger); }
 html[data-surface='workspace'] .wk-callout-body { display: flex; flex: 1; min-width: 0; flex-direction: column; gap: 8px; }
+html[data-surface='workspace'] .wk-skipped-rows { margin: 0; padding-left: 18px; font-size: 13px; line-height: 1.5; color: var(--text-muted); }
 html[data-surface='workspace'] .wk-callout-actions { display: flex; flex-wrap: wrap; gap: 4px 18px; }
 html[data-surface='workspace'] .wk-callout-actions .wk-link { color: var(--text); font: 500 13px var(--f-text); text-decoration: underline; text-decoration-color: color-mix(in srgb, currentColor 35%, transparent); text-underline-offset: 3px; }
 html[data-surface='workspace'] .wk-callout-actions .wk-link:hover { text-decoration-color: currentColor; }

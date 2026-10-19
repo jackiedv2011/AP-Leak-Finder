@@ -5,6 +5,7 @@ import { formatCurrency, formatDate } from '@/lib/format'
 import { evaluateEligibility, type EvidenceCheck, type RecoveryEvidence } from '@/recovery/eligibility'
 import { autofillKey, quickBooksEvidence } from '@/recovery/quickbooksEvidence'
 import { dollarsToCents } from './amounts'
+import { useOptionalAuth } from '@/lib/auth/AuthContext'
 
 const pulledDate = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 
@@ -35,12 +36,34 @@ const REALLY_DUPLICATE_CHECKS: EvidenceCheck[] = ['duplicateImport', 'installmen
 
 const centsToDollars = (cents: number) => (cents > 0 ? (cents / 100).toFixed(2) : '')
 
+/**
+ * A CSV finding starts from what the ledger already says: the bill number and amount the rows share, and the
+ * currency (recovery runs in US dollars). Those were placeholders before, which read as answers already given;
+ * now they are real values the reviewer checks against the bill. Bank references and the checks stay blank:
+ * the ledger can't vouch for those.
+ */
+function fromLedger(finding: Finding): RecoveryEvidence {
+  const emptyStamp = { reference: '', confirmedBy: '', confirmedAt: 0 }
+  const first = finding.relatedRecords[0]
+  const sameBill = first?.invoiceNumber && finding.relatedRecords.every((r) => r.invoiceNumber === first.invoiceNumber) ? first.invoiceNumber : ''
+  const billAmount = first?.invoiceAmount ?? null
+  const currency = (r?: Finding['relatedRecords'][number]) => (r?.currency ?? 'USD').toUpperCase()
+  return {
+    payments: finding.relatedRecords.map((r) => ({ ...emptyStamp, recordId: r.id, paymentId: '', amountMinor: Math.round(r.amountPaid * 100), currency: currency(r), settled: false, obligationId: sameBill })),
+    obligation: { ...emptyStamp, obligationId: sameBill, amountMinor: billAmount ? Math.round(billAmount * 100) : 0, currency: currency(first) },
+    checks: {},
+    contradictions: [],
+    notes: '',
+  }
+}
+
 export function EvidencePanel({ finding, findings, imports = [], onSave }: { finding: Finding; findings: Finding[]; imports?: ImportBatch[]; onSave: (evidence: RecoveryEvidence) => void }) {
   const emptyStamp = { reference: '', confirmedBy: '', confirmedAt: 0 }
-  // Saved evidence wins; otherwise start from what QuickBooks already knows, then from blank.
-  const [evidence, setEvidence] = useState<RecoveryEvidence>(() => finding.evidence ?? quickBooksEvidence(finding, imports) ?? {payments: finding.relatedRecords.map(r => ({...emptyStamp,recordId:r.id,paymentId:'',amountMinor:Math.round(r.amountPaid*100),currency:r.currency ?? '',settled:false,obligationId:''})),obligation:{...emptyStamp,obligationId:'',amountMinor:0,currency:''},checks:{},contradictions:[],notes:''})
+  const auth = useOptionalAuth()
+  // Saved evidence wins; otherwise start from what QuickBooks already knows, then from what the ledger says.
+  const [evidence, setEvidence] = useState<RecoveryEvidence>(() => finding.evidence ?? quickBooksEvidence(finding, imports) ?? fromLedger(finding))
   const [billAmount, setBillAmount] = useState(() => centsToDollars(evidence.obligation.amountMinor))
-  const [actor,setActor] = useState('')
+  const [actor,setActor] = useState(() => (auth?.user && !auth.user.isGuest ? auth.user.name : ''))
   const [saved,setSaved] = useState(false)
   const gate = evaluateEligibility({...finding,contradictoryEvidence:[]},evidence,findings)
   const autofilled = evidence.autofilled ?? {}
@@ -73,10 +96,10 @@ export function EvidencePanel({ finding, findings, imports = [], onSave }: { fin
         {autofillDates.length > 0 && <div className="wk-callout" role="note" data-testid="quickbooks-autofill-note"><div className="wk-callout-body"><p>Answers marked <strong>From QuickBooks</strong> were filled from the QuickBooks import{Math.max(...autofillDates) > 0 ? ` of ${pulledDate.format(Math.max(...autofillDates))}` : ''}: the payment IDs, the bill they paid, and the refund and credit searches. Check each one before saving. QuickBooks doesn’t report whether a payment cleared the bank, so settlement still needs your confirmation.</p></div></div>}
 
         <fieldset className="wk-evq-group"><legend>1. Is this one bill?</legend>
-          <p className="wk-field-hint">The bill or invoice both payments were for.</p>
+          <p className="wk-field-hint">The bill or invoice both payments were for. {!finding.evidence && !autofillDates.length ? 'Filled in from your ledger — check it against the bill.' : null}</p>
           <div className="wk-evq-grid">
             {field('Bill or invoice number',evidence.obligation.obligationId,value=>edit([autofillKey.obligationId],prev=>({...prev,obligation:{...prev.obligation,obligationId:value},payments:prev.payments.map(p=>({...p,obligationId:value}))})),autofillKey.obligationId,{placeholder:finding.relatedRecords[0]?.invoiceNumber ?? 'INV-1001'})}
-            {field('Bill amount, in dollars',billAmount,value=>{setBillAmount(value);edit([autofillKey.obligationAmount],prev=>({...prev,obligation:{...prev.obligation,amountMinor:dollarsToCents(value)}}))},autofillKey.obligationAmount,{placeholder:'6800.00',inputMode:'decimal',hint:billAmountInvalid ? 'Enter an amount like 6800.00' : undefined,invalid:billAmountInvalid})}
+            {field('Bill amount, in dollars',billAmount,value=>{setBillAmount(value);edit([autofillKey.obligationAmount],prev=>({...prev,obligation:{...prev.obligation,amountMinor:dollarsToCents(value)}}))},autofillKey.obligationAmount,{placeholder:'0.00',inputMode:'decimal',hint:billAmountInvalid ? 'Enter an amount like 1250.00' : undefined,invalid:billAmountInvalid})}
             {field('Link to the bill, or where it’s filed',evidence.obligation.reference,value=>edit([autofillKey.obligationReference],prev=>({...prev,obligation:{...prev.obligation,reference:value}})),autofillKey.obligationReference,{placeholder:'A link, or “Bills folder, Feb 2025”'})}
             {field('Currency',evidence.obligation.currency,value=>edit([autofillKey.obligationCurrency],prev=>({...prev,obligation:{...prev.obligation,currency:value.toUpperCase()}})),autofillKey.obligationCurrency,{placeholder:'USD',hint:'Recovery works in US dollars for now.'})}
           </div>

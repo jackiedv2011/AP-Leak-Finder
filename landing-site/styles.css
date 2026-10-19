@@ -543,11 +543,39 @@ img, video, canvas, svg { display: block; max-width: 100%; }
 @media (hover: hover) and (pointer: fine) { .wt-pill button:hover { color: #fff; } }
 .wt-pill button.is-current { background: rgb(255 255 255 / .12); color: #fff; }
 .wt-pill button.is-done { color: rgb(255 255 255 / .8); }   /* steps seen; those still to come stay dim */
-.wt-pill .wt-sep { width: 1px; height: 1.8rem; margin: 0 .6rem 0 .4rem; align-self: center; background: rgb(255 255 255 / .16); }
-.wt-pill .wt-skip { display: inline-flex; align-items: center; gap: .6rem; padding: 0 1.4rem 0 1.6rem; background: #fff; color: #0a0d0b; }   /* the way out: on past the steps to the close */
-@media (hover: hover) and (pointer: fine) { .wt-pill .wt-skip:hover { background: rgb(255 255 255 / .86); color: #0a0d0b; } }
-.wt-pill .wt-skip svg { width: 1.4rem; height: 1.4rem; transform: rotate(180deg); }
 .wt-pill button:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+/* the way past the laptop, either way: shown as the section comes on screen, before the steps take the scroll,
+   and kept up through them. Fixed to the viewport (appended to body by walkthrough.js, since an ancestor of the
+   section is transformed); it points the way you were heading when it appeared */
+.wt-skipper {
+  position: fixed;
+  right: var(--grid-side-margin);
+  bottom: 3.2rem;
+  z-index: 60;
+  display: inline-flex;
+  align-items: center;
+  gap: .8rem;
+  height: 4.6rem;
+  padding: 0 1.8rem 0 2rem;
+  border: 1px solid rgb(10 13 11 / .1);
+  border-radius: 99rem;
+  background: #fff;
+  color: #0a0d0b;
+  box-shadow: 0 .8rem 2.4rem rgb(0 0 0 / .18);
+  font: 500 1.5rem/1 var(--f-sans);
+  letter-spacing: -.01em;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(1.2rem);
+  transition: opacity .25s, transform .35s var(--e-out), visibility 0s .35s, background-color .2s, scale .16s var(--e-out);
+}
+.wt-skipper.is-shown { opacity: 1; visibility: visible; transform: none; transition: opacity .25s, transform .35s var(--e-out), visibility 0s, background-color .2s, scale .16s var(--e-out); }
+@media (hover: hover) and (pointer: fine) { .wt-skipper:hover { background: rgb(255 255 255 / .86); } }
+.wt-skipper:active { scale: .97; }
+.wt-skipper:focus-visible { outline: 2px solid #00fd74; outline-offset: 3px; }
+.wt-skipper svg { width: 1.4rem; height: 1.4rem; }
+.wt-skipper[data-way="down"] svg { transform: rotate(180deg); }
 .is-live .wt-end { position: absolute; left: 0; right: 0; bottom: 4rem; z-index: 3; margin: 0; opacity: 0; visibility: hidden; }
 
 /* ---------- what Reclaim finds ----------
@@ -972,8 +1000,11 @@ img, video, canvas, svg { display: block; max-width: 100%; }
   .is-live .wt-cap p { margin-top: .8rem; font-size: 1.6rem; }
   .is-live .wt-pill { bottom: 2.4rem; }
   .wt-pill button { height: 3.2rem; padding: 0 1.2rem; font-size: 1.3rem; }
-  .wt-pill button:not(.is-current, .wt-skip) { width: 3.2rem; padding: 0; font-size: 0; }   /* phones: a dot per step, the current one named */
-  .wt-pill button:not(.is-current, .wt-skip)::before { content: ""; display: block; width: .6rem; height: .6rem; margin: auto; border-radius: 50%; background: currentColor; }
+  .wt-pill button:not(.is-current) { width: 3.2rem; padding: 0; font-size: 0; }   /* phones: a dot per step, the current one named */
+  .is-live .wt-pill { left: var(--grid-side-margin); }   /* phones: the step dots to the left, Skip to the right of them */
+  .wt-skipper { bottom: 2.4rem; height: 4.2rem; padding: 0 1.4rem 0 1.6rem; font-size: 1.4rem; }
+  .wt-skipper-long { display: none; }
+  .wt-pill button:not(.is-current)::before { content: ""; display: block; width: .6rem; height: .6rem; margin: auto; border-radius: 50%; background: currentColor; }
   .wt-end { padding-inline: var(--grid-side-margin); }
   .is-live .wt-end { bottom: 4rem; }
   .grid1 .content { grid-template-columns: repeat(2, 1fr); gap: .8rem; grid-column: 1 / -1; }

@@ -16,8 +16,9 @@ export function findingReference(finding: Finding): string {
 
 /** The one next step a finding offers. "Start recovery" never appears on an ineligible finding. */
 export function nextActionLabel(finding: Finding, eligible: boolean): string {
-  if (eligible) return 'Authorize recovery'
-  if (finding.classification === 'preventive_security') return 'Resolve security alert'
-  if (finding.classification === 'future_savings') return 'View savings opportunity'
-  return 'Review evidence'
+  if (eligible) return 'Approve the request to the vendor'
+  if (finding.classification === 'preventive_security') return 'Check the new bank details with the vendor'
+  if (finding.classification === 'future_savings') return 'Decide if this is worth fixing'
+  if (finding.type === 'exact_duplicate' || finding.type === 'near_duplicate') return 'Answer the evidence questions'
+  return 'Check the records'
 }

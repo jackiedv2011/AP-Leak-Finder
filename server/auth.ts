@@ -24,6 +24,8 @@ export interface PublicUser {
   onboardingSeenAt: number | null
   /** What onboarding learned; null if it was skipped or never answered. */
   onboardingProfile: OnboardingProfile | null
+  /** Null until the person has finished or skipped the dashboard tour, which shows once per account. */
+  tourSeenAt: number | null
 }
 
 const VERIFY_TTL_MS = 24 * 60 * 60 * 1000
@@ -74,6 +76,7 @@ export class AuthService {
       plan: planOf(row.plan),
       onboardingSeenAt: row.onboarding_seen_at,
       onboardingProfile: readProfile(row.onboarding_profile),
+      tourSeenAt: row.tour_seen_at ?? null,
     }
   }
 
@@ -83,6 +86,10 @@ export class AuthService {
 
   markOnboardingSeen(userId: string): void {
     this.db.prepare('UPDATE users SET onboarding_seen_at = ? WHERE id = ?').run(Date.now(), userId)
+  }
+
+  markTourSeen(userId: string): void {
+    this.db.prepare('UPDATE users SET tour_seen_at = ? WHERE id = ? AND tour_seen_at IS NULL').run(Date.now(), userId)
   }
 
   /** Stores onboarding's answers and marks onboarding as done in the same write. */

@@ -465,6 +465,12 @@ export function createApp(deps: AppDependencies): App {
       return json(200, { user: publicUser(auth.findUserById(user.id)!) })
     }
 
+    if (path === '/api/account/tour-seen' && method === 'POST') {
+      const user = requireUser(req)
+      auth.markTourSeen(user.id)
+      return json(200, { user: publicUser(auth.findUserById(user.id)!) })
+    }
+
     if (path === '/api/account/onboarding' && method === 'POST') {
       const user = requireUser(req)
       requireJson(req)

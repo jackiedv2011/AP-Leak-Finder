@@ -647,7 +647,7 @@ describe('AuditApp', () => {
     render(<AuditApp />)
     await waitFor(DASHBOARD_READY)
     fireEvent.click(dashboardRows()[0])
-    fireEvent.click(await screen.findByRole('button', { name: /^This is real/ }))
+    fireEvent.click(await screen.findByRole('button', { name: /^Not an issue/ }))
     const dialog = await screen.findByTestId('decision-dialog')
     fireEvent.click(within(dialog).getByLabelText(/^Not an issue/))
     fireEvent.change(within(dialog).getByLabelText('Why is it expected?'), { target: { value: 'known_vendor_exception' } })

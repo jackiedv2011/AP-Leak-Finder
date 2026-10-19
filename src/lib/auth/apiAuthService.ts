@@ -31,6 +31,7 @@ export interface ServerUser {
   plan: Plan
   onboardingSeenAt: number | null
   onboardingProfile: OnboardingProfile | null
+  tourSeenAt?: number | null
 }
 
 export type SignUpResult = { ok: true; requiresVerification: true; email: string } | { ok: true; requiresVerification: false; user: AuthUser } | AuthError
@@ -151,6 +152,12 @@ export async function fetchEntitlements(): Promise<Entitlements | null> {
 
 export async function markOnboardingSeen(): Promise<AuthUser | null> {
   const { status, body } = await call<{ user: ServerUser }>('/api/account/onboarding-seen', { method: 'POST' })
+  return status === 200 ? toAuthUser(body.user) : null
+}
+
+/** Records that the dashboard tour was finished or skipped, so it never opens again for this account. */
+export async function markTourSeen(): Promise<AuthUser | null> {
+  const { status, body } = await call<{ user: ServerUser }>('/api/account/tour-seen', { method: 'POST' })
   return status === 200 ? toAuthUser(body.user) : null
 }
 

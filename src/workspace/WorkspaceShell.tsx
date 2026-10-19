@@ -24,6 +24,7 @@ import {
 } from 'lucide-react'
 import { useOptionalAuth } from '@/lib/auth/AuthContext'
 import { CustomizeSheet } from './Customize'
+import { WorkspaceTour } from './WorkspaceTour'
 import { PreferencesProvider, usePreferences } from './preferences'
 import { resolveTheme } from './theme'
 import './workspace.css'
@@ -163,7 +164,7 @@ function Shell({ mode, onModeChange, auditCount, findingCount, recoveryCount, wo
   }, [switcherOpen])
 
   const renderItem = ({ mode: entryMode, label, icon: Icon, count }: NavEntry) => <li key={entryMode}>
-    <button type="button" className="wk-nav-item" aria-current={mode === entryMode ? 'page' : undefined} title={prefs.sidebarCollapsed ? label : undefined} onClick={() => { onModeChange(entryMode); setMobileNavOpen(false) }}>
+    <button type="button" className="wk-nav-item" data-tour={`nav-${entryMode}`} aria-current={mode === entryMode ? 'page' : undefined} title={prefs.sidebarCollapsed ? label : undefined} onClick={() => { onModeChange(entryMode); setMobileNavOpen(false) }}>
       <Icon aria-hidden="true" /><span>{label}</span>{count !== undefined && count > 0 ? <span className="wk-nav-count">{count}</span> : null}
     </button>
   </li>
@@ -176,19 +177,19 @@ function Shell({ mode, onModeChange, auditCount, findingCount, recoveryCount, wo
       <button type="button" className="wk-brandrow" onClick={() => { onModeChange('dashboard'); setMobileNavOpen(false) }} aria-label="Reclaim overview">
         <Mark /><b>Reclaim</b><span className="wk-plan-chip" data-plan={plan}>{plan === 'local' ? 'Local' : plan === 'guest' ? 'guest' : PLAN_LABEL[plan]}</span>
       </button>
-      <button ref={findTrigger} type="button" className="wk-find" onClick={openFind} title="Find (F)"><Search aria-hidden="true" /><span>Find</span><kbd aria-hidden="true">F</kbd></button>
+      <button ref={findTrigger} type="button" className="wk-find" data-tour="find" onClick={openFind} title="Find (F)"><Search aria-hidden="true" /><span>Find</span><kbd aria-hidden="true">F</kbd></button>
       <nav aria-label="Workspace">
         <ul className="wk-nav">{primary.map(renderItem)}</ul>
         <div className="wk-nav-rule" />
         <ul className="wk-nav">{secondary.map(renderItem)}</ul>
       </nav>
-      <div className="wk-side-foot">
-        <a className="wk-side-btn" href="/" title="Back to the landing page"><Globe aria-hidden="true" /><span>Back to landing page</span></a>
-        <button type="button" className="wk-side-btn" onClick={() => { setCustomizeOpen(true); setMobileNavOpen(false) }} title="Customize"><SlidersHorizontal aria-hidden="true" /><span>Customize</span></button>
-        <button type="button" className="wk-side-btn wk-collapse-btn" onClick={() => update({ sidebarCollapsed: !prefs.sidebarCollapsed })} title={prefs.sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}>
+      <div className="wk-side-foot" data-tour="side-foot">
+        <a className="wk-side-btn" href="/" title="Back to the landing page" data-tour="side-landing"><Globe aria-hidden="true" /><span>Back to landing page</span></a>
+        <button type="button" className="wk-side-btn" data-tour="side-customize" onClick={() => { setCustomizeOpen(true); setMobileNavOpen(false) }} title="Customize"><SlidersHorizontal aria-hidden="true" /><span>Customize</span></button>
+        <button type="button" className="wk-side-btn wk-collapse-btn" data-tour="side-collapse" onClick={() => update({ sidebarCollapsed: !prefs.sidebarCollapsed })} title={prefs.sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}>
           {prefs.sidebarCollapsed ? <PanelLeftOpen aria-hidden="true" /> : <PanelLeftClose aria-hidden="true" />}<span>Collapse sidebar</span>
         </button>
-        {user ? <div className="wk-account">
+        {user ? <div className="wk-account" data-tour="account">
           <span className="wk-avatar" aria-hidden="true">{initialsOf(user.name)}</span>
           <div className="wk-account-copy" style={{ minWidth: 0 }}><div className="wk-account-name">{user.isGuest ? 'Guest session' : user.name}</div><div className="wk-account-sub">{user.isGuest ? 'Saved in this browser' : user.company || user.email}</div></div>
           <button type="button" className="wk-icon-btn" onClick={handleLogOut} aria-label={user.isGuest ? 'Exit guest session' : 'Log out'} title={user.isGuest ? 'Exit guest session' : 'Log out'}><LogOut aria-hidden="true" /></button>
@@ -199,7 +200,7 @@ function Shell({ mode, onModeChange, auditCount, findingCount, recoveryCount, wo
       <header className="wk-topbar">
         <button type="button" className="wk-icon-btn wk-menu-btn" onClick={() => setMobileNavOpen(true)} aria-label="Open navigation"><Menu aria-hidden="true" /></button>
         <div className="wk-crumbs">
-          <div className="wk-switcher" ref={switcher}>
+          <div className="wk-switcher" ref={switcher} data-tour="switcher">
             <button type="button" className="wk-switcher-btn" aria-expanded={switcherOpen} onClick={() => setSwitcherOpen((open) => !open)} aria-label={`Current audit: ${workspaceLabel}. Choose an audit`}>
               <span className="wk-switcher-icon"><Mark /></span><span>{workspaceLabel}</span><ChevronDown aria-hidden="true" />
             </button>
@@ -214,11 +215,11 @@ function Shell({ mode, onModeChange, auditCount, findingCount, recoveryCount, wo
           <ChevronRight aria-hidden="true" />
           {finding ? <><button type="button" className="wk-more" style={{ marginRight: 0 }} onClick={() => onModeChange('findings')}>Findings</button><ChevronRight aria-hidden="true" /><strong>{finding}</strong></> : <strong>{title}</strong>}
         </div>
-        <div className="wk-topbar-actions">
-          <button type="button" className="wk-icon-btn" onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')} aria-label={resolvedTheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'} title={resolvedTheme === 'dark' ? 'Light mode' : 'Dark mode'}>
+        <div className="wk-topbar-actions" data-tour="topbar-actions">
+          <button type="button" className="wk-icon-btn" data-tour="theme" onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')} aria-label={resolvedTheme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'} title={resolvedTheme === 'dark' ? 'Light mode' : 'Dark mode'}>
             {resolvedTheme === 'dark' ? <Sun aria-hidden="true" /> : <Moon aria-hidden="true" />}
           </button>
-          <button type="button" className="wk-icon-btn" onClick={() => setCustomizeOpen(true)} aria-label="Customize" title="Customize"><SlidersHorizontal aria-hidden="true" /></button>
+          <button type="button" className="wk-icon-btn" data-tour="customize" onClick={() => setCustomizeOpen(true)} aria-label="Customize" title="Customize"><SlidersHorizontal aria-hidden="true" /></button>
           {actions}
         </div>
       </header>
@@ -228,6 +229,7 @@ function Shell({ mode, onModeChange, auditCount, findingCount, recoveryCount, wo
       </main>
     </div>
     <CustomizeSheet open={customizeOpen} onOpenChange={setCustomizeOpen} />
+    {user ? <WorkspaceTour mode={mode} caseOpen={finding !== null} onModeChange={onModeChange} onMobileNav={setMobileNavOpen} /> : null}
     {findOpen ? <div className="wk-command-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) closeFind() }}><section className="wk-command" role="dialog" aria-modal="true" aria-labelledby="wk-command-title">
       <h2 id="wk-command-title" className="wk-sr-only">Find in workspace</h2><div className="wk-command-input-row"><Search aria-hidden="true" /><input ref={findInput} type="search" value={findQuery} onChange={(event) => { setFindQuery(event.target.value); setActiveIndex(0) }} placeholder="Find a page, vendor or finding…" aria-label="Find pages or findings" /><button type="button" className="wk-icon-btn" aria-label="Close search" onClick={closeFind}><X aria-hidden="true" /></button></div>
       <div className="wk-command-results"><span className="wk-label wk-command-caption">{query ? 'Results' : 'Go to'}</span>{results.length ? results.map((result, index) => { const Icon = result.icon; return <button key={result.key} type="button" className="wk-command-result" data-active={index === activeIndex || undefined} onMouseEnter={() => setActiveIndex(index)} onClick={() => { result.open(); closeFind() }}><Icon aria-hidden="true" /><span><strong>{result.label}</strong><small>{result.detail}</small></span>{index === activeIndex ? <CornerDownLeft aria-hidden="true" /> : null}</button> }) : <p className="wk-command-empty">Nothing matches “{findQuery}”</p>}</div>

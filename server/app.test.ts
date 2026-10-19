@@ -377,6 +377,17 @@ describe('plans and entitlements', () => {
     expect((await c.get('/api/auth/me')).body.user.onboardingSeenAt).toBeTypeOf('number')
   })
 
+  it('the dashboard tour shows once per account: the first finish or skip is kept', async () => {
+    const c = new Client()
+    await signUpAndVerify(c, alice)
+    expect((await c.get('/api/auth/me')).body.user.tourSeenAt).toBeNull()
+    const first = (await c.post('/api/account/tour-seen')).body.user.tourSeenAt
+    expect(first).toBeTypeOf('number')
+    expect((await c.post('/api/account/tour-seen')).body.user.tourSeenAt).toBe(first)
+    expect((await c.get('/api/auth/me')).body.user.tourSeenAt).toBe(first)
+    expect((await new Client().post('/api/account/tour-seen')).status).toBe(401)
+  })
+
   it('onboarding answers are saved on the account, and malformed ones are refused', async () => {
     const c = new Client()
     await signUpAndVerify(c, alice)

@@ -181,7 +181,7 @@ function RecoveryFacts({ finding, state }: { finding: Finding; state: CaseState 
   )
 }
 
-const STEPS = ['Review evidence', 'Approve request', 'Contact vendor', 'Verify return', 'Reconcile'] as const
+const STEPS = ['Prove it', 'Approve the request', 'Send it to the vendor', 'Money comes back', 'Record it in your books'] as const
 
 function historicalRecoveryClaim(finding: Finding, state: CaseState): boolean {
   return finding.class === 'recoverable' || (['exact_duplicate', 'near_duplicate'].includes(finding.type) &&
@@ -206,6 +206,7 @@ export function CaseDetail(props: CaseDetailProps) {
   const entitlements = useEntitlements()
   const [deciding, setDeciding] = useState<DecisionValue | null>(null)
   const internal = !historicalRecoveryClaim(finding, state)
+  const duplicate = finding.type === 'exact_duplicate' || finding.type === 'near_duplicate'
   const canChangeDecision = state.decision !== null && (state.recoveryStage === null || state.recoveryStage === 'confirmed')
   const canReopenOutcome = state.recoveryStage === 'recovered' || state.recoveryStage === 'not_recovered'
   const hasClosedRemainder = !internal && state.recoveryStage === 'recovered' && verifiedReturned(state) > 0 && Math.round((state.requestedAmount ?? 0) * 100) > Math.round(verifiedReturned(state) * 100)
@@ -403,18 +404,25 @@ export function CaseDetail(props: CaseDetailProps) {
             <div className="wk-panelcard-head">
               <div>
                 <h2 id="case-decision">{state.decision === null ? 'Your decision' : 'Decision'}</h2>
-                <p>{state.decision === null ? <>Next: <strong>{nextActionLabel(finding, gate.eligible)}</strong>. {!internal ? 'Nothing is sent to a vendor until you authorize it.' : finding.type === 'exact_duplicate' || finding.type === 'near_duplicate' ? 'It counts as money to claim once you confirm its evidence.' : 'This is checked inside your business. It is not money owed by a vendor.'}</> : 'Recorded on this finding.'}</p>
+                <p>{state.decision === null ? <>Next: <strong>{nextActionLabel(finding, gate.eligible)}</strong>. {!internal ? 'Nothing is sent to a vendor until you authorize it.' : duplicate ? 'Fill in “Confirm the evidence” and save, and this becomes money you can ask the vendor for. If it’s clearly not a duplicate, choose Not an issue.' : 'This is checked inside your business. It is not money owed by a vendor.'}</> : 'Recorded on this finding.'}</p>
               </div>
             </div>
             <div className="wk-panelcard-body">
               {state.decision === null ? (
                 <div className="wk-decide" role="group" aria-label="Review this finding">
-                  {CHOICES.map(({ value, title, detail, internal: internalDetail, icon: Icon }) => (
-                    <button key={value} type="button" className="wk-decide-btn" onClick={() => setDeciding(value)}>
+                  {CHOICES.map(({ value, title, detail, internal: internalDetail, icon: Icon }) => {
+                    // An unproven duplicate becomes a claim through the evidence questions, not an internal review.
+                    const toEvidence = value === 'confirmed' && internal && duplicate && onSaveEvidence !== undefined
+                    return <button key={value} type="button" className="wk-decide-btn" onClick={() => {
+                      if (!toEvidence) return setDeciding(value)
+                      const form = document.getElementById('evidence-review')
+                      form?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                      form?.querySelector<HTMLInputElement>('input:not([type=checkbox])')?.focus({ preventScroll: true })
+                    }}>
                       <Icon aria-hidden="true" />
-                      <span><strong>{title}</strong><small>{internal ? internalDetail : detail}</small></span>
+                      <span><strong>{title}</strong><small>{toEvidence ? 'Answer the evidence questions to turn it into a claim.' : internal ? internalDetail : detail}</small></span>
                     </button>
-                  ))}
+                  })}
                 </div>
               ) : (
                 <div className="wk-stack">
