@@ -46,6 +46,9 @@ export default defineConfig(({ mode }) => {
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
     exclude: ['**/node_modules/**', '**/dist/**', '**/restore-backup-*/**'],
+    // `// @vitest-environment jsdom-server` loads vitest-environment-jsdom-server: jsdom on the
+    // node pipeline, for front-end tests that start the real server (see the file for why).
+    alias: { 'vitest-environment-jsdom-server': path.resolve(__dirname, './src/test/jsdomServerEnvironment.ts') },
   },
   }
 })

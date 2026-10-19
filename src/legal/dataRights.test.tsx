@@ -1,3 +1,4 @@
+// @vitest-environment jsdom-server
 /**
  * Front end + real server: accepting changed Terms, and deleting an account
  * from Settings.

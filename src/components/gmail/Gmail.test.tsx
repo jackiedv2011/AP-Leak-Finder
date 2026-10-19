@@ -1,3 +1,4 @@
+// @vitest-environment jsdom-server
 /**
  * Connect, review, edit and send, end to end: the real recovery panel in the
  * browser, a real Reclaim server, and a stand-in for Google that records what

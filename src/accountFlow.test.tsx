@@ -1,3 +1,4 @@
+// @vitest-environment jsdom-server
 /**
  * Front end + real server, in one process: accounts, data isolation between
  * two people sharing a browser, log-out/log-in round trips, and the legacy

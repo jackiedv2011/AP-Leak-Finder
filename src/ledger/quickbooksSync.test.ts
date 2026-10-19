@@ -1,3 +1,4 @@
+// @vitest-environment jsdom-server
 import { afterEach, describe, expect, it } from 'vitest'
 import { parseCsv } from '@/lib/csv'
 import { toLedgerImport, type QuickBooksPull } from '../../server/quickbooks.ts'

@@ -1,3 +1,4 @@
+// @vitest-environment jsdom-server
 /**
  * Plan changes, front end + real server + fake Stripe in one process: the
  * workspace unlocks the moment a subscription starts and locks again when a

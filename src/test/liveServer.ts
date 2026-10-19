@@ -11,6 +11,7 @@ import { projectSync } from '@/ledger/projectSync'
  * A real Reclaim server for front-end tests, plus a `fetch` that behaves like
  * a browser tab: relative `/api` URLs resolve against it and cookies persist.
  * Swapping the jar is how a test switches "browsers" (or users).
+ * Test files that use it start with `// @vitest-environment jsdom-server`.
  */
 export interface LiveServer {
   app: App
