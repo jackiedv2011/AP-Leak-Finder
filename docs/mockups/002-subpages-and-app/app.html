@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>App mockups</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400..700&family=Geist+Mono:wght@400;500&family=JetBrains+Mono:wght@400;500&family=Schibsted+Grotesk:ital,wght@0,400..800;1,400..800&display=block" rel="stylesheet">
+<style>
+  :root {
+    --paper: #fcfbf7; --ink: #08100c; --grey-100: #f4f1ea; --grey-200: #ebe7de; --grey-300: #dedad0;
+    --grey-500: #827d73; --grey-600: #47443e; --green: #00fd74;
+    --display: 'Schibsted Grotesk', 'Geist', ui-sans-serif, system-ui, sans-serif;
+    --text: 'Geist', ui-sans-serif, system-ui, sans-serif;
+    --mono: 'Geist Mono', ui-monospace, monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { font-size: 10px; background: var(--grey-200); }
+  @media (min-width: 1024px) { html { font-size: clamp(5.33333px, .694444vw, 17.7778px); } }
+  @media (max-width: 1023px) { html { font-size: clamp(8.53333px, 2.66667vw, 11px); } }
+  body { color: var(--ink); background: var(--paper); font: 1.6rem/1.45 var(--text); -webkit-font-smoothing: antialiased; overflow-x: clip; }
+  a { color: inherit; }
+  .mock-tag { position: fixed; right: 1.2rem; bottom: 1.2rem; z-index: 10; padding: .4rem .8rem; border-radius: .6rem; background: var(--ink); color: var(--paper); font: 500 1.1rem/1.4 var(--mono); letter-spacing: .1em; }
+
+  .hero { padding: 12rem 8rem 9.6rem; background: var(--grey-200); }
+  .eyebrow { font: 400 1.3rem/1.3 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: color-mix(in srgb, currentColor 55%, transparent); }
+  h1 { max-width: 16ch; margin-top: 2.4rem; font: 600 8rem/.95 var(--display); letter-spacing: -.035em; }
+  h1 em, h2 em { font-style: italic; }
+  .lede { max-width: 64rem; margin-top: 3.2rem; color: var(--grey-600); font-size: 2rem; line-height: 1.4; }
+
+  .ink { margin: 0 1.6rem; padding: 9.6rem 6.4rem; border-radius: 2.4rem; background: var(--ink); color: var(--paper); transform: translateY(-1.6rem); }
+  .ink ol { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4rem; list-style: none; }
+  .ink li .n { font: 400 1.2rem var(--mono); letter-spacing: .08em; opacity: .55; }
+  .ink li h3 { margin-top: 1.6rem; font: 600 2.8rem/1.15 var(--display); letter-spacing: -.03em; }
+  .ink li p { margin-top: 1.2rem; color: color-mix(in srgb, var(--paper) 70%, transparent); font-size: 1.6rem; }
+  .ink code { font: 400 1.4rem var(--mono); color: var(--paper); }
+
+  main { padding: 6.4rem 8rem 12rem; }
+  section.pair { padding: 6.4rem 0; border-top: 1px solid var(--grey-300); }
+  section.pair:first-child { border-top: 0; padding-top: 0; }
+  section.pair header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 1.6rem 4rem; margin-bottom: 3.2rem; }
+  h2 { font: 600 4rem/1.1 var(--display); letter-spacing: -.03em; }
+  section.pair header p { max-width: 64rem; color: var(--grey-600); font-size: 1.7rem; }
+  .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2.4rem; }
+  .grid.one { grid-template-columns: minmax(0, 36rem) minmax(0, 1fr); align-items: start; }
+  figure { min-width: 0; }
+  figure a { display: block; overflow: hidden; border: 1px solid var(--grey-300); border-radius: 1.2rem; background: var(--grey-100); }
+  figure img { display: block; width: 100%; height: auto; }
+  figcaption { display: flex; gap: 1.2rem; margin-top: 1.2rem; color: var(--grey-600); font-size: 1.5rem; }
+  figcaption b { flex: none; font: 500 1.2rem/1.9 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--grey-500); }
+  figcaption b.after { color: var(--ink); }
+  figcaption b.after::before { content: ''; display: inline-block; width: .7rem; height: .7rem; margin-right: .6rem; border-radius: 50%; background: var(--green); vertical-align: .1rem; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 1.5rem; }
+  th, td { padding: 1.1rem 1.2rem; border-bottom: 1px solid var(--grey-300); text-align: left; vertical-align: middle; }
+  th { color: var(--grey-500); font: 400 1.2rem var(--mono); letter-spacing: .08em; text-transform: uppercase; }
+  td code { font: 400 1.35rem var(--mono); }
+  .sw { display: inline-block; width: 1.6rem; height: 1.6rem; margin-right: .8rem; border: 1px solid rgb(0 0 0 / .12); border-radius: .4rem; vertical-align: -.3rem; }
+  .table-wrap { overflow-x: auto; }
+
+  .pieces { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.6rem; }
+  .tile { overflow: hidden; border-radius: 2.4rem; }
+  .tile img { display: block; width: 100%; aspect-ratio: 2 / 1; object-fit: contain; object-position: 50% 40%; }
+  .tile .cap { display: flex; flex-direction: column; align-items: center; gap: .6rem; padding: 0 2.4rem 2.4rem; text-align: center; }
+  .tile .cap strong { font: 500 1.7rem/1.2 var(--text); letter-spacing: -.015em; }
+  .tile .cap small { font: 400 1.15rem/1.3 var(--mono); letter-spacing: .08em; text-transform: uppercase; opacity: .62; }
+  .notes { max-width: 80rem; margin-top: 2.4rem; color: var(--grey-600); font-size: 1.6rem; }
+  .notes li { margin-top: .8rem; margin-left: 2rem; }
+
+  @media (max-width: 1023px) {
+    .hero { padding: 9.6rem 1.6rem 6.4rem; }
+    h1 { font-size: 4.8rem; }
+    .ink { margin: 0 .8rem; padding: 6.4rem 2rem; }
+    .ink ol { grid-template-columns: 1fr; gap: 3.2rem; }
+    main { padding: 4rem 1.6rem 9.6rem; }
+    .grid, .grid.one, .pieces { grid-template-columns: minmax(0, 1fr); }
+    h2 { font-size: 3.2rem; }
+  }
+</style>
+</head>
+<body>
+<span class="mock-tag">MOCKUP</span>
+
+<header class="hero">
+  <p class="eyebrow">Plan 002 · stage 1 · the app</p>
+  <h1>The app, on the landing’s paper and <em>ink</em>.</h1>
+  <p class="lede">Today’s dashboard, Launch and Onboarding next to the same screens with two override sheets injected into the running app. Only tokens and type change in the dashboard; Launch and Onboarding also lose the old black-clay 3D for the landing’s exhibit tiles.</p>
+</header>
+
+<div class="ink">
+  <ol>
+    <li><span class="n">01</span><h3>Warm light, ink dark.</h3><p>Light moves from cool greys to the landing’s paper (<code>#f4f1ea</code> canvas, <code>#fcfbf7</code> cards). Dark moves from true black to its green-black ink (<code>#08100c</code>, <code>#121a16</code>).</p></li>
+    <li><span class="n">02</span><h3>Schibsted for display.</h3><p>Page titles, display headings and the headline money switch to Schibsted Grotesk. Launch and Onboarding drop Barlow Condensed capitals for sentence case.</p></li>
+    <li><span class="n">03</span><h3>The new 3D family.</h3><p>The black cubes and cream paper loops are hidden. Each art slot is a pastel exhibit tile with a flat placeholder of the piece still to be rendered.</p></li>
+  </ol>
+</div>
+
+<main>
+  <section class="pair">
+    <header><h2>Overview, light</h2><p>Same layout, same classes. Cards sit on warm paper, the type is ink, and green is spent once: the next-finding button.</p></header>
+    <div class="grid">
+      <figure><a href="shots/app-overview-before-light-1440.png"><img src="shots/app-overview-before-light-1440.png" alt="Overview today, light" loading="lazy"></a><figcaption><b>Before</b>Cool greys (#f3f3f3 / #fff / #e2e2e2), Geist titles and totals.</figcaption></figure>
+      <figure><a href="shots/app-overview-after-light-1440.png"><img src="shots/app-overview-after-light-1440.png" alt="Overview with the new tokens, light" loading="lazy"></a><figcaption><b class="after">After</b>Paper and ink tokens, Schibsted for “Overview” and the four totals.</figcaption></figure>
+    </div>
+  </section>
+
+  <section class="pair">
+    <header><h2>Overview, dark</h2><p>The dark theme takes the landing’s ink sections instead of true black.</p></header>
+    <div class="grid">
+      <figure><a href="shots/app-overview-before-dark-1440.png"><img src="shots/app-overview-before-dark-1440.png" alt="Overview today, dark" loading="lazy"></a><figcaption><b>Before</b>True black (#000 / #111 / #242424).</figcaption></figure>
+      <figure><a href="shots/app-overview-after-dark-1440.png"><img src="shots/app-overview-after-dark-1440.png" alt="Overview with the new tokens, dark" loading="lazy"></a><figcaption><b class="after">After</b>Green-black ink (#08100c / #121a16 / #212a25), paper text.</figcaption></figure>
+    </div>
+  </section>
+
+  <section class="pair">
+    <header><h2>Findings</h2><p>The densest table in the app, to check the warm lines and muted text still read.</p></header>
+    <div class="grid">
+      <figure><a href="shots/app-findings-before-light-1440.png"><img src="shots/app-findings-before-light-1440.png" alt="Findings today, light" loading="lazy"></a><figcaption><b>Before</b>Light, today.</figcaption></figure>
+      <figure><a href="shots/app-findings-after-light-1440.png"><img src="shots/app-findings-after-light-1440.png" alt="Findings with the new tokens, light" loading="lazy"></a><figcaption><b class="after">After</b>Light: warm lines, muted text kept at 5:1.</figcaption></figure>
+      <figure><a href="shots/app-findings-before-dark-1440.png"><img src="shots/app-findings-before-dark-1440.png" alt="Findings today, dark" loading="lazy"></a><figcaption><b>Before</b>Dark, today.</figcaption></figure>
+      <figure><a href="shots/app-findings-after-dark-1440.png"><img src="shots/app-findings-after-dark-1440.png" alt="Findings with the new tokens, dark" loading="lazy"></a><figcaption><b class="after">After</b>Dark: ink canvas, grey-900 table.</figcaption></figure>
+    </div>
+  </section>
+
+  <section class="pair">
+    <header><h2>Launch</h2><p>The first screen of a new workspace sits on the landing hero’s grey, so it reads as the page you came from.</p></header>
+    <div class="grid">
+      <figure><a href="shots/app-launch-before-light-1440.png"><img src="shots/app-launch-before-light-1440.png" alt="Launch today" loading="lazy"></a><figcaption><b>Before</b>Barlow capitals, black-clay tray and cube loops.</figcaption></figure>
+      <figure><a href="shots/app-launch-after-light-1440.png"><img src="shots/app-launch-after-light-1440.png" alt="Launch with the new style" loading="lazy"></a><figcaption><b class="after">After</b>Schibsted sentence case; blue and orange exhibit tiles (pieces to render).</figcaption></figure>
+    </div>
+  </section>
+
+  <section class="pair">
+    <header><h2>Onboarding, first screen</h2><p>Same copy. One italic word, as on the landing, needs a one-line markup change in <code>Onboarding.tsx</code>.</p></header>
+    <div class="grid">
+      <figure><a href="shots/app-onboarding-before-light-1440.png"><img src="shots/app-onboarding-before-light-1440.png" alt="Onboarding welcome today" loading="lazy"></a><figcaption><b>Before</b>“LET’S FIND MONEY THAT’S YOURS.” over black cubes and cream paper.</figcaption></figure>
+      <figure><a href="shots/app-onboarding-after-light-1440.png"><img src="shots/app-onboarding-after-light-1440.png" alt="Onboarding welcome with the new style" loading="lazy"></a><figcaption><b class="after">After</b>“Let’s find money that’s <em>yours</em>.” over a green coin-stack tile.</figcaption></figure>
+    </div>
+  </section>
+
+  <section class="pair">
+    <header><h2>Onboarding, step 2 (extra)</h2><p>Four choice cards take the landing’s four-hue rotation. Two use the real exhibit stills; two are placeholders.</p></header>
+    <div class="grid">
+      <figure><a href="shots/app-onboarding-goals-before-light-1440.png"><img src="shots/app-onboarding-goals-before-light-1440.png" alt="Onboarding goals today" loading="lazy"></a><figcaption><b>Before</b>Cream paper, black cube and green gem loops.</figcaption></figure>
+      <figure><a href="shots/app-onboarding-goals-after-light-1440.png"><img src="shots/app-onboarding-goals-after-light-1440.png" alt="Onboarding goals with the new style" loading="lazy"></a><figcaption><b class="after">After</b>Blue placeholder · green echo still · violet piece still · orange placeholder.</figcaption></figure>
+    </div>
+  </section>
+
+  <section class="pair">
+    <header><h2>Phone and dark Launch (extra)</h2><p>At 390 px nothing in the layout moves; the tokens carry over. Launch in dark keeps the pastel tiles.</p></header>
+    <div class="grid one">
+      <figure><a href="shots/app-overview-after-light-390.png"><img src="shots/app-overview-after-light-390.png" alt="Overview on a phone with the new tokens" loading="lazy"></a><figcaption><b class="after">After</b>Overview, 390 × 844, full page.</figcaption></figure>
+      <figure><a href="shots/app-launch-after-dark-1440.png"><img src="shots/app-launch-after-dark-1440.png" alt="Launch in dark with the new style" loading="lazy"></a><figcaption><b class="after">After</b>Launch, dark: ink ground, grey-900 cards, the same pastel tiles.</figcaption></figure>
+    </div>
+  </section>
+
+  <section class="pair">
+    <header><h2>Final tokens</h2><p>From <code>workspace-tokens.css</code>, scoped like <code>reclaim.css</code>. Accents other than green and mono are untouched.</p></header>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Token</th><th>Light today</th><th>Light after</th><th>Dark today</th><th>Dark after</th></tr></thead>
+        <tbody>
+          <tr><td><code>--bg</code></td><td><span class="sw" style="background:#f3f3f3"></span><code>#f3f3f3</code></td><td><span class="sw" style="background:#f4f1ea"></span><code>#f4f1ea</code></td><td><span class="sw" style="background:#000"></span><code>#000</code></td><td><span class="sw" style="background:#08100c"></span><code>#08100c</code></td></tr>
+          <tr><td><code>--bg-deep</code></td><td><code>#eaeaea</code></td><td><span class="sw" style="background:#ebe7de"></span><code>#ebe7de</code></td><td><code>#0c0c0c</code></td><td><span class="sw" style="background:#0e1712"></span><code>#0e1712</code></td></tr>
+          <tr><td><code>--surface</code></td><td><span class="sw" style="background:#fff"></span><code>#fff</code></td><td><span class="sw" style="background:#fcfbf7"></span><code>#fcfbf7</code></td><td><span class="sw" style="background:#111"></span><code>#111</code></td><td><span class="sw" style="background:#121a16"></span><code>#121a16</code></td></tr>
+          <tr><td><code>--surface-hi</code></td><td><code>#f6f6f6</code></td><td><code>#f6f3ec</code></td><td><code>#1a1a1a</code></td><td><code>#18211c</code></td></tr>
+          <tr><td><code>--surface-sunk</code></td><td><code>#f8f8f8</code></td><td><code>#f8f6f0</code></td><td><code>#0a0a0a</code></td><td><code>#0d1511</code></td></tr>
+          <tr><td><code>--line</code></td><td><span class="sw" style="background:#e2e2e2"></span><code>#e2e2e2</code></td><td><span class="sw" style="background:#e4e0d6"></span><code>#e4e0d6</code></td><td><span class="sw" style="background:#242424"></span><code>#242424</code></td><td><span class="sw" style="background:#212a25"></span><code>#212a25</code></td></tr>
+          <tr><td><code>--line-soft</code></td><td><code>#eeeeee</code></td><td><code>#ece8df</code></td><td><code>#1b1b1b</code></td><td><code>#1a231e</code></td></tr>
+          <tr><td><code>--line-strong</code></td><td><code>#cdcdcd</code></td><td><code>#c7c2b7</code></td><td><code>#3a3a3a</code></td><td><code>#36403a</code></td></tr>
+          <tr><td><code>--text</code></td><td><code>#0a0a0a</code></td><td><span class="sw" style="background:#08100c"></span><code>#08100c</code></td><td><code>#fff</code></td><td><span class="sw" style="background:#fcfbf7"></span><code>#fcfbf7</code></td></tr>
+          <tr><td><code>--text-dim</code></td><td><code>#3d3d3d</code></td><td><code>#47443e</code></td><td><code>#c6c6c6</code></td><td><code>#c9c6bd</code></td></tr>
+          <tr><td><code>--text-muted</code></td><td><code>#6b6b6b</code></td><td><code>#6b665d</code> (5.0:1)</td><td><code>#8e8e8e</code></td><td><code>#8f918a</code> (5.9:1)</td></tr>
+          <tr><td><code>--inverse / --on-inverse</code></td><td><code>#0a0a0a / #fff</code></td><td><code>#08100c / #fcfbf7</code></td><td><code>#fff / #000</code></td><td><code>#fcfbf7 / #08100c</code></td></tr>
+          <tr><td><code>--st-neutral-*</code></td><td><code>#5c5c5c · #efefef · #a3a3a3</code></td><td><code>#5e5a52 · #ede9e0 · #a8a296</code></td><td><code>#b0b0b0 · 8% white · #6f6f6f</code></td><td><code>#b3b2aa · 8% paper · #6f716b</code></td></tr>
+          <tr><td><code>--accent-ink / -soft</code> (green)</td><td><code>#00803a / #e3ffde</code></td><td><code>#0b7a3a / #dcf7e6</code></td><td><code>#00fd74 / 12%</code></td><td>unchanged</td></tr>
+          <tr><td><code>--f-display</code></td><td>Geist</td><td colspan="3">Schibsted Grotesk, on <code>.wk-display</code>, <code>.wk-head h1</code>, <code>.wk-total-value</code>, <code>.wk-head-figure .wk-money</code>, <code>.wk-figure-sm</code>, <code>.wk-flow-step strong</code> (proportional numerals)</td></tr>
+          <tr><td>Launch / Onboarding light <code>--bg</code></td><td><code>#f3f3f3</code></td><td><span class="sw" style="background:#ebe7de"></span><code>#ebe7de</code> (hero grey), lines <code>#dbd6cb</code>, muted <code>#67625a</code></td><td colspan="2">dark follows the workspace dark tokens</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="pair">
+    <header><h2>Pieces to render</h2><p>Flat placeholders in <code>pieces/*.svg</code>: one smooth object in one hue on its pastel, long soft shadow, off-white second material. Floors and hues are sampled from the four exhibit stills.</p></header>
+    <div class="pieces">
+      <div class="tile" style="background:#c2dff1;color:#0b2e48"><img src="pieces/ledger.svg" alt=""><div class="cap"><strong>Your payments</strong><small>Launch · record slabs dropping into a white tray</small></div></div>
+      <div class="tile" style="background:#f6cfb3;color:#4a1d0c"><img src="pieces/cafe.svg" alt=""><div class="cap"><strong>Our sample</strong><small>Launch · a coral café cup on a white saucer</small></div></div>
+      <div class="tile" style="background:#c4ead4;color:#0c3a23"><img src="pieces/coins.svg" alt=""><div class="cap"><strong>Welcome</strong><small>Onboarding · coin stack, top coin lifting back</small></div></div>
+      <div class="tile" style="background:#c2dff1;color:#0b2e48"><img src="pieces/unpaid.svg" alt=""><div class="cap"><strong>Unpaid invoices</strong><small>Onboarding goals · invoice slabs on a base</small></div></div>
+      <div class="tile" style="background:#f6cfb3;color:#4a1d0c"><img src="pieces/unsure.svg" alt=""><div class="cap"><strong>Not sure yet</strong><small>Onboarding goals · a sphere on a white disc</small></div></div>
+      <div class="tile" style="background:#d8d0f2;color:#241858"><img src="../../../landing-site/media/exhibits/piece/still.webp" alt="" style="object-fit:cover"><div class="cap"><strong>Credits or refunds</strong><small>Exists · the landing’s piece exhibit</small></div></div>
+    </div>
+    <ul class="notes">
+      <li>Hidden, not deleted: <code>public/onboarding/*</code> loops (welcome, card_upload, card_sample, ic_*, business, tools, how, data, finale). Steps not shot here get a caption-only tile in the right hue.</li>
+      <li>Reproduce: start <code>npm run dev:server</code> and <code>npm run dev</code>, then inject <code>workspace-tokens.css</code> and <code>onboarding-tokens.css</code> after load (they must stay last in <code>&lt;head&gt;</code>).</li>
+    </ul>
+  </section>
+</main>
+</body>
+</html>

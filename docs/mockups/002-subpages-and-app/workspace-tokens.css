@@ -1,0 +1,105 @@
+/* MOCKUP — workspace tokens on the landing's paper and ink.
+ *
+ * An override sheet for src/workspace/reclaim.css, injected after it into the running
+ * app (see docs/mockups/002-subpages-and-app/app.html). Tokens and fonts only: no layout,
+ * no class renamed, the Customize accents still flow through var(--accent).
+ *
+ * Light  → the landing's warm paper: canvas grey-100, paper cards, warm-grey lines, ink type.
+ * Dark   → the landing's green-black ink sections: ink canvas, grey-900 cards, grey-800 lines.
+ * Type   → Schibsted Grotesk for page titles, display headings and the headline money;
+ *          Geist stays for everything you read, Geist Mono for keys and labels.
+ *
+ * Scoped exactly as reclaim.css scopes its tokens. Dialogs that portal out of the app
+ * carry the .wk class themselves (UpgradeDialog etc.), so the same selectors reach them.
+ */
+
+/* ---------- tokens: light ---------- */
+html[data-surface='workspace'] .wk {
+  --bg: #f4f1ea;            /* landing --cl-grey-100 */
+  --bg-deep: #ebe7de;       /* landing --cl-grey-200, the hero grey: sidebar hover */
+  --surface: #fcfbf7;       /* landing paper */
+  --surface-hi: #f6f3ec;    /* row hover */
+  --surface-sunk: #f8f6f0;  /* table heads, queue foot */
+  --line: #e4e0d6;          /* between grey-300 #dedad0 and grey-200 */
+  --line-soft: #ece8df;
+  --line-strong: #c7c2b7;   /* landing --cl-grey-400 */
+  --text: #08100c;          /* ink */
+  --text-dim: #47443e;      /* landing --cl-grey-600 */
+  --text-muted: #6b665d;    /* landing grey-500 #827d73 darkened to 5:1 on the canvas (4.6:1 on #ebe7de) */
+  --inverse: #08100c;
+  --on-inverse: #fcfbf7;
+
+  --scrim: rgb(8 16 12 / .42);
+  --shadow-pop: 0 1px 0 rgb(8 16 12 / .02), 0 24px 60px -12px rgb(20 26 22 / .22);
+  --shadow-rest: 0 1px 2px rgb(20 26 22 / .045);
+
+  --kind-ink: #08100c;
+  --st-neutral-ink: #5e5a52; --st-neutral-soft: #ede9e0; --st-neutral-dot: #a8a296;
+
+  --f-display: 'Schibsted Grotesk', 'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* ---------- tokens: dark ---------- */
+html[data-surface='workspace'][data-theme='dark'] .wk {
+  --bg: #08100c;            /* ink */
+  --bg-deep: #0e1712;
+  --surface: #121a16;       /* landing --cl-grey-900 */
+  --surface-hi: #18211c;
+  --surface-sunk: #0d1511;
+  --line: #212a25;          /* landing --cl-grey-800 */
+  --line-soft: #1a231e;
+  --line-strong: #36403a;
+  --text: #fcfbf7;          /* paper */
+  --text-dim: #c9c6bd;
+  --text-muted: #8f918a;
+  --inverse: #fcfbf7;
+  --on-inverse: #08100c;
+
+  --st-neutral-ink: #b3b2aa; --st-neutral-soft: rgb(252 251 247 / .08); --st-neutral-dot: #6f716b;
+  --scrim: rgb(4 8 6 / .72);
+  --shadow-pop: 0 24px 70px rgb(0 0 0 / .55);
+  --shadow-rest: none;
+}
+
+/* ---------- accent: only the neutral ones move ----------
+   Green keeps --accent #00fd74 (the landing's money-back green); its soft chip takes the
+   landing's summary-card chip (#dcf7e6 / #0c5a2c). "Mono" becomes ink and paper. */
+html[data-surface='workspace'] .wk,
+html[data-surface='workspace'][data-accent='green'] .wk { --accent-ink: #0b7a3a; --accent-soft: #dcf7e6; }
+html[data-surface='workspace'][data-accent='mono'] .wk {
+  --accent: #08100c; --accent-hover: #1d2621; --on-accent: #fcfbf7;
+  --accent-ink: #08100c; --accent-soft: #ede9e0; --accent-ring: rgb(8 16 12 / .18);
+}
+html[data-surface='workspace'][data-theme='dark'] .wk,
+html[data-surface='workspace'][data-theme='dark'][data-accent='green'] .wk { --accent-ink: #00fd74; --accent-soft: rgb(0 253 116 / .12); }
+html[data-surface='workspace'][data-theme='dark'][data-accent='mono'] .wk { --accent: #fcfbf7; --accent-hover: #e9e7e0; --on-accent: #08100c; --accent-ink: #fcfbf7; --accent-soft: #1a231e; }
+
+/* ---------- display type: Schibsted Grotesk, sentence case ---------- */
+html[data-surface='workspace'] .wk-display { font-family: var(--f-display); letter-spacing: -.022em; }
+html[data-surface='workspace'] .wk-panel .wk-display.wk-h2,
+html[data-surface='workspace'] .wk-panel h2.wk-display { font-family: var(--f-display); letter-spacing: -.025em; }
+.wk-head h1 { font-family: var(--f-display); letter-spacing: -.03em; }
+
+/* headline money: the overview / recoveries totals, the case figure, the big counts */
+/* Schibsted's tabular setting gives the comma a full figure width ("$18 , 174"), so the big
+   figures use proportional numerals; tables and lists keep Geist's tabular ones. */
+.wk-total-value { font-family: var(--f-display); font-variant-numeric: proportional-nums; letter-spacing: -.035em; }
+.wk-head-figure .wk-money { font-family: var(--f-display); font-variant-numeric: proportional-nums; letter-spacing: -.035em; }
+html[data-surface='workspace'] .wk-figure-sm { font-family: var(--f-display); font-variant-numeric: proportional-nums; letter-spacing: -.035em; }
+.wk-flow-step strong { font-family: var(--f-display); font-variant-numeric: proportional-nums; letter-spacing: -.03em; }
+
+/* the Customize theme cards show the canvases they switch to */
+.wk-theme-preview[data-look='dark'] { background: #08100c; }
+.wk-theme-preview[data-look='system'] { background: linear-gradient(135deg, #f4f1ea 50%, #08100c 50%); }
+
+/* MOCKUP marker */
+html[data-surface='workspace'] body::after {
+  content: 'MOCKUP';
+  position: fixed; top: 50%; right: 0; z-index: 9999; transform: translateY(-50%);
+  writing-mode: vertical-rl;
+  padding: 8px 2px; border-radius: 5px 0 0 5px;
+  border: 1px solid rgb(252 251 247 / .22);
+  background: rgb(8 16 12 / .82); color: #fcfbf7;
+  font: 500 10px/1.4 'Geist Mono', ui-monospace, monospace; letter-spacing: .1em;
+  pointer-events: none;
+}

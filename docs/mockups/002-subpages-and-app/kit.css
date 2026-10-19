@@ -1,0 +1,355 @@
+/* ==========================================================================
+   Mockup kit — plan 002 (sub pages and the app, brought onto the landing style)
+   Loaded AFTER landing-site/styles.css and landing-site/pages.css. It reuses the
+   landing's own classes wherever they exist (.hero-home, .content-columns,
+   .fd-tile, .ex-sum*, .pl-*, .grid-item-brand, .closing-promises, .cta-button)
+   and adds only what the sub pages need on top. Everything is in rem, so it
+   scales with the viewport like the landing (styles.css sets the html font-size).
+   Classes the kit adds all start with .kit-.
+   ========================================================================== */
+
+:root {
+  /* the four section pieces: tile floor (sampled from the exhibit stills), the object's saturated hue,
+     the ink used for text on the tile, and the lighter tint used for chips and icon discs */
+  --kit-green-floor: rgb(196 234 212);  --kit-green: #2ae874;  --kit-green-ink: #0c3a23;  --kit-green-tint: #d6f5e2;  --kit-green-chip: #0c5a2c;
+  --kit-orange-floor: rgb(246 207 179); --kit-orange: #f6704f; --kit-orange-ink: #4a1d0c; --kit-orange-tint: #fbe3d6; --kit-orange-chip: #7a2e12;
+  --kit-violet-floor: rgb(216 208 242); --kit-violet: #7050f0; --kit-violet-ink: #241858; --kit-violet-tint: #e8e3fb; --kit-violet-chip: #3b2a8c;
+  --kit-blue-floor: rgb(194 223 241);   --kit-blue: #2ac8f2;   --kit-blue-ink: #0b2e48;   --kit-blue-tint: #dcecf8;   --kit-blue-chip: #0b4a75;
+  --kit-secondary: #f7f4ef;            /* the plain off-white second material (the bowl, the tray) */
+  --kit-card-line: #e6e2d9;            /* hairline round a white card on paper (as .ex-sum) */
+  --kit-card-shadow: 0 1px 0 rgb(0 0 0 / .02), 0 2.4rem 4.8rem -3.2rem rgb(20 26 22 / .28);
+}
+
+/* ---------- static-mockup plumbing ---------- */
+/* no main.js: the nav is pasted straight onto the page in its light state, and sits on the hero */
+.kit .the-nav { position: absolute; }
+.kit .the-nav .menu-toggle { pointer-events: auto; }
+/* nothing in the mockups is hidden by a reveal: (main.js would wrap headings in .line-wrap; it never runs here) */
+.kit [data-split], .kit [data-closing-in], .kit [data-closing-object] { opacity: 1 !important; transform: none !important; visibility: visible !important; }
+.kit .pipeline .pl-fill { transform: none; }
+.kit a[href^="#"] { cursor: pointer; }
+
+/* the corner label: says what this is, out of the way */
+.kit-mock-label {
+  position: fixed; right: 1.2rem; top: calc(var(--nav-height) + .4rem); z-index: 3000;
+  padding: .6rem 1rem .5rem; border-radius: 99rem;
+  background: rgb(8 16 12 / .72); color: var(--cl-white);
+  font: 500 1rem/1 var(--f-mono); letter-spacing: .1em; text-transform: uppercase;
+  pointer-events: none;
+}
+
+/* ==========================================================================
+   1. Eyebrow — Geist Mono, small capitals, with an optional step number
+   <p class="kit-eyebrow">01 · Connect</p>
+   ========================================================================== */
+.kit-eyebrow { display: block; font: 400 1.3rem/1.3 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--cl-grey-500); font-variant-numeric: tabular-nums; }
+[theme="black"] .kit-eyebrow { color: color-mix(in srgb, var(--cl-white) 50%, transparent); }
+.kit-eyebrow + .heading { margin-top: 2rem; }
+
+/* ==========================================================================
+   2. Page hero — .hero-home with a sub page's measure. Grey, ink type, one <em>,
+   the description and a CTA pair, the 3D slot on the right.
+   Slot options: the record-stack film (default, as the landing), or an exhibit
+   tile / placeholder (.kit-hero.is-tile).
+   ========================================================================== */
+.kit-hero { min-height: 76rem; }
+.kit-hero .kit-hero-eyebrow { position: relative; z-index: 1; grid-column: 1 / span 6; margin-bottom: 3.2rem; color: var(--cl-grey-600); }
+.kit-hero .heading { grid-column: 1 / span 7; }
+.kit-hero .desc { grid-column: 1 / span 5; }
+.kit-hero .desc .type-body-large { max-width: 52rem; }
+/* tile variant: the slot holds a pastel tile instead of the film on the hero's own floor */
+.kit-hero.is-tile .bg-wrap .wrap { grid-column: 7 / span 6; aspect-ratio: auto; }
+.kit-hero.is-tile .bg-wrap .fd-tile { height: auto; pointer-events: auto; }
+.kit-hero.is-tile .bg-wrap .fd-tile > img,
+.kit-hero.is-tile .bg-wrap .fd-tile > .kit-ph-obj { aspect-ratio: 5 / 4; }
+
+/* ==========================================================================
+   3. Ink rounded section with numbered columns — the landing's 01 Upload / 02 Find /
+   03 Recover, opening over the grey hero. On a sub page it replaces the old hero
+   anchor list: each column is a link to its step.
+   ========================================================================== */
+.kit-ink .section { padding-block: 11.2rem calc(11.2rem + var(--rounded-margin)); }
+.kit-ink .header + .columns { margin-top: 0; }
+.content-columns .columns.kit-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6.4rem; }
+a.content-column { position: relative; display: block; color: inherit; }
+a.content-column .heading { transition: opacity .2s; }
+@media (hover: hover) and (pointer: fine) { a.content-column:hover .heading { opacity: .72; } }
+.kit-col-arrow { position: absolute; right: 0; top: 0; width: 1.4rem; height: 1.4rem; color: var(--cl-grey-500); transform: rotate(180deg); }
+.content-column .desc { color: var(--cl-grey-400); }
+
+/* ==========================================================================
+   4. Paper rounded section — rises over the ink with the landing's rounded corners.
+   Holds the steps, the figures, the FAQ. Steps inside are plain .section blocks.
+   ========================================================================== */
+.kit-paper .rs-scale { padding-bottom: 4rem; }
+
+/* ==========================================================================
+   5. Step — eyebrow, sentence heading, lead, body, and a figure; alternating sides.
+   Layouts:
+     .kit-step            copy left (5 cols), figure right (6 cols)
+     .kit-step.is-flip    figure left, copy right
+     .kit-step.is-split   eyebrow + heading left, lead + body right, figure full width under
+   A full-width block under any of them: .kit-step-wide (the app mock, a tile row, a track).
+   ========================================================================== */
+.kit-step { padding-block: 16rem 0; }
+.kit-step:first-child { padding-top: 12rem; }
+.kit-step-row { align-items: center; }
+.kit-step-copy { grid-column: 1 / span 5; grid-row: 1; }
+.kit-step-fig { grid-column: 7 / span 6; grid-row: 1; min-width: 0; }
+.kit-step.is-flip .kit-step-copy { grid-column: 8 / span 5; }
+.kit-step.is-flip .kit-step-fig { grid-column: 1 / span 6; }
+.kit-step.is-split .kit-step-row { align-items: start; }
+.kit-step.is-split .kit-step-copy { grid-column: 1 / span 6; }
+.kit-step.is-split .kit-step-text { grid-column: 8 / span 5; grid-row: 1; }
+.kit-step .heading { max-width: 11em; }
+.kit-step-lead { margin-top: 3.2rem; color: var(--cl-black); font-size: 2.4rem; font-weight: 500; letter-spacing: -.025em; line-height: 1.3; }
+.kit-step-body { margin-top: 2rem; color: var(--cl-grey-500); font-size: 1.8rem; line-height: 1.45; letter-spacing: -.005em; }
+.kit-step.is-split .kit-step-lead { margin-top: 0; }
+.kit-step-wide { grid-column: 1 / -1; margin-top: 7.2rem; min-width: 0; }
+.kit-step-wide + .kit-step-wide { margin-top: 4.8rem; }
+
+/* ==========================================================================
+   6. Exhibit tile + exhibit placeholder
+   Tile: the landing's .fd-tile as is (data-ex="echo|overflow|piece|shadow" sets its floor).
+   Placeholder: .fd-tile.kit-ph with data-hue="green|orange|violet|blue" — a flat silhouette
+   of the piece still to render, and a "Piece to render · …" tag.
+   Rows: .kit-tiles (2-up), .kit-tiles.is-3, .kit-tiles.is-5 (4:3 crops).
+   ========================================================================== */
+.kit-tiles { display: grid; grid-template-columns: repeat(var(--n, 2), minmax(0, 1fr)); gap: 1.6rem; margin: 0; padding: 0; list-style: none; }
+.kit-tiles.is-3 { --n: 3; }
+.kit-tiles.is-5 { --n: 5; gap: 1.2rem; }
+.kit-tiles.is-3 .fd-tile > img, .kit-tiles.is-3 .kit-ph-obj,
+.kit-tiles.is-5 .fd-tile > img, .kit-tiles.is-5 .kit-ph-obj { aspect-ratio: 4 / 3; }
+.kit-tiles.is-5 .fd-title { font-size: 1.6rem; }
+.kit-tiles.is-5 .fd-cap { margin-top: -1.2rem; padding: 0 1.6rem 2.2rem; }
+/* where the object sits off-centre, keep it whole in a narrower crop */
+.fd-tile[data-ex="overflow"] > img { object-position: 56% 50%; }
+.fd-tile[data-ex="shadow"] > img { object-position: 28% 50%; }
+
+.fd-tile[data-hue="green"]  { --floor: var(--kit-green-floor);  --ink: var(--kit-green-ink);  --hue: var(--kit-green); }
+.fd-tile[data-hue="orange"] { --floor: var(--kit-orange-floor); --ink: var(--kit-orange-ink); --hue: var(--kit-orange); }
+.fd-tile[data-hue="violet"] { --floor: var(--kit-violet-floor); --ink: var(--kit-violet-ink); --hue: var(--kit-violet); }
+.fd-tile[data-hue="blue"]   { --floor: var(--kit-blue-floor);   --ink: var(--kit-blue-ink);   --hue: var(--kit-blue); }
+.kit-ph { position: relative; outline: 1.5px dashed color-mix(in srgb, var(--ink) 28%, transparent); outline-offset: -1.2rem; }
+.kit-ph-obj { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; }
+.kit-ph-tag { position: absolute; left: 2rem; top: 2rem; z-index: 1; max-width: calc(100% - 4rem); padding: .6rem 1rem .5rem; border-radius: .8rem; background: rgb(255 255 255 / .6); color: var(--ink); font: 500 1.05rem/1.3 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; }
+.kit-tiles.is-5 .kit-ph-tag { left: 1.6rem; top: 1.6rem; max-width: calc(100% - 3.2rem); font-size: .95rem; }
+/* the silhouette's paints: the hue (three faces), the off-white second material, and the long soft shadow */
+.kit-ph-obj .hue    { fill: var(--hue); }
+.kit-ph-obj .hue-lt { fill: color-mix(in srgb, var(--hue), #fff 34%); }
+.kit-ph-obj .hue-dk { fill: color-mix(in srgb, var(--hue), #000 16%); }
+.kit-ph-obj .sec    { fill: var(--kit-secondary); }
+.kit-ph-obj .sec-dk { fill: color-mix(in srgb, var(--kit-secondary), var(--floor) 55%); }
+.kit-ph-obj .sec-md { fill: color-mix(in srgb, var(--kit-secondary), #000 4%); }
+.kit-ph-obj .sec-sh { fill: color-mix(in srgb, var(--kit-secondary), #000 9%); }
+.kit-ph-obj .shd    { fill: color-mix(in srgb, var(--floor), #0a1410 22%); filter: blur(7px); opacity: .9; }
+
+/* ==========================================================================
+   7. App mock, flat on paper — the landing's .app (styles.css) with no tablet bezel:
+   a white-edged screen with a soft shadow. The app is laid out at its own rem sizes
+   and zoomed (--z) to fill the frame; on phones the sidebar drops and it zooms down.
+   ========================================================================== */
+.kit-app { --z: 1.16; --ratio: 16 / 9.4; position: relative; width: 100%; aspect-ratio: var(--ratio); overflow: hidden; border: 1px solid var(--kit-card-line); border-radius: 2rem; background: #f3f3f3; box-shadow: 0 1px 0 rgb(0 0 0 / .02), 0 3.2rem 6.4rem -4rem rgb(20 26 22 / .34); }
+.kit-app > .app { position: absolute; left: 0; top: 0; width: 100%; height: 100%; border-radius: 0; zoom: var(--z); }   /* (a zoomed box's % size is the frame's own: the app fills it, laid out at frame ÷ --z) */
+.kit-app.is-short { --ratio: 16 / 7.6; }
+.kit-app .app-body { padding-bottom: 2.4rem; }
+/* (a caption under it, mono, like the exhibit tiles') */
+.kit-app-cap { display: flex; justify-content: space-between; gap: 2.4rem; margin-top: 2rem; color: var(--cl-grey-500); font: 400 1.2rem/1.3 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; }
+
+/* ==========================================================================
+   8. White summary card — the landing's .ex-sum as is (rows, pastel state chips,
+   total). Outside the landing's finds section its round renders need loading here.
+   For rows that aren't one of the four mistakes, .ex-sum-ico.is-line holds a line icon.
+   ========================================================================== */
+.kit .ex-sum-row[data-ex="echo"] .ex-sum-ico { background-image: url(../../../landing-site/media/exhibits/echo/still-m.webp); }
+.kit .ex-sum-row[data-ex="overflow"] .ex-sum-ico { background-image: url(../../../landing-site/media/exhibits/overflow/still-m.webp); }
+.kit .ex-sum-row[data-ex="piece"] .ex-sum-ico { background-image: url(../../../landing-site/media/exhibits/piece/still-m.webp); }
+.kit .ex-sum-row[data-ex="shadow"] .ex-sum-ico { background-image: url(../../../landing-site/media/exhibits/shadow/still-m.webp); }
+.ex-sum-row[data-hue="green"]  { --ink: var(--kit-green-chip);  --tint: var(--kit-green-tint); }
+.ex-sum-row[data-hue="orange"] { --ink: var(--kit-orange-chip); --tint: var(--kit-orange-tint); }
+.ex-sum-row[data-hue="violet"] { --ink: var(--kit-violet-chip); --tint: var(--kit-violet-tint); }
+.ex-sum-row[data-hue="blue"]   { --ink: var(--kit-blue-chip);   --tint: var(--kit-blue-tint); }
+.ex-sum-row[data-hue="grey"]   { --ink: var(--cl-grey-600);     --tint: var(--cl-grey-100); }
+.ex-sum-ico.is-line { display: grid; place-items: center; background: var(--cl-grey-100); color: var(--cl-black); }
+.ex-sum-ico.is-line svg { width: 2.2rem; height: 2.2rem; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.ex-sum.kit-sum-plain .ex-sum-row { grid-template-columns: 5.6rem minmax(0, 1fr) auto; }   /* rows with no amount */
+
+/* pastel status chip, anywhere (same as .ex-sum-state) */
+.kit-chip { --ink: var(--cl-grey-600); --tint: var(--cl-grey-100); display: inline-flex; align-items: center; gap: .6rem; height: 3rem; padding: 0 1.2rem; border-radius: 99rem; background: var(--tint); color: var(--ink); font: 500 1.3rem/1 var(--f-sans); white-space: nowrap; }
+.kit-chip[data-hue="green"]  { --ink: var(--kit-green-chip);  --tint: var(--kit-green-tint); }
+.kit-chip[data-hue="orange"] { --ink: var(--kit-orange-chip); --tint: var(--kit-orange-tint); }
+.kit-chip[data-hue="violet"] { --ink: var(--kit-violet-chip); --tint: var(--kit-violet-tint); }
+.kit-chip[data-hue="blue"]   { --ink: var(--kit-blue-chip);   --tint: var(--kit-blue-tint); }
+.kit-chip > i { width: .7rem; height: .7rem; border-radius: 50%; background: var(--cl-reclaim); }   /* status dot: green only for money back */
+
+/* ==========================================================================
+   9. Ruled list — replaces the black carousel cards. Hairlines, a mono index, a
+   Schibsted title, grey body, an optional mono meta on the right.
+   ========================================================================== */
+.kit-ruled { margin: 0; padding: 0; list-style: none; border-bottom: 1px solid var(--cl-grey-300); }
+.kit-ruled > li { display: grid; grid-template-columns: 6.4rem minmax(0, 1fr) minmax(0, auto); gap: 2.4rem; align-items: baseline; padding-block: 2.8rem; border-top: 1px solid var(--cl-grey-300); }
+.kit-ruled-no { color: var(--cl-grey-500); font: 400 1.3rem/1.3 var(--f-mono); letter-spacing: .04em; }
+.kit-ruled-title { font: 600 2.8rem/1.08 var(--f-display); letter-spacing: -.035em; }
+.kit-ruled-desc { max-width: 60rem; margin-top: 1rem; color: var(--cl-grey-500); font-size: 1.7rem; line-height: 1.45; }
+.kit-ruled-meta { justify-self: end; color: var(--cl-grey-500); font: 400 1.2rem/1.3 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; white-space: nowrap; }
+[theme="black"] .kit-ruled, [theme="black"] .kit-ruled > li { border-color: var(--cl-grey-800); }
+
+/* ==========================================================================
+   10. Big-figure stat — Geist Mono label, Schibsted figure, a line, the source.
+   ========================================================================== */
+.kit-stats { display: grid; grid-template-columns: repeat(var(--n, 3), minmax(0, 1fr)); gap: 2.4rem; margin: 0; padding: 0; list-style: none; }
+.kit-stats.is-2 { --n: 2; }
+.kit-stat { padding-top: 2.4rem; border-top: 1px solid var(--cl-grey-300); }
+.kit-stat-label { display: block; color: var(--cl-grey-500); font: 400 1.3rem/1.3 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; }
+.kit-stat-fig { display: block; margin-top: 4rem; font: 600 12rem/.9 var(--f-display); letter-spacing: -.05em; }
+.kit-stat-fig small { margin-left: .12em; font-size: .4em; letter-spacing: -.035em; }
+.kit-stat-desc { max-width: 34rem; margin-top: 2.4rem; color: var(--cl-grey-600); font-size: 1.8rem; line-height: 1.4; letter-spacing: -.01em; }
+.kit-stat-src { display: inline-block; margin-top: 1.6rem; color: var(--cl-grey-500); font: 400 1.2rem/1.3 var(--f-mono); letter-spacing: .04em; text-decoration: underline; text-decoration-color: var(--cl-grey-300); text-underline-offset: .35em; }
+.kit-stat-src:hover { color: var(--cl-black); }
+
+/* ==========================================================================
+   11. Ruled FAQ — partials/faq.html restyled: heading left, ruled questions right,
+   a thin plus that turns to a cross when open.
+   ========================================================================== */
+.kit-faq { padding-block: 16rem 4rem; }
+.kit-faq-head { grid-column: 1 / span 4; align-self: start; }
+.kit-faq-head .kit-faq-note { margin-top: 2.4rem; color: var(--cl-grey-500); font-size: 1.7rem; line-height: 1.45; }
+.kit-faq-head .kit-faq-note a { color: var(--cl-black); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: .3em; }
+.kit-faq-list { grid-column: 6 / span 7; margin: 0; padding: 0; list-style: none; border-bottom: 1px solid var(--cl-grey-300); }
+.kit-faq-list details { border-top: 1px solid var(--cl-grey-300); }
+.kit-faq-list summary { display: flex; align-items: center; justify-content: space-between; gap: 2.4rem; padding-block: 2.6rem; cursor: pointer; list-style: none; font-size: 2rem; font-weight: 500; letter-spacing: -.02em; line-height: 1.3; }
+.kit-faq-list summary::-webkit-details-marker { display: none; }
+.kit-faq-list summary::after {
+  content: ""; flex: none; width: 1.6rem; height: 1.6rem;
+  background: linear-gradient(currentColor, currentColor) center / 100% 1.5px no-repeat, linear-gradient(currentColor, currentColor) center / 1.5px 100% no-repeat;
+  opacity: .55; transition: transform .3s var(--e-out);
+}
+.kit-faq-list details[open] summary::after { transform: rotate(45deg); }
+.kit-faq-list details p { max-width: 64rem; padding-bottom: 2.8rem; margin-top: -.8rem; color: var(--cl-grey-500); font-size: 1.7rem; line-height: 1.5; }
+.kit-faq-list details p a { color: var(--cl-black); text-decoration: underline; text-underline-offset: .2em; }
+
+/* ==========================================================================
+   12. Flagged → Settled track on paper — the landing's .pipeline / .pl-* recoloured
+   for paper: the Reclaim lane in ink, green only on the last node (money back).
+   ========================================================================== */
+.kit-track .pl-who { color: var(--cl-grey-500); }
+.kit-track .is-us .pl-who { color: var(--cl-black); }
+.kit-track .pl-track { background: var(--cl-grey-300); }
+.kit-track .is-others .pl-track { background: repeating-linear-gradient(90deg, var(--cl-grey-300) 0 .6rem, transparent .6rem 1.2rem); }
+.kit-track .is-others .pl-fill { background: var(--cl-grey-400); }
+.kit-track .is-us .pl-fill { background: var(--cl-black); }
+.kit-track .pl-node { border-color: var(--cl-black); background: var(--cl-white); }
+.kit-track .pl-node.is-end { border-color: var(--cl-black); background: var(--cl-reclaim); }
+.kit-track .is-others .pl-node.is-start { border-color: var(--cl-grey-400); }
+.kit-track .pl-steps li { border-top-color: var(--cl-grey-300); }
+.kit-track .pl-steps p { color: var(--cl-grey-500); }
+
+/* ==========================================================================
+   13. Trust strip — the closer's three promises (.closing-promises) on their own,
+   for any page: line icon in a grey square, title, one line.
+   ========================================================================== */
+.closing-promises.kit-trust { max-width: none; margin: 0; }
+
+/* ==========================================================================
+   14. Export tiles — the landing's .grid-item-brand, two to a row inside a figure
+   ========================================================================== */
+.kit-brands { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.2rem; margin: 0; padding: 0; list-style: none; }
+.kit-brands .grid-item-brand { aspect-ratio: 302 / 124; }
+.kit-brands a.grid-item-brand { display: block; }
+.kit-brands .grid-item-brand:not([idx="0"]) .wrap { background: var(--cl-grey-100); color: var(--cl-black); box-shadow: inset 0 0 0 1px var(--cl-grey-300); }
+@media (hover: hover) and (pointer: fine) { .kit-brands a.grid-item-brand:hover .wrap { box-shadow: inset 0 0 0 1px var(--cl-black); } }
+.kit-brands-note { margin-top: 1.6rem; color: var(--cl-grey-500); font: 400 1.2rem/1.3 var(--f-mono); letter-spacing: .04em; }
+.kit-brands-note a { color: var(--cl-black); text-decoration: underline; text-underline-offset: .3em; }
+
+/* ==========================================================================
+   15. Section head on paper (a block that isn't a step: stats, a tile row)
+   ========================================================================== */
+.kit-block { padding-block: 16rem 0; }
+.kit-block-head { grid-column: 1 / span 7; margin-bottom: 6.4rem; }
+.kit-block-head .kit-block-desc { max-width: 56rem; margin-top: 2.4rem; color: var(--cl-grey-500); font-size: 2rem; line-height: 1.4; letter-spacing: -.01em; }
+.kit-block-body { grid-column: 1 / -1; min-width: 0; }
+
+/* ==========================================================================
+   phones + tablets (≤1023px)
+   ========================================================================== */
+@media (max-width: 1023px) {
+  .kit-hero { min-height: 0; }
+  .kit-hero .kit-hero-eyebrow, .kit-hero .heading { grid-column: 1 / -1; }
+  .kit-hero .kit-hero-eyebrow { margin-bottom: 2rem; }
+  .kit-hero .desc { grid-column: 1 / -1; }
+  .kit-hero .bg-wrap { margin-top: 3.2rem; }
+  .kit-hero.is-tile .bg-wrap .wrap { grid-column: 1 / -1; }
+  .kit-hero.is-tile { padding-bottom: 4rem; }
+
+  .kit-ink .section { padding-block: 6.4rem calc(6.4rem + var(--rounded-margin)); }
+  .content-columns .columns.kit-cols-4 { display: grid; grid-template-columns: 1fr; gap: 3.2rem; }
+  .content-columns .kit-cols-4 .content-column { padding-top: 2.4rem; border-top: 1px solid var(--cl-grey-800); }
+  .content-columns .kit-cols-4 .content-column:first-child { padding-top: 0; border-top: 0; }
+  .kit-col-arrow { top: auto; bottom: .4rem; }
+  .content-columns .kit-cols-4 .content-column:not(:first-child) .kit-col-arrow { top: 2.4rem; bottom: auto; }
+  .content-columns .kit-cols-4 .content-column:first-child .kit-col-arrow { top: 0; bottom: auto; }
+
+  .kit-step, .kit-block { padding-top: 8rem; }
+  .kit-step:first-child { padding-top: 6.4rem; }
+  .kit-step-copy, .kit-step.is-flip .kit-step-copy, .kit-step.is-split .kit-step-copy,
+  .kit-step-fig, .kit-step.is-flip .kit-step-fig, .kit-step.is-split .kit-step-text { grid-column: 1 / -1; grid-row: auto; }
+  .kit-step-fig, .kit-step.is-split .kit-step-text { margin-top: 3.2rem; }
+  .kit-step.is-flip .kit-step-fig { order: 2; }
+  .kit-step-lead { margin-top: 2.4rem; font-size: 2rem; }
+  .kit-step-body { font-size: 1.6rem; }
+  .kit-step-wide { margin-top: 4rem; }
+  .kit-step-wide + .kit-step-wide { margin-top: 3.2rem; }
+
+  .kit-tiles { grid-template-columns: 1fr; gap: 1.2rem; }
+  .kit-tiles.is-5, .kit-tiles.is-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .8rem; }
+  .kit-tiles.is-5 > li:last-child:nth-child(odd), .kit-tiles.is-3 > li:last-child:nth-child(odd) { grid-column: 1 / -1; }
+  .kit-tiles.is-5 > li:last-child:nth-child(odd) .fd-tile > img,
+  .kit-tiles.is-5 > li:last-child:nth-child(odd) .kit-ph-obj { aspect-ratio: 16 / 9; }
+  .kit-tiles.is-5 .fd-title { font-size: 1.4rem; }
+  .kit-tiles.is-5 .fd-meta { font-size: 1rem; }
+  .kit-tiles.is-5 .fd-cap { padding: 0 1rem 1.6rem; }
+  .kit-tiles.is-5 .fd-tile, .kit-tiles.is-3 .fd-tile { border-radius: 1.4rem; }
+  .kit-ph { outline-offset: -.8rem; }
+  .kit-ph-tag, .kit-tiles.is-5 .kit-ph-tag { left: 1.4rem; top: 1.4rem; max-width: calc(100% - 2.8rem); font-size: .95rem; }
+
+  .kit-app { --z: .5; --ratio: 4 / 3.5; border-radius: 1.4rem; }
+  .kit-app .app-side { display: none; }
+  .kit-app.is-short { --ratio: 4 / 3; }
+  .kit-app-cap { flex-direction: column; gap: .4rem; margin-top: 1.4rem; font-size: 1rem; }
+
+  .kit-ruled > li { grid-template-columns: 4rem minmax(0, 1fr); gap: 1.2rem; padding-block: 2.2rem; }
+  .kit-ruled-title { font-size: 2.2rem; }
+  .kit-ruled-desc { font-size: 1.5rem; }
+  .kit-ruled-meta { grid-column: 2; justify-self: start; margin-top: .4rem; }
+
+  .kit-stats, .kit-stats.is-2 { grid-template-columns: 1fr; gap: 4rem; }
+  .kit-stat-fig { margin-top: 2.4rem; font-size: 8.8rem; }
+  .kit-stat-desc { font-size: 1.6rem; }
+
+  .kit-faq { padding-block: 8rem 2.4rem; }
+  .kit-faq-head, .kit-faq-list { grid-column: 1 / -1; }
+  .kit-faq-list { margin-top: 3.2rem; }
+  .kit-faq-list summary { padding-block: 2rem; font-size: 1.7rem; }
+  .kit-faq-list details p { font-size: 1.5rem; }
+
+  .kit-brands { gap: .8rem; }
+  .kit-brands .grid-item-brand { aspect-ratio: 302 / 150; }
+  .kit-brands .grid-item-brand .wrap { border-radius: 1.4rem; }
+  .kit-brands .grid-item-brand .wm { margin-top: 1.8rem; transform: scale(.8); }
+
+  .kit-block-head { grid-column: 1 / -1; margin-bottom: 4rem; }
+  .kit-block-head .kit-block-desc { font-size: 1.7rem; }
+
+  /* the track on paper, vertical: an ink rail, the green on the last node */
+  .kit-track .pl-steps li::before { border-color: var(--cl-black); background: var(--cl-white); }
+  .kit-track .pl-steps li::after { background: var(--cl-black); }
+  .kit-track .pl-steps li:last-child::before { background: var(--cl-reclaim); }
+}
+@media (min-width: 600px) and (max-width: 1023px) {
+  .content-columns .columns.kit-cols-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4rem 3.2rem; }
+  .content-columns .kit-cols-4 .content-column { padding-top: 0; border-top: 0; }
+  .kit-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .kit-tiles.is-5 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .kit-app { --z: .72; --ratio: 16 / 11; }
+  .kit-stats { grid-template-columns: repeat(var(--n, 3), minmax(0, 1fr)); gap: 2.4rem; }
+}
