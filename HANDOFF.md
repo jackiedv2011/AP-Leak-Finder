@@ -1,5 +1,7 @@
 # Reclaim — handoff for a fresh session
 
+> **Who's who:** commits by `Das <das2385@gmail.com>` are **Jagan's** (the owner; `jackiedv2011` on GitHub and Linear). `Terminalds` is Sid, the co-founder. Full table in `CLAUDE.md`.
+
 Project: `/Users/jaganvenkatraman/Documents/AP Leak Finder` (GitHub: `jackiedv2011/AP-Leak-Finder`, branch `main`). Updated 2026-09-24.
 
 ## 0. Read this first — nothing from the last session is committed
