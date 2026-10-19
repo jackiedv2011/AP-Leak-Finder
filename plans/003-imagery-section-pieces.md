@@ -1,6 +1,7 @@
 # Imagery: retire the old generated 3D, continue the section pieces
 
-Status: **plan**, waiting for approval. When approved, the next step is mockups of the new pieces (§6), then renders and code.
+Status: **plan, decisions taken (§5)**. Next step: mockups of the new pieces (§6), then renders and code.
+Scope for now: the **marketing site only**. Onboarding and Launch are deferred (Linear REC-31, Backlog).
 Audit run 2026-10-19 over the whole repo: five parallel sweeps, then an independent verifier. The verifier found no live
 reference the sweeps missed. Full results, with every reference, line and per-slot idea: `docs/audits/2026-10-19-old-imagery.json`; this file is the summary.
 
@@ -85,7 +86,7 @@ All 16 loops in `public/onboarding/` (17 MB) are black clay cubes, cream paper, 
 | Marketing | 8 stills (4 How It Works, 4 research thumbnails), plus 1 optional for Security |
 | App | about 13 new pieces (16 slots minus 3 reused). Stills first; loops only where motion carries meaning (the onboarding stages). |
 
-The render-pipeline sweep estimates about 4 days for the marketing stills. The app takes 6–15 days depending on stills
+The render-pipeline sweep estimates about 4 days for the marketing stills. The app (deferred) takes 6–15 days depending on stills
 versus loops.
 
 ## 3. Dead weight: old imagery nothing shows (delete)
@@ -99,9 +100,10 @@ versus loops.
 | `src/assets/app/evidence-room.webp`, `public/art/` (17 crops), `public/generated/reclaim-tutorial/` (6 AI-generated UI mock-ups) | 10 MB | Referenced by nothing |
 | `src/workspace/WorkObject.tsx`, `objects.ts`, `.wk-object` CSS | small | Orphaned. Points at `media/stills/`, which was deleted. |
 | `scripts/prepare_landing_scene_plates.py` | small | Tooling for the AI scene plates |
-| After §4 step 2: `solutions.py`, `onboarding.py`, `onboardlib.py`, `render_onboarding.sh`, the old `media/{connect,find,build,recover}.*` and the old `public/onboarding/*` | 25 MB | Once each is replaced |
+| After §4 step 2: `solutions.py` and the old `media/{connect,find,build,recover}.*` | 7.7 MB | Once How It Works has its new pieces |
+| Later, with REC-31: `onboarding.py`, `onboardlib.py`, `render_onboarding.sh` and the old `public/onboarding/*` | 17 MB | Deferred, since onboarding is still on these |
 
-`.preview-pre-v2/` (72 MB) is Aditya's archive snapshot from `7964a7b`. Keep it or delete it: owner's call.
+`.preview-pre-v2/` (72 MB), Aditya's archive snapshot from `7964a7b`, is **kept** (§5).
 
 ## 4. Order of work
 
@@ -113,18 +115,20 @@ versus loops.
    - Fix the stale `landing-site/blender/README.md`, which still calls `hero.py` the log-in film and describes ledger
      stocks the code no longer has.
 2. **On a machine with Blender 5.2 and a GPU.** Write one `exhibit_*.py` per new piece, modelled on `exhibit_shadow.py`
-   and `exhibit_piece.py`. Order: How It Works (4) → research thumbnails (4) → onboarding and Launch (REC-31). Encode
+   and `exhibit_piece.py`. Order: How It Works (4) → research thumbnails (4). Onboarding and Launch (REC-31) come later. Encode
    with `exhibit_encode.py`, then swap the assets in.
 3. **Clean-up.** Remove the old scripts and assets as each replacement lands.
 
-## 5. Decisions for the owner
+## 5. Decisions (Aditya, Oct 19)
 
-1. **Stat cards:** figure on a pastel tile, no picture (recommended; it saves 8–10 renders), or a render per stat?
-2. **Onboarding:** stills (faster, about 6 days) or loops (about 15 days)? Recommended: stills for the card icons and Launch,
-   loops for the 7 stage pieces.
-3. **`.preview-pre-v2/`:** keep the 72 MB archive or delete it?
-4. **Who renders:** the owner's Blender machine, or the Higgsfield Blender connector this session has, driving a Blender
-   that someone opens and connects.
+1. **Stat cards:** the figure on a pastel tile, with no picture. No renders for any stat carousel.
+2. **Onboarding:** deferred. The app's 16 loops stay as they are for now. REC-31 holds the per-screen piece table for later.
+3. **`.preview-pre-v2/`:** kept. It's not part of the clean-up in §3.
+4. **Who renders:** a machine with Blender 5.2 and a GPU, not the cloud session or a remote connector. The work here
+   produces the scripts, the mockups and the page code; the renders come back from that machine.
+
+So the renders needed now are **8 stills**: 4 for How It Works and 4 research thumbnails. One optional Security piece
+is the ninth.
 
 ## 6. Mockups for this plan (after approval)
 
