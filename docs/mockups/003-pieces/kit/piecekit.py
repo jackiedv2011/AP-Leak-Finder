@@ -424,7 +424,27 @@ class Scene:
             order.append(s)
             for k in sorted(kids.get(s.idx, []), key=key):
                 emit(k)
-        for s in sorted(roots, key=key):
+        def above(a, b):
+            """a lies wholly above b and over it: from any camera above the floor, b can't hide a."""
+            av, bv = a.verts(), b.verts()
+            if min(p[2] for p in av) < max(p[2] for p in bv) - .006:
+                return False
+            return max(p[0] for p in av) > min(p[0] for p in bv) and min(p[0] for p in av) < max(p[0] for p in bv) and \
+                max(p[1] for p in av) > min(p[1] for p in bv) and min(p[1] for p in av) < max(p[1] for p in bv)
+        rs = sorted(roots, key=key)
+        for _ in range(len(rs) * len(rs)):
+            moved = False
+            for i in range(len(rs)):
+                for j in range(i + 1, len(rs)):
+                    if above(rs[i], rs[j]):
+                        rs.insert(j, rs.pop(i))
+                        moved = True
+                        break
+                if moved:
+                    break
+            if not moved:
+                break
+        for s in rs:
             emit(s)
         for s in order:
             g = []
@@ -496,7 +516,8 @@ class Scene:
                 k += m
         top, bot = L[-1], L[0]
         if cam.sees(list(reversed(bot)), newell(list(reversed(bot)))):
-            self._face(g, list(reversed(bot)), self.col('deep' if s.gap_below else 'mid', s.mat))
+            self._face(g, list(reversed(bot)), self.col('deep' if s.gap_below else 'mid', s.mat) if s.upright
+                       else self.tone(newell(list(reversed(bot))), False, s.mat))
         if not cam.sees(top, newell(top)):
             return
         if s.hole:
@@ -506,7 +527,7 @@ class Scene:
                 self._path(top), self._path(ring_in), self.col('mid', s.mat), self.col('mid', s.mat)))
             self._opening(s, g, defs, nid, [(r_in * math.cos(2 * math.pi * k / 96), r_in * math.sin(2 * math.pi * k / 96)) for k in range(96)], fz)
         else:
-            self._face(g, top, self.col('mid', s.mat))
+            self._face(g, top, self.col('mid', s.mat) if s.upright else self.tone(newell(top), False, s.mat))
         for wl in s.wells:
             wx, wy, ww, wd, wdep = wl[:5]
             wr = wl[5] if len(wl) > 5 else .02
