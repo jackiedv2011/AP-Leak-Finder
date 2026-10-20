@@ -5,7 +5,10 @@ Shared components for the plan 002 mockups (the sub pages and the app, brought o
 wherever they exist and adds only what the sub pages need; every class it adds starts with `kit-`.
 
 - **Reference pages:** `how-it-works.html` (the full template, top to bottom) and `kit.html` (a sheet of every
-  component How It Works doesn't use). Screenshots of both are in `shots/`.
+  component How It Works doesn't use). Screenshots of both are in `shots/`. `index.html` is the owner's gallery
+  (today vs mockup for every page, the app, and every piece still to render).
+- **Imagery follows plan 003** (`plans/003-imagery-section-pieces.md`, owner decisions Oct 19): the old generated 3D is
+  gone; every slot it held gets a piece in the section-piece style (§6), drawn as a placeholder until it is rendered.
 - **Copy from them, don't retype.** The nav, sprite, closer and footer are long; take them from `how-it-works.html`.
 
 ## 0. Page skeleton
@@ -42,9 +45,19 @@ wherever they exist and adds only what the sub pages need; every class it adds s
 </html>
 ```
 
+**Page rhythm.** The template is grey hero → ink rounded section → paper → closer → ink footer. Three stated variants
+(anything else is drift):
+- **Index pages** (Research, Guides) go grey hero → paper: there are no numbered steps to put in an ink section.
+- **Pricing** puts the plans first (paper straight after the hero), then the ink "what counts as recovered" section,
+  then the paper FAQ, so it still alternates.
+- **Articles** (research) open on a paper hero with the article's own thumbnail at right; no ink section.
+
 Rules that hold everywhere:
 - **Type:** Schibsted display, semibold, sentence case, never capitals; at most one `<em>` per heading (most headings
   have none). Geist for reading. Geist Mono only for small capped labels and step numbers.
+- **Muted text:** `var(--kit-muted)` `#6b665d` for any grey text under 24px (5.5:1 on paper, 4.6:1 on the grey hero; the
+  same value as the app's `--text-muted`). The landing's `--cl-grey-500` `#827d73` is 3.95:1 on paper, so it is kept
+  only for text 24px and larger and for icons. On ink, muted text is `--cl-grey-400`.
 - **Colour:** grey hero (`theme="grey"`) → ink rounded section (`theme="black"`) → paper (`theme="white"`).
   Neon green `#00fd74` only for: money that comes back, one CTA per section, status dots. Never icon tiles, bars,
   tag fills or backgrounds. Pastels only inside exhibit tiles and chips.
@@ -65,7 +78,7 @@ Mono, small capitals, grey (half-white on ink). Step number first when the secti
 <h2 class="heading type-h3">Start with what you have.</h2>
 ```
 
-## 2. Page hero — `.hero-home.kit-hero` (+ `.is-tile`)
+## 2. Page hero — `.hero-home.kit-hero` (+ `.is-cutout`)
 The landing's hero with a sub page's measure: optional eyebrow, ink h1 with one `<em>`, description, CTA pair
 (ink + text link), 3D slot on the right. Default slot = the record-stack film on the hero's own floor.
 ```html
@@ -86,16 +99,21 @@ The landing's hero with a sub page's measure: optional eyebrow, ink h1 with one 
   </div>
 </section>
 ```
-Tile variant (an exhibit still or placeholder in the slot instead of the film) — add `is-tile` and put a tile in `.wrap`:
+Cut-out variant (a page's own piece instead of the record stack, e.g. Security's sealed record box): add `is-cutout`
+and draw the piece straight onto the grey floor, no tile, no frame, like the record stack and the closer's coins. The
+`.kit-cutout` sets the floor to the hero grey so the soft shadow lands on `#ebe7de`; the small tag sits under the object.
 ```html
-<section class="hero-home kit-hero is-tile" theme="grey">
+<section class="hero-home kit-hero is-cutout" theme="grey">
   <div class="bg"><div class="bg-wrap the-grid"><div class="wrap">
-    <div class="fd-tile kit-ph" data-hue="blue"><span class="kit-ph-tag">Piece to render · sealed record box</span><!-- svg.kit-ph-obj (§6) --></div>
-    <!-- or a still: <div class="fd-tile" data-ex="piece"><img src="../../../landing-site/media/exhibits/piece/still.webp" alt=""></div> -->
+    <div class="kit-cutout" data-hue="violet">
+      <svg class="kit-ph-obj" viewBox="0 0 400 300" preserveAspectRatio="xMidYMid meet" aria-hidden="true">…</svg>
+      <span class="kit-ph-tag">Piece to render · sealed record box</span>
+    </div>
   </div></div></div>
   <div class="content the-grid"> …eyebrow, h1, desc as above… </div>
 </section>
 ```
+(The older `.is-tile` variant, a framed pastel tile in the hero, is retired: no other hero frames its object.)
 
 ## 3. Ink rounded section with numbered columns — `.rounded-section.kit-ink` + `.content-columns`
 The landing's 01/02/03 columns on ink, opening over the grey hero. Replaces the old hero anchor list and the sticky
@@ -173,23 +191,33 @@ A paper block that isn't a step (stats, a tile row, a list): `.kit-block` with `
 ```
 
 ## 6. Exhibit tile and exhibit placeholder — `.fd-tile`, `.fd-tile.kit-ph`, rows `.kit-tiles`
-**The 3D rule.** The direction is the landing's four section pieces: one smooth, untextured object per tile, one
-saturated hue on a pastel of the same hue, a long soft shadow, plain off-white second material. The hues have
-meanings — keep them:
+**The 3D rule (plan 003).** The direction is the landing's four section pieces: one smooth, untextured object per tile,
+one saturated hue on a pastel of the same hue, a long soft shadow falling back-left, plain off-white second material.
+The four existing stills stay reserved for the four checks. Every other slot gets its own piece. One hue table for
+the whole set (marketing pages, kit, app, plan 003):
 
-| hue | `data-ex` still | `data-hue` (placeholder) | meaning |
+| hue | `data-ex` still | `data-hue` (placeholder) | meaning, and the pieces in that hue |
 |---|---|---|---|
-| green | `echo` (coin stack) | `green` | duplicate payment · also payment mismatch (5th check) |
-| orange | `overflow` (beads over a bowl) | `orange` | overpayment |
-| violet | `piece` (keys in a tray) | `violet` | unused credit · also "your payments"/records cards |
-| blue | `shadow` (cube + stepped shadow) | `blue` | duplicate bill · also security |
+| green | `echo` (coin stack) | `green` | **duplicate payment** · How It Works 04 Recover (coins settling into a white dish) · AP-benchmarks research thumbnail (a row of white coins, one green pair) · payment mismatch (proposal, see §16) |
+| orange | `overflow` (beads over a bowl) | `orange` | **overpayment** · How It Works 02 Find (one coral bead lifted from a white bowl) · occupational-fraud thumbnail (an invoice slab, a coral copy sliding out) · app: "Our sample", "Unpaid invoices" (REC-31) |
+| violet | `piece` (keys in a tray) | `violet` | **unused credit** · How It Works 03 Evidence (a card drawn from a white stack) · Security (a sealed record box) · payments-fraud thumbnail (an envelope in a white tray) |
+| blue | `shadow` (cube + stepped shadow) | `blue` | **duplicate bill** · How It Works 01 Connect (blocks filing into a white tray) · improper-payments thumbnail (a column of bars, a stepped shadow) · app: "Your payments" ledger, "Not sure yet" (REC-31) |
+
+**Captions.** A still always carries the landing's own `.fd-cap` text, on every page:
+
+| still | `.fd-title` | `.fd-meta` |
+|---|---|---|
+| echo | One payment. Made twice. | Duplicate payment · $4,280 |
+| overflow | More than the bill asked for. | Overpayment · $1,200 |
+| piece | It was yours the whole time. | Unused credit · $850 |
+| shadow | Two bills. One purchase. | Duplicate bill · $2,640 |
 
 Tile (a still; the landing's own class, as is — `<a>` when it links somewhere):
 ```html
 <div class="fd-tile" data-ex="echo"><img src="../../../landing-site/media/exhibits/echo/still.webp" alt=""><span class="fd-cap"><span class="fd-title">One payment. Made twice.</span><span class="fd-meta">Duplicate payment · $4,280</span></span></div>
 ```
 Placeholder (a piece that doesn't exist yet): the tile in the hue's pastel, a flat silhouette, a dashed inset, and the
-tag. The silhouette paints with classes: `hue` / `hue-lt` / `hue-dk` (the object), `sec` / `sec-md` / `sec-sh`
+tag. A piece no plan owns yet adds `<span class="kit-ph-flag">Proposal · not in plan 003</span>` inside the tag (leak red). The silhouette paints with classes: `hue` / `hue-lt` / `hue-dk` (the object), `sec` / `sec-md` / `sec-sh`
 (off-white material), `sec-dk` (a hole in it), `shd` (the long soft shadow, blurred by CSS).
 ```html
 <div class="fd-tile kit-ph" data-hue="green">
@@ -213,7 +241,7 @@ Disc too big for its socket — **payment mismatch** (green):
 <ellipse class="hue-lt" cx="252" cy="115" rx="45" ry="14"/>
 <ellipse class="hue" cx="252" cy="116.5" rx="41.5" ry="12.6"/>
 ```
-Sealed record box — **security** (blue):
+Sealed record box — **security** (violet; on the hero as a cut-out, §2):
 ```html
 <polygon class="shd" points="132,194 200,228 104,250 36,214"/>
 <polygon class="hue-dk" points="132,128 200,162 200,228 132,194"/>
@@ -224,7 +252,7 @@ Sealed record box — **security** (blue):
 <ellipse class="sec" cx="234" cy="180" rx="14" ry="17" transform="rotate(-27 234 180)"/>
 <ellipse class="hue-lt" cx="234" cy="180" rx="8" ry="10" transform="rotate(-27 234 180)"/>
 ```
-Small stack of records — **your payments / a ledger / research** (violet, or any hue):
+Small stack of records — **your payments / a ledger** (blue; app, REC-31):
 ```html
 <polygon class="shd" points="120,186 200,226 110,246 30,206"/>
 <polygon class="sec-sh" points="120,170 200,210 200,226 120,186"/><polygon class="sec-md" points="200,210 280,170 280,186 200,226"/><polygon class="sec" points="200,130 280,170 200,210 120,170"/>
@@ -232,18 +260,26 @@ Small stack of records — **your payments / a ledger / research** (violet, or a
 <polygon class="sec-sh" points="120,130 200,170 200,186 120,146"/><polygon class="sec-md" points="200,170 280,130 280,146 200,186"/><polygon class="sec" points="200,90 280,130 200,170 120,130"/>
 <polygon class="hue-lt" points="168,112 222,139 214,143 160,116"/><polygon class="hue-lt" points="184,104 238,131 230,135 176,108"/>
 ```
-Rows: `.kit-tiles` (2-up, 16:9), `.kit-tiles.is-3` and `.kit-tiles.is-5` (4:3 crops; on phones 2-up, an odd last tile spans the row).
+The eight plan-003 pieces (How It Works ×4, research thumbnails ×4) are drawn in the same paint classes and inlined in
+`how-it-works.html` and `research.html`; copy them from there. Their generator is a scratch script, not part of the kit.
+
+Rows: `.kit-tiles` (2-up, 16:9), `.kit-tiles.is-3` and `.kit-tiles.is-5` (4:3 crops). The shadow still is never cropped
+in a 4:3 row: it is contained on its own floor. On phones every row is one tile wide at the stills' own 16:9.
 ```html
 <ol class="kit-tiles is-5">
-  <li><a href="what-it-checks.html#duplicate-payments" class="fd-tile" data-ex="echo"><img src="../../../landing-site/media/exhibits/echo/still-m.webp" alt=""><span class="fd-cap"><span class="fd-title">Paid once. Then paid again.</span><span class="fd-meta">Duplicate payment</span></span></a></li>
+  <li><a href="what-it-checks.html#duplicate-payments" class="fd-tile" data-ex="echo"><img src="../../../landing-site/media/exhibits/echo/still-m.webp" alt=""><span class="fd-cap"><span class="fd-title">One payment. Made twice.</span><span class="fd-meta">Duplicate payment · $4,280</span></span></a></li>
   <!-- … shadow, overflow, piece, then the green payment-mismatch placeholder -->
 </ol>
 ```
 
 ## 7. App mock, flat on paper — `.kit-app` (+ `.is-short`)
 The landing's `.app` (dashboard mock-up from `styles.css`) with no tablet bezel: a screen with a hairline, rounded
-corners and a soft shadow, cropped like a window. The app lays out at its own rem sizes, zoomed by `--z` to fill the
-frame (1.16 desktop; 0.5 on phones, where the sidebar drops). `.is-short` = a wider, shorter crop. Take the `.app`
+corners and a soft shadow, cropped like a window. Inside the frame the app takes the **warm palette app.html proposes**
+(the `--a-*` tokens are set to `workspace-tokens.css`'s light values; page title and headline money in Schibsted), so the
+marketing pages and the app sheet show one product. Cards keep their height and the body fades out at the frame's foot,
+so the crop reads as a crop. The app lays out at its own rem sizes, zoomed by `--z` (1.16 desktop). On phones the
+sidebar drops and the frame shows a readable crop of the main column (zoom .78, fading at the right and bottom), not the
+whole app at 7px. `.is-short` = a wider, shorter crop. Take the `.app`
 markup from the BUILT page `landing-site/how-it-works/index.html` (partials expanded) or from `how-it-works.html`
 here; drop `data-base-width` and the `.framed` / `.screen-fit` wrappers.
 ```html
@@ -290,13 +326,18 @@ Schibsted title, grey body, optional mono meta at right. Works on ink too.
 </ol>
 ```
 
-## 10. Big-figure stat — `.kit-stats` (`.is-2`) > `.kit-stat`
-Mono label, Schibsted figure (unit in `<small>`), one line, the source as a mono link. Replaces stat cards with renders.
+## 10. Stat tile — `.kit-stat-tiles` (`.is-2`) > `.kit-stat-tile[data-hue]`
+**The figure on a pastel tile, no picture** (plan 003 decision 1). Replaces every stat card that had a render (How It
+Works' carousel, About's rates, the research articles). Mono label, Schibsted figure (unit in `<small>`), one line,
+the source as a mono link, all in the tile's own ink. The hue says what the figure is about: **blue** = invoices and
+bills (57% e-invoicing, 8.2 days, 18.4% exceptions), **green** = payments (1.5% duplicates), **orange** = cost ($9.84
+per invoice), **violet** = credits.
 ```html
-<ul class="kit-stats">
-  <li class="kit-stat"><span class="kit-stat-label">Days</span><strong class="kit-stat-fig">8.2<small>days</small></strong><p class="kit-stat-desc">The average time it takes to process a single invoice.</p><a class="kit-stat-src" href="…">Ardent Partners</a></li>
+<ul class="kit-stat-tiles">
+  <li class="kit-stat-tile" data-hue="blue"><span class="kit-stat-label">Days</span><strong class="kit-stat-fig">8.2<small>days</small></strong><p class="kit-stat-desc">The average time it takes to process a single invoice.</p><a class="kit-stat-src" href="…">Ardent Partners</a></li>
 </ul>
 ```
+(`.kit-stats` > `.kit-stat`, bare figures on paper with rules, is kept in kit.css but no page uses it.)
 
 ## 11. Ruled FAQ — `.kit-faq`
 `partials/faq.html` restyled: heading left, ruled questions right, a thin plus that turns to a cross. Open the first.
@@ -327,6 +368,11 @@ ink, green only on the last node. Vertical on phones. Copy the block from `landi
 ```
 (Exactly five steps: the lanes are drawn for five columns.)
 
+Colour rule, one for every copy of this component: **on ink** (the landing, Pricing) the Reclaim lane is green up to the
+node that counts as money back, nothing after it; **on paper** (How It Works) the lane is ink and only that node is
+green. Step titles are never green. Stage names are still two sets, an owner decision: Flagged / Proven / Approved /
+Requested / Settled (landing, How It Works) vs Discover / Verify / Recover / Recovered / Reconcile (Pricing's ledger).
+
 ## 13. Trust strip — `.closing-promises.kit-trust`
 The closer's three promises (line icon in a grey square, title, one line), usable anywhere.
 ```html
@@ -347,7 +393,45 @@ The landing's system tiles, two to a row inside a figure. `idx="0"` = ink tile w
 Wordmark classes: `wm-quickbooks`, `wm-xero`, `wm-netsuite`, `wm-bill`, `wm-ramp`, `wm-csv`.
 
 ## 15. Corner label — `.kit-mock-label`
-`<div class="kit-mock-label">Mockup · 002 · Page name</div>` right after the sprite. Fixed, top right under the nav.
+`<div class="kit-mock-label">Mockup · 002 · Page name</div>` right after the sprite. Top right under the nav, absolute,
+so it scrolls away with the top of the page and never sits over content further down.
+
+## 16. Pieces to render (every placeholder in this set)
+| piece | hue | where | plan |
+|---|---|---|---|
+| blocks filing into a white tray | blue | How It Works 01 Connect | 003 §2 |
+| one coral bead lifted from a white bowl | orange | How It Works 02 Find | 003 §2 |
+| a card drawn from a white stack | violet | How It Works 03 Evidence | 003 §2 |
+| coins settling into a white dish | green | How It Works 04 Recover | 003 §2 |
+| a row of white coins, one green pair | green | Research card + article hero: AP benchmarks (also /about) | 003 §2 |
+| an invoice slab, a coral copy sliding out | orange | Research card: occupational fraud, ACFE (also /about) | 003 §2 |
+| an envelope in a white tray | violet | Research card: payments fraud, AFP/FBI (also /about) | 003 §2 |
+| a column of bars, a stepped shadow | blue | Research card: improper payments, GAO (also /about) | 003 §2 |
+| a sealed record box | violet | Security hero (cut-out) | 003 §2, optional 9th |
+| a disc too big for its socket | green | What It Checks 05, How It Works 5-up row | **not in plan 003**: a 9th/10th still, or an empty tile (owner) |
+| Launch "Your payments", "Our sample", Onboarding welcome, goals "Unpaid invoices", "Not sure yet" | blue, orange, green, orange, blue | app (`app.html`) | REC-31, deferred |
+
+## 17. Copy to confirm
+Wording the mockups use that is not a string in today's page sources (or is a source phrase used as a new label).
+Approve it separately from the layout.
+
+| page | string | paraphrases |
+|---|---|---|
+| How It Works | ink column lines: "Export your bills, payments, vendors and credits the way you normally would, and upload the files." · "Every result comes with the records behind it, each pointing back to where it came from." | the Connect and Evidence sections' own sentences, shortened |
+| How It Works | "Step-by-step export guides for the common systems → Guides" | the FAQ's "Our export guides show where to find them" |
+| How It Works | stats eyebrow "AP benchmarks · Ardent Partners" | the carousel's source line |
+| How It Works | periods added to the step headings ("Start with what you have.") | the landing's display headings end in a period |
+| How It Works, What It Checks | payment-mismatch tile "Billed $2,090. Paid $2,900." | that check's own example (INV-6612) |
+| What It Checks | the three trust-strip sublines under the six data promises | FAQ answers elsewhere on the site |
+| What It Checks | "Show all 22 examples" | — (the old carousel had arrows) |
+| Pricing | lane labels "Found money" / "Recovered money", the "Not counted" mark, phone note "Found, not counted" | "Found money and recovered money are different numbers" |
+| Pricing | hero ends in a period; "Talk to Us" → "Talk to us" | sentence case |
+| Security | card head "Access", row chips "You choose" / "Any time" / "Read only" / "No access" | each card's own sentence |
+| Security | ink column lines under What it reads / Evidence / Never gets / Publishing next | each section's intro |
+| About | hero CTAs "Run a free audit" / "Read the research" | the source hero has no CTA |
+| Research | hero link "Browse the library"; "+ More filters" (phones) | — |
+| Research article | eyebrow "Two benchmarks · neither is a loss figure"; "Same layout" hand-off | the summary's "Neither number is a loss figure" |
+| Guides | hint "Guides for QuickBooks Online · Xero · NetSuite · Bill" | the FAQ's guide list |
 
 ## Serving and screenshots (what tripped us up)
 - Serve the repo root (`npx http-server /home/user/AP-Leak-Finder -p <port> -c-1 -s`) and open

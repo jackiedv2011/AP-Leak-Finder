@@ -103,3 +103,9 @@ html[data-surface='workspace'] body::after {
   font: 500 10px/1.4 'Geist Mono', ui-monospace, monospace; letter-spacing: .1em;
   pointer-events: none;
 }
+
+/* ---------- green rationing: one green CTA per screen ----------
+   The plan upsell under "Up next" (Dashboard) and above the Findings table was a second green
+   button beside "Review next finding". It becomes ink; green stays on the money-back action. */
+html[data-surface='workspace'] .wk .wk-upsell .wk-btn[data-variant='primary'] { background: var(--inverse); color: var(--on-inverse); }
+html[data-surface='workspace'] .wk .wk-upsell .wk-btn[data-variant='primary']:hover { background: color-mix(in srgb, var(--inverse) 86%, var(--bg)); }

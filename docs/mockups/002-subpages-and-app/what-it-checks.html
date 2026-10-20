@@ -24,7 +24,8 @@
   .wic-check .kit-step-fig .fd-tile > img { aspect-ratio: 4 / 3; object-fit: cover; }
   .wic-check .kit-step-fig .kit-ph-obj { aspect-ratio: 4 / 3; }
   .wic-check .fd-tile[data-ex="echo"] > img { object-position: 36% 50%; }
-  .wic-check .fd-tile[data-ex="shadow"] > img { object-position: 22% 50%; }
+  /* the shadow still's pair runs edge to edge in a 4:3 crop: shown whole, contained on its own floor, so neither shadow is cut */
+  .wic-check .fd-tile[data-ex="shadow"] > img { object-fit: contain; object-position: 50% 58%; background: var(--floor); }
   .wic-check .fd-tile[data-ex="overflow"] > img { object-position: 30% 50%; }
   .wic-check .fd-tile[data-ex="piece"] > img { object-position: 42% 50%; }
   .wic-check .kit-step-wide { margin-top: 8.8rem; }
@@ -395,7 +396,7 @@
           </div>
           <div class="kit-step-fig">
             <div class="fd-tile kit-ph" data-hue="green">
-              <span class="kit-ph-tag">Piece to render · payment mismatch</span>
+              <span class="kit-ph-tag">Piece to render · payment mismatch<span class="kit-ph-flag">Proposal · not in plan 003</span></span>
               <svg class="kit-ph-obj" viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
                 <!-- a disc too big for its socket: the payment that doesn't fit the bill -->
                 <ellipse class="shd" cx="128" cy="206" rx="96" ry="24" transform="rotate(-8 128 206)"/>
@@ -408,7 +409,7 @@
                 <ellipse class="hue-lt" cx="252" cy="115" rx="45" ry="14"/>
                 <ellipse class="hue" cx="252" cy="116.5" rx="41.5" ry="12.6"/>
               </svg>
-              <span class="fd-cap"><span class="fd-title">Billed $2,090. Paid $2,900.</span><span class="fd-meta">Payment mismatch · INV-6612</span></span>
+              <span class="fd-cap"><span class="fd-title">Billed $2,090. Paid $2,900.</span><span class="fd-meta">Payment mismatch</span></span>
             </div>
           </div>
           <div class="kit-step-wide">
@@ -472,8 +473,7 @@
       <section class="section kit-faq" theme="white" id="faq">
         <div class="the-grid">
           <div class="kit-faq-head">
-            <p class="kit-eyebrow">FAQ</p>
-            <h2 class="heading type-h3">Questions, answered.</h2>
+            <h2 class="heading type-h3">FAQ</h2>
             <p class="kit-faq-note">Not sure where to start? <a href="#">Talk to us</a></p>
           </div>
           <ul class="kit-faq-list">

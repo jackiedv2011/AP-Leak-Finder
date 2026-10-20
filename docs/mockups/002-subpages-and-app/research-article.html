@@ -26,7 +26,7 @@
 .ra-hero-copy { grid-column: 1 / span 7; grid-row: 1; }
 .ra-hero-fig { grid-column: 8 / span 5; grid-row: 1; }
 .ra-hero-fig .fd-tile { height: auto; }
-.ra-hero-fig .fd-tile > img { aspect-ratio: 5 / 4; object-position: 46% 50%; }
+.ra-hero-fig .fd-tile > img, .ra-hero-fig .kit-ph-obj { aspect-ratio: 5 / 4; }
 .ra-back { display: inline-flex; align-items: center; gap: .8rem; color: var(--cl-grey-600); font: 400 1.2rem/1.3 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; }
 .ra-back .icon { width: 1.4rem; height: 1.4rem; transform: rotate(-90deg); }
 @media (hover: hover) and (pointer: fine) { .ra-back:hover { color: var(--cl-black); } }
@@ -61,15 +61,9 @@
    blue = bills (invoice exceptions). Text in the tile's own ink. */
 .ra-stats { grid-column: 1 / -1; margin-top: 9.6rem; }
 .ra-stats > .kit-eyebrow { margin-bottom: 2.4rem; }
-.ra-stat-tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.6rem; margin: 0; padding: 0; list-style: none; }
-.ra-stat { --floor: var(--kit-green-floor); --ink: var(--kit-green-ink); min-width: 0; display: flex; flex-direction: column; min-height: 52rem; padding: 3.2rem 4rem 4rem; border-radius: 2.4rem; background: var(--floor); color: var(--ink); }
-.ra-stat[data-hue="blue"] { --floor: var(--kit-blue-floor); --ink: var(--kit-blue-ink); }
-.ra-stat-label { font: 400 1.2rem/1.3 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; opacity: .7; }
-.ra-stat-fig { display: block; margin-top: 10.4rem; font: 600 20rem/.82 var(--f-display); letter-spacing: -.055em; }
-.ra-stat-fig small { margin-left: .06em; font-size: .42em; letter-spacing: -.03em; }
-.ra-stat-desc { max-width: 44rem; margin-top: auto; padding-top: 4rem; font-size: 2rem; font-weight: 500; line-height: 1.35; letter-spacing: -.02em; }
-.ra-stat-src { align-self: flex-start; margin-top: 2rem; font: 400 1.2rem/1.3 var(--f-mono); letter-spacing: .04em; text-decoration: underline; text-decoration-color: color-mix(in srgb, var(--ink) 35%, transparent); text-underline-offset: .35em; opacity: .8; }
-@media (hover: hover) and (pointer: fine) { .ra-stat-src:hover { opacity: 1; } }
+/* the figures: the kit's .kit-stat-tile (kit.css), set larger in an article */
+.ra-stat-tiles .kit-stat-tile { min-height: 48rem; }
+.ra-stat-tiles .kit-stat-fig { font-size: 18rem; }
 
 /* what follows (Findings, Takeaways) uses the same section; shown here as a ruled hand-off */
 .ra-next { padding-block: 0 4rem; }
@@ -80,7 +74,7 @@
   .ra-hero-copy, .ra-hero-fig { grid-column: 1 / -1; grid-row: auto; }
   .ra-hero-fig { margin-top: 4rem; }
   .ra-hero-fig .fd-tile { border-radius: 1.8rem; }
-  .ra-hero-fig .fd-tile > img { aspect-ratio: 16 / 10; }
+  .ra-hero-fig .fd-tile > img, .ra-hero-fig .kit-ph-obj { aspect-ratio: 16 / 10; }
   .ra-hero .heading { margin-top: 2.8rem; font-size: 5.2rem; }
   .ra-meta { margin-top: 2.4rem; }
   .ra-meta .ra-checked { flex-basis: 100%; }
@@ -100,10 +94,8 @@
   .ra-body li { padding-left: 2.4rem; }
   .ra-body li::before { width: 1.2rem; }
   .ra-stats { margin-top: 6.4rem; }
-  .ra-stat-tiles { grid-template-columns: 1fr; gap: 1.2rem; }
-  .ra-stat { min-height: 0; padding: 2.4rem 2.4rem 2.8rem; border-radius: 1.8rem; }
-  .ra-stat-fig { margin-top: 5.6rem; font-size: 11.2rem; }
-  .ra-stat-desc { padding-top: 2.4rem; font-size: 1.7rem; }
+  .ra-stat-tiles .kit-stat-tile { min-height: 0; }
+  .ra-stat-tiles .kit-stat-fig { font-size: 10.4rem; }
   .ra-next .kit-ruled { grid-column: 1 / -1; }
 }
 </style>
@@ -220,7 +212,37 @@
         </nav>
       </div>
       <div class="ra-hero-fig">
-        <div class="fd-tile" data-ex="echo"><img src="../../../landing-site/media/exhibits/echo/still.webp" alt=""></div>
+        <!-- the article's own thumbnail, the same as its card on /research (plan 003 §2: AP benchmarks = green,
+             a row of white coins with one green pair) -->
+        <div class="fd-tile kit-ph" data-hue="green">
+          <span class="kit-ph-tag">Piece to render · a row of white coins, one green pair</span>
+          <svg class="kit-ph-obj" viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+              <polygon class="shd" points="39.2,174.2 64.2,164.2 79.0,167.5 94.0,185.5 79.0,187.5 64.2,184.2"/>
+              <polygon class="shd" points="89.2,183.2 114.2,173.2 129.0,176.5 144.0,194.5 129.0,196.5 114.2,193.2"/>
+              <polygon class="shd" points="139.2,192.2 164.2,182.2 179.0,185.5 194.0,203.5 179.0,205.5 164.2,202.2"/>
+              <polygon class="shd" points="189.2,201.2 214.2,191.2 229.0,194.5 244.0,212.5 229.0,214.5 214.2,211.2"/>
+              <polygon class="shd" points="239.2,201.2 264.2,191.2 279.0,194.5 294.0,212.5 279.0,214.5 264.2,211.2"/>
+              <polygon class="shd" points="289.2,219.2 314.2,209.2 329.0,212.5 344.0,230.5 329.0,232.5 314.2,229.2"/>
+              <path class="sec-sh" d="M54.0 163.5v14.0a25.0 10.0 0 0 0 50.0 0v-14.0z"/>
+              <ellipse class="sec" cx="79.0" cy="163.5" rx="25.0" ry="10.0"/>
+              <ellipse class="sec-md" cx="79.0" cy="163.5" rx="20.0" ry="8.0"/>
+              <path class="sec-sh" d="M104.0 172.5v14.0a25.0 10.0 0 0 0 50.0 0v-14.0z"/>
+              <ellipse class="sec" cx="129.0" cy="172.5" rx="25.0" ry="10.0"/>
+              <ellipse class="sec-md" cx="129.0" cy="172.5" rx="20.0" ry="8.0"/>
+              <path class="sec-sh" d="M154.0 181.5v14.0a25.0 10.0 0 0 0 50.0 0v-14.0z"/>
+              <ellipse class="sec" cx="179.0" cy="181.5" rx="25.0" ry="10.0"/>
+              <ellipse class="sec-md" cx="179.0" cy="181.5" rx="20.0" ry="8.0"/>
+              <path class="hue-dk" d="M204.0 190.5v14.0a25.0 10.0 0 0 0 50.0 0v-14.0z"/>
+              <ellipse class="hue" cx="229.0" cy="190.5" rx="25.0" ry="10.0"/>
+              <ellipse class="hue-lt" cx="229.0" cy="190.5" rx="20.0" ry="8.0"/>
+              <path class="hue-dk" d="M254.0 190.5v14.0a25.0 10.0 0 0 0 50.0 0v-14.0z"/>
+              <ellipse class="hue" cx="279.0" cy="190.5" rx="25.0" ry="10.0"/>
+              <ellipse class="hue-lt" cx="279.0" cy="190.5" rx="20.0" ry="8.0"/>
+              <path class="sec-sh" d="M304.0 208.5v14.0a25.0 10.0 0 0 0 50.0 0v-14.0z"/>
+              <ellipse class="sec" cx="329.0" cy="208.5" rx="25.0" ry="10.0"/>
+              <ellipse class="sec-md" cx="329.0" cy="208.5" rx="20.0" ry="8.0"/>
+          </svg>
+        </div>
       </div>
     </div>
   </section>
@@ -254,18 +276,18 @@
       <!-- 3. THE TWO BENCHMARKS — big figures on pastel tiles, no render (were stat cards with old renders) -->
       <div class="ra-stats">
         <p class="kit-eyebrow">Two benchmarks · neither is a loss figure</p>
-        <ul class="ra-stat-tiles">
-          <li class="ra-stat" data-hue="green">
-            <span class="ra-stat-label">Of payments · duplicate or erroneous</span>
-            <strong class="ra-stat-fig">1.5<small>%</small></strong>
-            <p class="ra-stat-desc">At the median organization, 1.5% of the disbursements issued in a year are duplicate or erroneous.</p>
-            <a class="ra-stat-src" href="https://www.apqc.org/resources/benchmarking/open-standards-benchmarking/measures/percentage-total-annual-number" target="_blank" rel="noopener">APQC · sample of 1,686 companies</a>
+        <ul class="kit-stat-tiles is-2 ra-stat-tiles">
+          <li class="kit-stat-tile" data-hue="green">
+            <span class="kit-stat-label">Of payments · duplicate or erroneous</span>
+            <strong class="kit-stat-fig">1.5<small>%</small></strong>
+            <p class="kit-stat-desc">At the median organization, 1.5% of the disbursements issued in a year are duplicate or erroneous.</p>
+            <a class="kit-stat-src" href="https://www.apqc.org/resources/benchmarking/open-standards-benchmarking/measures/percentage-total-annual-number" target="_blank" rel="noopener">APQC · sample of 1,686 companies</a>
           </li>
-          <li class="ra-stat" data-hue="blue">
-            <span class="ra-stat-label">Exceptions · invoices</span>
-            <strong class="ra-stat-fig">18.4<small>%</small></strong>
-            <p class="ra-stat-desc">On average, 18.4% of the invoices an AP team processes need exception handling.</p>
-            <a class="ra-stat-src" href="https://payablesplace.ardentpartners.com/2026/01/state-of-epayables-part-nine-ap-benchmarks-and-best-in-class-performance/" target="_blank" rel="noopener">Ardent Partners</a>
+          <li class="kit-stat-tile" data-hue="blue">
+            <span class="kit-stat-label">Exceptions · invoices</span>
+            <strong class="kit-stat-fig">18.4<small>%</small></strong>
+            <p class="kit-stat-desc">On average, 18.4% of the invoices an AP team processes need exception handling.</p>
+            <a class="kit-stat-src" href="https://payablesplace.ardentpartners.com/2026/01/state-of-epayables-part-nine-ap-benchmarks-and-best-in-class-performance/" target="_blank" rel="noopener">Ardent Partners</a>
           </li>
         </ul>
       </div>

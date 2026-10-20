@@ -111,24 +111,23 @@
 
 <main class="page">
 
-  <!-- 2. PAGE HERO, tile variant: the slot holds an exhibit placeholder (here Security's sealed record box) -->
-  <section class="hero-home kit-hero is-tile" theme="grey">
+  <!-- 2. PAGE HERO, cut-out variant: a piece still to render drawn straight onto the grey floor (here Security's
+       violet sealed record box), no tile, like the record stack on the other heroes -->
+  <section class="hero-home kit-hero is-cutout" theme="grey">
     <div class="bg">
       <div class="bg-wrap the-grid"><div class="wrap">
-        <div class="fd-tile kit-ph" data-hue="blue">
+        <div class="kit-cutout" data-hue="violet">
+          <svg class="kit-ph-obj" viewBox="0 0 400 300" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+            <polygon class="shd" points="45,175 113,141 200,160 268,194 200,228 113,209"/>
+            <polygon class="hue-dk" points="132,128 200,162 200,228 132,194"/>
+            <polygon class="hue" points="200,162 268,128 268,194 200,228"/>
+            <polygon class="sec-sh" points="124,114 200,152 200,168 124,130"/>
+            <polygon class="sec-md" points="200,152 276,114 276,130 200,168"/>
+            <polygon class="sec" points="200,76 276,114 200,152 124,114"/>
+            <ellipse class="sec" cx="234" cy="180" rx="14" ry="17" transform="rotate(-27 234 180)"/>
+            <ellipse class="hue-lt" cx="234" cy="180" rx="8" ry="10" transform="rotate(-27 234 180)"/>
+          </svg>
           <span class="kit-ph-tag">Piece to render · sealed record box</span>
-          <svg class="kit-ph-obj" viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
-                  <!-- a sealed record box: a box in the hue, an off-white lid, a round seal -->
-                  <polygon class="shd" points="132,194 200,228 104,250 36,214"/>
-                  <polygon class="hue-dk" points="132,128 200,162 200,228 132,194"/>
-                  <polygon class="hue" points="200,162 268,128 268,194 200,228"/>
-                  <polygon class="sec-sh" points="124,114 200,152 200,168 124,130"/>
-                  <polygon class="sec-md" points="200,152 276,114 276,130 200,168"/>
-                  <polygon class="sec" points="200,76 276,114 200,152 124,114"/>
-                  <ellipse class="sec" cx="234" cy="180" rx="14" ry="17" transform="rotate(-27 234 180)"/>
-                  <ellipse class="hue-lt" cx="234" cy="180" rx="8" ry="10" transform="rotate(-27 234 180)"/>
-                </svg>
-
         </div>
       </div></div>
     </div>
@@ -184,7 +183,7 @@
           <p class="sheet-label" style="margin-top:6.4rem"><b>Exhibit placeholders</b> .fd-tile.kit-ph[data-hue] + .kit-ph-tag + svg.kit-ph-obj — pieces still to render</p>
           <div class="kit-block-body">
             <ol class="kit-tiles is-3">
-              <li><div class="fd-tile kit-ph" data-hue="blue"><span class="kit-ph-tag">Piece to render · sealed record box</span><svg class="kit-ph-obj" viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+              <li><div class="fd-tile kit-ph" data-hue="violet"><span class="kit-ph-tag">Piece to render · sealed record box</span><svg class="kit-ph-obj" viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
                   <!-- a sealed record box: a box in the hue, an off-white lid, a round seal -->
                   <polygon class="shd" points="132,194 200,228 104,250 36,214"/>
                   <polygon class="hue-dk" points="132,128 200,162 200,228 132,194"/>
@@ -196,7 +195,7 @@
                   <ellipse class="hue-lt" cx="234" cy="180" rx="8" ry="10" transform="rotate(-27 234 180)"/>
                 </svg>
 <span class="fd-cap"><span class="fd-title">Read, never write.</span><span class="fd-meta">Security</span></span></div></li>
-              <li><div class="fd-tile kit-ph" data-hue="violet"><span class="kit-ph-tag">Piece to render · your payments</span><svg class="kit-ph-obj" viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+              <li><div class="fd-tile kit-ph" data-hue="blue"><span class="kit-ph-tag">Piece to render · your payments<span class="kit-ph-flag">Later · REC-31</span></span><svg class="kit-ph-obj" viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
                   <!-- a small stack of records: off-white, hue, off-white slabs -->
                   <polygon class="shd" points="120,186 200,226 110,246 30,206"/>
                   <polygon class="sec-sh" points="120,170 200,210 200,226 120,186"/>
@@ -212,7 +211,7 @@
                   <polygon class="hue-lt" points="184,104 238,131 230,135 176,108"/>
                 </svg>
 <span class="fd-cap"><span class="fd-title">Upload a payment ledger.</span><span class="fd-meta">Launch · your payments</span></span></div></li>
-              <li><div class="fd-tile kit-ph" data-hue="green"><span class="kit-ph-tag">Piece to render · payment mismatch</span><svg class="kit-ph-obj" viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+              <li><div class="fd-tile kit-ph" data-hue="green"><span class="kit-ph-tag">Piece to render · payment mismatch<span class="kit-ph-flag">Proposal · not in plan 003</span></span><svg class="kit-ph-obj" viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
                   <!-- a disc too big for its socket: the payment that doesn't fit the bill -->
                   <ellipse class="shd" cx="128" cy="206" rx="96" ry="24" transform="rotate(-8 128 206)"/>
                   <path class="sec-sh" d="M102 190v26a78 26 0 0 0 156 0v-26z"/>
@@ -223,7 +222,7 @@
                   <ellipse class="hue" cx="252" cy="116" rx="58" ry="19"/>
                   <ellipse class="hue-lt" cx="252" cy="115" rx="45" ry="14"/>
                   <ellipse class="hue" cx="252" cy="116.5" rx="41.5" ry="12.6"/>
-                </svg><span class="fd-cap"><span class="fd-title">Billed one amount. Paid another.</span><span class="fd-meta">Payment mismatch</span></span></div></li>
+                </svg><span class="fd-cap"><span class="fd-title">Billed $2,090. Paid $2,900.</span><span class="fd-meta">Payment mismatch</span></span></div></li>
             </ol>
           </div>
         </div>
@@ -283,11 +282,11 @@
       <!-- 10. BIG FIGURES, 2-up (the research article's stat cards, no render) -->
       <section class="section sheet-block" theme="white">
         <div class="the-grid">
-          <p class="sheet-label"><b>Big-figure stats</b> ul.kit-stats.is-2 &gt; li.kit-stat</p>
+          <p class="sheet-label"><b>Stat tiles</b> ul.kit-stat-tiles.is-2 &gt; li.kit-stat-tile[data-hue] — the figure on a pastel tile, no picture (plan 003 decision 1)</p>
           <div class="kit-block-body">
-            <ul class="kit-stats is-2">
-              <li class="kit-stat"><span class="kit-stat-label">Duplicate or erroneous payments</span><strong class="kit-stat-fig">1.5%</strong><p class="kit-stat-desc">APQC puts duplicate or erroneous payments at 1.5% of disbursements.</p><a class="kit-stat-src" href="#">APQC</a></li>
-              <li class="kit-stat"><span class="kit-stat-label">Invoice exceptions</span><strong class="kit-stat-fig">18.4%</strong><p class="kit-stat-desc">Ardent puts invoice exceptions at 18.4%.</p><a class="kit-stat-src" href="#">Ardent Partners</a></li>
+            <ul class="kit-stat-tiles is-2">
+              <li class="kit-stat-tile" data-hue="green"><span class="kit-stat-label">Duplicate or erroneous payments</span><strong class="kit-stat-fig">1.5%</strong><p class="kit-stat-desc">APQC puts duplicate or erroneous payments at 1.5% of disbursements.</p><a class="kit-stat-src" href="#">APQC</a></li>
+              <li class="kit-stat-tile" data-hue="blue"><span class="kit-stat-label">Invoice exceptions</span><strong class="kit-stat-fig">18.4%</strong><p class="kit-stat-desc">Ardent puts invoice exceptions at 18.4%.</p><a class="kit-stat-src" href="#">Ardent Partners</a></li>
             </ul>
           </div>
         </div>

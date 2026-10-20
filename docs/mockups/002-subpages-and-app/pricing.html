@@ -40,7 +40,7 @@
   .pp-terms li { align-items: center; }
   .pp-terms h3 { margin-top: 0; font-size: 1.6rem; font-weight: 500; }
   /* the pilot note */
-  .pp-pilot { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: 4rem; margin-top: 6.4rem; padding: 3.2rem 3.2rem 3.2rem 4rem; border-radius: 2.4rem; background: var(--cl-grey-100); }
+  .pp-pilot { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: 4rem; margin-top: 6.4rem; padding: 3.2rem 3.2rem 3.2rem 4rem; border-radius: 2.8rem; background: var(--cl-grey-100); }
   .pp-pilot .kit-eyebrow { margin-bottom: 1.2rem; }
   .pp-pilot .type-body-large { max-width: 64rem; letter-spacing: -.01em; line-height: 1.3; }
 
@@ -53,7 +53,7 @@
   .pp-ledger .pl-fill { transform: none; }
   .pp-ledger .is-us .pl-fill { grid-column: 1 / 4; }                    /* green runs to the counted stage, not past it */
   .pp-ledger .is-us .pl-node:nth-child(8) { border-color: var(--cl-grey-500); }   /* 05 Reconcile: after the money, no green */
-  .pp-ledger .pl-steps li:nth-child(4) strong { color: var(--cl-reclaim); }   /* the one stage that is money back */
+  /* (step titles stay paper, as on the landing: on ink the lane is green up to the counted node, nothing else) */
   /* the plans' paper ends clear of the ink rising over it */
   .pp-paper-plans .rs-scale { padding-bottom: calc(var(--rounded-margin) + 14rem); }
 
@@ -70,7 +70,7 @@
     .pp-list { margin-top: 2.4rem; }
     .pp-plan .pp-cta { margin-top: 2.4rem; }
     .pp-terms { margin-top: 4rem !important; }
-    .pp-pilot { flex-direction: column; align-items: flex-start; gap: 2.4rem; margin-top: 4rem; padding: 2.8rem 2.4rem; }
+    .pp-pilot { flex-direction: column; align-items: flex-start; gap: 2.4rem; margin-top: 4rem; padding: 2.8rem 2.4rem; border-radius: 2rem; }
     .pp-paper-plans .rs-scale { padding-bottom: calc(var(--rounded-margin) + 6.4rem); }
     .pp-ledger .header { grid-column: 1 / -1; }
     .pp-ledger .pipeline { margin-top: 4.8rem; }
@@ -309,9 +309,8 @@
       <section class="section kit-faq pp-faq" theme="white" id="faq">
         <div class="the-grid">
           <div class="kit-faq-head">
-            <p class="kit-eyebrow">FAQ</p>
-            <h2 class="heading type-h3">Questions, answered.</h2>
-            <p class="kit-faq-note">Not sure which plan fits? <a href="#contact">Talk to us</a></p>
+            <h2 class="heading type-h3">FAQ</h2>
+            <p class="kit-faq-note">Not sure where to start? <a href="#contact">Talk to us</a></p>
           </div>
           <ul class="kit-faq-list">
             <li><details open><summary>How much does Reclaim cost?</summary><p>Free costs nothing and shows the three smallest findings in each upload. Growth is $15 a month plus 10% of money that actually comes back. Flat is $50 a month with no success fee. Paid plans open with our supervised pilots; <a href="#contact">talk to us</a> to join one. Refunds and credits always go directly to you.</p></details></li>

@@ -136,17 +136,16 @@
 
 <main class="page">
 
-  <!-- 1. HERO — grey, ink type, one <em>. The 3D slot holds the piece Security needs and doesn't have yet:
-       a sealed record box in blue (blue = security), drawn as an exhibit placeholder until it is rendered
-       in the matte family. Replaces the old black hero with no object. -->
-  <section class="hero-home kit-hero is-tile" theme="grey">
+  <!-- 1. HERO — grey, ink type, one <em>. The 3D slot holds the piece Security needs and doesn't have yet: a sealed
+       record box in violet (plan 003 §2: violet = unused credit + security), drawn as a cut-out straight onto the grey
+       floor like the record stack on every other hero, no tile. Replaces the old black hero with no object. -->
+  <section class="hero-home kit-hero is-cutout" theme="grey">
     <div class="bg">
       <div class="bg-wrap the-grid"><div class="wrap">
-        <div class="fd-tile kit-ph" data-hue="blue">
-          <span class="kit-ph-tag">Piece to render · sealed record box</span>
-          <svg class="kit-ph-obj" viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
-            <!-- a sealed record box: a box in the hue, an off-white lid, a round seal -->
-            <polygon class="shd" points="132,194 200,228 104,250 36,214"/>
+        <div class="kit-cutout" data-hue="violet">
+          <svg class="kit-ph-obj" viewBox="0 0 400 300" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+            <!-- a sealed record box: a box in the hue, an off-white lid, a round seal; its shadow falls back-left on the grey -->
+            <polygon class="shd" points="45,175 113,141 200,160 268,194 200,228 113,209"/>
             <polygon class="hue-dk" points="132,128 200,162 200,228 132,194"/>
             <polygon class="hue" points="200,162 268,128 268,194 200,228"/>
             <polygon class="sec-sh" points="124,114 200,152 200,168 124,130"/>
@@ -155,6 +154,7 @@
             <ellipse class="sec" cx="234" cy="180" rx="14" ry="17" transform="rotate(-27 234 180)"/>
             <ellipse class="hue-lt" cx="234" cy="180" rx="8" ry="10" transform="rotate(-27 234 180)"/>
           </svg>
+          <span class="kit-ph-tag">Piece to render · sealed record box</span>
         </div>
       </div></div>
     </div>
@@ -209,7 +209,7 @@
           </div>
           <div class="kit-step-fig">
             <div class="ex-sum kit-sum-plain sec-card">
-              <div class="ex-sum-head"><h3>Access</h3><span class="kit-chip" data-hue="blue">Nothing connected</span></div>
+              <div class="ex-sum-head"><h3>Access</h3><span class="kit-chip" data-hue="violet">Nothing connected</span></div>
               <ol class="ex-sum-rows">
                 <li class="ex-sum-row" data-hue="grey"><span class="ex-sum-ico is-line" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 3.5h8l4 4v13H6z"/><path d="M14 3.5v4h4M9 12.5h6M9 16h6"/></svg></span><span class="ex-sum-what"><span class="ex-sum-kind">The source you choose</span><span class="ex-sum-sub">Only the exports you choose to upload. Nothing connects to your accounting system.</span></span><span class="ex-sum-state">You choose</span></li>
                 <li class="ex-sum-row" data-hue="grey"><span class="ex-sum-ico is-line" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 7h14M9.5 7V4.5h5V7M7 7l1 13h8l1-13"/><path d="M10.5 11v5.5M13.5 11v5.5"/></svg></span><span class="ex-sum-what"><span class="ex-sum-kind">Yours to delete</span><span class="ex-sum-sub">You decide what you upload, and you can export or delete your data whenever you like.</span></span><span class="ex-sum-state">Any time</span></li>

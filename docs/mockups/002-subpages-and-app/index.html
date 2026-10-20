@@ -1,0 +1,591 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mockups 002 — gallery</title>
+<meta name="description" content="Plan 002 mockups for the owner: every sub page today vs the mockup, the app, and every piece still to render (plan 003).">
+<link rel="icon" type="image/svg+xml" href="../../../landing-site/assets/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400..700&family=Geist+Mono:wght@400;500&family=JetBrains+Mono:wght@400;500&family=Schibsted+Grotesk:ital,wght@0,400..800;1,400..800&display=block" rel="stylesheet">
+<link rel="stylesheet" href="../../../landing-site/styles.css">
+<link rel="stylesheet" href="kit.css">
+<style>
+/* the gallery: itself a sample of the style (grey hero, ink numbered section, paper sections, mono eyebrows) */
+.g-hero { padding: 12rem 0 14rem; background: var(--cl-grey-200); }
+.g-hero .kit-eyebrow { grid-column: 1 / span 6; color: var(--cl-grey-600); }
+.g-hero h1 { grid-column: 1 / span 9; margin-top: 3.2rem; }
+.g-hero .g-lede { grid-column: 1 / span 6; margin-top: 4rem; color: var(--cl-grey-600); }
+.g-hero .g-toc { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: .8rem; margin: 4.8rem 0 0; padding: 0; list-style: none; }
+.g-toc a { display: inline-flex; align-items: center; height: 3.6rem; padding: 0 1.6rem; border-radius: 99rem; background: var(--cl-white); box-shadow: inset 0 0 0 1px var(--cl-grey-300); font-size: 1.5rem; font-weight: 500; letter-spacing: -.01em; }
+.g-toc a:hover { box-shadow: inset 0 0 0 1px var(--cl-black); }
+.g-ink { margin: -4rem 1.6rem 0; padding: 11.2rem 0 12rem; border-radius: 2.4rem; background: var(--cl-black); color: var(--cl-white); position: relative; z-index: 1; }
+.g-ink .the-grid { width: calc(var(--grid-width) - 3.2rem); }
+.g-ink ol { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6.4rem; margin: 0; padding: 0; list-style: none; }
+.g-ink .n { display: block; margin-bottom: 1.6rem; color: var(--cl-grey-500); font: 400 1.2rem/1.3 var(--f-mono); }
+.g-ink h2 { font: 600 3.6rem/1.05 var(--f-display); letter-spacing: -.03em; }
+.g-ink p { margin-top: 1.6rem; color: var(--cl-grey-400); font-size: 1.7rem; line-height: 1.45; }
+.g-ink em { font-style: italic; }
+.g-sec { padding: 14.4rem 0 0; background: var(--cl-white); }
+.g-sec:last-of-type { padding-bottom: 14.4rem; }
+.g-sec-head { grid-column: 1 / span 8; margin-bottom: 6.4rem; }
+.g-sec-head .heading { margin-top: 2rem; }
+.g-sec-head p.g-desc { max-width: 64rem; margin-top: 2.4rem; color: var(--kit-muted); font-size: 2rem; line-height: 1.4; letter-spacing: -.01em; }
+.g-body { grid-column: 1 / -1; min-width: 0; }
+.g-page { display: grid; grid-template-columns: minmax(0, 4fr) minmax(0, 8fr); gap: 4rem; padding-block: 6.4rem; border-top: 1px solid var(--cl-grey-300); }
+.g-page:first-child { border-top: 0; padding-top: 0; }
+.g-page-head .heading { margin-top: 2rem; font-size: 4rem; }
+.g-page-text { margin-top: 2rem; color: var(--kit-muted); font-size: 1.6rem; line-height: 1.5; }
+.g-links { display: flex; flex-wrap: wrap; gap: .8rem 2rem; margin-top: 2.4rem; font: 400 1.2rem/1.3 var(--f-mono); letter-spacing: .04em; }
+.g-links a { text-decoration: underline; text-decoration-color: var(--cl-grey-400); text-underline-offset: .35em; }
+.g-links a:hover { text-decoration-color: var(--cl-black); }
+.g-links a:first-child { font-weight: 500; text-decoration-color: var(--cl-black); }
+.g-shots { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, .3fr); gap: 1.6rem; align-items: start; }
+.g-shots figure { min-width: 0; margin: 0; }
+.g-shots a { display: block; overflow: hidden; border-radius: 1.2rem; box-shadow: 0 0 0 1px var(--kit-card-line), 0 2.4rem 4.8rem -3.2rem rgb(20 26 22 / .32); background: var(--cl-grey-100); }
+.g-shots img { display: block; width: 100%; height: auto; }
+.g-shots figcaption, .g-app figcaption { display: flex; gap: 1rem; margin-top: 1.2rem; color: var(--kit-muted); font: 400 1.2rem/1.3 var(--f-mono); letter-spacing: .04em; }
+.g-shots figcaption b, .g-app figcaption b { font-weight: 500; letter-spacing: .08em; text-transform: uppercase; color: var(--kit-muted); }
+figcaption b.is-new { color: var(--cl-black); }
+figcaption b.is-new::before { content: ""; display: inline-block; width: .7rem; height: .7rem; margin-right: .6rem; border-radius: 50%; background: var(--cl-reclaim); vertical-align: .1rem; }
+.g-pieces-label { display: flex; justify-content: space-between; gap: 2.4rem; margin: 6.4rem 0 2rem; padding-top: 2rem; border-top: 1px solid var(--cl-grey-300); color: var(--kit-muted); font: 400 1.2rem/1.3 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; }
+.g-pieces-label:first-child { margin-top: 0; }
+.g-pieces-label b { color: var(--cl-black); font-weight: 500; }
+.kit-tiles.g-4 { --n: 4; gap: 1.2rem; }
+.kit-tiles.g-4 .fd-tile > img, .kit-tiles.g-4 .kit-ph-obj { aspect-ratio: 16 / 10; }
+.kit-tiles.g-4 .fd-title { font-size: 1.6rem; }
+.kit-tiles.g-4 .fd-cap { margin-top: -1.6rem; padding: 0 1.6rem 2.2rem; }
+.kit-tiles.g-4 .kit-ph-tag { left: 1.4rem; top: 1.4rem; max-width: calc(100% - 2.8rem); padding: .5rem .8rem .4rem; font-size: .9rem; }
+.kit-tiles.g-2 { --n: 4; }
+.g-app { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.6rem; margin: 0; padding: 0; list-style: none; }
+.g-app figure { margin: 0; }
+.g-app a { display: block; overflow: hidden; border-radius: 1.2rem; box-shadow: 0 0 0 1px var(--kit-card-line); }
+.g-app img { display: block; width: 100%; height: auto; }
+.g-cta { display: flex; flex-wrap: wrap; gap: 1.2rem; margin-top: 4rem; }
+.g-ask { margin: 0; padding: 0; list-style: none; border-bottom: 1px solid var(--cl-grey-300); counter-reset: ask; }
+.g-ask li { display: grid; grid-template-columns: 6.4rem minmax(0, 1fr); gap: 2.4rem; padding-block: 2.8rem; border-top: 1px solid var(--cl-grey-300); counter-increment: ask; }
+.g-ask li::before { content: counter(ask, decimal-leading-zero); color: var(--kit-muted); font: 400 1.3rem/2.2 var(--f-mono); }
+.g-ask h3 { font: 600 2.6rem/1.15 var(--f-display); letter-spacing: -.03em; }
+.g-ask p { max-width: 76rem; margin-top: 1rem; color: var(--kit-muted); font-size: 1.7rem; line-height: 1.45; }
+.g-ask code, .g-page-text code { font: 400 .9em var(--f-mono); }
+.g-foot { padding: 6.4rem 0; background: var(--cl-black); color: var(--cl-grey-400); font: 400 1.2rem/1.5 var(--f-mono); letter-spacing: .04em; }
+.g-foot .the-grid > * { grid-column: 1 / -1; }
+.g-foot a { color: var(--cl-white); text-decoration: underline; text-underline-offset: .3em; }
+@media (max-width: 1023px) {
+  .g-hero { padding: 8rem 0 9.6rem; }
+  .g-hero .kit-eyebrow, .g-hero h1, .g-hero .g-lede { grid-column: 1 / -1; }
+  .g-ink { margin: -3.2rem .8rem 0; padding: 6.4rem 0; }
+  .g-ink ol { grid-template-columns: 1fr; gap: 3.2rem; }
+  .g-ink h2 { font-size: 2.8rem; }
+  .g-sec { padding-top: 8rem; }
+  .g-sec:last-of-type { padding-bottom: 8rem; }
+  .g-sec-head { grid-column: 1 / -1; margin-bottom: 4rem; }
+  .g-sec-head p.g-desc { font-size: 1.7rem; }
+  .g-page { grid-template-columns: 1fr; gap: 2.4rem; padding-block: 4.8rem; }
+  .g-page-head .heading { font-size: 3rem; }
+  .g-shots { grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .g-shots .g-phone { grid-column: 1 / -1; width: 50%; }
+  .kit-tiles.g-4, .kit-tiles.g-2 { grid-template-columns: 1fr; }
+  .kit-tiles.g-4 .fd-tile > img, .kit-tiles.g-4 .kit-ph-obj { aspect-ratio: 16 / 9; }
+  .g-app { grid-template-columns: 1fr; }
+  .g-ask li { grid-template-columns: 3.2rem minmax(0, 1fr); gap: 1.2rem; padding-block: 2.2rem; }
+  .g-ask h3 { font-size: 2.1rem; }
+  .g-ask p { font-size: 1.5rem; }
+}
+@media (min-width: 600px) and (max-width: 1023px) {
+  .kit-tiles.g-4, .kit-tiles.g-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+</style>
+</head>
+<body class="kit">
+<div class="kit-mock-label" style="top:1.6rem">Mockup · 002 · gallery</div>
+<main class="page">
+
+  <header class="g-hero">
+    <div class="the-grid">
+      <p class="kit-eyebrow">Plan 002 · stage 1 · mockups for review</p>
+      <h1 class="heading type-h1">Every sub page, on the landing’s <em>style.</em></h1>
+      <p class="g-lede type-body-large">How It Works, What It Checks, Pricing, Security, About, Research and Guides as they are today next to the mockup, then the app, then every 3D piece still to render. Imagery follows plan 003: the old generated blocks and textures are gone, and every slot they held gets a piece in the style of the landing’s four colourful section pieces.</p>
+      <ul class="g-toc">
+        <li><a href="#pages">The pages</a></li>
+        <li><a href="#pieces">Pieces to render</a></li>
+        <li><a href="#app">The app</a></li>
+        <li><a href="#decide">Decisions for you</a></li>
+        <li><a href="kit.html">Component sheet</a></li>
+        <li><a href="before/before-first-screens.png">Today, every first screen</a></li>
+      </ul>
+    </div>
+  </header>
+
+  <section class="g-ink" theme="black">
+    <div class="the-grid">
+      <ol>
+        <li><span class="n">01</span><h2>One template.</h2><p>Grey hero with ink type and a 3D object at right, light nav pill with an ink Get Started, an ink rounded section of numbered columns, paper after. Sentence case everywhere; green only for money back, one CTA per section and status dots.</p></li>
+        <li><span class="n">02</span><h2>Only the section pieces.</h2><p>One smooth object, one hue, on a pastel of that hue, long soft shadow. Green = duplicate payment, orange = overpayment, violet = unused credit, blue = duplicate bill. Pieces that don’t exist yet are drawn flat and tagged <em>Piece to render</em>.</p></li>
+        <li><span class="n">03</span><h2>The app on paper and ink.</h2><p>Warm paper light theme, green-black ink dark theme, Schibsted for titles and headline money. Same layout and classes. Launch and Onboarding pieces are later (REC-31).</p></li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="g-sec" theme="white" id="pages">
+    <div class="the-grid">
+      <div class="g-sec-head">
+        <p class="kit-eyebrow">The pages · today vs mockup</p>
+        <h2 class="heading type-h2">Eight pages, one <em>family.</em></h2>
+        <p class="g-desc">Each row: today’s first screen, the mockup’s first screen and its phone view. Click any picture for the full page.</p>
+      </div>
+      <div class="g-body">
+      <article class="g-page" id="how-it-works">
+        <div class="g-page-head">
+          <p class="kit-eyebrow">01 · How It Works</p>
+          <h3 class="heading type-h3">The template, top to bottom.</h3>
+          <p class="g-page-text">The black hero and its anchor list become the grey hero with the record stack. One ink section of numbered steps replaces the anchor list and the side index. Where the old connect / find / build / recover loops were, each step now has its own piece in the section-piece style: blue blocks filing into a tray, an orange bead lifted from a bowl, a violet card drawn from a stack, green coins settling into a dish. The app sits flat (warm palette, no tablet), the stat carousel becomes figures on pastel tiles, and the FAQ is a ruled list.</p>
+          <p class="g-links"><a href="how-it-works.html">Open the mockup</a><a href="shots/how-it-works-1440.png">Full page, 1440</a><a href="shots/how-it-works-390.png">Full page, 390</a><a href="before/how-it-works.png">Today, full page</a></p>
+        </div>
+        <div class="g-shots">
+          <figure class="g-today"><a href="before/how-it-works.png"><img src="before/first/how-it-works.png" width="1440" height="900" alt="How It Works today, first screen" decoding="async"></a><figcaption><b>Today</b>first screen, 1440</figcaption></figure>
+          <figure class="g-mock"><a href="how-it-works.html"><img src="shots/first/how-it-works-1440.png" width="1440" height="900" alt="How It Works mockup, first screen" decoding="async"></a><figcaption><b class="is-new">Mockup</b>first screen, 1440</figcaption></figure>
+          <figure class="g-phone"><a href="shots/how-it-works-390.png"><img src="shots/first/how-it-works-390.png" width="390" height="844" alt="How It Works mockup on a phone" decoding="async"></a><figcaption><b class="is-new">390</b>phone</figcaption></figure>
+        </div>
+      </article>
+      <article class="g-page" id="what-it-checks">
+        <div class="g-page-head">
+          <p class="kit-eyebrow">02 · What It Checks</p>
+          <h3 class="heading type-h3">Five checks, five pieces.</h3>
+          <p class="g-page-text">Grey hero; the five checks as ink numbered columns. Each check gets its exhibit still with the landing’s caption (the fifth, payment mismatch, is a flagged proposal). The black tick-card carousels become ruled example lists; the green six-tile grid becomes the trust strip.</p>
+          <p class="g-links"><a href="what-it-checks.html">Open the mockup</a><a href="shots/what-it-checks-1440.png">Full page, 1440</a><a href="shots/what-it-checks-390.png">Full page, 390</a><a href="before/what-it-checks.png">Today, full page</a></p>
+        </div>
+        <div class="g-shots">
+          <figure class="g-today"><a href="before/what-it-checks.png"><img src="before/first/what-it-checks.png" width="1440" height="900" alt="What It Checks today, first screen" decoding="async"></a><figcaption><b>Today</b>first screen, 1440</figcaption></figure>
+          <figure class="g-mock"><a href="what-it-checks.html"><img src="shots/first/what-it-checks-1440.png" width="1440" height="900" alt="What It Checks mockup, first screen" decoding="async"></a><figcaption><b class="is-new">Mockup</b>first screen, 1440</figcaption></figure>
+          <figure class="g-phone"><a href="shots/what-it-checks-390.png"><img src="shots/first/what-it-checks-390.png" width="390" height="844" alt="What It Checks mockup on a phone" decoding="async"></a><figcaption><b class="is-new">390</b>phone</figcaption></figure>
+        </div>
+      </article>
+      <article class="g-page" id="pricing">
+        <div class="g-page-head">
+          <p class="kit-eyebrow">03 · Pricing</p>
+          <h3 class="heading type-h3">Plans first.</h3>
+          <p class="g-page-text">Grey hero with an italic “back.” instead of the underline. Plans on paper straight after it: Schibsted names in sentence case, ruled feature lists, one green button. “What counts as recovered” is the landing’s own track on ink, green only up to the counted stage.</p>
+          <p class="g-links"><a href="pricing.html">Open the mockup</a><a href="shots/pricing-1440.png">Full page, 1440</a><a href="shots/pricing-390.png">Full page, 390</a><a href="before/pricing.png">Today, full page</a></p>
+        </div>
+        <div class="g-shots">
+          <figure class="g-today"><a href="before/pricing.png"><img src="before/first/pricing.png" width="1440" height="900" alt="Pricing today, first screen" decoding="async"></a><figcaption><b>Today</b>first screen, 1440</figcaption></figure>
+          <figure class="g-mock"><a href="pricing.html"><img src="shots/first/pricing-1440.png" width="1440" height="900" alt="Pricing mockup, first screen" decoding="async"></a><figcaption><b class="is-new">Mockup</b>first screen, 1440</figcaption></figure>
+          <figure class="g-phone"><a href="shots/pricing-390.png"><img src="shots/first/pricing-390.png" width="390" height="844" alt="Pricing mockup on a phone" decoding="async"></a><figcaption><b class="is-new">390</b>phone</figcaption></figure>
+        </div>
+      </article>
+      <article class="g-page" id="security">
+        <div class="g-page-head">
+          <p class="kit-eyebrow">04 · Security</p>
+          <h3 class="heading type-h3">A violet sealed record box.</h3>
+          <p class="g-page-text">Grey hero with Security’s own piece, a violet sealed record box (plan 003), drawn straight onto the grey floor until it is rendered. Ink columns replace the side index; the grey cards with green icon tiles become one white summary card; capitals headings are gone.</p>
+          <p class="g-links"><a href="security.html">Open the mockup</a><a href="shots/security-1440.png">Full page, 1440</a><a href="shots/security-390.png">Full page, 390</a><a href="before/security.png">Today, full page</a></p>
+        </div>
+        <div class="g-shots">
+          <figure class="g-today"><a href="before/security.png"><img src="before/first/security.png" width="1440" height="900" alt="Security today, first screen" decoding="async"></a><figcaption><b>Today</b>first screen, 1440</figcaption></figure>
+          <figure class="g-mock"><a href="security.html"><img src="shots/first/security-1440.png" width="1440" height="900" alt="Security mockup, first screen" decoding="async"></a><figcaption><b class="is-new">Mockup</b>first screen, 1440</figcaption></figure>
+          <figure class="g-phone"><a href="shots/security-390.png"><img src="shots/first/security-390.png" width="390" height="844" alt="Security mockup on a phone" decoding="async"></a><figcaption><b class="is-new">390</b>phone</figcaption></figure>
+        </div>
+      </article>
+      <article class="g-page" id="about">
+        <div class="g-page-head">
+          <p class="kit-eyebrow">05 · About</p>
+          <h3 class="heading type-h3">Sentence case, one italic word.</h3>
+          <p class="g-page-text">Grey hero in sentence case. The ink statement carries the three stills with the landing’s captions; the beliefs become numbered columns; Ardent’s rates are figures on pastel tiles.</p>
+          <p class="g-links"><a href="about.html">Open the mockup</a><a href="shots/about-1440.png">Full page, 1440</a><a href="shots/about-390.png">Full page, 390</a><a href="before/about.png">Today, full page</a></p>
+        </div>
+        <div class="g-shots">
+          <figure class="g-today"><a href="before/about.png"><img src="before/first/about.png" width="1440" height="900" alt="About today, first screen" decoding="async"></a><figcaption><b>Today</b>first screen, 1440</figcaption></figure>
+          <figure class="g-mock"><a href="about.html"><img src="shots/first/about-1440.png" width="1440" height="900" alt="About mockup, first screen" decoding="async"></a><figcaption><b class="is-new">Mockup</b>first screen, 1440</figcaption></figure>
+          <figure class="g-phone"><a href="shots/about-390.png"><img src="shots/first/about-390.png" width="390" height="844" alt="About mockup on a phone" decoding="async"></a><figcaption><b class="is-new">390</b>phone</figcaption></figure>
+        </div>
+      </article>
+      <article class="g-page" id="research">
+        <div class="g-page-head">
+          <p class="kit-eyebrow">06 · Research</p>
+          <h3 class="heading type-h3">One thumbnail per article.</h3>
+          <p class="g-page-text">Grey hero; the green filter panel becomes plain mono chips. The striped “dept” renders are replaced by the four article thumbnails plan 003 lists: a row of coins with a green pair, an invoice with a coral copy, an envelope in a tray, a column of bars.</p>
+          <p class="g-links"><a href="research.html">Open the mockup</a><a href="shots/research-1440.png">Full page, 1440</a><a href="shots/research-390.png">Full page, 390</a><a href="before/research.png">Today, full page</a></p>
+        </div>
+        <div class="g-shots">
+          <figure class="g-today"><a href="before/research.png"><img src="before/first/research.png" width="1440" height="900" alt="Research today, first screen" decoding="async"></a><figcaption><b>Today</b>first screen, 1440</figcaption></figure>
+          <figure class="g-mock"><a href="research.html"><img src="shots/first/research-1440.png" width="1440" height="900" alt="Research mockup, first screen" decoding="async"></a><figcaption><b class="is-new">Mockup</b>first screen, 1440</figcaption></figure>
+          <figure class="g-phone"><a href="shots/research-390.png"><img src="shots/first/research-390.png" width="390" height="844" alt="Research mockup on a phone" decoding="async"></a><figcaption><b class="is-new">390</b>phone</figcaption></figure>
+        </div>
+      </article>
+      <article class="g-page" id="research-article">
+        <div class="g-page-head">
+          <p class="kit-eyebrow">07 · Research article</p>
+          <h3 class="heading type-h3">Paper, not mint.</h3>
+          <p class="g-page-text">The full mint hero band goes: a paper hero with a mono “Sources checked” line and the article’s own thumbnail. Sentence-case heads; the stat cards with renders become figures on pastel tiles.</p>
+          <p class="g-links"><a href="research-article.html">Open the mockup</a><a href="shots/research-article-1440.png">Full page, 1440</a><a href="shots/research-article-390.png">Full page, 390</a><a href="before/research_ap-benchmarks.png">Today, full page</a></p>
+        </div>
+        <div class="g-shots">
+          <figure class="g-today"><a href="before/research_ap-benchmarks.png"><img src="before/first/research-article.png" width="1440" height="900" alt="Research article today, first screen" decoding="async"></a><figcaption><b>Today</b>first screen, 1440</figcaption></figure>
+          <figure class="g-mock"><a href="research-article.html"><img src="shots/first/research-article-1440.png" width="1440" height="900" alt="Research article mockup, first screen" decoding="async"></a><figcaption><b class="is-new">Mockup</b>first screen, 1440</figcaption></figure>
+          <figure class="g-phone"><a href="shots/research-article-390.png"><img src="shots/first/research-article-390.png" width="390" height="844" alt="Research article mockup on a phone" decoding="async"></a><figcaption><b class="is-new">390</b>phone</figcaption></figure>
+        </div>
+      </article>
+      <article class="g-page" id="guides">
+        <div class="g-page-head">
+          <p class="kit-eyebrow">08 · Guides</p>
+          <h3 class="heading type-h3">Export tiles, no hexagon.</h3>
+          <p class="g-page-text">Grey hero with search. “Start here” is a white summary card holding the landing’s export tiles; the black-bordered box, the black badges and the hexagon placeholder are gone.</p>
+          <p class="g-links"><a href="guides.html">Open the mockup</a><a href="shots/guides-1440.png">Full page, 1440</a><a href="shots/guides-390.png">Full page, 390</a><a href="before/guides.png">Today, full page</a></p>
+        </div>
+        <div class="g-shots">
+          <figure class="g-today"><a href="before/guides.png"><img src="before/first/guides.png" width="1440" height="900" alt="Guides today, first screen" decoding="async"></a><figcaption><b>Today</b>first screen, 1440</figcaption></figure>
+          <figure class="g-mock"><a href="guides.html"><img src="shots/first/guides-1440.png" width="1440" height="900" alt="Guides mockup, first screen" decoding="async"></a><figcaption><b class="is-new">Mockup</b>first screen, 1440</figcaption></figure>
+          <figure class="g-phone"><a href="shots/guides-390.png"><img src="shots/first/guides-390.png" width="390" height="844" alt="Guides mockup on a phone" decoding="async"></a><figcaption><b class="is-new">390</b>phone</figcaption></figure>
+        </div>
+      </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="g-sec" theme="white" id="pieces">
+    <div class="the-grid">
+      <div class="g-sec-head">
+        <p class="kit-eyebrow">Plan 003 · pieces to render</p>
+        <h2 class="heading type-h2">The pieces, before anything is <em>modelled.</em></h2>
+        <p class="g-desc">The four section pieces that exist, and every placeholder in the set, at tile size and colour. Approve the objects and hues; then they are rendered on a machine with Blender (plan 003 §4).</p>
+      </div>
+      <div class="g-body">
+        <p class="g-pieces-label"><b>Exist · the landing’s four section pieces</b><span>reserved for the four checks</span></p>
+        <ol class="kit-tiles g-4"><li><div class="fd-tile" data-ex="echo"><img src="../../../landing-site/media/exhibits/echo/still-m.webp" width="1600" height="900" alt="" decoding="async"><span class="fd-cap"><span class="fd-title">One payment. Made twice.</span><span class="fd-meta">Duplicate payment · $4,280</span></span></div></li><li><div class="fd-tile" data-ex="overflow"><img src="../../../landing-site/media/exhibits/overflow/still-m.webp" width="1600" height="900" alt="" decoding="async"><span class="fd-cap"><span class="fd-title">More than the bill asked for.</span><span class="fd-meta">Overpayment · $1,200</span></span></div></li><li><div class="fd-tile" data-ex="piece"><img src="../../../landing-site/media/exhibits/piece/still-m.webp" width="1600" height="900" alt="" decoding="async"><span class="fd-cap"><span class="fd-title">It was yours the whole time.</span><span class="fd-meta">Unused credit · $850</span></span></div></li><li><div class="fd-tile" data-ex="shadow"><img src="../../../landing-site/media/exhibits/shadow/still-m.webp" width="1600" height="900" alt="" decoding="async"><span class="fd-cap"><span class="fd-title">Two bills. One purchase.</span><span class="fd-meta">Duplicate bill · $2,640</span></span></div></li></ol>
+        <p class="g-pieces-label"><b>How It Works · four steps</b><span>where the old hex-chain / rainbow / wedge / terrazzo loops were</span></p>
+        <ol class="kit-tiles g-4"><li><div class="fd-tile kit-ph" data-hue="blue"><span class="kit-ph-tag">Piece to render · blocks filing into a white tray</span><svg class="kit-ph-obj" viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><polygon class="shd" points="96.2,183.4 152.2,161.0 184.0,168.0 320.0,222.4 264.0,244.8 232.2,237.8"/>
+<polygon class="sec-sh" points="128.0,190.4 264.0,244.8 264.0,226.8 128.0,172.4"/>
+<polygon class="sec-md" points="264.0,244.8 320.0,222.4 320.0,204.4 264.0,226.8"/>
+<polygon class="sec" points="184.0,150.0 320.0,204.4 264.0,226.8 128.0,172.4"/>
+<polygon class="sec-dk" points="184.0,154.8 308.0,204.4 264.0,222.0 140.0,172.4"/>
+<ellipse class="shd" cx="182.0" cy="170.8" rx="22.0" ry="7.0" transform="rotate(0 182.0 170.8)" style="opacity:0.55"/>
+<polygon class="hue-dk" points="187.0,201.6 221.0,215.2 221.0,185.2 187.0,171.6"/>
+<polygon class="hue" points="221.0,215.2 261.0,199.2 261.0,169.2 221.0,185.2"/>
+<polygon class="hue-lt" points="227.0,155.6 261.0,169.2 221.0,185.2 187.0,171.6"/>
+<polygon class="hue-dk" points="229.0,218.4 263.0,232.0 263.0,202.0 229.0,188.4"/>
+<polygon class="hue" points="263.0,232.0 303.0,216.0 303.0,186.0 263.0,202.0"/>
+<polygon class="hue-lt" points="269.0,172.4 303.0,186.0 263.0,202.0 229.0,188.4"/>
+<polygon class="hue-dk" points="145.0,148.8 179.0,162.4 179.0,132.4 145.0,118.8"/>
+<polygon class="hue" points="179.0,162.4 219.0,146.4 219.0,116.4 179.0,132.4"/>
+<polygon class="hue-lt" points="185.0,102.8 219.0,116.4 179.0,132.4 145.0,118.8"/></svg><span class="fd-cap"><span class="fd-title">01 Connect</span><span class="fd-meta">How It Works · was connect.webm</span></span></div></li><li><div class="fd-tile kit-ph" data-hue="orange"><span class="kit-ph-tag">Piece to render · one coral bead lifted from a white bowl</span><svg class="kit-ph-obj" viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><polygon class="shd" points="58.6,214.9 120.6,190.1 180.0,203.2 192.4,252.8 142.8,247.8 83.4,234.8"/>
+<path class="sec-sh" d="M118.0 172.0v56.0a62.0 24.8 0 0 0 124.0 0v-56.0z"/>
+<ellipse class="sec" cx="180.0" cy="172.0" rx="62.0" ry="24.8"/>
+<ellipse class="sec-dk" cx="180.0" cy="174.0" rx="56.0" ry="22.4"/>
+<circle class="hue-dk" cx="191.0" cy="155.6" r="8.6"/>
+<circle class="hue" cx="190.0" cy="154.4" r="7.3"/>
+<circle class="hue-lt" cx="192.8" cy="152.2" r="2.3"/>
+<circle class="hue-dk" cx="183.3" cy="155.6" r="8.6"/>
+<circle class="hue" cx="182.3" cy="154.4" r="7.3"/>
+<circle class="hue-lt" cx="185.1" cy="152.2" r="2.3"/>
+<circle class="hue-dk" cx="167.5" cy="156.3" r="8.6"/>
+<circle class="hue" cx="166.5" cy="155.1" r="7.3"/>
+<circle class="hue-lt" cx="169.3" cy="152.9" r="2.3"/>
+<circle class="hue-dk" cx="205.0" cy="156.9" r="8.6"/>
+<circle class="hue" cx="204.0" cy="155.7" r="7.3"/>
+<circle class="hue-lt" cx="206.8" cy="153.5" r="2.3"/>
+<circle class="hue-dk" cx="176.7" cy="157.2" r="8.6"/>
+<circle class="hue" cx="175.7" cy="156.0" r="7.3"/>
+<circle class="hue-lt" cx="178.5" cy="153.8" r="2.3"/>
+<circle class="hue-dk" cx="166.7" cy="157.5" r="8.6"/>
+<circle class="hue" cx="165.7" cy="156.3" r="7.3"/>
+<circle class="hue-lt" cx="168.5" cy="154.1" r="2.3"/>
+<circle class="hue-dk" cx="151.2" cy="157.7" r="8.6"/>
+<circle class="hue" cx="150.2" cy="156.5" r="7.3"/>
+<circle class="hue-lt" cx="153.0" cy="154.3" r="2.3"/>
+<circle class="hue-dk" cx="191.2" cy="158.2" r="8.6"/>
+<circle class="hue" cx="190.2" cy="157.0" r="7.3"/>
+<circle class="hue-lt" cx="193.0" cy="154.8" r="2.3"/>
+<circle class="hue-dk" cx="147.5" cy="159.3" r="8.6"/>
+<circle class="hue" cx="146.5" cy="158.1" r="7.3"/>
+<circle class="hue-lt" cx="149.3" cy="155.9" r="2.3"/>
+<circle class="hue-dk" cx="161.2" cy="159.3" r="8.6"/>
+<circle class="hue" cx="160.2" cy="158.1" r="7.3"/>
+<circle class="hue-lt" cx="163.0" cy="155.9" r="2.3"/>
+<circle class="hue-dk" cx="196.3" cy="159.4" r="8.6"/>
+<circle class="hue" cx="195.3" cy="158.2" r="7.3"/>
+<circle class="hue-lt" cx="198.1" cy="156.0" r="2.3"/>
+<circle class="hue-dk" cx="172.5" cy="160.0" r="8.6"/>
+<circle class="hue" cx="171.5" cy="158.8" r="7.3"/>
+<circle class="hue-lt" cx="174.3" cy="156.6" r="2.3"/>
+<circle class="hue-dk" cx="199.1" cy="160.1" r="8.6"/>
+<circle class="hue" cx="198.1" cy="158.9" r="7.3"/>
+<circle class="hue-lt" cx="200.9" cy="156.7" r="2.3"/>
+<circle class="hue-dk" cx="168.5" cy="162.6" r="8.6"/>
+<circle class="hue" cx="167.5" cy="161.4" r="7.3"/>
+<circle class="hue-lt" cx="170.3" cy="159.2" r="2.3"/>
+<circle class="hue-dk" cx="151.6" cy="162.9" r="8.6"/>
+<circle class="hue" cx="150.6" cy="161.7" r="7.3"/>
+<circle class="hue-lt" cx="153.4" cy="159.5" r="2.3"/>
+<circle class="hue-dk" cx="153.2" cy="162.9" r="8.6"/>
+<circle class="hue" cx="152.2" cy="161.7" r="7.3"/>
+<circle class="hue-lt" cx="155.0" cy="159.5" r="2.3"/>
+<circle class="hue-dk" cx="190.2" cy="163.0" r="8.6"/>
+<circle class="hue" cx="189.2" cy="161.8" r="7.3"/>
+<circle class="hue-lt" cx="192.0" cy="159.6" r="2.3"/>
+<circle class="hue-dk" cx="196.4" cy="164.3" r="8.6"/>
+<circle class="hue" cx="195.4" cy="163.1" r="7.3"/>
+<circle class="hue-lt" cx="198.2" cy="160.9" r="2.3"/>
+<circle class="hue-dk" cx="151.7" cy="165.7" r="8.6"/>
+<circle class="hue" cx="150.7" cy="164.5" r="7.3"/>
+<circle class="hue-lt" cx="153.5" cy="162.3" r="2.3"/>
+<circle class="hue-dk" cx="137.0" cy="166.8" r="8.6"/>
+<circle class="hue" cx="136.0" cy="165.6" r="7.3"/>
+<circle class="hue-lt" cx="138.8" cy="163.4" r="2.3"/>
+<circle class="hue-dk" cx="193.1" cy="167.1" r="8.6"/>
+<circle class="hue" cx="192.1" cy="165.9" r="7.3"/>
+<circle class="hue-lt" cx="194.9" cy="163.7" r="2.3"/>
+<circle class="hue-dk" cx="135.7" cy="169.4" r="8.6"/>
+<circle class="hue" cx="134.7" cy="168.2" r="7.3"/>
+<circle class="hue-lt" cx="137.5" cy="166.0" r="2.3"/>
+<circle class="hue-dk" cx="200.3" cy="169.6" r="8.6"/>
+<circle class="hue" cx="199.3" cy="168.4" r="7.3"/>
+<circle class="hue-lt" cx="202.1" cy="166.2" r="2.3"/>
+<circle class="hue-dk" cx="190.2" cy="170.3" r="8.6"/>
+<circle class="hue" cx="189.2" cy="169.1" r="7.3"/>
+<circle class="hue-lt" cx="192.0" cy="166.9" r="2.3"/>
+<circle class="hue-dk" cx="154.8" cy="170.6" r="8.6"/>
+<circle class="hue" cx="153.8" cy="169.4" r="7.3"/>
+<circle class="hue-lt" cx="156.6" cy="167.2" r="2.3"/>
+<circle class="hue-dk" cx="188.1" cy="170.8" r="8.6"/>
+<circle class="hue" cx="187.1" cy="169.6" r="7.3"/>
+<circle class="hue-lt" cx="189.9" cy="167.4" r="2.3"/>
+<circle class="hue-dk" cx="212.3" cy="171.0" r="8.6"/>
+<circle class="hue" cx="211.3" cy="169.8" r="7.3"/>
+<circle class="hue-lt" cx="214.1" cy="167.6" r="2.3"/>
+<circle class="hue-dk" cx="210.7" cy="171.9" r="8.6"/>
+<circle class="hue" cx="209.7" cy="170.7" r="7.3"/>
+<circle class="hue-lt" cx="212.5" cy="168.5" r="2.3"/>
+<circle class="hue-dk" cx="171.7" cy="172.3" r="8.6"/>
+<circle class="hue" cx="170.7" cy="171.1" r="7.3"/>
+<circle class="hue-lt" cx="173.5" cy="168.9" r="2.3"/>
+<circle class="hue-dk" cx="196.2" cy="173.0" r="8.6"/>
+<circle class="hue" cx="195.2" cy="171.8" r="7.3"/>
+<circle class="hue-lt" cx="198.0" cy="169.6" r="2.3"/>
+<circle class="hue-dk" cx="141.4" cy="173.3" r="8.6"/>
+<circle class="hue" cx="140.4" cy="172.1" r="7.3"/>
+<circle class="hue-lt" cx="143.2" cy="169.9" r="2.3"/>
+<circle class="hue-dk" cx="196.4" cy="173.9" r="8.6"/>
+<circle class="hue" cx="195.4" cy="172.7" r="7.3"/>
+<circle class="hue-lt" cx="198.2" cy="170.5" r="2.3"/>
+<circle class="hue-dk" cx="211.9" cy="174.4" r="8.6"/>
+<circle class="hue" cx="210.9" cy="173.2" r="7.3"/>
+<circle class="hue-lt" cx="213.7" cy="171.0" r="2.3"/>
+<circle class="hue-dk" cx="218.1" cy="174.6" r="8.6"/>
+<circle class="hue" cx="217.1" cy="173.4" r="7.3"/>
+<circle class="hue-lt" cx="219.9" cy="171.2" r="2.3"/>
+<circle class="hue-dk" cx="208.1" cy="175.3" r="8.6"/>
+<circle class="hue" cx="207.1" cy="174.1" r="7.3"/>
+<circle class="hue-lt" cx="209.9" cy="171.9" r="2.3"/>
+<circle class="hue-dk" cx="217.3" cy="177.0" r="8.6"/>
+<circle class="hue" cx="216.3" cy="175.8" r="7.3"/>
+<circle class="hue-lt" cx="219.1" cy="173.6" r="2.3"/>
+<circle class="hue-dk" cx="219.2" cy="177.6" r="8.6"/>
+<circle class="hue" cx="218.2" cy="176.4" r="7.3"/>
+<circle class="hue-lt" cx="221.0" cy="174.2" r="2.3"/>
+<circle class="hue-dk" cx="143.6" cy="179.7" r="8.6"/>
+<circle class="hue" cx="142.6" cy="178.5" r="7.3"/>
+<circle class="hue-lt" cx="145.4" cy="176.3" r="2.3"/>
+<circle class="hue-dk" cx="141.2" cy="179.9" r="8.6"/>
+<circle class="hue" cx="140.2" cy="178.7" r="7.3"/>
+<circle class="hue-lt" cx="143.0" cy="176.5" r="2.3"/>
+<circle class="hue-dk" cx="199.4" cy="180.4" r="8.6"/>
+<circle class="hue" cx="198.4" cy="179.2" r="7.3"/>
+<circle class="hue-lt" cx="201.2" cy="177.0" r="2.3"/>
+<circle class="hue-dk" cx="150.4" cy="181.1" r="8.6"/>
+<circle class="hue" cx="149.4" cy="179.9" r="7.3"/>
+<circle class="hue-lt" cx="152.2" cy="177.7" r="2.3"/>
+<circle class="hue-dk" cx="195.4" cy="183.4" r="8.6"/>
+<circle class="hue" cx="194.4" cy="182.2" r="7.3"/>
+<circle class="hue-lt" cx="197.2" cy="180.0" r="2.3"/>
+<circle class="hue-dk" cx="145.3" cy="183.5" r="8.6"/>
+<circle class="hue" cx="144.3" cy="182.3" r="7.3"/>
+<circle class="hue-lt" cx="147.1" cy="180.1" r="2.3"/>
+<circle class="hue-dk" cx="165.6" cy="183.7" r="8.6"/>
+<circle class="hue" cx="164.6" cy="182.5" r="7.3"/>
+<circle class="hue-lt" cx="167.4" cy="180.3" r="2.3"/>
+<circle class="hue-dk" cx="181.3" cy="184.6" r="8.6"/>
+<circle class="hue" cx="180.3" cy="183.4" r="7.3"/>
+<circle class="hue-lt" cx="183.1" cy="181.2" r="2.3"/>
+<circle class="hue-dk" cx="164.4" cy="188.0" r="8.6"/>
+<circle class="hue" cx="163.4" cy="186.8" r="7.3"/>
+<circle class="hue-lt" cx="166.2" cy="184.6" r="2.3"/>
+<ellipse class="shd" cx="196.0" cy="166.0" rx="13.0" ry="5.0" transform="rotate(0 196.0 166.0)" style="opacity:0.5"/>
+<circle class="hue-dk" cx="232.0" cy="114.0" r="17.0"/>
+<circle class="hue" cx="230.0" cy="112.0" r="14.6"/>
+<ellipse class="hue-lt" cx="235.7" cy="107.5" rx="6.1" ry="4.1" transform="rotate(-30 235.7 107.5)"/></svg><span class="fd-cap"><span class="fd-title">02 Find</span><span class="fd-meta">How It Works · was find.webm</span></span></div></li><li><div class="fd-tile kit-ph" data-hue="violet"><span class="kit-ph-tag">Piece to render · a card drawn from a white stack</span><svg class="kit-ph-obj" viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><polygon class="shd" points="9.7,186.8 93.7,153.2 170.0,170.0 278.0,213.2 194.0,246.8 117.7,230.0"/>
+<polygon class="shd" points="95.4,210.9 167.4,182.1 214.0,192.4 322.0,235.6 250.0,264.4 203.4,254.1" style="opacity:0.45"/>
+<polygon class="sec-sh" points="86.0,203.6 194.0,246.8 194.0,238.8 86.0,195.6"/>
+<polygon class="sec-md" points="194.0,246.8 278.0,213.2 278.0,205.2 194.0,238.8"/>
+<polygon class="sec" points="170.0,162.0 278.0,205.2 194.0,238.8 86.0,195.6"/>
+<polygon class="sec-sh" points="86.0,191.6 194.0,234.8 194.0,226.8 86.0,183.6"/>
+<polygon class="sec-md" points="194.0,234.8 278.0,201.2 278.0,193.2 194.0,226.8"/>
+<polygon class="sec" points="170.0,150.0 278.0,193.2 194.0,226.8 86.0,183.6"/>
+<polygon class="sec-sh" points="86.0,179.6 194.0,222.8 194.0,214.8 86.0,171.6"/>
+<polygon class="sec-md" points="194.0,222.8 278.0,189.2 278.0,181.2 194.0,214.8"/>
+<polygon class="sec" points="170.0,138.0 278.0,181.2 194.0,214.8 86.0,171.6"/>
+<polygon class="hue-dk" points="142.0,185.2 250.0,228.4 250.0,220.4 142.0,177.2"/>
+<polygon class="hue" points="250.0,228.4 322.0,199.6 322.0,191.6 250.0,220.4"/>
+<polygon class="hue-lt" points="214.0,148.4 322.0,191.6 250.0,220.4 142.0,177.2"/>
+<polygon class="sec-sh" points="86.0,155.6 194.0,198.8 194.0,190.8 86.0,147.6"/>
+<polygon class="sec-md" points="194.0,198.8 278.0,165.2 278.0,157.2 194.0,190.8"/>
+<polygon class="sec" points="170.0,114.0 278.0,157.2 194.0,190.8 86.0,147.6"/>
+<polygon class="sec-sh" points="86.0,143.6 194.0,186.8 194.0,178.8 86.0,135.6"/>
+<polygon class="sec-md" points="194.0,186.8 278.0,153.2 278.0,145.2 194.0,178.8"/>
+<polygon class="sec" points="170.0,102.0 278.0,145.2 194.0,178.8 86.0,135.6"/></svg><span class="fd-cap"><span class="fd-title">03 Evidence</span><span class="fd-meta">How It Works · was build.webm</span></span></div></li><li><div class="fd-tile kit-ph" data-hue="green"><span class="kit-ph-tag">Piece to render · coins settling into a white dish</span><svg class="kit-ph-obj" viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><polygon class="shd" points="91.0,218.3 116.8,194.2 177.0,183.9 194.0,187.6 245.6,249.5 194.0,256.4 177.0,252.7"/>
+<path class="sec-sh" d="M108.0 206.0v16.0a86.0 34.4 0 0 0 172.0 0v-16.0z"/>
+<ellipse class="sec" cx="194.0" cy="206.0" rx="86.0" ry="34.4"/>
+<ellipse class="sec-dk" cx="194.0" cy="209.0" rx="75.0" ry="30.0"/>
+<ellipse class="sec-md" cx="194.0" cy="211.0" rx="66.0" ry="26.4"/>
+<ellipse class="shd" cx="164.0" cy="204.0" rx="32.0" ry="9.0" transform="rotate(0 164.0 204.0)" style="opacity:0.45"/>
+<path class="hue-dk" d="M154.0 205.0v7.0a28.0 11.2 0 0 0 56.0 0v-7.0z"/>
+<ellipse class="hue" cx="182.0" cy="205.0" rx="28.0" ry="11.2"/>
+<path class="hue-dk" d="M154.0 197.0v7.0a28.0 11.2 0 0 0 56.0 0v-7.0z"/>
+<ellipse class="hue" cx="182.0" cy="197.0" rx="28.0" ry="11.2"/>
+<ellipse class="hue-lt" cx="182.0" cy="197.0" rx="22.4" ry="9.0"/>
+<path class="hue-dk" d="M202.0 211.0v7.0a28.0 11.2 0 0 0 56.0 0v-7.0z"/>
+<ellipse class="hue" cx="230.0" cy="211.0" rx="28.0" ry="11.2"/>
+<ellipse class="hue-lt" cx="230.0" cy="211.0" rx="22.4" ry="9.0"/>
+<ellipse class="shd" cx="202.0" cy="222.0" rx="22.0" ry="6.0" transform="rotate(0 202.0 222.0)" style="opacity:0.4"/>
+<path class="hue-dk" d="M192.0 129.0v7.0a28.0 11.2 0 0 0 56.0 0v-7.0z"/>
+<ellipse class="hue" cx="220.0" cy="129.0" rx="28.0" ry="11.2"/>
+<ellipse class="hue-lt" cx="220.0" cy="129.0" rx="22.4" ry="9.0"/></svg><span class="fd-cap"><span class="fd-title">04 Recover</span><span class="fd-meta">How It Works · was recover.webm</span></span></div></li></ol>
+        <p class="g-pieces-label"><b>Research · four article thumbnails</b><span>shared by /research and /about · replace the striped “dept” renders</span></p>
+        <ol class="kit-tiles g-4"><li><div class="fd-tile kit-ph" data-hue="green"><span class="kit-ph-tag">Piece to render · a row of white coins, one green pair</span><svg class="kit-ph-obj" viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><polygon class="shd" points="39.2,174.2 64.2,164.2 79.0,167.5 94.0,185.5 79.0,187.5 64.2,184.2"/>
+<polygon class="shd" points="89.2,183.2 114.2,173.2 129.0,176.5 144.0,194.5 129.0,196.5 114.2,193.2"/>
+<polygon class="shd" points="139.2,192.2 164.2,182.2 179.0,185.5 194.0,203.5 179.0,205.5 164.2,202.2"/>
+<polygon class="shd" points="189.2,201.2 214.2,191.2 229.0,194.5 244.0,212.5 229.0,214.5 214.2,211.2"/>
+<polygon class="shd" points="239.2,201.2 264.2,191.2 279.0,194.5 294.0,212.5 279.0,214.5 264.2,211.2"/>
+<polygon class="shd" points="289.2,219.2 314.2,209.2 329.0,212.5 344.0,230.5 329.0,232.5 314.2,229.2"/>
+<path class="sec-sh" d="M54.0 163.5v14.0a25.0 10.0 0 0 0 50.0 0v-14.0z"/>
+<ellipse class="sec" cx="79.0" cy="163.5" rx="25.0" ry="10.0"/>
+<ellipse class="sec-md" cx="79.0" cy="163.5" rx="20.0" ry="8.0"/>
+<path class="sec-sh" d="M104.0 172.5v14.0a25.0 10.0 0 0 0 50.0 0v-14.0z"/>
+<ellipse class="sec" cx="129.0" cy="172.5" rx="25.0" ry="10.0"/>
+<ellipse class="sec-md" cx="129.0" cy="172.5" rx="20.0" ry="8.0"/>
+<path class="sec-sh" d="M154.0 181.5v14.0a25.0 10.0 0 0 0 50.0 0v-14.0z"/>
+<ellipse class="sec" cx="179.0" cy="181.5" rx="25.0" ry="10.0"/>
+<ellipse class="sec-md" cx="179.0" cy="181.5" rx="20.0" ry="8.0"/>
+<path class="hue-dk" d="M204.0 190.5v14.0a25.0 10.0 0 0 0 50.0 0v-14.0z"/>
+<ellipse class="hue" cx="229.0" cy="190.5" rx="25.0" ry="10.0"/>
+<ellipse class="hue-lt" cx="229.0" cy="190.5" rx="20.0" ry="8.0"/>
+<path class="hue-dk" d="M254.0 190.5v14.0a25.0 10.0 0 0 0 50.0 0v-14.0z"/>
+<ellipse class="hue" cx="279.0" cy="190.5" rx="25.0" ry="10.0"/>
+<ellipse class="hue-lt" cx="279.0" cy="190.5" rx="20.0" ry="8.0"/>
+<path class="sec-sh" d="M304.0 208.5v14.0a25.0 10.0 0 0 0 50.0 0v-14.0z"/>
+<ellipse class="sec" cx="329.0" cy="208.5" rx="25.0" ry="10.0"/>
+<ellipse class="sec-md" cx="329.0" cy="208.5" rx="20.0" ry="8.0"/></svg><span class="fd-cap"><span class="fd-title">How often payments go out wrong</span><span class="fd-meta">Research · AP benchmarks</span></span></div></li><li><div class="fd-tile kit-ph" data-hue="orange"><span class="kit-ph-tag">Piece to render · an invoice slab, a coral copy sliding out</span><svg class="kit-ph-obj" viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><polygon class="shd" points="127.5,164.1 215.5,128.9 224.0,130.8 340.0,177.2 252.0,212.4 243.5,210.5"/>
+<polygon class="shd" points="51.9,180.8 139.9,145.6 160.0,150.0 276.0,196.4 188.0,231.6 167.9,227.2"/>
+<polygon class="hue-dk" points="136.0,166.0 252.0,212.4 252.0,204.4 136.0,158.0"/>
+<polygon class="hue" points="252.0,212.4 340.0,177.2 340.0,169.2 252.0,204.4"/>
+<polygon class="hue-lt" points="224.0,122.8 340.0,169.2 252.0,204.4 136.0,158.0"/>
+<polygon class="sec-sh" points="72.0,177.2 188.0,223.6 188.0,212.6 72.0,166.2"/>
+<polygon class="sec-md" points="188.0,223.6 276.0,188.4 276.0,177.4 188.0,212.6"/>
+<polygon class="sec" points="160.0,131.0 276.0,177.4 188.0,212.6 72.0,166.2"/>
+<polygon class="sec-dk" points="158.0,144.6 214.0,167.0 209.0,169.0 153.0,146.6"/>
+<polygon class="sec-dk" points="144.0,150.2 218.0,179.8 213.0,181.8 139.0,152.2"/>
+<polygon class="sec-dk" points="130.0,155.8 174.0,173.4 169.0,175.4 125.0,157.8"/>
+<polygon class="sec-dk" points="172.0,185.4 200.0,196.6 188.0,201.4 160.0,190.2"/></svg><span class="fd-cap"><span class="fd-title">What 2,402 fraud cases show</span><span class="fd-meta">Research · ACFE</span></span></div></li><li><div class="fd-tile kit-ph" data-hue="violet"><span class="kit-ph-tag">Piece to render · an envelope in a white tray</span><svg class="kit-ph-obj" viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><polygon class="shd" points="115.0,191.9 169.0,170.3 186.0,174.0 322.0,228.4 268.0,250.0 251.0,246.3"/>
+<polygon class="shd" points="86.0,173.8 94.0,170.6 182.0,190.0 280.0,229.2 272.0,232.4 184.0,213.0" style="opacity:0.75"/>
+<polygon class="sec-sh" points="132.0,195.6 268.0,250.0 268.0,234.0 132.0,179.6"/>
+<polygon class="sec-md" points="268.0,250.0 322.0,228.4 322.0,212.4 268.0,234.0"/>
+<polygon class="sec" points="186.0,158.0 322.0,212.4 268.0,234.0 132.0,179.6"/>
+<polygon class="sec-dk" points="186.0,162.8 310.0,212.4 268.0,229.2 144.0,179.6"/>
+<polygon class="hue" points="174.0,188.2 272.0,227.4 272.0,149.4 174.0,110.2"/>
+<polygon class="hue-dk" points="272.0,227.4 280.0,224.2 280.0,146.2 272.0,149.4"/>
+<polygon class="hue-lt" points="182.0,107.0 280.0,146.2 272.0,149.4 174.0,110.2"/>
+<polyline class="flap" points="177.0,114.4 223.0,175.0 269.0,151.2"/>
+<polygon class="sec-sh" points="132.0,195.6 268.0,250.0 268.0,234.0 132.0,179.6"/>
+<polygon class="sec-md" points="268.0,250.0 274.0,247.6 274.0,231.6 268.0,234.0"/>
+<polygon class="sec" points="138.0,177.2 274.0,231.6 268.0,234.0 132.0,179.6"/></svg><span class="fd-cap"><span class="fd-title">Payments fraud in 2025</span><span class="fd-meta">Research · AFP · FBI</span></span></div></li><li><div class="fd-tile kit-ph" data-hue="blue"><span class="kit-ph-tag">Piece to render · a column of bars, a stepped shadow</span><svg class="kit-ph-obj" viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><polygon class="shd" points="53.4,206.7 99.4,188.3 216.0,214.0 262.0,232.4 216.0,250.8 99.4,225.1" style="opacity:0.34"/>
+<polygon class="shd" points="77.8,212.1 123.8,193.7 216.0,214.0 262.0,232.4 216.0,250.8 123.8,230.5" style="opacity:0.34"/>
+<polygon class="shd" points="102.2,217.5 148.2,199.1 216.0,214.0 262.0,232.4 216.0,250.8 148.2,235.9" style="opacity:0.34"/>
+<polygon class="shd" points="126.5,222.8 172.5,204.4 216.0,214.0 262.0,232.4 216.0,250.8 172.5,241.2" style="opacity:0.34"/>
+<polygon class="shd" points="150.9,228.2 196.9,209.8 216.0,214.0 262.0,232.4 216.0,250.8 196.9,246.6" style="opacity:0.34"/>
+<polygon class="hue-dk" points="167.0,231.2 213.0,249.6 213.0,231.6 167.0,213.2"/>
+<polygon class="hue" points="213.0,249.6 259.0,231.2 259.0,213.2 213.0,231.6"/>
+<polygon class="hue-lt" points="213.0,194.8 259.0,213.2 213.0,231.6 167.0,213.2"/>
+<polygon class="hue-dk" points="173.0,210.6 219.0,229.0 219.0,211.0 173.0,192.6"/>
+<polygon class="hue" points="219.0,229.0 265.0,210.6 265.0,192.6 219.0,211.0"/>
+<polygon class="hue-lt" points="219.0,174.2 265.0,192.6 219.0,211.0 173.0,192.6"/>
+<polygon class="hue-dk" points="167.0,185.2 213.0,203.6 213.0,185.6 167.0,167.2"/>
+<polygon class="hue" points="213.0,203.6 259.0,185.2 259.0,167.2 213.0,185.6"/>
+<polygon class="hue-lt" points="213.0,148.8 259.0,167.2 213.0,185.6 167.0,167.2"/>
+<polygon class="hue-dk" points="173.0,164.6 219.0,183.0 219.0,165.0 173.0,146.6"/>
+<polygon class="hue" points="219.0,183.0 265.0,164.6 265.0,146.6 219.0,165.0"/>
+<polygon class="hue-lt" points="219.0,128.2 265.0,146.6 219.0,165.0 173.0,146.6"/>
+<polygon class="hue-dk" points="167.0,139.2 213.0,157.6 213.0,139.6 167.0,121.2"/>
+<polygon class="hue" points="213.0,157.6 259.0,139.2 259.0,121.2 213.0,139.6"/>
+<polygon class="hue-lt" points="213.0,102.8 259.0,121.2 213.0,139.6 167.0,121.2"/></svg><span class="fd-cap"><span class="fd-title">$186 billion in improper payments</span><span class="fd-meta">Research · GAO</span></span></div></li></ol>
+        <p class="g-pieces-label"><b>Optional and proposed</b><span>Security’s box is plan 003’s 9th · payment mismatch is in no plan yet</span></p>
+        <ol class="kit-tiles g-4 g-2"><li><div class="fd-tile kit-ph" data-hue="violet"><span class="kit-ph-tag">Piece to render · sealed record box</span><svg class="kit-ph-obj" viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><polygon class="shd" points="45,175 113,141 200,160 268,194 200,228 113,209"/>
+<polygon class="hue-dk" points="132,128 200,162 200,228 132,194"/>
+<polygon class="hue" points="200,162 268,128 268,194 200,228"/>
+<polygon class="sec-sh" points="124,114 200,152 200,168 124,130"/>
+<polygon class="sec-md" points="200,152 276,114 276,130 200,168"/>
+<polygon class="sec" points="200,76 276,114 200,152 124,114"/>
+<ellipse class="sec" cx="234" cy="180" rx="14" ry="17" transform="rotate(-27 234 180)"/>
+<ellipse class="hue-lt" cx="234" cy="180" rx="8" ry="10" transform="rotate(-27 234 180)"/></svg><span class="fd-cap"><span class="fd-title">You choose what we see.</span><span class="fd-meta">Security hero · optional 9th</span></span></div></li><li><div class="fd-tile kit-ph" data-hue="green"><span class="kit-ph-tag">Piece to render · payment mismatch<span class="kit-ph-flag">Proposal · not in plan 003</span></span><svg class="kit-ph-obj" viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><ellipse class="shd" cx="128" cy="206" rx="96" ry="24" transform="rotate(-8 128 206)"/>
+<path class="sec-sh" d="M102 190v26a78 26 0 0 0 156 0v-26z"/>
+<ellipse class="sec" cx="180" cy="190" rx="78" ry="26"/>
+<ellipse class="sec-dk" cx="180" cy="191" rx="42" ry="13"/>
+<ellipse class="shd" cx="196" cy="176" rx="50" ry="11" style="opacity:.55"/>
+<path class="hue-dk" d="M194 116v18a58 19 0 0 0 116 0v-18z"/>
+<ellipse class="hue" cx="252" cy="116" rx="58" ry="19"/>
+<ellipse class="hue-lt" cx="252" cy="115" rx="45" ry="14"/>
+<ellipse class="hue" cx="252" cy="116.5" rx="41.5" ry="12.6"/></svg><span class="fd-cap"><span class="fd-title">Billed $2,090. Paid $2,900.</span><span class="fd-meta">What It Checks 05</span></span></div></li></ol>
+      </div>
+    </div>
+  </section>
+
+  <section class="g-sec" theme="white" id="app">
+    <div class="the-grid">
+      <div class="g-sec-head">
+        <p class="kit-eyebrow">The app · dashboard, Launch, Onboarding</p>
+        <h2 class="heading type-h2">The same product, warm paper and <em>ink.</em></h2>
+        <p class="g-desc">Override sheets injected into the running app: tokens and type only. The sample runs as a Growth account in the browser so every vendor and amount shows. All pairs, light and dark, the phone and the final token table are on the app sheet.</p>
+      </div>
+      <div class="g-body">
+        <ul class="g-app">
+          <li><figure><a href="shots/app-overview-after-light-1440.png"><img src="shots/app-overview-after-light-1440.png" width="1440" height="900" alt="Overview, new tokens, light" decoding="async"></a><figcaption><b class="is-new">Overview</b>light</figcaption></figure></li>
+          <li><figure><a href="shots/app-findings-after-dark-1440.png"><img src="shots/app-findings-after-dark-1440.png" width="1440" height="900" alt="Findings, new tokens, dark" decoding="async"></a><figcaption><b class="is-new">Findings</b>dark</figcaption></figure></li>
+          <li><figure><a href="shots/app-case-after-light-1440.png"><img src="shots/app-case-after-light-1440.png" width="1440" height="900" alt="A finding, new tokens, light" decoding="async"></a><figcaption><b class="is-new">A finding</b>light</figcaption></figure></li>
+          <li><figure><a href="shots/app-overview-before-light-1440.png"><img src="shots/app-overview-before-light-1440.png" width="1440" height="900" alt="Overview today, light" decoding="async"></a><figcaption><b>Today</b>Overview, light</figcaption></figure></li>
+          <li><figure><a href="shots/app-findings-before-dark-1440.png"><img src="shots/app-findings-before-dark-1440.png" width="1440" height="900" alt="Findings today, dark" decoding="async"></a><figcaption><b>Today</b>Findings, dark</figcaption></figure></li>
+          <li><figure><a href="shots/app-case-before-light-1440.png"><img src="shots/app-case-before-light-1440.png" width="1440" height="900" alt="A finding today, light" decoding="async"></a><figcaption><b>Today</b>a finding, light</figcaption></figure></li>
+        </ul>
+        <div class="g-cta">
+          <a href="app.html" class="cta cta-button" size="large" theme="black"><span class="hover-loop"><span class="inner">Open the app sheet</span></span></a>
+          <a href="shots/app-sheet-1440.png" class="cta cta-button has-arrow" size="large" theme="none"><span class="hover-loop"><span class="inner">App sheet, full page</span></span></a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="g-sec" theme="white" id="decide">
+    <div class="the-grid">
+      <div class="g-sec-head">
+        <p class="kit-eyebrow">Before code</p>
+        <h2 class="heading type-h2">Decisions for <em>you.</em></h2>
+      </div>
+      <div class="g-body">
+        <ol class="g-ask">
+          <li><div><h3>Payment mismatch: a piece, or an empty tile?</h3><p>What It Checks and How It Works need a fifth piece. Plan 003’s render list doesn’t have one, and plan 003 says ship an empty tile rather than a placeholder. Either add it as a 10th still (the mockups propose a green disc too big for its socket), or show check 05 with an empty pastel tile.</p></div></li>
+          <li><div><h3>Sub-page heroes: the shared record stack, or each page’s own piece?</h3><p>Six of the seven grey heroes reuse the landing’s record-stack film, so every first screen looks like the homepage. Security already has its own piece. If each page should get one, they are more renders for plan 003.</p></div></li>
+          <li><div><h3>One set of stage names</h3><p>Flagged / Proven / Approved / Requested / Settled (landing, How It Works) or Discover / Verify / Recover / Recovered / Reconcile (Pricing’s ledger).</p></div></li>
+          <li><div><h3>Copy to confirm</h3><p>A few short labels and lines in the mockups aren’t strings on today’s pages (lane labels on Pricing, chips on Security, two About CTAs…). The list, with what each paraphrases, is in <a href="KIT.md">KIT.md</a> §17.</p></div></li>
+          <li><div><h3>The small grey text</h3><p>The landing’s grey (<code>#827d73</code>) is 3.95:1 on paper, under the 4.5:1 minimum for body text. The mockups use <code>#6b665d</code> (the app’s muted grey) for anything under 24px. The landing’s own captions, closer promises and summary card still use the lighter grey; one token change would fix them too.</p></div></li>
+        </ol>
+      </div>
+    </div>
+  </section>
+
+</main>
+<footer class="g-foot">
+  <div class="the-grid">
+    <p>Mockups for plans/002-subpages-and-app-to-landing-style.md and plans/003-imagery-section-pieces.md · built on the real landing-site/styles.css and pages.css · components in <a href="KIT.md">KIT.md</a> · today’s full pages in <a href="before/">before/</a></p>
+  </div>
+</footer>
+</body>
+</html>
