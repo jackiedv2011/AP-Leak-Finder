@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Piece calibration</title>
+<link rel="icon" type="image/svg+xml" href="../../../landing-site/assets/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400..700&family=Geist+Mono:wght@400;500&family=Schibsted+Grotesk:wght@400..800&display=block" rel="stylesheet">
+<style>
+  :root {
+    --paper: #fcfbf7; --ink: #08100c; --grey-100: #f4f1ea; --grey-300: #dedad0; --grey-500: #827d73; --grey-600: #47443e;
+    --f-sans: 'Geist', ui-sans-serif, system-ui, sans-serif;
+    --f-mono: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+    --f-display: 'Schibsted Grotesk', 'Geist', sans-serif;
+  }
+  html { font-size: clamp(5.33333px, .694444vw, 17.7778px); }      /* the landing's rem: 10px at 1440 */
+  @media (max-width: 1023px) { html { font-size: clamp(8.53333px, 2.66667vw, 11px); } }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--paper); color: var(--ink); font: 400 1.6rem/1.5 var(--f-sans); -webkit-font-smoothing: antialiased; }
+  .wrap { width: min(132rem, calc(100% - 3.2rem)); margin: 0 auto; padding: 6.4rem 0 9.6rem; }
+  .eyebrow { font: 400 1.2rem/1.3 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--grey-500); margin: 0 0 1.6rem; }
+  h1 { font: 600 4.8rem/1.05 var(--f-display); letter-spacing: -.03em; margin: 0 0 1.6rem; max-width: 18ch; }
+  h2 { font: 600 2.8rem/1.1 var(--f-display); letter-spacing: -.02em; margin: 0; }
+  .lede { max-width: 68ch; color: var(--grey-600); margin: 0; }
+  .bar { display: flex; flex-wrap: wrap; gap: 1.2rem 2.4rem; align-items: center; margin: 4rem 0 0; padding: 1.6rem 0; border-top: 1px solid var(--grey-300); border-bottom: 1px solid var(--grey-300); position: sticky; top: 0; background: var(--paper); z-index: 2; }
+  .seg { display: inline-flex; padding: .4rem; border-radius: 99px; background: var(--grey-100); }
+  .seg button { font: 500 1.3rem/1 var(--f-sans); border: 0; background: none; color: var(--grey-600); padding: 1rem 1.6rem; border-radius: 99px; cursor: pointer; }
+  .seg button[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
+  .bar .hint { font: 400 1.2rem/1.3 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--grey-500); }
+  section.piece { margin-top: 6.4rem; }
+  .piece-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: .8rem 2.4rem; margin-bottom: 2.4rem; }
+  .piece-head p { margin: 0; color: var(--grey-600); max-width: 60ch; }
+  .pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.6rem; }
+  .tile { margin: 0; border-radius: 2.4rem; overflow: hidden; background: var(--floor); color: var(--tink); display: flex; flex-direction: column; }
+  .tile .img { position: relative; aspect-ratio: 16 / 9; }
+  .tile .img img { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  .tile .img img.over { opacity: 0; transition: opacity .2s; }
+  .tile figcaption { display: flex; flex-direction: column; align-items: center; gap: .6rem; padding: .8rem 2.4rem 2.4rem; text-align: center; }
+  .fd-title { font: 500 1.8rem/1.2 var(--f-sans); letter-spacing: -.015em; }
+  .fd-meta { font: 400 1.2rem/1.3 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; opacity: .6; }
+  [data-hue="sky"] { --floor: #c2dff2; --tink: #0b2e48; }
+  [data-hue="mint"] { --floor: #c4e9d3; --tink: #0c3a23; }
+  /* overlay: the SVG laid over the still at 50 % on the right-hand tile */
+  body[data-view="overlay"] .tile.svg .img img.over { opacity: .5; }
+  body[data-view="overlay"] .tile.svg .img img.base { opacity: 1; }
+  body[data-view="blink"] .tile.svg .img img.over { animation: blink 1.2s steps(1) infinite; opacity: 1; }
+  @keyframes blink { 50% { opacity: 0; } }
+  .tile.svg .lab-overlay { display: none; }
+  body[data-view="overlay"] .tile.svg .lab-overlay, body[data-view="blink"] .tile.svg .lab-overlay { display: inline; }
+  body[data-view="overlay"] .tile.svg .lab-side, body[data-view="blink"] .tile.svg .lab-side { display: none; }
+  table { width: 100%; border-collapse: collapse; margin-top: 2.4rem; font-size: 1.4rem; }
+  th, td { text-align: left; padding: 1rem 1.2rem; border-bottom: 1px solid var(--grey-300); vertical-align: top; }
+  th { font: 400 1.1rem/1.3 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--grey-500); font-weight: 400; }
+  td code, .mono { font: 400 1.3rem/1.4 var(--f-mono); }
+  .sw { display: inline-block; width: 1.2rem; height: 1.2rem; border-radius: .3rem; vertical-align: -.15rem; margin-right: .6rem; box-shadow: inset 0 0 0 1px rgb(0 0 0 / .08); }
+  .notes { margin-top: 2rem; color: var(--grey-600); font-size: 1.4rem; max-width: 80ch; }
+  .notes li { margin: .4rem 0; }
+  footer { margin-top: 8rem; padding-top: 2.4rem; border-top: 1px solid var(--grey-300); color: var(--grey-500); font: 400 1.2rem/1.5 var(--f-mono); letter-spacing: .04em; }
+  @media (max-width: 1023px) {
+    .pair { grid-template-columns: 1fr; }
+    .tile { border-radius: 1.6rem; }
+    h1 { font-size: 3.6rem; }
+    table { display: block; overflow-x: auto; }
+  }
+</style>
+</head>
+<body data-view="side">
+<main class="wrap">
+  <p class="eyebrow">Mockup · 003 · Pieces · Calibration</p>
+  <h1>Two real pieces, redrawn flat.</h1>
+  <p class="lede">Each still from <span class="mono">landing-site/media/exhibits/</span> sits beside its SVG at the same size. The SVGs are built by
+    <span class="mono">kit/piecekit.py</span> from the Blender scripts' own numbers (camera, sun, sizes), so the nine new pieces drawn with the same kit share this
+    projection, light and palette. Switch to the overlay to see the SVG laid over the render at 50%.</p>
+
+  <div class="bar" role="group" aria-label="View">
+    <div class="seg">
+      <button type="button" data-view="side" aria-pressed="true">Side by side</button>
+      <button type="button" data-view="overlay" aria-pressed="false">Overlay 50%</button>
+      <button type="button" data-view="blink" aria-pressed="false">Blink</button>
+    </div>
+    <span class="hint">Right-hand tile: SVG alone · SVG over the still at 50% · SVG and still alternating</span>
+  </div>
+
+  <section class="piece" id="shadow">
+    <div class="piece-head">
+      <h2>Shadow · sky · duplicate bill</h2>
+      <p>Six plates squared up into a cube and the same six stepped into a tower, seen from straight above (the film's end pose, el 89.5°). The stepped floor shadow and the shadows on each tread come from the plates themselves.</p>
+    </div>
+    <div class="pair">
+      <figure class="tile" data-hue="sky">
+        <div class="img"><img class="base" src="../../../landing-site/media/exhibits/shadow/still.webp" alt="Rendered still: a blue cube and a stepped blue tower from above, long stepped shadows falling up and left"></div>
+        <figcaption><span class="fd-title">Render</span><span class="fd-meta">exhibits/shadow/still.webp · 2560 × 1440</span></figcaption>
+      </figure>
+      <figure class="tile svg" data-hue="sky">
+        <div class="img"><img class="base" src="../../../landing-site/media/exhibits/shadow/still.webp" alt="" style="opacity:0"><img class="over" src="pieces/_calib-shadow.svg" alt="SVG redraw of the same cube and tower" style="opacity:1"></div>
+        <figcaption><span class="fd-title"><span class="lab-side">SVG</span><span class="lab-overlay">SVG over render</span></span><span class="fd-meta">pieces/_calib-shadow.svg · 22 kB</span></figcaption>
+      </figure>
+    </div>
+    <table>
+      <thead><tr><th>Measure</th><th>Render</th><th>SVG</th><th>Rule it checks</th></tr></thead>
+      <tbody>
+        <tr><td>Objects (cube left edge → tower right edge)</td><td class="mono">x 482–2028 · y 720–1184</td><td class="mono">x 482–2030 · y 720–1184</td><td>camera: 100 mm, dist 14.0 × .97, el 89.5° on (0, .42, 0)</td></tr>
+        <tr><td>Floor shadow reach</td><td class="mono">x 166 · y 310</td><td class="mono">x 162 · y 310</td><td>shadow offset per metre of height (−.714, +.786); 1.06 × height</td></tr>
+        <tr><td>Top face</td><td><span class="sw" style="background:#2bc8f3"></span><code>#2bc8f3</code></td><td><span class="sw" style="background:#2bc8f3"></span><code>#2bc8f3</code></td><td>tops = mid</td></tr>
+        <tr><td>Chamfer facing the sun</td><td><span class="sw" style="background:#53cffa"></span><code>#53cffa</code></td><td><span class="sw" style="background:#53cbf9"></span><code>#53cbf9</code></td><td>sun-side chamfers and walls = lit</td></tr>
+        <tr><td>Tread in a plate's shadow</td><td><span class="sw" style="background:#006799"></span><code>#006799</code></td><td><span class="sw" style="background:#016693"></span><code>#016693</code></td><td>shadow cast on the hue = shade</td></tr>
+        <tr><td>Floor shadow, far / near the cube</td><td><span class="sw" style="background:#8ea3b0"></span><code>#8ea3b0</code> / <span class="sw" style="background:#9db4c3"></span><code>#9db4c3</code></td><td><span class="sw" style="background:#8ea3b0"></span><code>#8ea3b0</code> / <span class="sw" style="background:#96acba"></span><code>#96acba</code></td><td>shadow = floor × ≈.72; a glow lifts it near the foot</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="piece" id="echo">
+    <div class="piece-head">
+      <h2>Echo · mint · duplicate payment</h2>
+      <p>Seven coins (r .82, .078 thick, .012 apart, each a hair off square, seed 3 as in the script) with a raised ring on the top face, from the front at 30°.</p>
+    </div>
+    <div class="pair">
+      <figure class="tile" data-hue="mint">
+        <div class="img"><img class="base" src="../../../landing-site/media/exhibits/echo/still.webp" alt="Rendered still: a stack of seven green coins with a soft shadow to the left"></div>
+        <figcaption><span class="fd-title">Render</span><span class="fd-meta">exhibits/echo/still.webp · 2560 × 1440</span></figcaption>
+      </figure>
+      <figure class="tile svg" data-hue="mint">
+        <div class="img"><img class="base" src="../../../landing-site/media/exhibits/echo/still.webp" alt="" style="opacity:0"><img class="over" src="pieces/_calib-echo.svg" alt="SVG redraw of the same coin stack" style="opacity:1"></div>
+        <figcaption><span class="fd-title"><span class="lab-side">SVG</span><span class="lab-overlay">SVG over render</span></span><span class="fd-meta">pieces/_calib-echo.svg · 166 kB</span></figcaption>
+      </figure>
+    </div>
+    <table>
+      <thead><tr><th>Measure</th><th>Render</th><th>SVG</th><th>Rule it checks</th></tr></thead>
+      <tbody>
+        <tr><td>Stack</td><td class="mono">x 858–1702 · y 522–1214 (33% wide)</td><td class="mono">x 854–1702 · y 522–1214</td><td>camera: 100 mm, dist 14.4 × .965, el 30° on (0, 0, .62)</td></tr>
+        <tr><td>Floor shadow reach (left)</td><td class="mono">x 668</td><td class="mono">x 668</td><td>shadow direction and length; perspective</td></tr>
+        <tr><td>Top face</td><td><span class="sw" style="background:#28ed74"></span><code>#28ed74</code></td><td><span class="sw" style="background:#28ee75"></span><code>#28ee75</code></td><td>tops = mid</td></tr>
+        <tr><td>Coin wall</td><td><span class="sw" style="background:#6ef996"></span><code>#6ef996</code></td><td><span class="sw" style="background:#63fa8e"></span><code>#63fa8e</code></td><td>round walls = lit all round the front</td></tr>
+        <tr><td>Gap between coins</td><td><span class="sw" style="background:#00a222"></span><code>#00a222</code> (2–3 px)</td><td><span class="sw" style="background:#00a224"></span><code>#00a224</code></td><td>crevice = deep</td></tr>
+        <tr><td>Floor shadow</td><td><span class="sw" style="background:#8ba495"></span><code>#8ba495</code></td><td><span class="sw" style="background:#8ba495"></span><code>#8ba495</code></td><td>shadow = floor × ≈.71</td></tr>
+      </tbody>
+    </table>
+    <ul class="notes">
+      <li>What the flat version leaves out: the render's satin sheen (walls brighten a little to the right), the coins' fine milled edge, and the soft terminator at the far left of each wall.</li>
+      <li>Rebuild both SVGs with <span class="mono">python3 docs/mockups/003-pieces/kit/calib.py</span> from the repo root. The rules are in <span class="mono">KIT.md</span>.</li>
+    </ul>
+  </section>
+
+  <footer>Plan 003 · imagery: section pieces · calibration for the nine proposed pieces · the stills are 2560 × 1440 WebP renders from Blender 5.2</footer>
+</main>
+<script>
+  const btns = document.querySelectorAll('.seg button');
+  function setView(v) {
+    document.body.dataset.view = v;
+    btns.forEach(b => b.setAttribute('aria-pressed', String(b.dataset.view === v)));
+    document.querySelectorAll('.tile.svg').forEach(t => {
+      const base = t.querySelector('img.base'), over = t.querySelector('img.over');
+      base.style.opacity = v === 'side' ? 0 : 1;
+      over.style.opacity = v === 'side' ? 1 : v === 'overlay' ? .5 : '';
+    });
+    try { localStorage.setItem('calib-view', v); } catch (e) {}
+  }
+  btns.forEach(b => b.addEventListener('click', () => setView(b.dataset.view)));
+  const q = new URLSearchParams(location.search).get('view');
+  let saved = null; try { saved = localStorage.getItem('calib-view'); } catch (e) {}
+  setView(q || saved || 'side');
+</script>
+</body>
+</html>

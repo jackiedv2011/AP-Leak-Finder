@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2560 1440" width="2560" height="1440">
+  <defs><filter id="soft" filterUnits="userSpaceOnUse" x="0" y="0" width="2560" height="1440"><feGaussianBlur stdDeviation="6.5"/></filter></defs>
+  <rect width="2560" height="1440" fill="#c2dff2"/>
+  <!-- BOX  w 1.0  d .8  h .6 m, s = 512 px/m, el 30: top = 512 x 205 (d*s*sin30), front = 512 x 266 (h*s*cos30) -->
+  <path filter="url(#soft)" fill="#8ea3b0" d="M624 1110 H1136 V905 L917 784 H405 V989 Z"/>
+  <path fill="#53cbf9" d="M624 839 H1136 V1100 Q1136 1110 1126 1110 H634 Q624 1110 624 1100 Z"/>
+  <path fill="#2bc8f3" d="M634 639 H1126 Q1136 639 1136 644 V844 H624 V644 Q624 639 634 639 Z"/>
+  <path fill="#2aa4c6" d="M634 639 H1126 L1120 643 H640 Z M624 644 L634 646 V838 L624 840 Z"/>
+  <path fill="#53cbf9" d="M1136 644 L1126 646 V838 L1136 840 Z"/>
+  <!-- COIN STACK  r .82  h .078  gap .012, s = 512, el 30: rx 420, ry 210, wall 35, pitch 40 -->
+  <g filter="url(#soft)" fill="#8ea3b0">
+    <ellipse cx="1880" cy="1115" rx="420" ry="210"/><ellipse cx="1862" cy="1105" rx="420" ry="210"/>
+    <ellipse cx="1844" cy="1095" rx="420" ry="210"/><ellipse cx="1826" cy="1085" rx="420" ry="210"/>
+    <ellipse cx="1808" cy="1075" rx="420" ry="210"/><ellipse cx="1790" cy="1065" rx="420" ry="210"/>
+    <ellipse cx="1772" cy="1055" rx="420" ry="210"/>
+  </g>
+  <path fill="#53cbf9" d="M1460 1080 V1115 A420 210 0 0 0 2300 1115 V1080 A420 210 0 0 1 1460 1080 Z"/>
+  <ellipse cx="1880" cy="1080" rx="420" ry="210" fill="#2bc8f3"/>
+  <path fill="#00557f" d="M1460 1043 V1078 A420 210 0 0 0 2300 1078 V1043 A420 210 0 0 1 1460 1043 Z"/>
+  <path fill="#53cbf9" d="M1460 1040 V1075 A420 210 0 0 0 2300 1075 V1040 A420 210 0 0 1 1460 1040 Z"/>
+  <ellipse cx="1880" cy="1040" rx="420" ry="210" fill="#2bc8f3"/>
+  <path fill="#00557f" d="M1460 1003 V1038 A420 210 0 0 0 2300 1038 V1003 A420 210 0 0 1 1460 1003 Z"/>
+  <path fill="#53cbf9" d="M1460 1000 V1035 A420 210 0 0 0 2300 1035 V1000 A420 210 0 0 1 1460 1000 Z"/>
+  <ellipse cx="1880" cy="1000" rx="420" ry="210" fill="#2bc8f3"/>
+</svg>
