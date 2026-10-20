@@ -324,7 +324,6 @@ html[data-theme='light'] .wk {
 
 @media (max-width: 1100px) {
   .wk-dash-pipeline { grid-template-columns: minmax(0, 1fr); justify-items: center; gap: 22px; }
-  .wk-dash-pipeline .wk-object { order: -1; }
 }
 .wk-pipeline [data-accent='true'] .wk-pipeline-figure { color: var(--accent-ink); }
 @media (max-width: 620px) {
@@ -881,55 +880,6 @@ html[data-theme-transition] .wk-panel {
   .wk-topbar-title,
   .wk-ladder > *,
   .wk-table tbody tr { animation: none; }
-}
-
-/* ---------- 3D objects ---------- */
-/* See workspace/objects.ts for why these are the only colour on the screen.
-   They are alpha stills, so nothing sits behind one — no plate, no tint, no
-   second file for light mode. The chrome around them stays monochrome. */
-.wk-object {
-  display: block;
-  flex: none;
-  /* Sized by height, with the width following the aspect ratio the img's own
-     attributes carry. `object-fit` is the guard for the one case where a very
-     narrow column clamps the width: the object letterboxes rather than
-     stretching. */
-  height: var(--wk-obj-h);
-  width: auto;
-  max-width: 100%;
-  object-fit: contain;
-  user-select: none;
-  -webkit-user-drag: none;
-}
-
-/* The screen's opening line and its object, straight on the canvas — the same
-   way the marketing site sets a render, with no card around it. */
-.wk-screen-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 32px;
-  padding-bottom: 27px;
-  border-bottom: 1px solid var(--line);
-}
-.wk-screen-head p { font-size: 14px; color: var(--text-dim); max-width: 42ch; }
-
-/* An empty screen has nothing to look at by definition, so the object stops
-   being a mark beside the content and becomes the content. */
-.wk-empty[data-object] { align-items: center; text-align: center; gap: 13px; padding: 36px 21px 44px; }
-.wk-empty[data-object] p { margin-inline: auto; }
-.wk-empty .wk-object { margin-bottom: 8px; }
-
-/* The object naming a finding's cause, at the end of the summary row. */
-.wk-case-cause { display: flex; flex-direction: column; align-items: center; gap: 10px; }
-
-@media (max-width: 900px) {
-  .wk-screen-head { gap: 18px; padding-bottom: 21px; }
-  .wk-screen-head .wk-object { height: 94px; }
-}
-@media (max-width: 560px) {
-  .wk-screen-head { flex-direction: column; align-items: flex-start; gap: 16px; }
-  .wk-screen-head .wk-object { height: 112px; }
 }
 
 /* ---------- segmented control ---------- */

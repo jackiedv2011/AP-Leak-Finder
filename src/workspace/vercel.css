@@ -104,9 +104,6 @@ html[data-theme='light'] .wk-vercel {
 .wk-vercel .wk-bar, .wk-vercel .wk-rung-track { height: 4px; border-radius: 999px; }
 .wk-vercel .wk-bar i, .wk-vercel .wk-rung-track i { border-radius: inherit; background: var(--text-dim); }
 .wk-vercel .wk-empty { border-style: solid; background: var(--surface); }
-.wk-vercel .wk-screen-head { padding: 0; border: 0; }
-.wk-vercel .wk-screen-head .wk-object, .wk-vercel .wk-dash-pipeline .wk-object { display: none; }
-.wk-vercel .wk-screen-head p { max-width: none; color: var(--text-muted); font-size: 13px; }
 .wk-vercel .wk-pipeline > * { padding: 20px; gap: 6px; }
 .wk-vercel .wk-pipeline-figure { font: 600 20px/1.25 var(--f-text); letter-spacing: -.035em; }
 .wk-vercel .wk-ladder > * { padding: 20px; gap: 6px; }

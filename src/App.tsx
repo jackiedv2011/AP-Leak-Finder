@@ -3,9 +3,6 @@ import { AuthProvider, useAuth } from '@/lib/auth/AuthContext'
 import { loginUrlFor, redirectTo } from '@/pages/authRedirect'
 import { TermsUpdateGate } from '@/legal/TermsUpdateGate'
 
-const SiteLanding = lazy(() =>
-  import('@/components/site/SiteLanding').then((module) => ({ default: module.SiteLanding }))
-)
 const AuditApp = lazy(() => import('@/AuditApp').then((module) => ({ default: module.AuditApp })))
 const NotFoundPage = lazy(() =>
   import('@/components/NotFoundPage').then((module) => ({ default: module.NotFoundPage }))
@@ -69,8 +66,9 @@ function RouteFallback() {
   )
 }
 
+// '/' is not a React route: the marketing site (landing-site/) serves it, through
+// scripts/landingSitePlugin.ts in dev and as the copied index.html in production.
 const ROUTES: Record<string, () => ReactElement> = {
-  '/': () => <SiteLanding />,
   '/audit': () => (
     <RequireAuth>
       <AuditApp />

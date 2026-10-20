@@ -3,7 +3,8 @@
 The marketing site, built as plain HTML/CSS/JS. GSAP + ScrollTrigger, Lenis and Swiper load from
 CDNs; there is no build tooling beyond one Node script and no dependencies to install.
 
-It is not wired into the React app yet: `/` still renders `src/components/site/SiteLanding.tsx`.
+It serves `/` and the other marketing routes for the app: `scripts/landingSitePlugin.ts` serves it during
+`vite dev`, and `npm run build` copies it into `dist/`. The React app has no route for `/`.
 
 ## Build and preview
 

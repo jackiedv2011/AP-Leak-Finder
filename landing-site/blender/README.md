@@ -6,9 +6,9 @@ Chrome/Firefox/Edge, plus an H.264 MP4 with the section colour baked in for Safa
 
 | file | what |
 |---|---|
-| `looklib.py` | shared look: stock (`ream`/`paper`/`ruled`, `STOCKS` colours), accents, sun + fill, render settings |
-| `hero.py` | the old hero column (8 s); still the app's login screen (`src/pages/AuthSplit.tsx`), no longer on the site |
-| `hero_stack.py` | the site hero, 1355 frames (22.6 s, square): a stack of record slabs that pulls out each of its four coloured sheets in turn and files it back |
+| `looklib.py` | shared base: render settings, sun + fill, camera, the satin `plain` material and bevels; `library()` (terrazzo, wood, plywood) is the old look, used only by `solutions.py` |
+| `exhibit_common.py` | the current look: the shared set for the `exhibit_*.py` pieces (see [What these are of](#what-these-are-of)) |
+| `hero_stack.py` | the site hero, 1355 frames (22.6 s, square): a stack of record slabs that pulls out each of its four coloured sheets in turn and files it back; also the film on the app's log-in and sign-up pages (`src/pages/AuthSplit.tsx` plays `media/hero/d.mp4`) |
 | `solutions.py` | `scene=find\|build\|recover`, 150 frames (5 s) each |
 | `encode.py` | PNG frames -> `.webm` (alpha) or, with `bg=RRGGBB`, `.mp4` |
 | `montage.py` | frames side by side at the size the page shows them, over the section colour |
@@ -24,54 +24,18 @@ Chrome/Firefox/Edge, plus an H.264 MP4 with the section colour baked in for Safa
 
 ## What these are of
 
-Everything is built from one substance: a block of ledger sheets. Edge-on it shows its
-leaves (`ream`), face-on it is plain or printed card (`paper`, `ruled`), and every block
-carries an index tab — a thin divider seated into one face and left standing proud, which
-is a separate object because an extruded outline can only make a full-height fin.
+The current look is `exhibit_common.py`'s: one object, one hue, on a pastel tile of that hue. The
+object is built from primitives (soft one-segment bevels, no model files) in a satin material, lit by
+one sun from the front right whose shadow falls back-left onto a shadow-catcher floor, through a 100 mm
+lens. Each hue keeps its meaning: green = duplicate payment, orange = overpayment, violet = unused
+credit, blue = duplicate bill; `PALETTES` holds each one's tile floor and object stock. The full spec
+(materials, light, camera, output, gotchas) is `plans/003-imagery-section-pieces.md` §1. Start a new
+piece from `exhibit_shadow.py` or `exhibit_piece.py`.
 
-Colour is the site's own (`styles.css`), never decoration:
-
-| | |
-|---|---|
-| green `#00fd74` | money actually back |
-| orange `#ff6838` | paid twice |
-| blue `#00d1ff` | paid too much / approved |
-| pink `#ff7ef2` | paid to the wrong place |
-
-The chrome around these renders is monochrome on purpose, so whatever colour a viewer
-sees on the page is colour that came from in here — which means these loops have to
-carry it, and a frame of white cards with one coloured tab does not.
-
-Stock comes in colours (`STOCKS` in `looklib.py`) and a card is usually made of one,
-edge and face together. Two rules keep that from turning into confetti:
-
-- **Value before hue.** Every scene runs `cream` and `bone` through `mid` to `dark` as well
-  as through colour. Colour alone gives a picture variety; only value gives it depth, and on
-  a black section the darks have to come out of the stock because they cannot come from the
-  ground. Paper is never one white either — a real drawer holds bond, manila and board, and
-  those neutrals carry most of a frame's variety without spending any saturation on it.
-- **The subject gets contrast, not more colour.** The blue mark lands on a plain white
-  record, because a blue mark on a blue card is a mark nobody sees land.
-
-Saturated, not pale: a wash over every card reads as sticky notes and costs the leaves in
-the cut edge, which is the only thing making these objects paper.
-
-Each loop is about one event:
-
-- **hero** — reconciliation: every block pulled out, turned, and put back in balance. The
-  green block on the top ring holds out ~30 frames after the others and seats exactly on
-  the loop seam (smootherstep takes its speed to zero there, so the cut is invisible).
-- **find** — two records carrying the same invoice number cross the pile and come to rest
-  face to face. They are cut from the same orange stock, so they read as a pair from the
-  first frame, long before they go anywhere near each other.
-- **build** — records file themselves bottom-first; the last one waits, proud of the pile,
-  until Reclaim's mark comes down onto it, and only then do the two seat together.
-- **recover** — the file fans open on a gap: an outline with nothing in it. The card that
-  fills it arrives green, and the outline is left as a frame around something real.
-
-The hero renders on grey `#e5e5e5`, so it can go all the way to `carbon` for its darks. The
-solution loops sit on black and bottom out at `dark` instead — anything nearer to black
-there stops being an object and becomes a hole in the page.
+`solutions.py` (the `/how-it-works` loops, `media/{connect,find,build,recover}.*`) and `onboarding.py`
+with `onboardlib.py` (the app's loops in `public/onboarding/`) are the old look: terrazzo, wood and
+plywood from `looklib.library()`, black clay, cream paper and brass. They are kept only until their
+replacements land (plan 003 §4); don't start anything new from them.
 
 ## Onboarding (the app, not the site)
 
@@ -94,17 +58,16 @@ SCENES="ic_show ic_draft" ./render_onboarding.sh  # just these (delete their out
 ```bash
 B="/c/Program Files/Blender Foundation/Blender 5.2/blender.exe"
 # quick look (writes *_test_NNNN.png and *_bg.png composites)
-"$B" -b --factory-startup --python hero.py -- out=out/t res=960 spp=48 frames=1,70,214 bg=e5e5e5 overwrite=1 topdrop=.58
+"$B" -b --factory-startup --python solutions.py -- scene=find out=out/t res=720 spp=48 frames=1,40,80 bg=000000 overwrite=1
 # final
-"$B" -b --factory-startup --python hero.py -- out=out/hero_v2 res=1920 spp=128 frames=all topdrop=.58
 "$B" -b --factory-startup --python solutions.py -- scene=find out=out/find_v3 res=1080 spp=96 frames=all
 ```
 
 Paths are made absolute against the working directory before Blender sees them (on Windows,
 Blender resolves a bare relative output path against the drive root, so `out/x` would land in `C:\out\x`).
 
-Useful knobs (all `key=value` after `--`): `sunE` `fill` `sun=x,y,z` `exp` `view` `look` `dist` `el` `az`,
-hero: `open` `spread` `tilt` `twist` `pivot` `topdrop` `lens`; recover: `fan`.
+Useful knobs (all `key=value` after `--`): `sunE` `fill` `sun=x,y,z` `exp` `view` `look` `dist` `el` `az` `lens`;
+recover: `fan`.
 Renders resume where they stopped (existing frames are skipped unless `overwrite=1`).
 
 These loops are watched at ~317px in a three-up row on the homepage, so judge them at that
@@ -119,9 +82,8 @@ everything — check the real size before spending a full render:
 ## Encode
 
 ```bash
-"$B" -b --factory-startup --python encode.py -- src=out/hero_v2 prefix=hero out=../media/hero.webm crf=30
-"$B" -b --factory-startup --python encode.py -- src=out/hero_v2 prefix=hero out=../media/hero.mp4 crf=20 bg=e5e5e5
-# solutions: crf=31 for webm, bg=000000 for the mp4
+"$B" -b --factory-startup --python encode.py -- src=out/find_v3 prefix=find out=../media/find.webm crf=31
+"$B" -b --factory-startup --python encode.py -- src=out/find_v3 prefix=find out=../media/find.mp4 bg=000000
 ```
 
 ## The home page laptop (walkthrough)

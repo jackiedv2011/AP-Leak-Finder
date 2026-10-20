@@ -45,7 +45,9 @@ export default defineConfig(({ mode }) => {
   test: {
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
-    exclude: ['**/node_modules/**', '**/dist/**', '**/restore-backup-*/**'],
+    // .preview-pre-v2/ is an archive snapshot with its own config: under this one its `@/` imports
+    // resolve into the live src/, so its tests would only test the wrong tree.
+    exclude: ['**/node_modules/**', '**/dist/**', '**/restore-backup-*/**', '.preview-pre-v2/**'],
   },
   }
 })
