@@ -16,6 +16,10 @@
   --kit-violet-floor: rgb(216 208 242); --kit-violet: #7050f0; --kit-violet-ink: #241858; --kit-violet-tint: #e8e3fb; --kit-violet-chip: #3b2a8c;
   --kit-blue-floor: rgb(194 223 241);   --kit-blue: #2ac8f2;   --kit-blue-ink: #0b2e48;   --kit-blue-tint: #dcecf8;   --kit-blue-chip: #0b4a75;
   --kit-secondary: #f7f4ef;            /* the plain off-white second material (the bowl, the tray) */
+  /* muted reading text. The landing's --cl-grey-500 (#827d73) is 3.95:1 on paper and 3.32:1 on the grey hero, under
+     AA for body sizes; #6b665d is 5.5:1 on paper and 4.6:1 on grey, and is the app's --text-muted too (workspace-tokens.css).
+     #827d73 stays only for text 24px and larger. */
+  --kit-muted: #6b665d;
   --kit-card-line: #e6e2d9;            /* hairline round a white card on paper (as .ex-sum) */
   --kit-card-shadow: 0 1px 0 rgb(0 0 0 / .02), 0 2.4rem 4.8rem -3.2rem rgb(20 26 22 / .28);
 }
@@ -31,7 +35,7 @@
 
 /* the corner label: says what this is, out of the way */
 .kit-mock-label {
-  position: fixed; right: 1.2rem; top: calc(var(--nav-height) + .4rem); z-index: 3000;
+  position: absolute;   /* scrolls away with the top of the page, so it never sits over content further down */ right: 1.2rem; top: calc(var(--nav-height) + .4rem); z-index: 3000;
   padding: .6rem 1rem .5rem; border-radius: 99rem;
   background: rgb(8 16 12 / .72); color: var(--cl-white);
   font: 500 1rem/1 var(--f-mono); letter-spacing: .1em; text-transform: uppercase;
@@ -42,8 +46,10 @@
    1. Eyebrow — Geist Mono, small capitals, with an optional step number
    <p class="kit-eyebrow">01 · Connect</p>
    ========================================================================== */
-.kit-eyebrow { display: block; font: 400 1.3rem/1.3 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--cl-grey-500); font-variant-numeric: tabular-nums; }
+.kit-eyebrow { display: block; font: 400 1.3rem/1.3 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--kit-muted); font-variant-numeric: tabular-nums; }
 [theme="black"] .kit-eyebrow { color: color-mix(in srgb, var(--cl-white) 50%, transparent); }
+/* on ink the muted grey is the light one (the dark muted grey is for paper and grey) */
+[theme="black"] .kit-ruled-no, [theme="black"] .kit-ruled-desc, [theme="black"] .kit-ruled-meta { color: var(--cl-grey-400); }
 .kit-eyebrow + .heading { margin-top: 2rem; }
 
 /* ==========================================================================
@@ -62,6 +68,16 @@
 .kit-hero.is-tile .bg-wrap .fd-tile { height: auto; pointer-events: auto; }
 .kit-hero.is-tile .bg-wrap .fd-tile > img,
 .kit-hero.is-tile .bg-wrap .fd-tile > .kit-ph-obj { aspect-ratio: 5 / 4; }
+/* cut-out variant: a piece still to render, drawn straight onto the grey hero floor (like the record stack and the
+   closer's coins: no tile, no frame), its soft shadow on #ebe7de and only the small mono tag under it */
+.kit-hero.is-cutout .bg-wrap .wrap { grid-column: 7 / span 6; aspect-ratio: auto; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.kit-cutout { --floor: var(--cl-grey-200); --ink: var(--cl-black); position: relative; width: 100%; }
+.kit-cutout[data-hue="green"]  { --hue: var(--kit-green); }
+.kit-cutout[data-hue="orange"] { --hue: var(--kit-orange); }
+.kit-cutout[data-hue="violet"] { --hue: var(--kit-violet); }
+.kit-cutout[data-hue="blue"]   { --hue: var(--kit-blue); }
+.kit-cutout .kit-ph-obj { aspect-ratio: 4 / 3; }
+.kit-cutout .kit-ph-tag { position: static; display: table; margin: -1.6rem auto 0; background: rgb(255 255 255 / .55); color: var(--cl-grey-600); }
 
 /* ==========================================================================
    3. Ink rounded section with numbered columns — the landing's 01 Upload / 02 Find /
@@ -103,7 +119,7 @@ a.content-column .heading { transition: opacity .2s; }
 .kit-step.is-split .kit-step-text { grid-column: 8 / span 5; grid-row: 1; }
 .kit-step .heading { max-width: 11em; }
 .kit-step-lead { margin-top: 3.2rem; color: var(--cl-black); font-size: 2.4rem; font-weight: 500; letter-spacing: -.025em; line-height: 1.3; }
-.kit-step-body { margin-top: 2rem; color: var(--cl-grey-500); font-size: 1.8rem; line-height: 1.45; letter-spacing: -.005em; }
+.kit-step-body { margin-top: 2rem; color: var(--kit-muted); font-size: 1.8rem; line-height: 1.45; letter-spacing: -.005em; }
 .kit-step.is-split .kit-step-lead { margin-top: 0; }
 .kit-step-wide { grid-column: 1 / -1; margin-top: 7.2rem; min-width: 0; }
 .kit-step-wide + .kit-step-wide { margin-top: 4.8rem; }
@@ -125,6 +141,8 @@ a.content-column .heading { transition: opacity .2s; }
 /* where the object sits off-centre, keep it whole in a narrower crop */
 .fd-tile[data-ex="overflow"] > img { object-position: 56% 50%; }
 .fd-tile[data-ex="shadow"] > img { object-position: 28% 50%; }
+/* the shadow still's pair fills 74% of its 16:9 frame: in a 4:3 crop it is shown whole (contained on its own floor), not cut */
+.kit-tiles.is-3 .fd-tile[data-ex="shadow"] > img, .kit-tiles.is-5 .fd-tile[data-ex="shadow"] > img { object-fit: contain; object-position: 50% 62%; background: var(--floor); }
 
 .fd-tile[data-hue="green"]  { --floor: var(--kit-green-floor);  --ink: var(--kit-green-ink);  --hue: var(--kit-green); }
 .fd-tile[data-hue="orange"] { --floor: var(--kit-orange-floor); --ink: var(--kit-orange-ink); --hue: var(--kit-orange); }
@@ -134,6 +152,8 @@ a.content-column .heading { transition: opacity .2s; }
 .kit-ph-obj { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; }
 .kit-ph-tag { position: absolute; left: 2rem; top: 2rem; z-index: 1; max-width: calc(100% - 4rem); padding: .6rem 1rem .5rem; border-radius: .8rem; background: rgb(255 255 255 / .6); color: var(--ink); font: 500 1.05rem/1.3 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; }
 .kit-tiles.is-5 .kit-ph-tag { left: 1.6rem; top: 1.6rem; max-width: calc(100% - 3.2rem); font-size: .95rem; }
+/* a piece no plan owns yet (payment mismatch): the tag says so, in the leak red, so it reads as a question for the owner */
+.kit-ph-tag .kit-ph-flag { display: block; margin-top: .3rem; color: var(--cl-leak-ink); }
 /* the silhouette's paints: the hue (three faces), the off-white second material, and the long soft shadow */
 .kit-ph-obj .hue    { fill: var(--hue); }
 .kit-ph-obj .hue-lt { fill: color-mix(in srgb, var(--hue), #fff 34%); }
@@ -149,12 +169,26 @@ a.content-column .heading { transition: opacity .2s; }
    a white-edged screen with a soft shadow. The app is laid out at its own rem sizes
    and zoomed (--z) to fill the frame; on phones the sidebar drops and it zooms down.
    ========================================================================== */
-.kit-app { --z: 1.16; --ratio: 16 / 9.4; position: relative; width: 100%; aspect-ratio: var(--ratio); overflow: hidden; border: 1px solid var(--kit-card-line); border-radius: 2rem; background: #f3f3f3; box-shadow: 0 1px 0 rgb(0 0 0 / .02), 0 3.2rem 6.4rem -4rem rgb(20 26 22 / .34); }
+.kit-app { --z: 1.16; --ratio: 16 / 9.4; position: relative; width: 100%; aspect-ratio: var(--ratio); overflow: hidden; border: 1px solid var(--kit-card-line); border-radius: 2rem; background: #f4f1ea; box-shadow: 0 1px 0 rgb(0 0 0 / .02), 0 3.2rem 6.4rem -4rem rgb(20 26 22 / .34); }
 .kit-app > .app { position: absolute; left: 0; top: 0; width: 100%; height: 100%; border-radius: 0; zoom: var(--z); }   /* (a zoomed box's % size is the frame's own: the app fills it, laid out at frame ÷ --z) */
+/* the app in the warm palette app.html proposes (workspace-tokens.css, light): paper cards on a warm canvas, ink text,
+   warm hairlines, the darker muted grey. The same product on the marketing pages and in the app. */
+.kit-app > .app {
+  --a-bg: #f4f1ea; --a-deep: #ebe7de; --a-card: #fcfbf7; --a-hi: #f6f3ec; --a-sunk: #f8f6f0;
+  --a-line: #e4e0d6; --a-soft: #ece8df; --a-strong: #c7c2b7;
+  --a-text: #08100c; --a-dim: #47443e; --a-muted: #6b665d; --a-accent-ink: #0b7a3a;
+}
+.kit-app .app-btn.is-dark, .kit-app .app-user .av, .kit-app .app-switch i, .kit-app .app-tabs span.is-current { color: #fcfbf7; }
+/* display type, as in the app sheet: page titles and the headline money in Schibsted (proportional figures: its tabular comma is too wide) */
+.kit-app .app-h1, .kit-app .app-amount, .kit-app .app-total strong { font-family: var(--f-display); font-weight: 600; font-variant-numeric: proportional-nums; letter-spacing: -.035em; }
+/* cards keep their height (the body used to squeeze them into the frame and cut a row in half); the body fades out
+   at the frame's foot, so the crop reads as a crop */
+.kit-app .app-card, .kit-app .app-table, .kit-app .app-totals, .kit-app .app-head { flex-shrink: 0; }
+.kit-app .app-body { -webkit-mask-image: linear-gradient(#000 78%, transparent 99%); mask-image: linear-gradient(#000 78%, transparent 99%); }
 .kit-app.is-short { --ratio: 16 / 7.6; }
 .kit-app .app-body { padding-bottom: 2.4rem; }
 /* (a caption under it, mono, like the exhibit tiles') */
-.kit-app-cap { display: flex; justify-content: space-between; gap: 2.4rem; margin-top: 2rem; color: var(--cl-grey-500); font: 400 1.2rem/1.3 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; }
+.kit-app-cap { display: flex; justify-content: space-between; gap: 2.4rem; margin-top: 2rem; color: var(--kit-muted); font: 400 1.2rem/1.3 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; }
 
 /* ==========================================================================
    8. White summary card — the landing's .ex-sum as is (rows, pastel state chips,
@@ -188,10 +222,10 @@ a.content-column .heading { transition: opacity .2s; }
    ========================================================================== */
 .kit-ruled { margin: 0; padding: 0; list-style: none; border-bottom: 1px solid var(--cl-grey-300); }
 .kit-ruled > li { display: grid; grid-template-columns: 6.4rem minmax(0, 1fr) minmax(0, auto); gap: 2.4rem; align-items: baseline; padding-block: 2.8rem; border-top: 1px solid var(--cl-grey-300); }
-.kit-ruled-no { color: var(--cl-grey-500); font: 400 1.3rem/1.3 var(--f-mono); letter-spacing: .04em; }
+.kit-ruled-no { color: var(--kit-muted); font: 400 1.3rem/1.3 var(--f-mono); letter-spacing: .04em; }
 .kit-ruled-title { font: 600 2.8rem/1.08 var(--f-display); letter-spacing: -.035em; }
-.kit-ruled-desc { max-width: 60rem; margin-top: 1rem; color: var(--cl-grey-500); font-size: 1.7rem; line-height: 1.45; }
-.kit-ruled-meta { justify-self: end; color: var(--cl-grey-500); font: 400 1.2rem/1.3 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; white-space: nowrap; }
+.kit-ruled-desc { max-width: 60rem; margin-top: 1rem; color: var(--kit-muted); font-size: 1.7rem; line-height: 1.45; }
+.kit-ruled-meta { justify-self: end; color: var(--kit-muted); font: 400 1.2rem/1.3 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; white-space: nowrap; }
 [theme="black"] .kit-ruled, [theme="black"] .kit-ruled > li { border-color: var(--cl-grey-800); }
 
 /* ==========================================================================
@@ -200,12 +234,26 @@ a.content-column .heading { transition: opacity .2s; }
 .kit-stats { display: grid; grid-template-columns: repeat(var(--n, 3), minmax(0, 1fr)); gap: 2.4rem; margin: 0; padding: 0; list-style: none; }
 .kit-stats.is-2 { --n: 2; }
 .kit-stat { padding-top: 2.4rem; border-top: 1px solid var(--cl-grey-300); }
-.kit-stat-label { display: block; color: var(--cl-grey-500); font: 400 1.3rem/1.3 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; }
+.kit-stat-label { display: block; color: var(--kit-muted); font: 400 1.3rem/1.3 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; }
 .kit-stat-fig { display: block; margin-top: 4rem; font: 600 12rem/.9 var(--f-display); letter-spacing: -.05em; }
 .kit-stat-fig small { margin-left: .12em; font-size: .4em; letter-spacing: -.035em; }
 .kit-stat-desc { max-width: 34rem; margin-top: 2.4rem; color: var(--cl-grey-600); font-size: 1.8rem; line-height: 1.4; letter-spacing: -.01em; }
-.kit-stat-src { display: inline-block; margin-top: 1.6rem; color: var(--cl-grey-500); font: 400 1.2rem/1.3 var(--f-mono); letter-spacing: .04em; text-decoration: underline; text-decoration-color: var(--cl-grey-300); text-underline-offset: .35em; }
+.kit-stat-src { display: inline-block; margin-top: 1.6rem; color: var(--kit-muted); font: 400 1.2rem/1.3 var(--f-mono); letter-spacing: .04em; text-decoration: underline; text-decoration-color: var(--cl-grey-300); text-underline-offset: .35em; }
 .kit-stat-src:hover { color: var(--cl-black); }
+/* the figure on a pastel tile, no picture (plan 003 decision 1). The hue says what the figure is about:
+   blue = invoices and bills (57% e-invoicing, 8.2 days, 18.4% exceptions), green = payments (1.5% duplicates),
+   orange = cost ($9.84 per invoice), violet = credits. Figure and text in the tile's own ink. */
+.kit-stat-tiles { display: grid; grid-template-columns: repeat(var(--n, 3), minmax(0, 1fr)); gap: 1.6rem; margin: 0; padding: 0; list-style: none; }
+.kit-stat-tiles.is-2 { --n: 2; }
+.kit-stat-tile { --floor: var(--cl-grey-100); --ink: var(--cl-black); display: flex; flex-direction: column; min-height: 42rem; padding: 3.2rem 3.2rem 3rem; border-radius: 2.4rem; background: var(--floor); color: var(--ink); }
+.kit-stat-tile[data-hue="green"]  { --floor: var(--kit-green-floor);  --ink: var(--kit-green-ink); }
+.kit-stat-tile[data-hue="orange"] { --floor: var(--kit-orange-floor); --ink: var(--kit-orange-ink); }
+.kit-stat-tile[data-hue="violet"] { --floor: var(--kit-violet-floor); --ink: var(--kit-violet-ink); }
+.kit-stat-tile[data-hue="blue"]   { --floor: var(--kit-blue-floor);   --ink: var(--kit-blue-ink); }
+.kit-stat-tile .kit-stat-label { color: inherit; opacity: .72; }
+.kit-stat-tile .kit-stat-fig { margin-top: auto; padding-top: 4rem; font-size: 14.4rem; line-height: .86; letter-spacing: -.055em; }
+.kit-stat-tile .kit-stat-desc { max-width: 32rem; margin-top: 2.4rem; color: inherit; font-size: 1.7rem; }
+.kit-stat-tile .kit-stat-src { color: inherit; opacity: .8; text-decoration-color: color-mix(in srgb, var(--ink) 35%, transparent); }
 
 /* ==========================================================================
    11. Ruled FAQ — partials/faq.html restyled: heading left, ruled questions right,
@@ -213,7 +261,7 @@ a.content-column .heading { transition: opacity .2s; }
    ========================================================================== */
 .kit-faq { padding-block: 16rem 4rem; }
 .kit-faq-head { grid-column: 1 / span 4; align-self: start; }
-.kit-faq-head .kit-faq-note { margin-top: 2.4rem; color: var(--cl-grey-500); font-size: 1.7rem; line-height: 1.45; }
+.kit-faq-head .kit-faq-note { margin-top: 2.4rem; color: var(--kit-muted); font-size: 1.7rem; line-height: 1.45; }
 .kit-faq-head .kit-faq-note a { color: var(--cl-black); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: .3em; }
 .kit-faq-list { grid-column: 6 / span 7; margin: 0; padding: 0; list-style: none; border-bottom: 1px solid var(--cl-grey-300); }
 .kit-faq-list details { border-top: 1px solid var(--cl-grey-300); }
@@ -225,14 +273,14 @@ a.content-column .heading { transition: opacity .2s; }
   opacity: .55; transition: transform .3s var(--e-out);
 }
 .kit-faq-list details[open] summary::after { transform: rotate(45deg); }
-.kit-faq-list details p { max-width: 64rem; padding-bottom: 2.8rem; margin-top: -.8rem; color: var(--cl-grey-500); font-size: 1.7rem; line-height: 1.5; }
+.kit-faq-list details p { max-width: 64rem; padding-bottom: 2.8rem; margin-top: -.8rem; color: var(--kit-muted); font-size: 1.7rem; line-height: 1.5; }
 .kit-faq-list details p a { color: var(--cl-black); text-decoration: underline; text-underline-offset: .2em; }
 
 /* ==========================================================================
    12. Flagged → Settled track on paper — the landing's .pipeline / .pl-* recoloured
    for paper: the Reclaim lane in ink, green only on the last node (money back).
    ========================================================================== */
-.kit-track .pl-who { color: var(--cl-grey-500); }
+.kit-track .pl-who { color: var(--kit-muted); }
 .kit-track .is-us .pl-who { color: var(--cl-black); }
 .kit-track .pl-track { background: var(--cl-grey-300); }
 .kit-track .is-others .pl-track { background: repeating-linear-gradient(90deg, var(--cl-grey-300) 0 .6rem, transparent .6rem 1.2rem); }
@@ -242,7 +290,7 @@ a.content-column .heading { transition: opacity .2s; }
 .kit-track .pl-node.is-end { border-color: var(--cl-black); background: var(--cl-reclaim); }
 .kit-track .is-others .pl-node.is-start { border-color: var(--cl-grey-400); }
 .kit-track .pl-steps li { border-top-color: var(--cl-grey-300); }
-.kit-track .pl-steps p { color: var(--cl-grey-500); }
+.kit-track .pl-steps p { color: var(--kit-muted); }
 
 /* ==========================================================================
    13. Trust strip — the closer's three promises (.closing-promises) on their own,
@@ -258,7 +306,7 @@ a.content-column .heading { transition: opacity .2s; }
 .kit-brands a.grid-item-brand { display: block; }
 .kit-brands .grid-item-brand:not([idx="0"]) .wrap { background: var(--cl-grey-100); color: var(--cl-black); box-shadow: inset 0 0 0 1px var(--cl-grey-300); }
 @media (hover: hover) and (pointer: fine) { .kit-brands a.grid-item-brand:hover .wrap { box-shadow: inset 0 0 0 1px var(--cl-black); } }
-.kit-brands-note { margin-top: 1.6rem; color: var(--cl-grey-500); font: 400 1.2rem/1.3 var(--f-mono); letter-spacing: .04em; }
+.kit-brands-note { margin-top: 1.6rem; color: var(--kit-muted); font: 400 1.2rem/1.3 var(--f-mono); letter-spacing: .04em; }
 .kit-brands-note a { color: var(--cl-black); text-decoration: underline; text-underline-offset: .3em; }
 
 /* ==========================================================================
@@ -266,7 +314,7 @@ a.content-column .heading { transition: opacity .2s; }
    ========================================================================== */
 .kit-block { padding-block: 16rem 0; }
 .kit-block-head { grid-column: 1 / span 7; margin-bottom: 6.4rem; }
-.kit-block-head .kit-block-desc { max-width: 56rem; margin-top: 2.4rem; color: var(--cl-grey-500); font-size: 2rem; line-height: 1.4; letter-spacing: -.01em; }
+.kit-block-head .kit-block-desc { max-width: 56rem; margin-top: 2.4rem; color: var(--kit-muted); font-size: 2rem; line-height: 1.4; letter-spacing: -.01em; }
 .kit-block-body { grid-column: 1 / -1; min-width: 0; }
 
 /* ==========================================================================
@@ -300,21 +348,23 @@ a.content-column .heading { transition: opacity .2s; }
   .kit-step-wide { margin-top: 4rem; }
   .kit-step-wide + .kit-step-wide { margin-top: 3.2rem; }
 
-  .kit-tiles { grid-template-columns: 1fr; gap: 1.2rem; }
-  .kit-tiles.is-5, .kit-tiles.is-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .8rem; }
-  .kit-tiles.is-5 > li:last-child:nth-child(odd), .kit-tiles.is-3 > li:last-child:nth-child(odd) { grid-column: 1 / -1; }
-  .kit-tiles.is-5 > li:last-child:nth-child(odd) .fd-tile > img,
-  .kit-tiles.is-5 > li:last-child:nth-child(odd) .kit-ph-obj { aspect-ratio: 16 / 9; }
-  .kit-tiles.is-5 .fd-title { font-size: 1.4rem; }
-  .kit-tiles.is-5 .fd-meta { font-size: 1rem; }
-  .kit-tiles.is-5 .fd-cap { padding: 0 1rem 1.6rem; }
-  .kit-tiles.is-5 .fd-tile, .kit-tiles.is-3 .fd-tile { border-radius: 1.4rem; }
+  /* one tile to a row, every tile at the stills' own 16:9 (as the landing's tiles on a phone): no piece or shadow is cut */
+  .kit-tiles, .kit-tiles.is-5, .kit-tiles.is-3 { grid-template-columns: 1fr; gap: 1.2rem; }
+  .kit-tiles .fd-tile > img, .kit-tiles .kit-ph-obj, .kit-tiles.is-3 .fd-tile > img, .kit-tiles.is-3 .kit-ph-obj,
+  .kit-tiles.is-5 .fd-tile > img, .kit-tiles.is-5 .kit-ph-obj { aspect-ratio: 16 / 9; }
+  .kit-tiles.is-3 .fd-tile[data-ex="shadow"] > img, .kit-tiles.is-5 .fd-tile[data-ex="shadow"] > img { object-fit: cover; object-position: 50% 50%; }
+  .kit-tiles.is-5 .fd-title { font-size: 1.6rem; }
+  .kit-tiles.is-5 .fd-cap { margin-top: -1.2rem; padding: 0 1.6rem 2rem; }
+  .kit-tiles .fd-tile { border-radius: 1.6rem; }
   .kit-ph { outline-offset: -.8rem; }
   .kit-ph-tag, .kit-tiles.is-5 .kit-ph-tag { left: 1.4rem; top: 1.4rem; max-width: calc(100% - 2.8rem); font-size: .95rem; }
 
-  .kit-app { --z: .5; --ratio: 4 / 3.5; border-radius: 1.4rem; }
+  /* a phone shows a readable crop of each screen (zoom .78, the top-left of the main column: title and the first card),
+     not the whole app shrunk to 7px text */
+  .kit-app { --z: .78; --ratio: 4 / 4.4; border-radius: 1.4rem; }
+  .kit-app > .app { width: 150%; }
   .kit-app .app-side { display: none; }
-  .kit-app.is-short { --ratio: 4 / 3; }
+  .kit-app.is-short { --ratio: 4 / 4; }
   .kit-app-cap { flex-direction: column; gap: .4rem; margin-top: 1.4rem; font-size: 1rem; }
 
   .kit-ruled > li { grid-template-columns: 4rem minmax(0, 1fr); gap: 1.2rem; padding-block: 2.2rem; }
@@ -323,6 +373,11 @@ a.content-column .heading { transition: opacity .2s; }
   .kit-ruled-meta { grid-column: 2; justify-self: start; margin-top: .4rem; }
 
   .kit-stats, .kit-stats.is-2 { grid-template-columns: 1fr; gap: 4rem; }
+  .kit-stat-tiles, .kit-stat-tiles.is-2 { grid-template-columns: 1fr; gap: 1.2rem; }
+  .kit-stat-tile { min-height: 0; padding: 2.4rem 2.4rem 2.6rem; border-radius: 1.6rem; }
+  .kit-stat-tile .kit-stat-fig { padding-top: 6.4rem; font-size: 9.6rem; }
+  .kit-stat-tile .kit-stat-desc { font-size: 1.6rem; }
+  .kit-hero.is-cutout .bg-wrap .wrap { grid-column: 1 / -1; }
   .kit-stat-fig { margin-top: 2.4rem; font-size: 8.8rem; }
   .kit-stat-desc { font-size: 1.6rem; }
 
@@ -351,5 +406,8 @@ a.content-column .heading { transition: opacity .2s; }
   .kit-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .kit-tiles.is-5 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .kit-app { --z: .72; --ratio: 16 / 11; }
+  .kit-app > .app { width: 100%; }
+  .kit-stat-tiles { grid-template-columns: repeat(var(--n, 3), minmax(0, 1fr)); }
+  .kit-tiles.is-5, .kit-tiles.is-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .kit-stats { grid-template-columns: repeat(var(--n, 3), minmax(0, 1fr)); gap: 2.4rem; }
 }

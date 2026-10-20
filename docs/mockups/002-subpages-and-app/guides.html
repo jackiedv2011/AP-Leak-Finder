@@ -16,9 +16,9 @@
 /* Guides index — page-specific bits on top of kit.css */
 /* hero: the search takes the place of the CTA pair */
 .gd-search { display: flex; align-items: center; gap: 1.2rem; width: 100%; max-width: 52rem; height: 5.6rem; margin-top: 3.2rem; padding: 0 .6rem 0 1.8rem; border-radius: 1.4rem; background: #fff; box-shadow: inset 0 0 0 1px var(--kit-card-line), 0 1.6rem 3.2rem -2.4rem rgb(20 26 22 / .28); }
-.gd-search .icon { flex: none; width: 1.8rem; height: 1.8rem; color: var(--cl-grey-500); }
+.gd-search .icon { flex: none; width: 1.8rem; height: 1.8rem; color: var(--kit-muted); }
 .gd-search input { flex: 1; min-width: 0; border: 0; outline: 0; background: none; color: var(--cl-black); font: 400 1.7rem/1 var(--f-sans); }
-.gd-search input::placeholder { color: var(--cl-grey-500); }
+.gd-search input::placeholder { color: var(--kit-muted); }
 .gd-search input::-webkit-search-cancel-button { display: none; }
 .gd-search .cta-button { height: 4.4rem; min-height: 4.4rem; border-radius: 1rem; }
 .gd-search-hint { margin-top: 1.6rem; color: var(--cl-grey-600); font: 400 1.2rem/1.3 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; }
@@ -32,16 +32,16 @@
 .gd-card-head .kit-eyebrow { color: var(--cl-black); }
 .gd-card-body { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 4.8rem; align-items: center; padding: 4rem 1.2rem 1.2rem 2.4rem; }
 .gd-card-copy .heading { max-width: 7em; }
-.gd-card-desc { max-width: 44rem; margin-top: 2.4rem; color: var(--cl-grey-500); font-size: 1.8rem; line-height: 1.45; letter-spacing: -.005em; }
+.gd-card-desc { max-width: 44rem; margin-top: 2.4rem; color: var(--kit-muted); font-size: 1.8rem; line-height: 1.45; letter-spacing: -.005em; }
 .gd-files { display: flex; flex-wrap: wrap; align-items: center; gap: .8rem; margin-top: 3.2rem; }
-.gd-files-label { margin-right: .8rem; color: var(--cl-grey-500); font: 400 1.2rem/1.3 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; }
+.gd-files-label { margin-right: .8rem; color: var(--kit-muted); font: 400 1.2rem/1.3 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; }
 .gd-file { display: inline-flex; align-items: center; height: 3.2rem; padding: 0 1.4rem; border-radius: 99rem; box-shadow: inset 0 0 0 1px var(--cl-grey-300); color: var(--cl-grey-600); font: 400 1.2rem/1 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; }
 .gd-systems { gap: 1.2rem; }
 .gd-systems .grid-item-brand { aspect-ratio: 302 / 150; }
-.gd-systems .grid-item-brand .depth { color: var(--cl-grey-500); }
+.gd-systems .grid-item-brand .depth { color: var(--kit-muted); }
 .gd-systems .grid-item-brand[idx="0"] .depth { color: color-mix(in srgb, var(--cl-white) 62%, transparent); }
 .gd-systems .grid-item-brand:not([idx="0"]) .depth::before { content: ""; width: .6rem; height: .6rem; border-radius: 50%; background: var(--cl-reclaim); }
-.gd-go { position: absolute; right: 2.4rem; bottom: 2.2rem; display: flex; align-items: center; gap: .6rem; color: var(--cl-grey-500); text-transform: uppercase; transition: color .2s; }
+.gd-go { position: absolute; right: 2.4rem; bottom: 2.2rem; display: flex; align-items: center; gap: .6rem; color: var(--kit-muted); text-transform: uppercase; transition: color .2s; }
 .gd-go .icon { width: 1.2rem; height: 1.2rem; transform: rotate(90deg); }
 .grid-item-brand[idx="0"] .gd-go { color: color-mix(in srgb, var(--cl-white) 62%, transparent); }
 @media (hover: hover) and (pointer: fine) { .gd-systems .grid-item-brand:hover .gd-go { color: currentColor; } }
@@ -52,15 +52,15 @@
 .gd-links a { position: relative; display: block; height: 100%; padding-top: 3.2rem; border-top: 1px solid var(--cl-grey-300); transition: border-color .2s; }
 .gd-links .closing-ico { width: 4.8rem; height: 4.8rem; border-radius: 1.2rem; }
 .gd-links .closing-ico svg { width: 2.4rem; height: 2.4rem; }
-.gd-links-go { position: absolute; right: 0; top: 3.2rem; width: 2.4rem; height: 2.4rem; color: var(--cl-grey-500); transition: color .2s; }
+.gd-links-go { position: absolute; right: 0; top: 3.2rem; width: 2.4rem; height: 2.4rem; color: var(--kit-muted); transition: color .2s; }
 .gd-links h3 { margin-top: 4rem; font: 600 2.8rem/1.08 var(--f-display); letter-spacing: -.035em; }
-.gd-links p { max-width: 36rem; margin-top: 1.2rem; color: var(--cl-grey-500); font-size: 1.7rem; line-height: 1.45; letter-spacing: -.005em; }
+.gd-links p { max-width: 36rem; margin-top: 1.2rem; color: var(--kit-muted); font-size: 1.7rem; line-height: 1.45; letter-spacing: -.005em; }
 @media (hover: hover) and (pointer: fine) { .gd-links a:hover { border-color: var(--cl-black); } .gd-links a:hover .gd-links-go { color: var(--cl-black); } }
 
 /* another system: a grey panel to close the page, one ink action */
 .gd-band { padding-block: 12rem 9.6rem; }
 .gd-band-panel { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4.8rem; align-items: end; padding: 5.6rem 5.6rem 5.6rem; border-radius: 2.8rem; background: var(--cl-grey-100); }
-.gd-band-desc { max-width: 52rem; margin-top: 2.4rem; color: var(--cl-grey-500); font-size: 1.8rem; line-height: 1.45; letter-spacing: -.005em; }
+.gd-band-desc { max-width: 52rem; margin-top: 2.4rem; color: var(--kit-muted); font-size: 1.8rem; line-height: 1.45; letter-spacing: -.005em; }
 
 @media (max-width: 1023px) {
   .gd-search { height: 5.2rem; margin-top: 2.4rem; }
