@@ -212,6 +212,38 @@ button.cta-button { border: 0; }
 .article-image .screen-fit { position: relative; width: 100%; aspect-ratio: 800 / 568; overflow: hidden; border-radius: 1.4rem; }
 .article-image .screen-fit .app { position: absolute; top: 0; left: 0; }
 
+/* module: stat tiles. Benchmarks on the landing page's four exhibit colours, two by two; the numbers roll in
+   (main.js, [data-number]) */
+.stat-tiles { grid-column: 3 / -1; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: 1fr; gap: 1.6rem; margin: 0; padding: 0; list-style: none; }
+.stat-tile { --floor: #eee; --ink: #0a1a12; display: flex; flex-direction: column; justify-content: space-between; gap: 4.8rem; min-height: 31rem; padding: 3.2rem 3.6rem 3.2rem; border-radius: 2.4rem; background: var(--floor); color: var(--ink); }
+.stat-tile[data-ex="echo"] { --floor: var(--ex-echo-floor); --ink: var(--ex-echo-ink); }
+.stat-tile[data-ex="overflow"] { --floor: var(--ex-overflow-floor); --ink: var(--ex-overflow-ink); }
+.stat-tile[data-ex="piece"] { --floor: var(--ex-piece-floor); --ink: var(--ex-piece-ink); }
+.stat-tile[data-ex="shadow"] { --floor: var(--ex-shadow-floor); --ink: var(--ex-shadow-ink); }
+.st-number { display: flex; align-items: flex-end; font: 600 9.6rem/.92 var(--f-display); letter-spacing: -.05em; }
+.st-number .numbers { display: flex; overflow: hidden; }
+.st-number .numbers .number { position: relative; display: block; }
+.st-number .numbers .number + .number { margin-left: -.02em; }
+.st-number .number-text { display: block; }
+.st-number .number-text--copy { position: absolute; top: 0; left: 0; }
+.st-heading { margin-top: 1.2rem; font: 600 3.2rem/1.05 var(--f-display); letter-spacing: -.03em; }
+.st-desc { max-width: 36rem; font: 400 1.8rem/1.4 var(--f-sans); letter-spacing: -.01em; }
+.st-source { display: inline-flex; align-items: center; gap: .6rem; margin-top: 2rem; font: 400 1.2rem/1.3 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: inherit; opacity: .6; transition: opacity .2s; }
+.st-source:hover { opacity: 1; }
+.st-source .icon { width: 1.1rem; height: 1.1rem; rotate: 45deg; }
+@media (max-width: 1023px) {
+  .stat-tiles { grid-column: 1 / -1; }
+  .stat-tile { min-height: 0; gap: 4rem; padding: 2.8rem 2.4rem 2.4rem; }
+  .st-number { font-size: 7.2rem; }
+  .st-heading { font-size: 2.6rem; }
+}
+@media (max-width: 599px) {
+  .stat-tiles { grid-template-columns: 1fr; gap: 1.2rem; }
+  .stat-tile { border-radius: 1.6rem; }
+  .st-number { font-size: 6.4rem; }
+  .st-desc { font-size: 1.6rem; }
+}
+
 /* module: stat carousel */
 .article-carousel { position: relative; width: 100%; overflow: hidden; }
 .article-carousel .controls { display: flex; flex-direction: row; align-items: center; justify-content: flex-start; gap: .8rem; grid-column: 4 / auto; margin-top: 0; margin-bottom: 3.2rem; }

@@ -22,6 +22,10 @@
   --cl-leak-2: #fbe3db;
   --cl-leak-ink: #b3301a;
   --cl-reclaim: #00fd74;       /* bright Reclaim green: money coming back; always ink text on it */
+  --ex-echo-floor: rgb(196 234 212);     --ex-echo-ink: #0c3a23;       /* the four exhibit floors (the renders'), */
+  --ex-overflow-floor: rgb(246 207 179); --ex-overflow-ink: #4a1d0c;   /* each with its ink: the landing page's */
+  --ex-piece-floor: rgb(216 208 242);    --ex-piece-ink: #241858;      /* four mistakes, and the stat tiles on */
+  --ex-shadow-floor: rgb(194 223 241);   --ex-shadow-ink: #0b2e48;     /* How It Works */
   --cl-green-1: #00fd74;
   --cl-green-2: #d1ffca;
   --cl-pink-1: #ff7ef2;
@@ -598,10 +602,10 @@ img, video, canvas, svg { display: block; max-width: 100%; }
 .is-live .fd-tiles { margin-top: 0; }   /* the card's own clip leaves the gap */
 .fd-tile { --floor: #eee; --ink: #0a1a12; display: flex; flex-direction: column; height: 100%; overflow: hidden; border-radius: 2.4rem; background: var(--floor); color: var(--ink);; transition: scale .16s var(--e-out); }
 .fd-tile:active { scale: .98; }   /* pressed: it gives a little */
-.fd-tile[data-ex="echo"] { --floor: rgb(196 234 212); --ink: #0c3a23; }
-.fd-tile[data-ex="overflow"] { --floor: rgb(246 207 179); --ink: #4a1d0c; }
-.fd-tile[data-ex="piece"] { --floor: rgb(216 208 242); --ink: #241858; }
-.fd-tile[data-ex="shadow"] { --floor: rgb(194 223 241); --ink: #0b2e48; }
+.fd-tile[data-ex="echo"] { --floor: var(--ex-echo-floor); --ink: var(--ex-echo-ink); }
+.fd-tile[data-ex="overflow"] { --floor: var(--ex-overflow-floor); --ink: var(--ex-overflow-ink); }
+.fd-tile[data-ex="piece"] { --floor: var(--ex-piece-floor); --ink: var(--ex-piece-ink); }
+.fd-tile[data-ex="shadow"] { --floor: var(--ex-shadow-floor); --ink: var(--ex-shadow-ink); }
 .fd-tile img {
   display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; object-fit: cover;
   -webkit-mask-image: linear-gradient(#000 88%, transparent); mask-image: linear-gradient(#000 88%, transparent);   /* a level's difference in decoding never shows as an edge */

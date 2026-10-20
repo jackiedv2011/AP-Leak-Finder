@@ -615,6 +615,12 @@
     ScrollTrigger.create({ start: at(el, .9), onEnter: roll, onLeaveBack: reset });
   });
 
+  // ---------- stat tiles: rise in, two by two ----------
+  const statTiles = $('.stat-tiles');
+  if (statTiles && !calm) {
+    gsap.from($$('.stat-tile', statTiles), { y: 32, opacity: 0, duration: .7, ease: 'power2.out', stagger: .08, scrollTrigger: { start: at(statTiles, .85), toggleActions: 'play none none reverse' } });
+  }
+
   // ---------- integrations grid: tiles rise in, left to right ----------
   const gridList = $('.grid1 .content');
   if (gridList && !calm) {
