@@ -14,9 +14,10 @@ from piecekit import Scene, SH, hull
 
 OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'pieces', 'evidence.svg')
 
-N, W, D, T, GAP, B = 9, 1.8, 1.1, .09, .012, .02     # nine cards 1.8 x 1.1 m, .09 thick, .012 apart, .02 bevel
-VI = 5                                                # the violet one, counted from the bottom (0)
-PULL, SHIFT, YAW = .55, .08, -5                       # drawn out half its depth, a touch right, turned 5 deg
+N, W, D, T, GAP, B = 10, 1.8, 1.1, .09, .012, .02    # ten cards 1.8 x 1.1 m, .09 thick, .012 apart, .02 bevel
+VI = 6                                                # the violet one, counted from the bottom (0): three above it
+PULL, SHIFT, YAW = .55, .06, -4                       # drawn out half its depth, a touch right, turned 4 deg
+EL = 32
 
 
 def clip_y(poly, yw):
@@ -50,14 +51,19 @@ class EvidenceScene(Scene):
         sh = hull(pts)
         if len(sh) < 3:
             return
-        cid = nid('ws')
-        sil = hull([self.cam.project(p) for p in s.verts()])
-        defs.append('<clipPath id="%s"><path d="M%sZ"/></clipPath>' % (cid, ' L'.join('%.1f %.1f' % p for p in sil)))
-        g.append('<g clip-path="url(#%s)"><path filter="url(#%s)" fill="%s" d="%s"/></g>' % (
-            cid, self._blur(1.2), self.col('cast', s.mat), self._path([(x, yw, z) for x, z in sh])))
+        # masked to the card from its bottom chamfer up (the chamfer is the crevice under it and stays sec_deep;
+        # the bottom card has no crevice, so its foot is shaded too), with a stroke so the faces' own 1.2 px
+        # seam strokes are covered as well
+        mid = nid('ws')
+        sil = hull([self.cam.project(p) for L in (s.layers if s.zmin() < 1e-6 else s.layers[1:]) for p in L])
+        d = 'M' + ' L'.join('%.1f %.1f' % p for p in sil) + 'Z'
+        defs.append('<mask id="%s" maskUnits="userSpaceOnUse" x="0" y="0" width="%d" height="%d"><path d="%s" fill="#fff" '
+                    'stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/></mask>' % (mid, self.wpx, self.hpx, d))
+        g.append('<g mask="url(#%s)"><path filter="url(#%s)" fill="%s" d="%s"/></g>' % (
+            mid, self._blur(1.2), self.col('cast', s.mat), self._path([(x, yw, z) for x, z in sh])))
 
 
-def build(el=30, width=.40):
+def build(el=EL, width=.38, cy=.57):
     sc = EvidenceScene('lilac', el=el)
     cards = []
     for i in range(N):
@@ -67,7 +73,7 @@ def build(el=30, width=.40):
         else:
             cards.append(sc.box(0, 0, z, W, D, T, bevel=B, mat='sec'))
     sc.caster, sc.receivers = cards[VI], cards[:VI]
-    return sc.frame(width=width, cy=.58)
+    return sc.frame(width=width, cy=cy)
 
 
 if __name__ == '__main__':
