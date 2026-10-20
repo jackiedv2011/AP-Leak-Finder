@@ -7,6 +7,15 @@
 
 :root { --cl-yellow: var(--cl-reclaim); --cl-error-1: #c9372c; --cl-error-2: #ffeceb; }
 
+/* subpage paper: the light sections sit on the landing hero's warm paper (grey-200) rather than --cl-white, which
+   reads as white beside it. Only the section surfaces move; cards, forms, buttons and tiles keep their own colours,
+   and the dark sections already share the landing page's ink. Inside them grey-200, drawn for hairlines on the
+   lighter paper, steps one shade darker so the borders and dividers still show. */
+:root { --cl-paper: var(--cl-grey-200); }
+body:not([data-template="home"]) [theme="white"] { --cl-bg1: var(--cl-paper); --cl-grey-200: var(--cl-grey-300); }
+body:not([data-template="home"]) .bg[theme="white"] { background: var(--cl-paper); }
+.guides-hero, .guides-start, .guides-cards, .guide-page { --cl-grey-200: var(--cl-grey-300); }   /* the guides' own surfaces (below) */
+
 .type-h5 { font-family: var(--f-display); font-size: 3.2rem; font-weight: 600; letter-spacing: -.02em; line-height: 1.05; }
 .type-h6 { font-family: var(--f-display); font-size: 1.8rem; font-weight: 600; letter-spacing: -.02em; line-height: 1.05; }
 .type-body-base { font-size: 1.6rem; font-weight: 400; letter-spacing: normal; line-height: 1.25; }
@@ -168,7 +177,7 @@ button.cta-button { border: 0; }
 .article-sections .rounded-section { clip-path: inset(0); padding-bottom: var(--rounded-margin) !important; }
 .article-sections > .rounded-section:last-of-type { padding-bottom: 0 !important; }
 .article-sections .rounded-section + .rounded-section { margin-top: calc(var(--rounded-margin) * -1); }
-.article-section { position: relative; width: 100%; clip-path: inset(0); --cl-bg1: #fff; }
+.article-section { position: relative; width: 100%; clip-path: inset(0); }
 .article-section > .content { position: relative; }
 .article-section .full { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
 .article-section .full .the-container, .article-section .full .the-grid { height: 100%; }
@@ -622,7 +631,7 @@ button.cta-button { border: 0; }
 .guides-kicker .mark { flex: none; width: .6rem; height: .6rem; background: var(--cl-reclaim); }
 
 /* ---------- hub hero: white strip for the nav, then a black panel ---------- */
-.guides-hero { position: relative; width: 100%; padding-top: var(--nav-height); background: var(--cl-white); }
+.guides-hero { position: relative; width: 100%; padding-top: var(--nav-height); background: var(--cl-paper); }
 .guides-hero .panel { padding-block: 3.2rem; background: var(--cl-black); color: var(--cl-white); }
 .guides-hero .panel .the-grid > * { grid-column: 2 / span 10; }
 .guides-hero .kicker { color: var(--cl-reclaim); letter-spacing: .08em; }
@@ -636,7 +645,7 @@ button.cta-button { border: 0; }
 .guides-hero .search .go:hover { background: var(--cl-grey-800); }
 
 /* ---------- hub: the start-here card ---------- */
-.guides-start { padding-block: 4rem; background: var(--cl-white); }
+.guides-start { padding-block: 4rem; background: var(--cl-paper); }
 .guides-start .card { display: grid; grid-column: 2 / span 10; grid-template-columns: 1fr 16.25rem; border: 2px solid var(--cl-black); background: var(--cl-white); }
 .guides-start .copy { padding: 2.5rem; }
 .guides-start .kicker { margin-bottom: 1.25rem; color: var(--cl-grey-600); letter-spacing: .02em; }
@@ -656,7 +665,7 @@ button.cta-button { border: 0; }
 .guides-system a.inner:hover .go { color: var(--cl-black); }
 
 /* ---------- hub: three cards, then the closing band ---------- */
-.guides-cards { padding-bottom: 4rem; background: var(--cl-white); }
+.guides-cards { padding-bottom: 4rem; background: var(--cl-paper); }
 .guides-cards .grid { display: grid; grid-column: 2 / span 10; grid-template-columns: repeat(3, 1fr); }
 .guides-cards .card { border-right: 1px solid var(--cl-grey-200); }
 .guides-cards .inner { display: flex; flex-direction: column; align-items: flex-start; justify-content: flex-start; height: 100%; padding: 2rem; }
@@ -673,7 +682,7 @@ button.cta-button { border: 0; }
 .guides-band .action { display: flex; align-items: center; grid-column: 9 / -1; }
 
 /* ---------- a single guide ---------- */
-.guide-page { padding-top: var(--nav-height); background: var(--cl-white); }
+.guide-page { padding-top: var(--nav-height); background: var(--cl-paper); }
 .guide-layout { display: grid; grid-column: 2 / span 10; grid-template-columns: 24.8rem 1fr; gap: 6.4rem; }
 .guide-toc { position: relative; }
 .guide-toc .sticky { position: sticky; top: calc(var(--nav-height) + 4rem); padding-block: 4rem; }
