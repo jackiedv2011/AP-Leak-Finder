@@ -15,7 +15,7 @@ ARG VITE_STRIPE_PUBLISHABLE_KEY=
 ENV VITE_STRIPE_PUBLISHABLE_KEY=$VITE_STRIPE_PUBLISHABLE_KEY
 RUN npm run build
 # The server imports a few modules from src/ (recovery eligibility). Stage src/
-# without its 70 MB of images, which only the browser bundle needs.
+# without its images, which only the browser bundle needs.
 RUN mkdir -p /runtime && cp -R src /runtime/src && rm -rf /runtime/src/assets
 
 # ---- runtime dependencies only ----

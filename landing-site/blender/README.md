@@ -33,9 +33,10 @@ credit, blue = duplicate bill; `PALETTES` holds each one's tile floor and object
 piece from `exhibit_shadow.py` or `exhibit_piece.py`.
 
 `solutions.py` (the `/how-it-works` loops, `media/{connect,find,build,recover}.*`) and `onboarding.py`
-with `onboardlib.py` (the app's loops in `public/onboarding/`) are the old look: terrazzo, wood and
-plywood from `looklib.library()`, black clay, cream paper and brass. They are kept only until their
-replacements land (plan 003 §4); don't start anything new from them.
+with `onboardlib.py` (the app's loops in `public/onboarding/`) are the old look. `solutions.py` uses
+terrazzo, wood and plywood from `looklib.library()`; `onboarding.py` uses black clay, cream paper, a
+green gem and brass from `onboardlib.library()`. Both are kept only until their replacements land
+(plan 003 §4); don't start anything new from them.
 
 ## Onboarding (the app, not the site)
 
