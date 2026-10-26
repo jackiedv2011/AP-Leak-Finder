@@ -1,0 +1,41 @@
+/* The Reclaim mark (StackMark in ReclaimLogo.tsx). Ink slabs take the text colour, so the
+   mark follows light and dark themes; the green slab keeps the artwork's green. */
+.rk-mark {
+  overflow: visible;
+  fill: currentColor;
+}
+
+.rk-mark .rk-mark-accent {
+  fill: var(--rk-mark-green, #01e78a);
+}
+
+/* hover: the slabs spread apart, the top one highest, and settle back on leave.
+   Lengths are in the mark's own 100 x 94 units. */
+.rk-mark > * {
+  transition: transform 450ms cubic-bezier(0.455, 0.03, 0.515, 0.955);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .rk-lift:hover .rk-mark > * {
+    transition: transform 500ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .rk-lift:hover .rk-mark .rk-mark-top {
+    transform: translateY(-7px);
+  }
+
+  .rk-lift:hover .rk-mark .rk-mark-upper {
+    transform: translateY(-4.5px);
+  }
+
+  .rk-lift:hover .rk-mark .rk-mark-accent {
+    transform: translateY(-2px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rk-mark > *,
+  .rk-lift:hover .rk-mark > * {
+    transition: none;
+  }
+}

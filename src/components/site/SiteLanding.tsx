@@ -2,8 +2,8 @@ import { useRef, type ImgHTMLAttributes } from 'react'
 import { SITE_CHECKS } from '@/components/site/siteData'
 import { useLandingAction, type LandingAction } from '@/components/site/useLandingAction'
 import { useLandingMotionController } from '@/components/site/useLandingMotionController'
-import reclaimRMark from '@/assets/brand/reclaim-r-mark-v1.png'
 import reclaimWordmark from '@/assets/brand/reclaim-wordmark-v1.png'
+import { StackMark } from '@/components/ReclaimLogo'
 import './site.css'
 
 type LandingImageAsset = { src: string; srcSet: string; width: number; height: number }
@@ -43,7 +43,6 @@ const cafePhoto = optimizedAsset('cafe-photo-v2', 440, 357)
 const cuttingMat = optimizedAsset('cutting-mat-v2', 1672, 941)
 
 const LANDING_IMAGE_DIMENSIONS = new Map<string, { width: number; height: number }>([
-  [reclaimRMark, { width: 1254, height: 1254 }],
   [reclaimWordmark, { width: 2172, height: 724 }],
 ])
 
@@ -79,7 +78,7 @@ function Action({ action, quiet = false }: { action: LandingAction; quiet?: bool
 }
 
 function Brand({ inverse = false, markOnly = false, boxed = false, critical = false }: { inverse?: boolean; markOnly?: boolean; boxed?: boolean; critical?: boolean }) {
-  return <a className="fresh-brand" data-inverse={inverse || undefined} data-mark-only={markOnly || undefined} data-boxed={boxed || undefined} href="/" aria-label="Reclaim home"><span><LandingImage critical={critical} src={reclaimRMark} alt="" /></span>{!markOnly && <strong><LandingImage critical={critical} src={reclaimWordmark} alt="" /></strong>}</a>
+  return <a className="fresh-brand rk-lift" data-inverse={inverse || undefined} data-mark-only={markOnly || undefined} data-boxed={boxed || undefined} href="/" aria-label="Reclaim home"><span><StackMark /></span>{!markOnly && <strong><LandingImage critical={critical} src={reclaimWordmark} alt="" /></strong>}</a>
 }
 
 function Nav({ action }: { action: LandingAction }) {

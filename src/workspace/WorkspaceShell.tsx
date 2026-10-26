@@ -1,4 +1,5 @@
 import { PLAN_LABEL, planOf } from '@/lib/plans'
+import { StackMark } from '@/components/ReclaimLogo'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import {
   ArrowRight,
@@ -52,14 +53,7 @@ export interface WorkspaceShellProps {
 }
 
 export function Mark() {
-  return <svg viewBox="-13 -11.5 26 23" aria-hidden="true">
-    <path d="M-2.056,-4.6 L-5.751,-11 L5.751,-11 L2.056,-4.6 Z" />
-    <path d="M2.956,-4.081 L6.651,-10.481 L12.402,-0.520 L5.012,-0.520 Z" />
-    <path d="M5.012,0.520 L12.402,0.520 L6.651,10.481 L2.956,4.081 Z" />
-    <path d="M2.056,4.6 L5.751,11 L-5.751,11 L-2.056,4.6 Z" />
-    <path d="M-2.956,4.081 L-6.651,10.481 L-12.402,-0.520 L-5.012,-0.520 Z" />
-    <path d="M-5.012,-0.520 L-12.402,-0.520 L-6.651,-10.481 L-2.956,-4.081 Z" />
-  </svg>
+  return <StackMark />
 }
 
 /** True when a keystroke belongs to a field, so single-key shortcuts leave it alone. */
@@ -174,7 +168,7 @@ function Shell({ mode, onModeChange, auditCount, findingCount, recoveryCount, wo
     {mobileNavOpen ? <button className="wk-mobile-scrim" type="button" aria-label="Close navigation" onClick={() => setMobileNavOpen(false)} /> : null}
     <aside className="wk-side" data-mobile-open={mobileNavOpen || undefined} aria-label="Navigation">
       <button type="button" className="wk-icon-btn wk-drawer-close" onClick={() => setMobileNavOpen(false)} aria-label="Close navigation"><X aria-hidden="true" /></button>
-      <button type="button" className="wk-brandrow" onClick={() => { onModeChange('dashboard'); setMobileNavOpen(false) }} aria-label="Reclaim overview">
+      <button type="button" className="wk-brandrow rk-lift" onClick={() => { onModeChange('dashboard'); setMobileNavOpen(false) }} aria-label="Reclaim overview">
         <Mark /><b>Reclaim</b><span className="wk-plan-chip" data-plan={plan}>{plan === 'local' ? 'Local' : plan === 'guest' ? 'guest' : PLAN_LABEL[plan]}</span>
       </button>
       <button ref={findTrigger} type="button" className="wk-find" data-tour="find" onClick={openFind} title="Find (F)"><Search aria-hidden="true" /><span>Find</span><kbd aria-hidden="true">F</kbd></button>

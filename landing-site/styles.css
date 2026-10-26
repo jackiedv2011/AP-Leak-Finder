@@ -167,10 +167,9 @@ img, video, canvas, svg { display: block; max-width: 100%; }
 .heading1 .line-wrap:last-child { margin-bottom: -.18em; }
 
 /* ---------- logo ---------- */
-.hx-logo { --h: 2.4rem; display: flex; align-items: center; gap: calc(var(--h) * .28); height: var(--h); color: currentColor; }
-.hx-logo .wheel { height: 100%; width: auto; overflow: visible; flex: none; }
-.hx-logo .wheel .fill { fill: var(--cl-reclaim); }
-.hx-logo .word {
+.rk-logo { --h: 2.4rem; display: flex; align-items: center; gap: calc(var(--h) * .28); height: var(--h); color: currentColor; }
+.rk-logo .mark { height: 100%; width: auto; overflow: visible; flex: none; }
+.rk-logo .word {
   display: flex;
   overflow: hidden;
   font-size: calc(var(--h) * 1.02);
@@ -180,7 +179,7 @@ img, video, canvas, svg { display: block; max-width: 100%; }
   line-height: 1;
   padding: .06em .04em .1em 0;
 }
-.hx-logo .letter { display: inline-block; }
+.rk-logo .letter { display: inline-block; }
 
 /* ---------- hover-loop (label wrapper; hover is colour only, the label never moves) ---------- */
 .hover-loop { position: relative; display: block; overflow: hidden; }
@@ -279,8 +278,8 @@ img, video, canvas, svg { display: block; max-width: 100%; }
 .the-nav .left, .the-nav .center, .the-nav .right { position: relative; display: flex; align-items: center; justify-content: center; height: 100%; }
 .the-nav .right { gap: .8rem; justify-content: flex-end; }
 .the-nav .center { position: absolute; left: 50%; transform: translateX(-50%); }
-.the-nav .hx-logo { transform-origin: left center; transition: transform .55s var(--pill-ease); }
-.the-nav.is-floating .hx-logo { transform: scale(.92); }
+.the-nav .rk-logo { transform-origin: left center; transition: transform .55s var(--pill-ease); }
+.the-nav.is-floating .rk-logo { transform: scale(.92); }
 /* inside the pill the links lose their own grey pill (no pill in a pill) and the buttons round to match it */
 .the-nav .nav-bar { transition: background-color .35s var(--e-sine-io), height .55s var(--pill-ease); }
 .the-nav.is-floating[theme] .nav-bar { height: 4.4rem; background-color: transparent; }   /* [theme]: outranks the themed bars below */
@@ -289,7 +288,7 @@ img, video, canvas, svg { display: block; max-width: 100%; }
 .the-nav .menu-toggle { transition: background-color .35s var(--e-sine-io), color .3s; }
 .the-nav.is-floating[theme] .menu-toggle { background-color: transparent; }
 @media (prefers-reduced-motion: reduce) {   /* it still turns to glass, but snaps into place instead of gathering */
-  .the-nav .the-container, .the-nav .hx-logo, .the-nav .nav-bar { transition-property: background-color, border-color, box-shadow, backdrop-filter; }
+  .the-nav .the-container, .the-nav .rk-logo, .the-nav .nav-bar { transition-property: background-color, border-color, box-shadow, backdrop-filter; }
   .the-nav.is-floating.is-compact .the-container { transform: none; }
 }
 
@@ -950,7 +949,7 @@ img, video, canvas, svg { display: block; max-width: 100%; }
 .the-footer { position: relative; color: var(--cl-white); }
 .the-footer .the-container { padding-block: 8rem 4rem; }
 .ft-top { display: grid; grid-template-columns: 5fr 7fr; gap: 4.8rem; }
-.the-footer .hx-logo { --h: 3rem; font-size: 2.8rem; }
+.the-footer .rk-logo { --h: 3rem; font-size: 2.8rem; }
 .ft-line { max-width: 38rem; margin-top: 2rem; color: var(--cl-grey-400); font-size: 1.6rem; line-height: 1.5; }
 .ft-mail { display: inline-block; margin-top: 2.4rem; padding-bottom: .2rem; border-bottom: 1px solid var(--cl-grey-800); color: var(--cl-grey-400); font-size: 1.5rem; transition: color .3s, border-color .3s; }
 .ft-mail:hover { color: var(--cl-white); border-color: var(--cl-grey-500); }

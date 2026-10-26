@@ -42,7 +42,7 @@ export function Launch({ onRunSample, onUseOwn, running = false, note }: LaunchP
   return (
     <div className="wk ob ob-launch" data-running={running || undefined}>
       <header className="ob-top">
-        <a href="/" className="ob-brand">
+        <a href="/" className="ob-brand rk-lift">
           <Mark />
           <b>Reclaim</b>
         </a>

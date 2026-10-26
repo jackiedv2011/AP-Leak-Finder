@@ -86,11 +86,9 @@
 .rc-login-legal a { transition: color 0.3s ease-in-out; }
 .rc-login-legal a:hover { color: var(--black); }
 
-/* logo, as .hx-logo: the hexagon fills with green on hover */
+/* logo, as the marketing site's .rk-logo: its slabs spread apart on hover (reclaimMark.css) */
 .rc-logo { --h: calc(var(--r) * 2.4); display: flex; align-items: center; gap: calc(var(--h) * 0.28); height: var(--h); }
 .rc-logo svg { height: 100%; width: auto; overflow: visible; }
-.rc-logo .fill { fill: var(--reclaim); clip-path: inset(100% 0 0 0); transition: clip-path 0.6s var(--ease-roll); }
-.rc-logo:hover .fill { clip-path: inset(-10% 0 0 0); transition-duration: 1s; }
 .rc-logo span { font-size: calc(var(--h) * 1.02); font-weight: 650; letter-spacing: -0.045em; line-height: 1; }
 
 /* ---------- right: the black section ---------- */
@@ -287,5 +285,4 @@
 
 @media (prefers-reduced-motion: reduce) {
   .rc-login, .rc-login[data-leaving='true'], .rc-login-reel video, .rc-line, .rc-login-lede, .rc-login-body { animation: none; }
-  .rc-logo .fill { transition: none; }
 }

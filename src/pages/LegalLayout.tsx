@@ -14,7 +14,7 @@ export function LegalLayout({ title, summary, children }: LegalLayoutProps) {
   return (
     <div className="wk wk-doc-page">
       <header className="wk-auth-header">
-        <a href="/" aria-label="Reclaim home">
+        <a href="/" className="rk-lift" aria-label="Reclaim home">
           <Mark />
           Reclaim
         </a>

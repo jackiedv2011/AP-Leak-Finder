@@ -381,42 +381,34 @@
   }
 
   // ---------- logo ----------
-  // (reduced motion: the logo fades in where it stands)
+  // The mark is four slabs (.slab, top first). They drop into place, bottom one first, as the logo arrives,
+  // and spread apart while a mouse is over it, the top one highest.
+  // (reduced motion: the logo fades in where it stands, and the spread is instant)
+  const LIFT = [-7, -4.5, -2, 0];   // per slab, top first, in the mark's 100 x 94 units
   const logoReset = logo => {
     if (calm) { gsap.set(logo, { opacity: 0 }); return; }
-    gsap.set($('.wheel', logo), { scale: 0, rotation: 216, transformOrigin: '50% 50%' });
+    gsap.set($$('.slab', logo), { y: -60, opacity: 0 });
     gsap.set($$('.letter', logo), { xPercent: 50, yPercent: 150 });
   };
   const logoIn = logo => calm ? gsap.to(logo, { opacity: 1, duration: .5 }) : gsap.timeline({ defaults: { duration: 1, ease: 'power2.out' } })
-    .to($('.wheel', logo), { scale: 1, rotation: 0 }, 0)
+    .to($$('.slab', logo), { y: 0, opacity: 1, duration: .7, ease: 'power3.out', stagger: { each: .08, from: 'end' } }, 0)
     .to($$('.letter', logo), { xPercent: 0, yPercent: 0, stagger: .1 }, .1);
-  const navLogos = $$('.the-nav .hx-logo');
-  const footLogo = $('.the-footer .hx-logo');
+  const navLogos = $$('.the-nav .rk-logo');
+  const footLogo = $('.the-footer .rk-logo');
   navLogos.forEach(logoReset);
   if (footLogo) {
     logoReset(footLogo);
     ScrollTrigger.create({ trigger: '.the-footer', start: 'top 80%', onEnter: () => logoIn(footLogo), onLeaveBack: () => logoReset(footLogo) });
   }
 
-  // hover: the hexagon fills with green like water. A green copy of the wheel is clipped
-  // by a wave (period 13, amplitude 2, wheel units) that drifts sideways while its level rises.
-  const WAVE = 'M-26 0Q-22.75-4-19.5 0T-13 0T-6.5 0T0 0T6.5 0T13 0T19.5 0T26 0T32.5 0T39 0T45.5 0T52 0V60H-26Z';
-  $$('.hx-logo').forEach((logo, i) => {
-    const wheel = $('.wheel', logo);
-    wheel.insertAdjacentHTML('beforeend', `<clipPath id="hx-water-${i}"><path class="water" d="${WAVE}"/></clipPath><g clip-path="url(#hx-water-${i})"><use class="fill" href="#hx-wheel"/></g>`);
-    const water = $('.water', wheel);
-    gsap.set(water, { x: 0, y: 26 });   // empty: crest sits below the wheel
-    const drift = gsap.to(water, { x: -13, duration: 1.2, ease: 'none', repeat: -1, paused: true });
-    let level;
+  $$('.rk-logo').forEach(logo => {
+    const slabs = $$('.slab', logo);
     logo.addEventListener('pointerenter', e => {
       if (!byMouse(e)) return;
-      if (!calm) drift.play();
-      level?.kill();
-      level = gsap.to(water, { y: -3, duration: calm ? 0 : 1, ease: 'power2.out' });
+      gsap.to(slabs, { y: i => LIFT[i], duration: calm ? 0 : .5, ease: 'power3.out', overwrite: 'auto' });
     });
     logo.addEventListener('pointerleave', () => {
-      level?.kill();
-      level = gsap.to(water, { y: 26, duration: calm ? 0 : .6, ease: 'power1.inOut', onComplete: () => drift.pause() });
+      gsap.to(slabs, { y: 0, duration: calm ? 0 : .45, ease: 'power2.inOut', overwrite: 'auto' });
     });
   });
 
