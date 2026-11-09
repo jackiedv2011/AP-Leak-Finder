@@ -100,6 +100,24 @@ export function openDatabase(path: string): DatabaseSync {
   if (!columns.has('onboarding_seen_at')) db.exec('ALTER TABLE users ADD COLUMN onboarding_seen_at INTEGER')
   if (!columns.has('onboarding_profile')) db.exec('ALTER TABLE users ADD COLUMN onboarding_profile TEXT')
   if (!columns.has('tour_seen_at')) db.exec('ALTER TABLE users ADD COLUMN tour_seen_at INTEGER')
+  const projectColumns = new Set((db.prepare('PRAGMA table_info(projects)').all() as Array<{ name: string }>).map((c) => c.name))
+  if (!projectColumns.has('revision')) db.exec('ALTER TABLE projects ADD COLUMN revision INTEGER NOT NULL DEFAULT 0')
+  db.exec(`CREATE TABLE IF NOT EXISTS case_events (
+    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    project_id TEXT NOT NULL,
+    finding_id TEXT NOT NULL,
+    command_id TEXT NOT NULL,
+    command_hash TEXT NOT NULL,
+    action TEXT NOT NULL,
+    actor TEXT,
+    at INTEGER NOT NULL,
+    prior_revision INTEGER NOT NULL,
+    revision INTEGER NOT NULL,
+    source_refs TEXT NOT NULL,
+    PRIMARY KEY (user_id, project_id, command_id),
+    FOREIGN KEY (user_id, project_id) REFERENCES projects(user_id, id) ON DELETE CASCADE
+  );
+  CREATE INDEX IF NOT EXISTS case_events_case ON case_events(user_id, project_id, finding_id, revision);`)
   // The single paid plan became Growth when the three tracks were introduced.
   db.exec("UPDATE users SET plan = 'growth' WHERE plan = 'pro'")
   // audit_starts is the plan-usage ledger (see app.ts). Databases from before it

@@ -15,6 +15,10 @@ export const autofillKey = {
   obligationReference: 'obligation:reference',
   obligationAmount: 'obligation:amountMinor',
   obligationCurrency: 'obligation:currency',
+  supplierId: 'supplier:supplierId',
+  supplierReference: 'supplier:reference',
+  entityId: 'entity:entityId',
+  entityReference: 'entity:reference',
   check: (check: string) => `check:${check}`,
 }
 
@@ -84,6 +88,13 @@ export function quickBooksEvidence(finding: Finding, imports: ImportBatch[] = []
   })
 
   const obligation: RecoveryEvidence['obligation'] = { ...empty, obligationId, amountMinor: 0, currency: '' }
+  const entityNames = new Set(records.map((r) => r.company?.trim()).filter(Boolean))
+  const entityName = entityNames.size === 1 ? [...entityNames][0]! : ''
+  const entity: RecoveryEvidence['entity'] = { ...empty, entityId: entityName, reference: entityName ? `QuickBooks company ${entityName}` : '' }
+  if (entityName) {
+    mark(autofillKey.entityId, [entityName])
+    mark(autofillKey.entityReference, [entityName])
+  }
   if (sharedBill) {
     const paidBy = listed(facts.map((f) => label(f.payment)))
     Object.assign(obligation, {
@@ -98,6 +109,11 @@ export function quickBooksEvidence(finding: Finding, imports: ImportBatch[] = []
   const checks: RecoveryEvidence['checks'] = {}
   const contradictions: string[] = []
   const vendorIds = [...new Set(facts.map((f) => f.vendorId).filter((id): id is string => Boolean(id)))]
+  const supplier: RecoveryEvidence['supplier'] = { ...empty, supplierId: vendorIds.length === 1 ? vendorIds[0] : '', reference: vendorIds.length === 1 ? `QuickBooks vendor ${vendorIds[0]}` : '' }
+  if (vendorIds.length === 1) {
+    mark(autofillKey.supplierId, [vendorIds[0]])
+    mark(autofillKey.supplierReference, [vendorIds[0]])
+  }
   if (snapshot && allFromQuickBooks && vendorIds.length > 0) {
     const activity: QuickBooksVendorActivity = { credits: [], refunds: [], voided: [] }
     for (const id of vendorIds) {
@@ -130,5 +146,5 @@ export function quickBooksEvidence(finding: Finding, imports: ImportBatch[] = []
     }
   }
 
-  return { payments, obligation, checks, contradictions, notes: '', autofilled }
+  return { entity, supplier, payments, obligation, checks, contradictions, notes: '', autofilled }
 }

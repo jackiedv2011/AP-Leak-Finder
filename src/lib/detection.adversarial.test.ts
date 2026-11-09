@@ -25,6 +25,7 @@ function rec(overrides: Partial<APRecord> & { vendor: string; amountPaid: number
     terms: overrides.terms ?? null,
     bankAccountLast4: overrides.bankAccountLast4 ?? null,
     category: overrides.category ?? null,
+    transactionType: overrides.transactionType ?? null,
     rowIndex,
   }
 }
@@ -116,7 +117,7 @@ describe('Rule 1 — exact duplicates: overlap and refunds', () => {
       rec({ vendor: 'Refundo', invoiceNumber: 'R-1', amountPaid: 100, paymentDate: d(2025, 1, 2) }),
       rec({ vendor: 'Refundo', invoiceNumber: 'R-1', amountPaid: 50, paymentDate: d(2025, 1, 3) }),
       rec({ vendor: 'Refundo', invoiceNumber: 'R-1', amountPaid: 50, paymentDate: d(2025, 1, 4) }),
-      rec({ vendor: 'Refundo', invoiceNumber: 'R-1', amountPaid: -30, paymentDate: d(2025, 1, 20) }),
+      rec({ vendor: 'Refundo', invoiceNumber: 'R-1', amountPaid: -30, transactionType: 'refund', paymentDate: d(2025, 1, 20) }),
     ])
     expect(cents(recoverableSum(findings))).toBe(12000)
   })
@@ -125,7 +126,7 @@ describe('Rule 1 — exact duplicates: overlap and refunds', () => {
     const findings = run([
       rec({ vendor: 'Settled', invoiceNumber: 'X-1', amountPaid: 800, invoiceAmount: 800 }),
       rec({ vendor: 'Settled', invoiceNumber: 'X-1', amountPaid: 800, invoiceAmount: 800, paymentDate: d(2025, 1, 5) }),
-      rec({ vendor: 'Settled', invoiceNumber: 'X-1', amountPaid: -800, paymentDate: d(2025, 2, 1) }),
+      rec({ vendor: 'Settled', invoiceNumber: 'X-1', amountPaid: -800, transactionType: 'refund', paymentDate: d(2025, 2, 1) }),
     ])
     expect(findings.filter((f) => f.class === 'recoverable')).toHaveLength(0)
   })
@@ -360,7 +361,7 @@ describe('Rule 3 — overpayment', () => {
   it('NEG: an overpayment the vendor already refunded is not claimed again', () => {
     const findings = run([
       rec({ vendor: 'Overpaid', invoiceNumber: 'O-1', invoiceAmount: 1000, amountPaid: 1200 }),
-      rec({ vendor: 'Overpaid', invoiceNumber: 'O-1', amountPaid: -200, paymentDate: d(2025, 2, 1) }),
+      rec({ vendor: 'Overpaid', invoiceNumber: 'O-1', amountPaid: -200, transactionType: 'refund', paymentDate: d(2025, 2, 1) }),
     ])
     expect(findings.filter((f) => f.class === 'recoverable')).toHaveLength(0)
   })
@@ -368,7 +369,7 @@ describe('Rule 3 — overpayment', () => {
   it('POS: a partially refunded overpayment claims only what is still out', () => {
     const findings = run([
       rec({ vendor: 'Overpaid', invoiceNumber: 'O-2', invoiceAmount: 1000, amountPaid: 1200 }),
-      rec({ vendor: 'Overpaid', invoiceNumber: 'O-2', amountPaid: -50, paymentDate: d(2025, 2, 1) }),
+      rec({ vendor: 'Overpaid', invoiceNumber: 'O-2', amountPaid: -50, transactionType: 'refund', paymentDate: d(2025, 2, 1) }),
     ])
     const over = ofType(findings, 'overpayment')
     expect(over).toHaveLength(1)

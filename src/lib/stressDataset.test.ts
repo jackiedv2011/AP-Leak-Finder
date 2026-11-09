@@ -49,12 +49,11 @@ describe('messy ledger — parsing', () => {
     expect(parsed.records.find((r) => r.vendor === 'Comma Vendor')?.amountPaid).toBe(12500)
   })
 
-  it('collapses whitespace/case and legal-suffix variants onto one vendor, but keeps different vendors apart', () => {
+  it('preserves legal-suffix variants as separate supplier identities until reviewed', () => {
     const sierra = parsed.records.filter((r) => r.vendor === 'Sierra Coffee Supply')
-    expect(sierra).toHaveLength(4)
+    expect(sierra).toHaveLength(3)
     const abc = new Set(parsed.records.filter((r) => /abc supply/i.test(r.vendor)).map((r) => r.vendor))
-    // LLC and Inc. merge; "Co" is close enough to group for detection but is a different invoice anyway.
-    expect(abc.size).toBeLessThanOrEqual(2)
+    expect(abc.size).toBe(3)
     expect(parsed.records.some((r) => r.vendor === 'Northwest Bakery Co')).toBe(true)
     expect(parsed.records.some((r) => r.vendor === 'Northwest Pastry Co')).toBe(true)
     expect(parsed.records.some((r) => r.vendor === 'Acme Steel')).toBe(true)
@@ -85,11 +84,10 @@ describe('messy ledger — true positives', () => {
     expect(f.relatedRecords).toHaveLength(3)
   })
 
-  it('TP3: "ABC Supply LLC" and "ABC Supply, Inc." are the same vendor, so the repeated invoice is a duplicate', () => {
-    const f = only(ofType('exact_duplicate', 'ABC Supply'))
-    expect(f.dollarImpact).toBe(900)
-    // and the genuinely different "ABC Supply Co" invoice is not dragged in
-    expect(ofType('shared_invoice_number', 'ABC')).toHaveLength(0)
+  it('TP3: matching invoice numbers across legal-suffix variants remain a review signal', () => {
+    const f = only(ofType('shared_invoice_number', 'ABC Supply'))
+    expect(f.dollarImpact).toBe(1800)
+    expect(ofType('exact_duplicate', 'ABC Supply')).toHaveLength(0)
     expect(byVendor('ABC')).toHaveLength(1)
   })
 
@@ -132,7 +130,7 @@ describe('messy ledger — true positives', () => {
   })
 
   it('TP10: the same invoice number on two different vendors is flagged for review, and not as a duplicate', () => {
-    const f = only(ofType('shared_invoice_number'))
+    const f = only(ofType('shared_invoice_number', 'Acme'))
     expect(f.vendor).toContain('Acme Steel')
     expect(f.vendor).toContain('Acme Stone')
     expect(f.dollarImpact).toBe(2000)
@@ -207,7 +205,6 @@ describe('messy ledger — totals, priority, evidence', () => {
       [
         'amount_outlier:Metro Utilities:' + findings.find((f) => f.type === 'amount_outlier')!.dollarImpact.toFixed(2),
         'bank_account_change:Northwest Pastry Co:662.00',
-        'exact_duplicate:ABC Supply LLC:900.00',
         'exact_duplicate:Harbor Point Roasting Equipment:2500.00',
         'exact_duplicate:Lakeside Printing:800.00',
         'exact_duplicate:Pine Valley Dairy:760.00',
@@ -217,6 +214,7 @@ describe('messy ledger — totals, priority, evidence', () => {
         'near_duplicate:Nameless Vendor Test:' + byVendor('Nameless')[0].dollarImpact.toFixed(2),
         'overpayment:Golden Bean Exports:800.00',
         'shared_invoice_number:Acme Steel, Acme Stone:2000.00',
+        'shared_invoice_number:ABC Supply LLC, ABC Supply, Inc.:1800.00',
         'unclaimed_discount:Blue Bag Packaging:100.00',
       ].sort()
     )
@@ -226,7 +224,7 @@ describe('messy ledger — totals, priority, evidence', () => {
     // Without evidence nothing is a recovery candidate; the rules' own strong signals are still flagged.
     expect(result.recoverableTotal).toBe(0)
     const strong = findings.filter((f) => f.ruleClass === 'recoverable').reduce((s, f) => s + (f.flaggedAmount ?? 0), 0)
-    expect(strong).toBeCloseTo(6800 + 2500 + 900 + 800 + 100 + 760 + 800, 2)
+    expect(strong).toBeCloseTo(6800 + 2500 + 800 + 100 + 760 + 800, 2)
     // Both missed discounts are future savings, never money owed.
     expect(result.opportunityTotal).toBeCloseTo(40 + 100, 2)
     const review = findings.filter((f) => f.class === 'review').reduce((s, f) => s + f.dollarImpact, 0)

@@ -48,7 +48,7 @@ time, so match each answer to the question it best fits.
 ## 2. Scopes and API use
 
 **Scope requested:** `com.intuit.quickbooks.accounting` only. Intuit has no
-read-only accounting scope, so read-only is enforced in Reclaim's code:
+read-only accounting scope. The granted permission permits writes, although this adapter restricts its own data calls to GET:
 
 - Every company-data call goes through one function (`apiGet` in
   `server/quickbooks.ts`). It issues **GET requests only**, only to the API

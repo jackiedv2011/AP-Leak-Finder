@@ -56,6 +56,8 @@ const COLUMN_ALIASES: Record<string, string> = {
   source_account: 'source_account',
   source_system_account: 'source_account',
   transaction_type: 'transaction_type',
+  supplier_id: 'supplier_id',
+  vendor_id: 'supplier_id',
 }
 
 const CANONICAL_COLUMNS = new Set(Object.values(COLUMN_ALIASES))
@@ -116,6 +118,7 @@ export function parseCsv(csvText: string): ParseResult {
       company: cellOrNull(row.company),
       sourceAccount: cellOrNull(row.source_account),
       transactionType: cellOrNull(row.transaction_type),
+      stableSupplierId: cellOrNull(row.supplier_id),
       // Placeholder identity — the ledger store assigns the real global id
       // and importBatchId when this record is merged into the environment.
       id: `pending:${index}`,
@@ -137,12 +140,13 @@ export function parseCsv(csvText: string): ParseResult {
     records.map((r) => ({ vendor: r.vendor, bankAccountLast4: r.bankAccountLast4 }))
   )
   for (const record of records) {
-    // The display vendor is the resolved group name; the original spelling stays in source.raw.
     const resolved = vendorResolution.resolveVendorName(record.vendor)
-    const canonical = normalizeVendor(resolved)
-    record.canonicalVendorId = `vendor_${checksum(canonical)}`
-    if (canonical !== record.source!.normalized.vendor) record.source!.transformations.vendor.push('suggested_fuzzy_vendor_group')
-    record.vendor = resolved
+    // A fuzzy name resemblance is a suggestion, not proof that two rows have
+    // the same supplier. Group only the deterministic normalized name until a
+    // person reviews the alias against a stable supplier identity.
+    const canonical = normalizeVendor(record.vendor)
+    record.canonicalVendorId = record.stableSupplierId ? `supplier_${checksum(record.stableSupplierId.trim().toLowerCase())}` : `vendor_${checksum(canonical)}`
+    if (normalizeVendor(resolved) !== canonical) record.suggestedVendorAlias = resolved
     record.identityKey = recordIdentity(record)
     record.rowFingerprint = checksum(record.identityKey)
   }

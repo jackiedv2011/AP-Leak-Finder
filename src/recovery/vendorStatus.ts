@@ -1,4 +1,4 @@
-import type { CaseState, VendorUpdate, VendorUpdateStatus } from '@/ledger/caseState'
+import type { CaseState, VendorUpdate, VendorUpdateStatus } from '../ledger/caseState.ts'
 
 /**
  * Everything the app knows about each kind of vendor reply, in one place.

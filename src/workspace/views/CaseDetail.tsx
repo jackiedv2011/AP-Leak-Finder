@@ -14,22 +14,27 @@ import type { APRecord, Finding } from '@/types'
 import { FINDING_TYPE_LABELS } from '@/lib/labels'
 import { recommendRecoveryMethod, recoveryNextAction } from '@/recovery/model'
 import { recoveryLedger, RECOVERY_LEDGER_LABEL } from '@/recovery/ledger'
-import { verifiedReturned } from '@/recovery/financials'
+import { activeReturned, validSettlements, verifiedReturned } from '@/recovery/financials'
+import { latestVendorPosition } from '@/recovery/vendorStatus'
 import { playbookFor } from '@/recovery/playbooks'
 import { evidenceOf, openQuestion, timelineFor } from '../selectors'
 import { StatusChip } from './StatusChip'
 import { InternalReviewPanel, METHOD_LABEL, RecoveryRequestPanel, type RequestPackage } from './RecoveryPanels'
 import type { GmailSendReceipt } from '@/lib/gmailApi'
-import { GmailFollowUp } from '@/components/gmail/Gmail'
+import { GmailAttemptActivity, GmailFollowUp } from '@/components/gmail/Gmail'
 import { RecoveryAccountingPanel, RecoveryProgressPanel } from './RecoveryJourney'
 import { KIND_LABEL, KindChip } from './KindChip'
 import { Strength } from './Strength'
+import { CaseAssistant } from './CaseAssistant'
 import { findingReference, nextActionLabel } from './findingText'
 
 interface CaseDetailProps {
   finding: Finding
   findings?: Finding[]
   projectId?: string
+  sample?: boolean
+  owner?: string | null
+  sampleEvidence?: RecoveryEvidence
   onSaveEvidence?: (findingId: string, evidence: RecoveryEvidence) => void
   state: CaseState
   records: APRecord[]
@@ -43,6 +48,8 @@ interface CaseDetailProps {
   /** Take back the last step: a decision (until a request is sent) or a recorded outcome. */
   onReopen: (findingId: string) => void
   onReopenBalance: (findingId: string) => void
+  onBeginNewRequestReview?: (findingId: string) => void
+  onHistoricalSettlement?: (findingId: string, generation: number, proof: RecoveryVerification) => void
   onApproveRecovery: (findingId: string, pkg: RequestPackage, knownBeforeReclaim: boolean, knownBeforeNote: string | null) => void
   onApproveAndSend?: (findingId: string, pkg: RequestPackage, knownBeforeReclaim: boolean, knownBeforeNote: string | null) => void
   /** Gmail accepted the request; record it as sent. */
@@ -62,8 +69,43 @@ interface CaseDetailProps {
 const stamp = (ts: number) => new Date(ts).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 const longDate = (ts: number) => new Date(ts).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 
+function HistoricalSettlementForm({ findingId, generation, onRecord }: { findingId: string; generation: number; onRecord: NonNullable<CaseDetailProps['onHistoricalSettlement']> }) {
+  const [amount, setAmount] = useState('')
+  const [reference, setReference] = useState('')
+  const [method, setMethod] = useState<RecoveryMethod>('refund')
+  const [appliedToBill, setAppliedToBill] = useState('')
+  const [settledDate, setSettledDate] = useState(() => new Date().toLocaleDateString('en-CA'))
+  const [error, setError] = useState<string | null>(null)
+  const record = () => {
+    const parsed = Number(amount)
+    const settledAt = new Date(`${settledDate}T00:00:00`).getTime()
+    if (!Number.isFinite(parsed) || parsed <= 0 || Math.abs(parsed * 100 - Math.round(parsed * 100)) > 0.000001 || !reference.trim() || !Number.isFinite(settledAt) || settledAt > Date.now() + 60_000 || ((method === 'credit' || method === 'offset') && !appliedToBill.trim())) {
+      setError('Enter a valid amount, settlement date, and reference. For a credit or offset, include the bill where it was applied.')
+      return
+    }
+    try {
+      onRecord(findingId, generation, { amount: parsed, method, source: 'manual', reference: reference.trim(), settledAt, appliedToBill: appliedToBill.trim() || undefined })
+      setAmount(''); setReference(''); setAppliedToBill(''); setError(null)
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'The earlier return could not be recorded.')
+    }
+  }
+  return <div className="wk-stack">
+    <strong>Record a later return for request {generation}</strong>
+    <div className="wk-fields" data-columns="3">
+      <label>Amount<input className="wk-input" inputMode="decimal" value={amount} onChange={(event) => setAmount(event.target.value)} /></label>
+      <label>Method<select className="wk-input" value={method} onChange={(event) => setMethod(event.target.value as RecoveryMethod)}><option value="refund">Refund</option><option value="credit">Applied credit</option><option value="offset">Offset</option></select></label>
+      <label>Settlement reference<input className="wk-input" value={reference} onChange={(event) => setReference(event.target.value)} /></label>
+      <label>Settled on<input className="wk-input" type="date" value={settledDate} onChange={(event) => setSettledDate(event.target.value)} /></label>
+    </div>
+    {method !== 'refund' ? <label>Bill where applied<input className="wk-input" value={appliedToBill} onChange={(event) => setAppliedToBill(event.target.value)} /></label> : null}
+    {error ? <p role="alert" className="wk-field-error">{error}</p> : null}
+    <button type="button" className="wk-btn" data-variant="outline" data-size="sm" onClick={record}>Record earlier return</button>
+  </div>
+}
+
 const CHOICES: Array<{ value: DecisionValue; title: string; detail: string; internal: string; icon: typeof CircleCheck }> = [
-  { value: 'confirmed', title: 'This is real', detail: 'The records show money to get back. Prepare the request next.', internal: 'Worth checking inside the business. Opens an internal review.', icon: CircleCheck },
+  { value: 'confirmed', title: 'I reviewed this check', detail: 'You believe these records describe a possible duplicate. The evidence and request amount still need review before outreach.', internal: 'You believe this needs an internal review. No supplier request is created.', icon: CircleCheck },
   { value: 'needs_info', title: 'I need more detail', detail: 'Keep it open while you check a PO, statement or the vendor.', internal: 'Keep it open while you gather more context.', icon: CircleHelp },
   { value: 'expected', title: 'Not an issue', detail: 'Expected, or a detection mistake. It leaves the open findings.', internal: 'Expected, or a detection mistake. It leaves the open findings.', icon: CircleX },
 ]
@@ -78,6 +120,16 @@ const COLUMNS: Column[] = [
 ]
 
 /** The records behind the finding. Values repeated across rows are what made them match, so they are marked. */
+function EvidenceReference({ reference }: { reference: string }) {
+  try {
+    const url = new URL(reference)
+    if (url.protocol === 'https:' || url.protocol === 'http:') return <a href={url.href} target="_blank" rel="noreferrer">{reference}</a>
+  } catch {
+    // File names and accounting references are displayed as text.
+  }
+  return <>{reference}</>
+}
+
 function Evidence({ finding, checklist = true }: { finding: Finding; checklist?: boolean }) {
   const records = finding.relatedRecords
   const showVendor = new Set(records.map((r) => r.vendor.trim().toLowerCase())).size > 1
@@ -99,6 +151,15 @@ function Evidence({ finding, checklist = true }: { finding: Finding; checklist?:
           </p>
         </div>
       </div>
+      {finding.evidence ? (
+        <ul className="wk-panelcard-body">
+          <li>Bill {finding.evidence.obligation.obligationId} · <EvidenceReference reference={finding.evidence.obligation.reference} /></li>
+          {finding.evidence.payments.map((payment) => <li key={payment.recordId}>Payment {payment.paymentId} · <EvidenceReference reference={payment.reference} /></li>)}
+          {finding.evidence.priorReturns?.map((entry, index) => <li key={index}>{entry.method === 'refund' ? 'Refund' : 'Applied credit'} · <EvidenceReference reference={entry.reference} /></li>)}
+        </ul>
+      ) : null}
+      <details className="wk-panelcard-body wk-evq-details">
+      <summary>Matched ledger rows</summary>
       <div className="wk-evidence-table" style={{ overflowX: 'auto' }}>
         <table className="wk-table">
           <thead>
@@ -132,6 +193,7 @@ function Evidence({ finding, checklist = true }: { finding: Finding; checklist?:
           </li>
         ))}
       </ul>
+      </details>
       {playbook ? (
         <div className="wk-panelcard-body wk-subsection wk-stack">
           <h3 className="wk-subhead"><ListChecks aria-hidden="true" />Before asking the vendor</h3>
@@ -157,12 +219,12 @@ function RecoveryFacts({ finding, state }: { finding: Finding; state: CaseState 
     const requested = state.recoveryStage && state.recoveryStage !== 'confirmed' ? state.requestedAmount ?? null : null
     const received = verifiedReturned(state)
     const closed = state.recoveryStage === 'recovered' || state.recoveryStage === 'not_recovered'
-    const remaining = requested !== null ? Math.max(0, requested - (received ?? 0)) : null
+    const remaining = requested !== null ? Math.max(0, requested - activeReturned(state)) : null
     const methods = new Set(state.recoverySettlements?.map((entry) => entry.method) ?? [])
     const method = state.recoveredVia ?? state.requestedResolution ?? null
-    rows.push(['Records support', formatCurrency(finding.dollarImpact)], ['Status', status])
+    rows.push(['Flagged value', formatCurrency(finding.dollarImpact)], ['Status', status])
     if (requested !== null) rows.push(['Requested', formatCurrency(requested)])
-    if (received > 0 || state.recoveryStage === 'not_recovered') rows.push(['Received', formatCurrency(received), received > 0])
+    if (received > 0 || state.recoveryStage === 'not_recovered') rows.push(['Return recorded by customer', formatCurrency(received), received > 0])
     if ((state.legacyRecoveredAmount ?? 0) > 0) rows.push(['Older unverified amount (not counted)', formatCurrency(state.legacyRecoveredAmount!)])
     if (requested === null && state.recoveryStage === 'requested') rows.push(['Requested amount', 'Missing from legacy case; confirm the original request'])
     if (remaining !== null && (remaining > 0 || !closed)) rows.push([closed ? 'Unreturned balance' : 'Still outstanding', formatCurrency(remaining)])
@@ -194,22 +256,22 @@ function stepsDone(state: CaseState): boolean[] {
     state.decision === 'confirmed',
     Boolean(state.approvedAt) || sent,
     sent,
-    state.recoveryStage === 'recovered' && verifiedReturned(state) > 0,
+    state.recoveryStage === 'recovered' && activeReturned(state) > 0,
     Boolean(state.reconciledAt),
   ]
 }
 
 /** §29 — what happened and the work in front of you, the decision and money alongside. */
 export function CaseDetail(props: CaseDetailProps) {
-  const { finding, findings = [], imports, projectId, onSaveEvidence, state, records, discoveredAt, sender, onDecide, onMarkRequested, onRecordOutcome, onReopen, onReopenBalance, onApproveRecovery, onApproveAndSend, onEmailSent, onFollowUpSent, onFollowUpDays, onContactHold, onVendorUpdate, onFollowUp, onVerifyRecovery, onCloseRecovery, onReconcileRecovery } = props
+  const { finding, findings = [], imports, projectId, onSaveEvidence, state, records, discoveredAt, sender, onDecide, onMarkRequested, onRecordOutcome, onReopen, onReopenBalance, onBeginNewRequestReview, onHistoricalSettlement, onApproveRecovery, onApproveAndSend, onEmailSent, onFollowUpSent, onFollowUpDays, onContactHold, onVendorUpdate, onFollowUp, onVerifyRecovery, onCloseRecovery, onReconcileRecovery } = props
   const gate = evaluateEligibility(finding, finding.evidence, findings)
   const entitlements = useEntitlements()
   const [deciding, setDeciding] = useState<DecisionValue | null>(null)
   const internal = !historicalRecoveryClaim(finding, state)
   const duplicate = finding.type === 'exact_duplicate' || finding.type === 'near_duplicate'
   const canChangeDecision = state.decision !== null && (state.recoveryStage === null || state.recoveryStage === 'confirmed')
-  const canReopenOutcome = state.recoveryStage === 'recovered' || state.recoveryStage === 'not_recovered'
-  const hasClosedRemainder = !internal && state.recoveryStage === 'recovered' && verifiedReturned(state) > 0 && Math.round((state.requestedAmount ?? 0) * 100) > Math.round(verifiedReturned(state) * 100)
+  const canReopenOutcome = !state.requiresRevalidation && (state.recoveryStage === 'recovered' || state.recoveryStage === 'not_recovered')
+  const hasClosedRemainder = !internal && !state.requiresRevalidation && state.recoveryStage === 'recovered' && activeReturned(state) > 0 && Math.round((state.requestedAmount ?? 0) * 100) > Math.round(activeReturned(state) * 100)
   const evidence = evidenceOf(finding)
   const question = openQuestion(finding)
   const steps = timelineFor(finding, state, discoveredAt)
@@ -217,6 +279,22 @@ export function CaseDetail(props: CaseDetailProps) {
   const history = state.history ?? []
   const moneyEvents = internal ? [] : recoveryLedger(state)
   const now = Date.now()
+  const prior = gate.amountBreakdown
+  const settlements = validSettlements(state)
+  const refunds = prior.refundedMinor + settlements.filter((entry) => entry.method === 'refund').reduce((sum, entry) => sum + Math.round(entry.amount * 100), 0)
+  const credits = prior.appliedCreditMinor + settlements.filter((entry) => entry.method !== 'refund').reduce((sum, entry) => sum + Math.round(entry.amount * 100), 0)
+  const openAmount = Math.max(0, prior.overpaymentMinor - refunds - credits - prior.ledgerAdjustmentMinor)
+  const response = latestVendorPosition(state)
+  const waitingForReturn = state.recoveryStage === 'requested' && openAmount > 0
+  const supplier = finding.evidence?.supplier
+  const entityId = finding.evidence?.entity?.entityId
+  const contactMatches = supplier && entityId ? findings.flatMap((candidate) => {
+    const evidence = candidate.evidence
+    const contact = evidence?.supplier?.contact
+    return evidence?.entity?.entityId === entityId && evidence.supplier?.supplierId === supplier.supplierId && contact?.source === 'supplier_record' ? [contact] : []
+  }) : []
+  const suggestedContact = supplier?.contact ?? (new Set(contactMatches.map((contact) => contact.email.toLowerCase())).size === 1 ? contactMatches[0] : undefined)
+  const caseOwner = history.findLast((event) => event.action === 'recovery:approved')?.actor ?? props.owner ?? 'Workspace account'
   const nextAction = state.recoveryStage ? recoveryNextAction(state, now, internal) : null
   const done = stepsDone(state)
   const currentStep = done.findIndex((isDone) => !isDone)
@@ -270,7 +348,9 @@ export function CaseDetail(props: CaseDetailProps) {
       <RecoveryRequestPanel
         key={finding.id}
         projectId={projectId}
+        sample={props.sample}
         finding={finding}
+        suggestedContact={suggestedContact}
         state={state}
         sender={sender}
         limits={entitlements.limits}
@@ -283,7 +363,7 @@ export function CaseDetail(props: CaseDetailProps) {
       />
     ) : state.recoveryStage === 'requested' && !internal ? (
       <>
-        {onFollowUpSent && onFollowUpDays ? (
+        {!state.requiresRevalidation && onFollowUpSent && onFollowUpDays ? (
           <GmailFollowUp key={`follow-up-${finding.id}`} finding={finding} state={state} projectId={projectId} sender={sender} onSent={(receipt) => onFollowUpSent(finding.id, receipt)} onChangeDays={(days) => onFollowUpDays(finding.id, days)} />
         ) : null}
         <RecoveryProgressPanel key={finding.id} finding={finding} state={state} onVendorUpdate={onVendorUpdate} onFollowUp={onFollowUp} onVerify={onVerifyRecovery} onClose={onCloseRecovery} />
@@ -291,6 +371,8 @@ export function CaseDetail(props: CaseDetailProps) {
     ) : state.recoveryStage === 'requested' && internal ? (
       <InternalReviewPanel key={finding.id} onClose={(note) => onRecordOutcome(finding.id, 'not_recovered', null, note, null)} />
     ) : null
+
+  const canEditEvidence = Boolean(onSaveEvidence && !['requested', 'recovered', 'not_recovered'].includes(state.recoveryStage ?? '') && (finding.type === 'exact_duplicate' || finding.type === 'near_duplicate'))
 
   return (
     <>
@@ -308,7 +390,7 @@ export function CaseDetail(props: CaseDetailProps) {
           </div>
         </div>
         <div className="wk-head-copy wk-head-figure">
-          <span className="wk-label">{internal ? 'Flagged value' : 'Records support'}</span>
+          <span className="wk-label">Flagged value</span>
           <strong className="wk-money">{formatCurrency(finding.dollarImpact)}</strong>
         </div>
       </header>
@@ -316,9 +398,11 @@ export function CaseDetail(props: CaseDetailProps) {
       <div className="wk-case">
         <div className="wk-case-main">
           <section className="wk-panelcard" data-m="what" aria-labelledby="case-what">
-            <div className="wk-panelcard-head"><h2 id="case-what">What happened</h2></div>
+            <div className="wk-panelcard-head"><h2 id="case-what">Why it was flagged</h2></div>
             <div className="wk-panelcard-body wk-case-summary">
               <p>{finding.explanation}</p>
+              <p className="wk-field-hint">{typeLabel} · {findingReference(finding)}</p>
+              {duplicate ? <p className="wk-field-hint">{gate.eligible ? 'The cited records support a claim after reviewer confirmation.' : 'Possible issue. Supplier outreach requires a completed evidence review.'}</p> : null}
               {question && (state.decision === null || state.decision === 'needs_info') ? (
                 <div className="wk-question" role="note">
                   <TriangleAlert aria-hidden="true" />
@@ -328,15 +412,69 @@ export function CaseDetail(props: CaseDetailProps) {
             </div>
           </section>
 
+          {duplicate && gate.eligible ? (
+            <section className="wk-panelcard" aria-labelledby="case-amount">
+              <div className="wk-panelcard-head"><div><h2 id="case-amount">Amount</h2><p>Outstanding <strong>{formatCurrency(openAmount / 100)}</strong></p></div></div>
+              <div className="wk-panelcard-body wk-stack">
+                <details className="wk-evq-details"><summary>Show calculation</summary>
+                  <dl className="wk-kv">
+                    <div><dt>Original overpayment</dt><dd>{formatCurrency(prior.overpaymentMinor / 100)}</dd></div>
+                    <div><dt>Confirmed refunds</dt><dd>−{formatCurrency(refunds / 100)}</dd></div>
+                    <div><dt>Confirmed applied credits</dt><dd>−{formatCurrency(credits / 100)}</dd></div>
+                    {prior.ledgerAdjustmentMinor ? <div><dt>Adjustment already included in the ledger flag</dt><dd>−{formatCurrency(prior.ledgerAdjustmentMinor / 100)}</dd></div> : null}
+                    <div><dt>Outstanding</dt><dd>{formatCurrency(openAmount / 100)}</dd></div>
+                  </dl>
+                  <p className="wk-field-hint">Returns are confirmed by your team against the cited records.</p>
+                </details>
+                {waitingForReturn && response?.status === 'promised' ? <p>Promised {response.method === 'credit' ? 'credit' : 'refund'}{response.amount ? ` · ${formatCurrency(response.amount)}` : ''} · awaiting confirmation of the balance</p> : null}
+                {waitingForReturn && response?.status === 'credit_issued' ? <p>Issued credit{response.amount ? ` · ${formatCurrency(response.amount)}` : ''} · awaiting confirmation of application</p> : null}
+                {state.recoveryRequestedAt ? <p className="wk-field-hint">{props.sample ? 'Simulated send · ' : ''}Case owner · {caseOwner}</p> : null}
+              </div>
+            </section>
+          ) : null}
+
           {workPanel ? <div className="wk-case-work" data-m="work">{workPanel}</div> : null}
 
-          {state.requiresRevalidation ? <p className="wk-field-hint" role="status">This existing recovery needs its evidence revalidated before any further outreach. Recorded returns stay preserved.</p> : null}
+          {state.requiresRevalidation && ['requested', 'recovered', 'not_recovered'].includes(state.recoveryStage ?? '') ? (
+            <section className="wk-panelcard" aria-labelledby="historical-review-title">
+              <div className="wk-panelcard-head"><h2 id="historical-review-title">Historical request</h2></div>
+              <div className="wk-panelcard-body wk-stack">
+                <p>This sent request stays in history. Record any replies and returns here. Further supplier contact requires fresh evidence, a new decision, and a new approval.</p>
+                {onBeginNewRequestReview ? <button type="button" className="wk-btn" data-variant="outline" data-size="sm" onClick={() => onBeginNewRequestReview(finding.id)} disabled={!state.requestedAmount || Math.max(state.legacyRecoveredAmount ?? 0, state.recoveredAmount ?? 0) > verifiedReturned(state)}>Start a separate request review</button> : null}
+                {!state.requestedAmount ? <p className="wk-field-hint">The original request amount is missing. This record needs correction before a new request can begin.</p> : null}
+                {Math.max(state.legacyRecoveredAmount ?? 0, state.recoveredAmount ?? 0) > verifiedReturned(state) ? <p className="wk-field-hint">An older return amount has no settlement reference. Resolve that historical record before a new request can begin.</p> : null}
+              </div>
+            </section>
+          ) : null}
+
+          {(state.archivedRequests ?? []).length > 0 ? (
+            <section className="wk-panelcard" aria-labelledby="archived-requests-title">
+              <div className="wk-panelcard-head"><h2 id="archived-requests-title">Earlier requests</h2></div>
+              <div className="wk-panelcard-body wk-stack">
+                {state.archivedRequests!.map((request) => (
+                  <div key={request.generation}>
+                    <strong>Request {request.generation} · {formatCurrency(request.requestedAmount ?? 0)}</strong>
+                    <p>{request.recoverySentEmail ? `Sent ${longDate(request.recoverySentEmail.sentAt)} to ${request.recoverySentEmail.to}` : request.recoveryRequestedAt ? `Recorded sent ${longDate(request.recoveryRequestedAt)}` : 'Sent date unavailable'} · {request.recoveryStage === 'recovered' ? 'Closed with return' : request.recoveryStage === 'not_recovered' ? 'Closed without return' : 'Was open when archived'}</p>
+                    {request.legacyApprovedAt ? <p>Earlier approval recorded {longDate(request.legacyApprovedAt)}; fresh approval is required for a new request.</p> : null}
+                    {request.recoverySubject ? <p>Subject: {request.recoverySubject}</p> : null}
+                    {!request.recoverySentEmail && request.recoveryRecipientEmail ? <p>Recipient recorded: {request.recoveryRecipientEmail}</p> : null}
+                    {request.recoveryDraft ? <details><summary>Original request text</summary><p style={{ whiteSpace: 'pre-wrap' }}>{request.recoveryDraft}</p></details> : null}
+                    {request.recoveryEvidenceAttachment ? <details><summary>Original payment-evidence.txt</summary><pre style={{ whiteSpace: 'pre-wrap' }}>{request.recoveryEvidenceAttachment}</pre></details> : null}
+                    {request.vendorUpdates?.map((update, index) => <p key={`${update.at}-${index}`}>{longDate(update.at)} · {update.status.replace(/_/g, ' ')}: {update.note}</p>)}
+                    {request.recoveryFollowUps?.map((receipt) => <p key={receipt.messageId}>Follow-up sent {longDate(receipt.sentAt)} to {receipt.to}</p>)}
+                    <p>{formatCurrency((state.recoverySettlements ?? []).filter((entry) => (entry.requestGeneration ?? 1) === request.generation).reduce((sum, entry) => sum + entry.amount, 0))} in customer-recorded returns for this request</p>
+                    {onHistoricalSettlement ? <HistoricalSettlementForm findingId={finding.id} generation={request.generation} onRecord={onHistoricalSettlement} /> : null}
+                  </div>
+                ))}
+              </div>
+            </section>
+          ) : null}
 
           {/* Only duplicate rules have a recovery gate; savings and security findings never collect recovery evidence. */}
           {/* Duplicates ask these checks in the evidence questions below, so the short checklist would repeat them. */}
-          <Evidence finding={finding} checklist={!(onSaveEvidence && (finding.type === 'exact_duplicate' || finding.type === 'near_duplicate'))} />
+          <Evidence finding={finding} checklist={!canEditEvidence} />
 
-          {onSaveEvidence && (finding.type === 'exact_duplicate' || finding.type === 'near_duplicate') ? <EvidencePanel key={`evidence-${finding.id}`} finding={finding} findings={findings} imports={imports} onSave={(evidence) => onSaveEvidence(finding.id, evidence)} /> : null}
+          {canEditEvidence && onSaveEvidence ? <EvidencePanel key={`evidence-${finding.id}`} finding={finding} findings={findings} imports={imports} initialEvidence={props.sampleEvidence} onSave={(evidence) => onSaveEvidence(finding.id, evidence)} /> : null}
 
           {!internal ? <RecoveryAccountingPanel finding={finding} state={state} onReconcile={onReconcileRecovery} /> : null}
 
@@ -367,16 +505,25 @@ export function CaseDetail(props: CaseDetailProps) {
           ) : null}
 
           <section className="wk-panelcard" aria-labelledby="case-history-title">
-            <div className="wk-panelcard-head"><h2 id="case-history-title">History</h2></div>
+            <div className="wk-panelcard-head"><h2 id="case-history-title">Activity</h2></div>
             <div className="wk-panelcard-body">
               {history.length > 0 && !entitlements.limits.fullRecoveryWorkflow ? (
                 <Locked title="The full case history is part of Growth and Flat" note="Who did what, when, with the amounts and methods.">{timeline}</Locked>
               ) : timeline}
+              {state.recoveryRequestedAt && state.recoverySubject ? <details className="wk-evq-details">
+                <summary>Supplier request · {state.recoverySimulated ? 'simulated' : state.recoverySentEmail ? 'Gmail accepted' : 'sent manually'}</summary>
+                <p>To {state.recoveryRecipientEmail} · {stamp(state.recoveryRequestedAt)}</p>
+                <p>{state.recoverySubject}</p>
+                <p style={{ whiteSpace: 'pre-wrap' }}>{state.recoveryDraft}</p>
+                {state.recoveryEvidenceAttachment ? <details><summary>payment-evidence.txt</summary><pre style={{ whiteSpace: 'pre-wrap' }}>{state.recoveryEvidenceAttachment}</pre></details> : null}
+              </details> : null}
+              {!internal && projectId ? <GmailAttemptActivity key={`${projectId}-${finding.id}`} projectId={projectId} findingId={finding.id} /> : null}
             </div>
           </section>
         </div>
 
         <aside className="wk-case-side">
+          <CaseAssistant projectId={projectId} findingId={finding.id} />
           {nextAction ? (
             <section className="wk-panelcard wk-next" data-m="lead" aria-labelledby="case-next">
               <div className="wk-panelcard-body wk-stack">
@@ -410,9 +557,10 @@ export function CaseDetail(props: CaseDetailProps) {
             <div className="wk-panelcard-body">
               {state.decision === null ? (
                 <div className="wk-decide" role="group" aria-label="Review this finding">
+                  {(state.activeRequestGeneration ?? 1) > 1 && state.requiresRevalidation ? <p className="wk-field-hint">Review and save fresh evidence before confirming a new request. You can still mark a false alarm or ask for more detail.</p> : null}
                   {CHOICES.map(({ value, title, detail, internal: internalDetail, icon: Icon }) => {
                     // An unproven duplicate becomes a claim through the evidence questions, not an internal review.
-                    const toEvidence = value === 'confirmed' && internal && duplicate && onSaveEvidence !== undefined
+                    const toEvidence = value === 'confirmed' && ((internal && duplicate) || ((state.activeRequestGeneration ?? 1) > 1 && state.requiresRevalidation)) && onSaveEvidence !== undefined
                     return <button key={value} type="button" className="wk-decide-btn" onClick={() => {
                       if (!toEvidence) return setDeciding(value)
                       const form = document.getElementById('evidence-review')

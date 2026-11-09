@@ -45,7 +45,7 @@ export const PLAN_PITCH: Record<Plan, PlanPitch> = {
   growth: {
     tagline: 'Pay when you get paid',
     price: `${money(PLAN_PRICE_USD.growth)} / month + ${PLAN_SUCCESS_FEE.growth * 100}% of what’s recovered`,
-    summary: 'Every finding, every audit, and the whole recovery workflow — with AI writing the vendor emails for you.',
+    summary: 'Every finding and the self-serve case workflow, with optional AI drafting when configured. You review and send each request.',
     features: [
       'Every finding in every audit — nothing hidden',
       'AI-drafted recovery emails from the exact records',
@@ -54,7 +54,7 @@ export const PLAN_PITCH: Record<Plan, PlanPitch> = {
       'Every-vendor reports and accounting closeout',
       'Unlimited uploads and re-audits',
     ],
-    note: `The ${PLAN_SUCCESS_FEE.growth * 100}% applies only to money that actually comes back — never to findings, promises or unused credits.`,
+    note: `Proposed pricing. Automated success-fee billing is disabled until returns can be independently matched, attributed and approved.`,
   },
   flat: {
     tagline: 'Keep every dollar',
@@ -65,7 +65,7 @@ export const PLAN_PITCH: Record<Plan, PlanPitch> = {
       'No success fee — 100% of every recovery stays with you',
       'One fixed monthly cost for budgeting',
     ],
-    note: `Costs less than Growth once you recover more than ${money(FLAT_BREAK_EVEN)} a month.`,
+    note: `Proposed pricing. Human-managed investigation is separately scoped; this plan is self-serve software.`,
   },
 }
 

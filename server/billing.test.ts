@@ -5,6 +5,8 @@ import { loadConfig } from './config.ts'
 import { FakeStripe } from './fakeStripe.ts'
 import { createStripeClient, formEncode, normalizeSubscription, signatureHeader, StripeError, verifyWebhook } from './stripe.ts'
 import { authorizedProject } from './testProject.ts'
+import { ProjectStore } from './projectStore.ts'
+import { randomUUID } from 'node:crypto'
 
 const WHSEC = 'whsec_test_secret'
 const env = { NODE_ENV: 'test', DATABASE_PATH: ':memory:', APP_ORIGIN: 'http://localhost:0', REQUIRE_EMAIL_VERIFICATION: 'false', STRIPE_SECRET_KEY: 'sk_test_unused', STRIPE_WEBHOOK_SECRET: WHSEC }
@@ -277,7 +279,7 @@ describe('without Stripe keys', () => {
   })
 })
 
-describe('Growth success fee', () => {
+describe('customer-entered returns and proposed success fee', () => {
   const refund = (amount: number, reference: string) => ({ amount, method: 'refund', source: 'bank', reference, settledAt: Date.UTC(2026, 9, 1) })
   function project(id: string, state: Record<string, unknown>) {
     const { project, findingId } = authorizedProject(id, { vendor: 'Acme Supply', invoice: 'INV-1', amount: 1234.5, requested: 1234.5 })
@@ -287,6 +289,20 @@ describe('Growth success fee', () => {
     return project
   }
   const items = () => [...stripe.invoiceItems.values()]
+  async function requestedCase(client: Client, id: string) {
+    const saved = authorizedProject(id, { vendor: 'Acme Supply', invoice: 'INV-1', amount: 1234.5, requested: 1234.5 })
+    const user = app.auth.findUserByEmail('pilot@example.com')!
+    let revision = new ProjectStore(app.db, null).upsert(user.id, saved.project)
+    const command = async (type: string, input: unknown) => {
+      const response = await client.post(`/api/projects/${id}/case-commands`, { commandId: randomUUID(), expectedRevision: revision, findingId: saved.findingId, type, input })
+      expect(response.status).toBe(200)
+      revision = response.body.revision
+    }
+    const request = { subject: 'Duplicate payment INV-1', body: 'Please return the extra payment.', recipientEmail: 'billing@acme.test', recipientConfirmed: true, method: 'refund', requestedAmount: 1234.5 }
+    await command('approve', { package: request, knownBeforeReclaim: false, knownBeforeNote: null })
+    await command('request', request)
+    return command
+  }
 
   async function onGrowth() {
     const client = await signedIn()
@@ -295,21 +311,22 @@ describe('Growth success fee', () => {
     return client
   }
 
-  it('bills 10% of each settled refund once, on the next subscription invoice', async () => {
+  it('records customer-entered refunds once without creating a success-fee invoice', async () => {
     const client = await onGrowth()
-    const saved = project('p1', { recoverySettlements: [refund(1000, 'BANK-1'), refund(234.5, 'BANK-2')] })
-    expect((await client.put('/api/projects/p1', saved)).status).toBe(200)
+    const command = await requestedCase(client, 'p1')
+    await command('settlement', refund(1000, 'BANK-1'))
+    await command('settlement', refund(234.5, 'BANK-2'))
     await app.billingIdle()
-    expect(items().map((i) => i.amountCents).sort((a, b) => a - b)).toEqual([2345, 10000])
-    expect(items().every((i) => i.subscription && i.metadata.finding_id)).toBe(true)
-    // Saving again (or redelivering) never bills twice.
-    await client.put('/api/projects/p1', saved)
+    expect(items()).toHaveLength(0)
+    // Reading billing again never turns the assertion into a fee.
+    await client.get('/api/billing')
     await app.billingIdle()
-    expect(items()).toHaveLength(2)
+    expect(items()).toHaveLength(0)
     const status = (await client.get('/api/billing')).body.successFees
-    expect(status).toMatchObject({ monthCents: 12345, unbilledCents: 0 })
+    expect(status).toMatchObject({ monthCents: 0, unbilledCents: 0 })
+    expect(app.db.prepare('SELECT COUNT(*) AS n FROM recovery_fees WHERE billable = 0').get()).toEqual({ n: 2 })
     stripe.endPeriod()
-    expect(stripe.invoices.at(-1)).toMatchObject({ amountCents: 1500 + 12345 })
+    expect(stripe.invoices.at(-1)).toMatchObject({ amountCents: 1500 })
   })
 
   it('never charges on findings, vendor promises or credits not applied to a bill', async () => {
@@ -322,47 +339,48 @@ describe('Growth success fee', () => {
     await client.put('/api/projects/p2', saved)
     await app.billingIdle()
     expect(items()).toHaveLength(0)
-    // Once the credit is applied to a real bill it is returned value.
+    // A typed bill reference remains a customer assertion until matched.
     const states: Record<string, unknown> = saved.environment.caseStates
     states['exact_duplicate-p2'] = { ...(states['exact_duplicate-p2'] as object), recoverySettlements: [{ amount: 500, method: 'credit', source: 'document', reference: 'CM-9', settledAt: 3, appliedToBill: 'BILL-2207' }] }
     await client.put('/api/projects/p2', saved)
     await app.billingIdle()
-    expect(items().map((i) => i.amountCents)).toEqual([5000])
+    expect(items()).toHaveLength(0)
   })
 
   it('money recorded on Free or Flat is never billed, even after moving to Growth', async () => {
     const client = await signedIn()
-    await client.put('/api/projects/p3', project('p3', { recoverySettlements: [refund(800, 'BANK-FREE')] }))
+    const command = await requestedCase(client, 'p3')
+    await command('settlement', refund(800, 'BANK-FREE'))
     await client.post('/api/billing/subscribe', { plan: 'flat', paymentMethodId: 'pm_card_visa' })
-    await client.put('/api/projects/p3', project('p3', { recoverySettlements: [refund(800, 'BANK-FREE'), refund(100, 'BANK-FLAT')] }))
+    await command('settlement', refund(100, 'BANK-FLAT'))
     await client.post('/api/billing/change', { plan: 'growth' })
-    await client.put('/api/projects/p3', project('p3', { recoverySettlements: [refund(800, 'BANK-FREE'), refund(100, 'BANK-FLAT'), refund(50, 'BANK-GROWTH')] }))
+    await command('settlement', refund(50, 'BANK-GROWTH'))
     await app.billingIdle()
-    expect(items().map((i) => i.amountCents)).toEqual([500])
+    expect(items()).toHaveLength(0)
     const rows = app.db.prepare('SELECT reference, billable, reason FROM recovery_fees ORDER BY recorded_at, reference').all()
     expect(rows).toEqual([
-      { reference: 'BANK-FREE', billable: 0, reason: 'plan_free' },
-      { reference: 'BANK-FLAT', billable: 0, reason: 'plan_flat' },
-      { reference: 'BANK-GROWTH', billable: 1, reason: null },
+      { reference: 'BANK-FREE', billable: 0, reason: 'customer_assertion_unmatched' },
+      { reference: 'BANK-FLAT', billable: 0, reason: 'customer_assertion_unmatched' },
+      { reference: 'BANK-GROWTH', billable: 0, reason: 'customer_assertion_unmatched' },
     ])
   })
 
-  it('a removed settlement is voided: deleted while pending, credited back once invoiced', async () => {
+  it('a removed customer assertion is voided without a Stripe invoice item', async () => {
     const client = await onGrowth()
-    await client.put('/api/projects/p4', project('p4', { recoverySettlements: [refund(300, 'BANK-A'), refund(200, 'BANK-B')] }))
+    const command = await requestedCase(client, 'p4')
+    await command('settlement', refund(300, 'BANK-A'))
+    await command('settlement', refund(934.5, 'BANK-B'))
     await app.billingIdle()
-    expect(items()).toHaveLength(2)
-    await client.put('/api/projects/p4', project('p4', { recoverySettlements: [refund(200, 'BANK-B')] }))
-    await app.billingIdle()
-    expect(items().map((i) => i.amountCents)).toEqual([2000])
+    expect(items()).toHaveLength(0)
     stripe.endPeriod()
     await deliver()
-    await client.put('/api/projects/p4', project('p4', { recoveryStage: 'requested', recoverySettlements: [] }))
+    await command('reopen', {})
     await app.billingIdle()
-    expect(items().map((i) => i.amountCents)).toEqual([2000, -2000])
+    expect(items()).toHaveLength(0)
+    expect(app.db.prepare('SELECT COUNT(*) AS n FROM recovery_fees WHERE voided_at IS NOT NULL').get()).toEqual({ n: 2 })
   })
 
-  it('fees from the last period go on a final invoice when a cancelled plan ends', async () => {
+  it('a cancelled plan does not invoice customer-entered returns from the last period', async () => {
     const client = await onGrowth()
     await client.post('/api/billing/cancel')
     await client.put('/api/projects/p5', project('p5', { recoverySettlements: [refund(1000, 'BANK-LAST')] }))
@@ -370,11 +388,11 @@ describe('Growth success fee', () => {
     stripe.endPeriod()
     await deliver()
     expect(await plan(client)).toBe('free')
-    expect(stripe.invoices.at(-1)).toMatchObject({ amountCents: 10000 })
+    expect(stripe.invoices).toHaveLength(0)
     // Recorded after the plan ended: not billable.
     await client.put('/api/projects/p5', project('p5', { recoverySettlements: [refund(1000, 'BANK-LAST'), refund(400, 'BANK-AFTER')] }))
     await app.billingIdle()
-    expect(items()).toHaveLength(1)
+    expect(items()).toHaveLength(0)
   })
 
   it('imported audits are snapshotted, not billed', async () => {
@@ -388,7 +406,7 @@ describe('Growth success fee', () => {
 })
 
 describe('deleting an account', () => {
-  it('bills fees owed, ends the subscription now, then deletes; a Stripe outage stops the deletion', async () => {
+  it('ends the subscription without billing asserted returns, then deletes; a Stripe outage stops deletion', async () => {
     const client = await signedIn()
     await client.post('/api/billing/subscribe', { plan: 'growth', paymentMethodId: 'pm_card_visa' })
     const { project, findingId } = authorizedProject('d1', { vendor: 'Acme Supply', invoice: 'INV-9', amount: 500, requested: 500 })
@@ -405,7 +423,7 @@ describe('deleting an account', () => {
     const deleted = await client.post('/api/account/delete', { confirmEmail: 'pilot@example.com' })
     expect(deleted.status).toBe(200)
     expect([...stripe.subscriptions.values()][0].status).toBe('canceled')
-    expect(stripe.invoices.at(-1)).toMatchObject({ amountCents: 5000 })
+    expect(stripe.invoices).toHaveLength(0)
     expect(app.db.prepare('SELECT COUNT(*) AS n FROM billing_accounts').get()).toEqual({ n: 0 })
   })
 })

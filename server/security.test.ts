@@ -13,6 +13,7 @@ import { authorizedProject } from './testProject.ts'
 import { loadConfig, type ServerConfig } from './config.ts'
 import { openDatabase } from './db.ts'
 import { DevMailer } from './mailer.ts'
+import { ProjectStore } from './projectStore.ts'
 import type { DraftService } from './ai.ts'
 
 const baseConfig = loadConfig({ NODE_ENV: 'test', DATABASE_PATH: ':memory:', APP_ORIGIN: 'http://localhost:0' })
@@ -66,7 +67,7 @@ async function account(input: typeof alice, plan: 'free' | 'growth' | 'flat' = '
   const verified = await c.post('/api/auth/verify-email', { token: new URL(mail.link).searchParams.get('token') })
   expect(verified.status).toBe(200)
   if (plan !== 'free') app.db.prepare('UPDATE users SET plan = ? WHERE email = ?').run(plan, input.email)
-  if (project) expect((await c.put(`/api/projects/${project.id}`, project)).status).toBe(200)
+  if (project) new ProjectStore(app.db, baseConfig.dataKeys).upsert(verified.body.user.id, project)
   return c
 }
 
@@ -137,7 +138,7 @@ describe('Free: each ledger is audited once, and the rule cannot be talked aroun
     const merged = ledger('feb', 80, 500)
     merged.environment.records = [...ledger('x', 40, 500).environment.records, ...ledger('x', 40).environment.records]
     expect((await c.put('/api/projects/feb', merged)).status).toBe(409)
-    expect((await c.put('/api/projects/jan', { ...ledger('jan', 40), name: 'renamed' })).status).toBe(200)
+    expect((await c.call('/api/projects/jan', { method: 'PUT', headers: { 'If-Match': '1' }, json: { ...ledger('jan', 40), name: 'renamed' } })).status).toBe(200)
   })
 
   it('a new month that shares a few days with the last one is a new ledger', async () => {
@@ -208,7 +209,7 @@ describe('cross-account access', () => {
   it('SQL-looking ids and names are data, not queries', async () => {
     const a = await account(alice)
     expect((await a.call("/api/projects/x'%20OR%20'1'='1", { method: 'PUT', json: project("x' OR '1'='1") })).status).toBe(404)
-    expect((await a.put('/api/projects/p1', project('p1', { name: "'); DROP TABLE users; --" }))).status).toBe(200)
+    expect((await a.call('/api/projects/p1', { method: 'PUT', headers: { 'If-Match': '1' }, json: project('p1', { name: "'); DROP TABLE users; --" }) })).status).toBe(200)
     expect((await a.get('/api/projects')).body.projects[0].name).toBe("'); DROP TABLE users; --")
     expect((app.db.prepare('SELECT COUNT(*) AS n FROM users').get() as { n: number }).n).toBe(1)
   })

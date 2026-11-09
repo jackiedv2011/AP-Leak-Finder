@@ -1,4 +1,5 @@
 import type { CaseState } from '@/ledger/caseState'
+import { activeReturned } from './financials'
 
 export type RecoveryLedgerKind = 'reviewed' | 'approved' | 'requested' | 'acknowledged' | 'vendor_agreed' | 'promised' | 'credit_issued' | 'refund_reported' | 'returned' | 'reversed' | 'unreturned_closed' | 'balance_reopened' | 'reconciled' | 'reconciliation_corrected'
 export interface RecoveryLedgerEntry {
@@ -22,12 +23,17 @@ export function recoveryLedger(state: CaseState): RecoveryLedgerEntry[] {
     if (at) entries.push({ kind, at, amount, reference })
   }
   if (state.decision === 'confirmed') push('reviewed', state.decidedAt, null, state.reason ?? null)
+  for (const archived of state.archivedRequests ?? []) {
+    if (archived.decision === 'confirmed') push('reviewed', archived.decidedAt, null, archived.reason ?? null)
+    push('approved', archived.approvedAt, archived.requestedAmount ?? null, 'Earlier request approved')
+    push('requested', archived.recoveryRequestedAt, archived.requestedAmount ?? null, archived.recoveryRecipientEmail ?? null)
+  }
   push('approved', state.approvedAt, state.requestedAmount ?? null, state.knownBeforeReclaim ? 'Issue known before Reclaim' : 'Customer approved')
   push('requested', state.recoveryRequestedAt, state.requestedAmount ?? null, state.recoveryRecipientEmail ?? null)
   const settlements = state.recoverySettlements ?? (state.recoveryVerification ? [state.recoveryVerification] : [])
   for (const update of state.vendorUpdates ?? []) {
     const kind = update.status === 'acknowledged' ? 'acknowledged' : update.status === 'accepted' || update.status === 'partial_acceptance' ? 'vendor_agreed' : update.status === 'promised' ? 'promised' : update.status === 'credit_issued' ? 'credit_issued' : update.status === 'already_refunded' ? 'refund_reported' : null
-    const priorReturnedCents = settlements.filter((settlement) => settlement.settledAt <= update.at).reduce((sum, settlement) => sum + Math.round(settlement.amount * 100), 0)
+    const priorReturnedCents = settlements.filter((settlement) => (settlement.requestGeneration ?? 1) === (state.activeRequestGeneration ?? 1) && settlement.settledAt <= update.at).reduce((sum, settlement) => sum + Math.round(settlement.amount * 100), 0)
     const acceptedBalance = update.status === 'accepted' && state.requestedAmount != null ? Math.max(0, Math.round(state.requestedAmount * 100) - priorReturnedCents) / 100 : null
     if (kind) push(kind, update.at, update.amount ?? acceptedBalance, update.note)
   }
@@ -57,8 +63,8 @@ export function recoveryLedger(state: CaseState): RecoveryLedgerEntry[] {
       push(reopened ? 'balance_reopened' : 'unreturned_closed', event.at, reopened && amount != null ? -amount : amount, event.note ?? null)
       if (reopened) lastClosedAmount = null
     }
-  } else if (state.recoveryStage === 'not_recovered' || (state.recoveryStage === 'recovered' && (state.recoveredAmount ?? 0) > 0 && (state.requestedAmount ?? 0) > (state.recoveredAmount ?? 0))) {
-    push('unreturned_closed', state.recoveryResolvedAt, state.requestedAmount == null ? null : Math.max(0, Math.round(state.requestedAmount * 100) - Math.round((state.recoveredAmount ?? 0) * 100)) / 100, state.recoveryOutcomeNote ?? null)
+  } else if (state.recoveryStage === 'not_recovered' || (state.recoveryStage === 'recovered' && activeReturned(state) > 0 && (state.requestedAmount ?? 0) > activeReturned(state))) {
+    push('unreturned_closed', state.recoveryResolvedAt, state.requestedAmount == null ? null : Math.max(0, Math.round(state.requestedAmount * 100) - Math.round(activeReturned(state) * 100)) / 100, state.recoveryOutcomeNote ?? null)
   }
   const reconciliationEvents = (state.history ?? []).filter((event) => event.action === 'accounting:reconciled' || event.action === 'accounting:corrected')
   if (reconciliationEvents.length) {

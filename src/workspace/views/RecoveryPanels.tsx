@@ -1,4 +1,4 @@
-import { evaluateEligibility } from '@/recovery/eligibility'
+import { evaluateEligibility, type SupplierContact } from '@/recovery/eligibility'
 import { projectSync } from '@/ledger/projectSync'
 import { useEffect, useMemo, useState } from 'react'
 import { CircleCheck, Copy, Download, Lightbulb, PauseCircle, Sparkles } from 'lucide-react'
@@ -25,6 +25,8 @@ export interface RequestPackage {
   requestedAmount: number
   method: RecoveryMethod
   recipientEmail: string
+  recipientConfirmed: boolean
+  evidenceAttachment?: string | null
 }
 
 function parseMoney(input: string): number {
@@ -41,6 +43,7 @@ function parseMoney(input: string): number {
  */
 export function RecoveryRequestPanel({
   finding,
+  suggestedContact,
   projectId,
   state,
   sender,
@@ -51,8 +54,10 @@ export function RecoveryRequestPanel({
   onEmailSent,
   onContactHold,
   recommendation,
+  sample = false,
 }: {
   finding: Finding
+  suggestedContact?: SupplierContact
   projectId?: string
   state: CaseState
   sender: SenderProfile
@@ -64,9 +69,13 @@ export function RecoveryRequestPanel({
   onEmailSent?: (pkg: RequestPackage, receipt: GmailSendReceipt) => void
   onContactHold: (reason: string | null) => void
   recommendation?: { method: RecoveryMethod; reason: string }
+  sample?: boolean
 }) {
   const gate = evaluateEligibility(finding)
-  const supportedAmount = (gate.potentialAmountMinor ?? 0) / 100
+  const previousReturned = (state.recoverySettlements ?? (state.recoveryVerification ? [state.recoveryVerification] : []))
+    .filter((entry) => (entry.requestGeneration ?? 1) !== (state.activeRequestGeneration ?? 1))
+    .reduce((sum, entry) => sum + entry.amount, 0)
+  const supportedAmount = Math.max(0, Math.round((gate.potentialAmountMinor ?? 0) - previousReturned * 100) / 100)
   const [upgrade, setUpgrade] = useState<string | null>(null)
   const canEdit = limits.fullLetters
   const [method, setMethod] = useState<RecoveryMethod>(state.requestedResolution ?? recommendation?.method ?? 'refund')
@@ -80,13 +89,23 @@ export function RecoveryRequestPanel({
   const [body, setBody] = useState(state.recoveryDraft ?? generated.body)
   const [edited, setEdited] = useState(Boolean(state.recoveryDraft))
   const [context, setContext] = useState('')
-  const [recipientEmail, setRecipientEmail] = useState(state.recoveryRecipientEmail ?? '')
+  const contact = suggestedContact
+  const [recipientEmail, setRecipientEmail] = useState(state.recoveryRecipientEmail ?? contact?.email ?? '')
+  const [recipientConfirmed, setRecipientConfirmed] = useState(Boolean(state.approvedAt && state.recoveryRecipientEmail))
   const [knownBeforeReclaim, setKnownBeforeReclaim] = useState<boolean | null>(state.knownBeforeReclaim ?? null)
   const [knownBeforeNote, setKnownBeforeNote] = useState(state.knownBeforeNote ?? '')
   const [holdOpen, setHoldOpen] = useState(Boolean(state.contactHold))
   const [holdReason, setHoldReason] = useState(state.contactHold ?? '')
   const [drafting, setDrafting] = useState(false)
   const [notice, setNotice] = useState<string | null>(null)
+  const [evidenceAttachment, setEvidenceAttachment] = useState(state.recoveryEvidenceAttachment ?? '')
+  const [includeEvidence, setIncludeEvidence] = useState(Boolean(state.recoveryEvidenceAttachment))
+  const evidenceSummary = finding.evidence
+    ? [
+        `Invoice ${finding.evidence.obligation.obligationId}`,
+        ...finding.evidence.payments.map((payment) => `Payment ${payment.paymentId} · ${formatCurrency(payment.amountMinor / 100)}`),
+      ].join('\n')
+    : ''
 
   // Until the reviewer edits the text, keep it in step with the method/amount they pick.
   useEffect(() => {
@@ -107,42 +126,45 @@ export function RecoveryRequestPanel({
         : null
 
   const isVendorLetter = finding.class === 'recoverable'
-  const pkg: RequestPackage = { subject, body, requestedAmount: amount, method, recipientEmail: recipientEmail.trim() }
+  const recipientValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipientEmail.trim())
+  const pkg: RequestPackage = { subject: subject.trim(), body: body.trim(), requestedAmount: amount, method, recipientEmail: recipientEmail.trim(), recipientConfirmed, evidenceAttachment: includeEvidence ? evidenceAttachment.trim() : null }
   const disclosureNote = knownBeforeReclaim ? knownBeforeNote.trim() || null : null
   const approvedForCurrent =
     Boolean(state.approvedAt) &&
-    state.recoverySubject === subject &&
-    state.recoveryDraft === body &&
+    state.recoverySubject === pkg.subject &&
+    state.recoveryDraft === pkg.body &&
+    (state.recoveryEvidenceAttachment ?? null) === pkg.evidenceAttachment &&
     state.requestedAmount === amount &&
     state.requestedResolution === method &&
     (state.recoveryRecipientEmail ?? '') === recipientEmail.trim() &&
     state.knownBeforeReclaim === knownBeforeReclaim &&
     (state.knownBeforeNote ?? null) === disclosureNote &&
-    !state.contactHold
+    recipientConfirmed && !state.contactHold
   const disclosureMissing = knownBeforeReclaim === null || (knownBeforeReclaim === true && !knownBeforeNote.trim())
-  const canApprove = !amountError && !state.contactHold && !disclosureMissing
+  const canApprove = !amountError && !state.contactHold && !disclosureMissing && recipientValid && recipientConfirmed && Boolean(pkg.subject && pkg.body) && (!includeEvidence || Boolean(pkg.evidenceAttachment))
 
   const copy = async () => {
     try {
-      await navigator.clipboard.writeText(`Subject: ${subject}\n\n${body}`)
+      await navigator.clipboard.writeText(`To: ${pkg.recipientEmail}\nSubject: ${pkg.subject}\n\n${pkg.body}`)
       setNotice('Copied to the clipboard.')
     } catch {
       setNotice('Copy is not available here. Select the text and copy it by hand.')
     }
   }
 
-  const download = () => {
-    const blob = new Blob([`Subject: ${subject}\n\n${body}\n`], { type: 'text/plain' })
+  const downloadText = (name: string, value: string) => {
+    const blob = new Blob([value], { type: 'text/plain' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `${finding.vendor.replace(/[^\w-]+/g, '-')}-recovery-request.txt`
+    a.download = name
     document.body.appendChild(a)
     a.click()
     a.remove()
     URL.revokeObjectURL(url)
     setNotice('Downloaded as a text file.')
   }
+  const download = () => downloadText(`${finding.vendor.replace(/[^\w-]+/g, '-')}-recovery-request.txt`, `Subject: ${subject}\n\n${body}\n`)
 
   const draftWithAi = async () => {
     if (amountError || !approvedForCurrent || !gate.eligible || !projectId) return
@@ -213,7 +235,9 @@ export function RecoveryRequestPanel({
             </div>
             <div className="wk-field">
               <label htmlFor="request-recipient">Vendor email</label>
-              <input id="request-recipient" className="wk-input" type="email" value={recipientEmail} onChange={(e) => setRecipientEmail(e.target.value)} placeholder="ap@vendor.com" />
+              <input id="request-recipient" className="wk-input" type="email" value={recipientEmail} onChange={(e) => { setRecipientEmail(e.target.value); setRecipientConfirmed(false) }} placeholder="Supplier billing or accounts receivable" />
+              {contact && recipientEmail.trim() === contact.email ? <span className="wk-field-hint">{contact.source === 'document' ? 'Document suggestion, requires confirmation' : 'Workspace supplier record'} · {contact.reference}</span> : null}
+              <label className="wk-radio"><input type="checkbox" checked={recipientConfirmed} disabled={!recipientValid} onChange={(e) => setRecipientConfirmed(e.target.checked)} />I confirmed this supplier billing address</label>
             </div>
           </div>
         ) : null}
@@ -226,6 +250,21 @@ export function RecoveryRequestPanel({
           <label htmlFor="request-body">Message</label>
           <textarea id="request-body" className="wk-input wk-letter" rows={14} value={body} readOnly={!canEdit} onChange={(e) => { setBody(e.target.value); setEdited(true) }} />
         </div>
+        {isVendorLetter ? (
+          <details className="wk-evq-details">
+            <summary>{includeEvidence ? 'Attachment · payment-evidence.txt' : 'Attachments · none selected'}</summary>
+            <label className="wk-radio">
+              <input type="checkbox" checked={includeEvidence} onChange={(event) => { setIncludeEvidence(event.target.checked); if (!evidenceAttachment) setEvidenceAttachment(evidenceSummary) }} />
+              Include a payment evidence summary
+            </label>
+            {includeEvidence ? <>
+              <label className="wk-field">Preview and edit payment-evidence.txt
+                <textarea className="wk-input" rows={5} maxLength={5000} value={evidenceAttachment} onChange={(event) => setEvidenceAttachment(event.target.value)} />
+              </label>
+              <button type="button" className="wk-btn" data-variant="outline" disabled={!pkg.evidenceAttachment} onClick={() => downloadText('payment-evidence.txt', pkg.evidenceAttachment ?? '')}>Download attachment for manual sending</button>
+            </> : <p className="wk-field-hint">Only the message will be included.</p>}
+          </details>
+        ) : null}
 
         {!canEdit ? (
           <p className="wk-field-hint">
@@ -250,7 +289,7 @@ export function RecoveryRequestPanel({
           ) : null}
           <button type="button" className="wk-btn" data-variant="outline" data-size="sm" onClick={copy}>
             <Copy aria-hidden="true" />
-            Copy
+            Copy draft
           </button>
           <button type="button" className="wk-btn" data-variant="outline" data-size="sm" onClick={canEdit ? download : () => setUpgrade('Downloading letters is part of Growth and Flat.')}>
             <Download aria-hidden="true" />
@@ -268,6 +307,13 @@ export function RecoveryRequestPanel({
 
       {isVendorLetter ? (
         <div className="wk-panelcard-body wk-stack wk-subsection" aria-labelledby="approval-title">
+          <details className="wk-evq-details">
+            <summary>Preview request</summary>
+            <p>To {pkg.recipientEmail || 'Choose a supplier billing address'}</p>
+            <p>{pkg.subject}</p>
+            <p style={{ whiteSpace: 'pre-wrap' }}>{pkg.body}</p>
+            <p>{pkg.evidenceAttachment ? 'Included attachment · payment-evidence.txt' : 'No attachments'}</p>
+          </details>
           <div>
             <h3 id="approval-title" className="wk-subhead">Approve before it goes out</h3>
             <p className="wk-field-hint">Check the amount, method, recipient and message. Approving records your go-ahead; it does not send an email.</p>
@@ -308,19 +354,23 @@ export function RecoveryRequestPanel({
             )}
             {/* The next step is the green one: approve first, then mark it sent once it has gone out. */}
             <button type="button" className="wk-btn" data-variant={approvedForCurrent ? 'primary' : 'outline'} data-size="sm" disabled={Boolean(amountError) || !approvedForCurrent} onClick={() => onMarkRequested(pkg)}>
-              Mark request sent
+              {sample ? 'Simulate sending request' : 'Mark request sent'}
             </button>
-            {!approvedForCurrent && onApproveAndSend ? (
+            {!sample && !approvedForCurrent && onApproveAndSend ? (
               <button type="button" className="wk-btn" data-variant="ghost" data-size="sm" disabled={!canApprove} title="Already sent it yourself? Approve it and record it as sent in one step." onClick={() => { if (knownBeforeReclaim !== null) onApproveAndSend(pkg, knownBeforeReclaim, disclosureNote) }}>
                 Approve and mark sent
               </button>
             ) : null}
           </div>
           <p className="wk-field-hint">
-            {disclosureMissing
+            {!recipientConfirmed
+              ? 'Enter and confirm the supplier billing address before approval.'
+              : disclosureMissing
               ? 'Answer the question above first, so the case records who identified the issue.'
               : state.approvedAt && !approvedForCurrent && !state.contactHold
                 ? 'The request changed after approval. Review and approve this version.'
+                : sample
+                  ? 'This isolated sample records a simulated send. External sending is disabled.'
                 : approvedForCurrent
                   ? 'Approved. Now send it from your email (Copy puts the message on your clipboard), then press Mark request sent.'
                   : 'First approve the request. Then send it and mark it sent. Already sent it yourself? Use Approve and mark sent.'}
@@ -347,9 +397,9 @@ export function RecoveryRequestPanel({
         </div>
       ) : null}
 
-      {isVendorLetter && limits.gmailSending && onEmailSent && projectId ? (
+      {!sample && isVendorLetter && limits.gmailSending && onEmailSent && projectId ? (
         <GmailSendStep
-          pkg={{ projectId, findingId: finding.id, vendor: finding.vendor, to: recipientEmail.trim(), subject, body, amount, methodLabel: METHOD_LABEL[method] }}
+          pkg={{ projectId, findingId: finding.id, generation: state.activeRequestGeneration, vendor: finding.vendor, to: pkg.recipientEmail, subject: pkg.subject, body: pkg.body, evidenceAttachment: pkg.evidenceAttachment ?? undefined, amount, methodLabel: METHOD_LABEL[method] }}
           ready={approvedForCurrent && !amountError}
           blockedReason={!gate.eligible ? 'Sending opens after the evidence checks pass.' : state.contactHold ? 'Vendor contact is on hold.' : null}
           onSent={(receipt) => onEmailSent(pkg, receipt)}

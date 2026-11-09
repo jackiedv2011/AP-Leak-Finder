@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useOptionalAuth } from '@/lib/auth/AuthContext'
-import { PLANS, PLAN_LABEL, PLAN_PITCH, PLAN_SUCCESS_FEE, planOf, successFee, type Plan } from '@/lib/plans'
+import { PLANS, PLAN_LABEL, PLAN_PITCH, PLAN_SUCCESS_FEE, planOf, type Plan } from '@/lib/plans'
 import { cancelPlan, changePlan, fetchBilling, resumePlan, type BillingResult, type BillingStatus, type PaidPlan } from '@/billing/api'
 import { formatCurrency } from '@/lib/format'
 import { UpgradeDialog } from './UpgradeDialog'
@@ -68,7 +68,7 @@ export function PlanBilling({ recovered }: { recovered: number }) {
               <p style={{ marginTop: 10, fontSize: 13.5 }} data-testid="plan-renewal">
                 {billing.cancelAtPeriodEnd
                   ? `Cancelled. ${PLAN_LABEL[plan]} stays on until ${day(billing.currentPeriodEnd!)}, then your account moves to Free.`
-                  : `Next bill: ${day(billing.currentPeriodEnd!)}${fee ? ', plus any success fees' : ''}.`}
+                  : `Next subscription bill: ${day(billing.currentPeriodEnd!)}. Automated success-fee billing is disabled.`}
               </p>
             ) : null}
             {billing?.status === 'past_due' ? (
@@ -79,8 +79,8 @@ export function PlanBilling({ recovered }: { recovered: number }) {
 
             {fee ? (
               <p style={{ marginTop: 10, fontSize: 13.5 }} data-testid="success-fee">
-                Success fee on this audit so far: <span className="wk-num">{formatCurrency(successFee(plan, recovered))}</span>{' '}
-                <span className="wk-dim">({PLAN_SUCCESS_FEE[plan] * 100}% of {formatCurrency(recovered)} recorded as returned)</span>
+                Customer-recorded returns on this audit: <span className="wk-num">{formatCurrency(recovered)}</span>{' '}
+                <span className="wk-dim">These are not independent proof or billable fee events. The proposed {PLAN_SUCCESS_FEE[plan] * 100}% success fee is disabled.</span>
                 {billing && billing.successFees.monthCents > 0 ? (
                   <>
                     <br />
@@ -143,12 +143,12 @@ export function PlanBilling({ recovered }: { recovered: number }) {
             {confirming === 'cancel' ? (
               <p style={{ fontSize: 13.5 }}>
                 Cancel {PLAN_LABEL[plan]}? You keep every paid feature until {day(billing.currentPeriodEnd!)}, and you won’t be billed again
-                {fee ? ' (success fees on money recorded as returned before then are still billed)' : ''}. After that the account is on Free; your audits stay.
+                . After that the account is on Free; your audits stay. Automated success-fee billing is disabled.
               </p>
             ) : (
               <p style={{ fontSize: 13.5 }}>
                 Switch to {PLAN_LABEL[confirming]} · {PLAN_PITCH[confirming].price}? The change starts now. You’re charged (or credited) the prorated difference for the rest of
-                this period{confirming === 'flat' ? ', and no success fee applies to money recorded from now on' : ', and 10% applies to money recorded as returned from now on'}.
+                this period. {confirming === 'flat' ? 'Flat has no proposed success fee.' : 'The proposed 10% success fee is not currently billed.'}
               </p>
             )}
             <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>

@@ -14,10 +14,11 @@
  * called, so a double click or a retry can never email a vendor twice.
  */
 import type { DatabaseSync } from 'node:sqlite'
+import { randomUUID } from 'node:crypto'
 import { HttpError, json, redirect, serializeCookie, type Request, type Response } from './http.ts'
 import { newToken, openSecret, sealSecret } from './crypto.ts'
 import { PLAN_LIMITS, planOf } from './plans.ts'
-import { authorizedFollowUpFacts, authorizedSendFacts } from './caseFacts.ts'
+import { authorizedFollowUpFacts, authorizedSendFacts, requestGeneration } from './caseFacts.ts'
 
 export const GMAIL_SEND_SCOPE = 'https://www.googleapis.com/auth/gmail.send'
 /** `openid email` identify the connected address; `gmail.send` is the only Gmail permission. */
@@ -159,23 +160,34 @@ export interface OutgoingEmail {
   cc: string[]
   subject: string
   body: string
+  evidenceAttachment?: string
 }
+
+const encodeMimeText = (value: string) => Buffer.from(value.replace(/\r?\n/g, '\r\n'), 'utf8').toString('base64').replace(/.{76}/g, '$&\r\n')
 
 /** A plain-text RFC 5322 message, base64url-encoded the way `users.messages.send` takes it. */
 export function buildRawMessage(email: OutgoingEmail): string {
   for (const address of [email.from, email.to, ...email.cc]) if (!isEmailAddress(address)) throw new Error('Invalid email address.')
   if (/[\r\n]/.test(email.subject)) throw new Error('A subject cannot contain line breaks.')
-  const body = Buffer.from(email.body.replace(/\r?\n/g, '\r\n'), 'utf8').toString('base64').replace(/.{76}/g, '$&\r\n')
+  const body = encodeMimeText(email.body)
   const headers = [
     `From: ${mailbox(email.fromName, email.from)}`,
     `To: ${email.to}`,
     ...(email.cc.length ? [`Cc: ${email.cc.join(', ')}`] : []),
     `Subject: ${encodeWord(email.subject)}`,
     'MIME-Version: 1.0',
-    'Content-Type: text/plain; charset="UTF-8"',
-    'Content-Transfer-Encoding: base64',
   ]
-  return Buffer.from(`${headers.join('\r\n')}\r\n\r\n${body}`, 'utf8').toString('base64url')
+  const textPart = ['Content-Type: text/plain; charset="UTF-8"', 'Content-Transfer-Encoding: base64']
+  if (email.evidenceAttachment === undefined) {
+    return Buffer.from([...headers, ...textPart, '', body].join('\r\n'), 'utf8').toString('base64url')
+  }
+  const boundary = randomUUID()
+  return Buffer.from([
+    ...headers, `Content-Type: multipart/mixed; boundary="${boundary}"`, '',
+    `--${boundary}`, ...textPart, '', body,
+    `--${boundary}`, ...textPart, 'Content-Disposition: attachment; filename="payment-evidence.txt"', '', encodeMimeText(email.evidenceAttachment),
+    `--${boundary}--`, '',
+  ].join('\r\n'), 'utf8').toString('base64url')
 }
 
 // ---------- routes ----------
@@ -250,12 +262,13 @@ export function exportGmail(db: DatabaseSync, userId: string) {
 export function createGmailRoutes(deps: GmailRouteDeps): GmailRoutes {
   const { db, gmail } = deps
   const now = deps.now ?? Date.now
-  db.exec(`
+  const schema = `
     -- One row per case sent through Gmail, reserved before Gmail is called.
     CREATE TABLE IF NOT EXISTS gmail_sends (
       user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
       project_id TEXT NOT NULL,
       finding_id TEXT NOT NULL,
+      generation INTEGER NOT NULL DEFAULT 1,
       status TEXT NOT NULL,
       message_id TEXT,
       thread_id TEXT,
@@ -265,13 +278,14 @@ export function createGmailRoutes(deps: GmailRouteDeps): GmailRoutes {
       amount_minor INTEGER NOT NULL,
       created_at INTEGER NOT NULL,
       sent_at INTEGER,
-      PRIMARY KEY (user_id, project_id, finding_id)
+      PRIMARY KEY (user_id, project_id, finding_id, generation)
     );
     -- Follow-ups on a sent case, numbered 1, 2, 3… and reserved the same way.
     CREATE TABLE IF NOT EXISTS gmail_follow_ups (
       user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
       project_id TEXT NOT NULL,
       finding_id TEXT NOT NULL,
+      generation INTEGER NOT NULL DEFAULT 1,
       seq INTEGER NOT NULL,
       status TEXT NOT NULL,
       message_id TEXT,
@@ -281,9 +295,41 @@ export function createGmailRoutes(deps: GmailRouteDeps): GmailRoutes {
       cc TEXT NOT NULL DEFAULT '',
       created_at INTEGER NOT NULL,
       sent_at INTEGER,
-      PRIMARY KEY (user_id, project_id, finding_id, seq)
-    )
-  `)
+      PRIMARY KEY (user_id, project_id, finding_id, generation, seq)
+    );
+    CREATE TABLE IF NOT EXISTS gmail_attempts (
+      id INTEGER PRIMARY KEY,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      project_id TEXT NOT NULL,
+      finding_id TEXT NOT NULL,
+      kind TEXT NOT NULL,
+      actor TEXT NOT NULL,
+      status TEXT NOT NULL,
+      at INTEGER NOT NULL,
+      resolved_at INTEGER
+    );
+    CREATE INDEX IF NOT EXISTS gmail_attempts_case ON gmail_attempts (user_id, project_id, finding_id, id);
+  `
+  const receiptTables = {
+    gmail_sends: 'user_id, project_id, finding_id, status, message_id, thread_id, from_email, to_email, cc, amount_minor, created_at, sent_at',
+    gmail_follow_ups: 'user_id, project_id, finding_id, seq, status, message_id, thread_id, from_email, to_email, cc, created_at, sent_at',
+  }
+  db.exec('BEGIN IMMEDIATE')
+  try {
+    const legacy = Object.entries(receiptTables).filter(([table]) => {
+      const columns = db.prepare('SELECT name FROM pragma_table_info(?)').all(table) as Array<{ name: string }>
+      return columns.length && !columns.some(({ name }) => name === 'generation')
+    })
+    for (const [table] of legacy) db.exec(`ALTER TABLE ${table} RENAME TO ${table}_legacy`)
+    db.exec(schema)
+    for (const [table, columns] of legacy) {
+      db.exec(`INSERT INTO ${table} (${columns}) SELECT ${columns} FROM ${table}_legacy; DROP TABLE ${table}_legacy`)
+    }
+    db.exec('COMMIT')
+  } catch (error) {
+    db.exec('ROLLBACK')
+    throw error
+  }
   const redirectUri = `${deps.appOrigin}${GMAIL_PATH}/callback`
   const sealContext = (userId: string, sub: string) => `gmail:${userId}:${sub}`
   const connection = (userId: string) =>
@@ -303,6 +349,14 @@ export function createGmailRoutes(deps: GmailRouteDeps): GmailRoutes {
     return user
   }
   const unavailable = () => new HttpError(503, 'Gmail sending isn’t set up on this server.', 'gmail_unavailable')
+  function trackAttempt(user: GmailUser, projectId: string, findingId: string, kind: 'request' | 'follow-up') {
+    const actor = `${user.first_name} ${user.last_name}`.trim()
+    const { lastInsertRowid } = db.prepare("INSERT INTO gmail_attempts (user_id, project_id, finding_id, kind, actor, status, at) VALUES (?, ?, ?, ?, ?, 'sending', ?)")
+      .run(user.id, projectId, findingId, kind, actor, now())
+    return (status: 'sent' | 'uncertain' | null) => {
+      db.prepare('UPDATE gmail_attempts SET status = ?, resolved_at = ? WHERE id = ?').run(status ?? 'failed', now(), lastInsertRowid)
+    }
+  }
 
   async function revoke(userId: string) {
     const row = connection(userId)
@@ -396,6 +450,16 @@ export function createGmailRoutes(deps: GmailRouteDeps): GmailRoutes {
       return json(200, { available: true, connected: Boolean(row), email: row?.company_name ?? null, connectedAt: row?.connected_at ?? null })
     }
 
+    if (path === `${GMAIL_PATH}/attempts` && method === 'GET') {
+      const user = requireUser(req)
+      const projectId = req.url.searchParams.get('projectId') ?? ''
+      const findingId = req.url.searchParams.get('findingId') ?? ''
+      if (!deps.getProject(user.id, projectId)) throw new HttpError(404, 'That project is not in this account.')
+      const attempts = db.prepare('SELECT id, kind, actor, status, at, resolved_at AS resolvedAt FROM gmail_attempts WHERE user_id = ? AND project_id = ? AND finding_id = ? ORDER BY id DESC LIMIT 50')
+        .all(user.id, projectId, findingId)
+      return json(200, { attempts })
+    }
+
     if (path === `${GMAIL_PATH}/connect` && method === 'GET') {
       const next = safeNext(req.url.searchParams.get('next'))
       const user = deps.userFor(req)
@@ -450,11 +514,17 @@ export function createGmailRoutes(deps: GmailRouteDeps): GmailRoutes {
       const input = await req.json<Record<string, unknown>>()
       const { projectId, findingId, to, cc, subject, body } = emailFields(input)
       const amount = typeof input.amountRequested === 'number' ? input.amountRequested : NaN
-      if (!Number.isFinite(amount)) throw new HttpError(400, 'The case data is malformed.', 'validation')
+      if (!Number.isSafeInteger(Math.round(amount * 100)) || amount <= 0 || Math.abs(amount * 100 - Math.round(amount * 100)) > 0.000001) throw new HttpError(400, 'Enter a positive request amount in dollars and cents.', 'validation')
+      if (cc.length) throw new HttpError(409, 'Only the approved supplier address can receive this request.', 'not_approved_version')
 
-      const facts = authorizedSendFacts(deps.getProject(user.id, projectId), findingId, amount)
+      const project = deps.getProject(user.id, projectId)
+      if (project?.mode === 'sample') throw new HttpError(403, 'Sample audits cannot send external email.', 'sample_outreach_disabled')
+      const generation = requestGeneration(project, findingId)
+      if ((input.generation ?? 1) !== generation) throw new HttpError(409, 'Reload and review the active request before sending.', 'request_generation_changed')
+      const key = [user.id, projectId, findingId, generation] as const
+      const facts = authorizedSendFacts(project, findingId, amount)
       // Asked before the approval checks, so a case already sent through Gmail reports that instead of "not approved".
-      const earlier = db.prepare('SELECT status, message_id, thread_id, from_email, to_email, cc, sent_at FROM gmail_sends WHERE user_id = ? AND project_id = ? AND finding_id = ?').get(user.id, projectId, findingId) as SendRow | undefined
+      const earlier = db.prepare('SELECT status, message_id, thread_id, from_email, to_email, cc, sent_at FROM gmail_sends WHERE user_id = ? AND project_id = ? AND finding_id = ? AND generation = ?').get(...key) as SendRow | undefined
       if (earlier?.status === 'sent') return json(409, { message: 'This request was already sent from Gmail.', code: 'gmail_already_sent', send: sendView(earlier) })
       if (earlier?.status === 'sending') throw new HttpError(409, 'This request is being sent right now.', 'gmail_send_in_progress')
       if (earlier?.status === 'uncertain' && input.retryUncertain !== true) {
@@ -463,26 +533,27 @@ export function createGmailRoutes(deps: GmailRouteDeps): GmailRoutes {
       if (!facts.ok) throw new HttpError(403, facts.reason, 'recovery_not_authorized')
       // Only what the customer approved goes out: the same words, to the same address.
       const approved = facts.approved
-      if (approved.subject !== subject || approved.body !== body) {
+      if (approved.subject !== subject || approved.body !== body || (input.evidenceAttachment ?? null) !== (approved.evidenceAttachment ?? null)) {
         throw new HttpError(409, 'The email differs from the approved version. Approve this version first.', 'not_approved_version')
       }
       if ((approved.recipientEmail ?? '').trim().toLowerCase() !== to.toLowerCase()) {
         throw new HttpError(409, 'The vendor email differs from the approved one. Approve the request with this address first.', 'not_approved_version')
       }
 
-      const key = [user.id, projectId, findingId] as const
       const reserved = earlier?.status === 'uncertain'
-        ? db.prepare("UPDATE gmail_sends SET status = 'sending', from_email = ?, to_email = ?, cc = ?, amount_minor = ?, created_at = ? WHERE user_id = ? AND project_id = ? AND finding_id = ? AND status = 'uncertain'")
+        ? db.prepare("UPDATE gmail_sends SET status = 'sending', from_email = ?, to_email = ?, cc = ?, amount_minor = ?, created_at = ? WHERE user_id = ? AND project_id = ? AND finding_id = ? AND generation = ? AND status = 'uncertain'")
             .run(row.company_name, to, cc.join(','), Math.round(amount * 100), now(), ...key)
-        : db.prepare("INSERT INTO gmail_sends (user_id, project_id, finding_id, status, from_email, to_email, cc, amount_minor, created_at) VALUES (?, ?, ?, 'sending', ?, ?, ?, ?, ?) ON CONFLICT DO NOTHING")
+        : db.prepare("INSERT INTO gmail_sends (user_id, project_id, finding_id, generation, status, from_email, to_email, cc, amount_minor, created_at) VALUES (?, ?, ?, ?, 'sending', ?, ?, ?, ?, ?) ON CONFLICT DO NOTHING")
             .run(...key, row.company_name, to, cc.join(','), Math.round(amount * 100), now())
       if (Number(reserved.changes) !== 1) throw new HttpError(409, 'This request is being sent right now.', 'gmail_send_in_progress')
-      await deliver(ctx, { from: row.company_name, fromName: `${user.first_name} ${user.last_name}`.trim(), to, cc, subject, body }, null, (status, sent) => {
-        if (status === null) db.prepare('DELETE FROM gmail_sends WHERE user_id = ? AND project_id = ? AND finding_id = ?').run(...key)
-        else db.prepare('UPDATE gmail_sends SET status = ?, message_id = ?, thread_id = ?, sent_at = ? WHERE user_id = ? AND project_id = ? AND finding_id = ?')
+      const finishAttempt = trackAttempt(user, projectId, findingId, 'request')
+      await deliver(ctx, { from: row.company_name, fromName: `${user.first_name} ${user.last_name}`.trim(), to, cc, subject, body, evidenceAttachment: approved.evidenceAttachment }, null, (status, sent) => {
+        if (status === null) db.prepare('DELETE FROM gmail_sends WHERE user_id = ? AND project_id = ? AND finding_id = ? AND generation = ?').run(...key)
+        else db.prepare('UPDATE gmail_sends SET status = ?, message_id = ?, thread_id = ?, sent_at = ? WHERE user_id = ? AND project_id = ? AND finding_id = ? AND generation = ?')
           .run(status, sent?.id ?? null, sent?.threadId ?? null, status === 'sent' ? now() : null, ...key)
+        finishAttempt(status)
       })
-      const done = db.prepare('SELECT status, message_id, thread_id, from_email, to_email, cc, sent_at FROM gmail_sends WHERE user_id = ? AND project_id = ? AND finding_id = ?').get(...key) as SendRow
+      const done = db.prepare('SELECT status, message_id, thread_id, from_email, to_email, cc, sent_at FROM gmail_sends WHERE user_id = ? AND project_id = ? AND finding_id = ? AND generation = ?').get(...key) as SendRow
       return json(200, { send: sendView(done) })
     }
 
@@ -497,41 +568,49 @@ export function createGmailRoutes(deps: GmailRouteDeps): GmailRoutes {
       const { projectId, findingId, to, cc, subject, body } = emailFields(input)
       const seq = typeof input.sequence === 'number' && Number.isInteger(input.sequence) ? input.sequence : NaN
       if (!(seq >= 1)) throw new HttpError(400, 'The case data is malformed.', 'validation')
-      const key = [user.id, projectId, findingId] as const
+      const project = deps.getProject(user.id, projectId)
+      const generation = requestGeneration(project, findingId)
+      if ((input.generation ?? 1) !== generation) throw new HttpError(409, 'Reload the active request before following up.', 'request_generation_changed')
+      const key = [user.id, projectId, findingId, generation] as const
 
-      const existing = db.prepare('SELECT seq, status, message_id, thread_id, from_email, to_email, cc, sent_at FROM gmail_follow_ups WHERE user_id = ? AND project_id = ? AND finding_id = ? ORDER BY seq').all(...key) as FollowUpRow[]
+      const existing = db.prepare('SELECT seq, status, message_id, thread_id, from_email, to_email, cc, sent_at FROM gmail_follow_ups WHERE user_id = ? AND project_id = ? AND finding_id = ? AND generation = ? ORDER BY seq').all(...key) as FollowUpRow[]
       const mine = existing.find((r) => r.seq === seq)
       if (mine?.status === 'sent') return json(409, { message: 'This follow-up was already sent from Gmail.', code: 'gmail_already_sent', send: { ...sendView(mine), sequence: seq } })
       if (existing.some((r) => r.status === 'sending')) throw new HttpError(409, 'A follow-up is being sent right now.', 'gmail_send_in_progress')
       if (mine?.status === 'uncertain' && input.retryUncertain !== true) {
         throw new HttpError(409, 'The last attempt may have gone out. Check your Gmail Sent folder before trying again.', 'gmail_send_uncertain')
       }
-      const facts = authorizedFollowUpFacts(deps.getProject(user.id, projectId), findingId)
+      const facts = authorizedFollowUpFacts(project, findingId)
       if (!facts.ok) throw new HttpError(403, facts.reason, 'recovery_not_authorized')
+      if (facts.to?.toLowerCase() !== to.toLowerCase() || facts.cc.join(',').toLowerCase() !== cc.join(',').toLowerCase()) {
+        throw new HttpError(409, 'Follow-up recipients must match the recorded supplier request.', 'not_approved_version')
+      }
       const sentCount = existing.filter((r) => r.status === 'sent').length
       if (!mine && seq !== sentCount + 1) throw new HttpError(409, 'The case changed since this follow-up was written. Reload it and try again.', 'gmail_follow_up_stale')
       if (!mine && sentCount >= MAX_FOLLOW_UPS) throw new HttpError(409, `This case already has ${MAX_FOLLOW_UPS} follow-ups. Call the vendor or close the case instead.`, 'gmail_follow_up_limit')
 
       // The last email Reclaim knows went out on this case: the request (from
       // Gmail, or the time the customer recorded sending it), or a follow-up.
-      const original = db.prepare("SELECT status, message_id, thread_id, from_email, to_email, cc, sent_at FROM gmail_sends WHERE user_id = ? AND project_id = ? AND finding_id = ? AND status = 'sent'").get(...key) as SendRow | undefined
+      const original = db.prepare("SELECT status, message_id, thread_id, from_email, to_email, cc, sent_at FROM gmail_sends WHERE user_id = ? AND project_id = ? AND finding_id = ? AND generation = ? AND status = 'sent'").get(...key) as SendRow | undefined
       const last = Math.max(facts.requestedAt ?? 0, original?.sent_at ?? 0, ...existing.filter((r) => r.status === 'sent').map((r) => r.sent_at ?? 0))
       if (now() - last < MIN_FOLLOW_UP_GAP_MS) throw new HttpError(409, 'The vendor was emailed less than a day ago. Give them a little longer.', 'gmail_follow_up_too_soon')
       // Same Gmail conversation as the request, or as the last follow-up.
       const threadId = [...existing].reverse().find((r) => r.status === 'sent' && r.thread_id)?.thread_id ?? original?.thread_id ?? null
 
       const reserved = mine
-        ? db.prepare("UPDATE gmail_follow_ups SET status = 'sending', from_email = ?, to_email = ?, cc = ?, created_at = ? WHERE user_id = ? AND project_id = ? AND finding_id = ? AND seq = ? AND status = 'uncertain'")
+        ? db.prepare("UPDATE gmail_follow_ups SET status = 'sending', from_email = ?, to_email = ?, cc = ?, created_at = ? WHERE user_id = ? AND project_id = ? AND finding_id = ? AND generation = ? AND seq = ? AND status = 'uncertain'")
             .run(row.company_name, to, cc.join(','), now(), ...key, seq)
-        : db.prepare("INSERT INTO gmail_follow_ups (user_id, project_id, finding_id, seq, status, from_email, to_email, cc, created_at) VALUES (?, ?, ?, ?, 'sending', ?, ?, ?, ?) ON CONFLICT DO NOTHING")
+        : db.prepare("INSERT INTO gmail_follow_ups (user_id, project_id, finding_id, generation, seq, status, from_email, to_email, cc, created_at) VALUES (?, ?, ?, ?, ?, 'sending', ?, ?, ?, ?) ON CONFLICT DO NOTHING")
             .run(...key, seq, row.company_name, to, cc.join(','), now())
       if (Number(reserved.changes) !== 1) throw new HttpError(409, 'A follow-up is being sent right now.', 'gmail_send_in_progress')
+      const finishAttempt = trackAttempt(user, projectId, findingId, 'follow-up')
       await deliver(ctx, { from: row.company_name, fromName: `${user.first_name} ${user.last_name}`.trim(), to, cc, subject, body }, threadId, (status, sent) => {
-        if (status === null) db.prepare('DELETE FROM gmail_follow_ups WHERE user_id = ? AND project_id = ? AND finding_id = ? AND seq = ?').run(...key, seq)
-        else db.prepare('UPDATE gmail_follow_ups SET status = ?, message_id = ?, thread_id = ?, sent_at = ? WHERE user_id = ? AND project_id = ? AND finding_id = ? AND seq = ?')
+        if (status === null) db.prepare('DELETE FROM gmail_follow_ups WHERE user_id = ? AND project_id = ? AND finding_id = ? AND generation = ? AND seq = ?').run(...key, seq)
+        else db.prepare('UPDATE gmail_follow_ups SET status = ?, message_id = ?, thread_id = ?, sent_at = ? WHERE user_id = ? AND project_id = ? AND finding_id = ? AND generation = ? AND seq = ?')
           .run(status, sent?.id ?? null, sent?.threadId ?? null, status === 'sent' ? now() : null, ...key, seq)
+        finishAttempt(status)
       })
-      const done = db.prepare('SELECT seq, status, message_id, thread_id, from_email, to_email, cc, sent_at FROM gmail_follow_ups WHERE user_id = ? AND project_id = ? AND finding_id = ? AND seq = ?').get(...key, seq) as FollowUpRow
+      const done = db.prepare('SELECT seq, status, message_id, thread_id, from_email, to_email, cc, sent_at FROM gmail_follow_ups WHERE user_id = ? AND project_id = ? AND finding_id = ? AND generation = ? AND seq = ?').get(...key, seq) as FollowUpRow
       return json(200, { send: { ...sendView(done), sequence: seq } })
     }
 

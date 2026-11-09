@@ -1,5 +1,5 @@
 import type { Finding } from '@/types'
-import { evaluateEligibility } from '@/recovery/eligibility'
+import { evaluateEligibility } from '../recovery/eligibility.ts'
 
 export function reviewMetadata(finding: Finding, createdAt = Date.now()): Finding {
   const classification = finding.type === 'bank_account_change' ? 'preventive_security' : ['unclaimed_discount','missed_discount'].includes(finding.type) ? 'future_savings' : 'review_needed'

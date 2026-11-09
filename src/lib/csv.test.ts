@@ -21,17 +21,19 @@ describe('parseCsv', () => {
     expect(result.records[0].invoiceDate).toBeNull()
   })
 
-  it('resolves near-duplicate vendor names to a shared canonical name after parsing', () => {
+  it('suggests a near-name alias without merging supplier identities', () => {
     const result = parseCsv([
       'vendor,payment_date,amount_paid',
-      'Acme Corp.,2025-02-01,100',
-      'ACME CORP,2025-02-02,200',
-      'Acme Corp.,2025-02-03,300',
+      'Sierra Coffee Supply,2025-02-01,100',
+      'Sierra Coffee Suply,2025-02-02,200',
+      'Sierra Coffee Supply,2025-02-03,300',
     ].join('\n'))
     expect(result.records).toHaveLength(3)
     const vendors = new Set(result.records.map((r) => r.vendor))
-    expect(vendors.size).toBe(1)
-    expect(result.records[0].vendor).toBe('Acme Corp.')
+    expect(vendors.size).toBe(2)
+    expect(result.records[0].vendor).toBe('Sierra Coffee Supply')
+    expect(result.records[1].suggestedVendorAlias).toBe('Sierra Coffee Supply')
+    expect(result.records[1].canonicalVendorId).not.toBe(result.records[0].canonicalVendorId)
   })
 
   it('leaves unrelated vendor names untouched', () => {

@@ -27,7 +27,7 @@ export interface ServerConfig {
   /** Exposes /api/dev/mailbox and /api/dev/plan. Never true in production; on by default only for a localhost origin. */
   devMailbox: boolean
   /**
-   * QuickBooks Online, read-only. `environment` picks Intuit's sandbox or production API (QBO_ENVIRONMENT, default sandbox). Client secret and token key are secrets.
+   * QuickBooks Online GET-only adapter. Intuit's accounting OAuth scope also permits writes. `environment` picks sandbox or production API (QBO_ENVIRONMENT, default sandbox). Client secret and token key are secrets.
    * The token key (32 random bytes, base64) seals stored access tokens; losing
    * it only means customers reconnect.
    */

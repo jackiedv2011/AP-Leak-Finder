@@ -16,7 +16,7 @@ const COMPARISON: Array<{ label: string; plans: Record<Plan, boolean | string> }
   { label: 'Approvals, follow-ups and partial returns', plans: { free: false, growth: true, flat: true } },
   { label: 'Full case history and accounting closeout', plans: { free: false, growth: true, flat: true } },
   { label: 'Every-vendor report', plans: { free: false, growth: true, flat: true } },
-  { label: 'Success fee on money recovered', plans: { free: 'None', growth: `${PLAN_SUCCESS_FEE.growth * 100}%`, flat: 'None' } },
+  { label: 'Proposed success fee; billing disabled', plans: { free: 'None', growth: `${PLAN_SUCCESS_FEE.growth * 100}%`, flat: 'None' } },
 ]
 
 export function checkoutUrl(plan: Plan): string {
@@ -52,10 +52,9 @@ export function Plans({ onStartAudit }: { onStartAudit: () => void }) {
       <section className="wk-section">
         <div className="wk-plans-hero">
           <span className="wk-label">Plans</span>
-          <h2 className="wk-display wk-h1">Find it free. Get it back.</h2>
+          <h2 className="wk-display wk-h1">Check the records. Decide what to request.</h2>
           <p className="wk-dim">
-            Every track runs every check. Free shows you where money leaked; Growth and Flat show every finding and run the whole
-            recovery with you.
+            Every track runs every check. A finding is a lead for review, not money owed. Paid plans show every finding and add a self-serve case workflow. Prices shown are proposed.
           </p>
         </div>
       </section>
@@ -72,7 +71,7 @@ export function Plans({ onStartAudit }: { onStartAudit: () => void }) {
                   {isCurrent ? (
                     <span className="wk-mark" data-tone="quiet">Current plan</span>
                   ) : plan === 'growth' ? (
-                    <span className="wk-mark" data-tone="strong">Most popular</span>
+                    <span className="wk-mark" data-tone="strong">Proposed</span>
                   ) : null}
                 </div>
                 <h3 className="wk-display wk-plans-tagline">{pitch.tagline}</h3>
@@ -136,7 +135,7 @@ export function Plans({ onStartAudit }: { onStartAudit: () => void }) {
           </table>
         </div>
         <p className="wk-table-sub" style={{ marginTop: 10 }}>
-          Paid plans renew monthly and can be cancelled any time. Growth’s {PLAN_SUCCESS_FEE.growth * 100}% applies only to money recorded as actually returned.
+          Paid pricing is proposed. Automated success-fee billing is disabled while attribution, independent matching, reversals and customer approval are defined. A customer-entered return alone does not create a fee.
         </p>
       </section>
 

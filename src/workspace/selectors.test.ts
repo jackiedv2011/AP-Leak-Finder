@@ -54,6 +54,21 @@ function baseline(): LedgerEnvironment {
 const findingFor = (env: LedgerEnvironment, vendor: string) => env.result.findings.find((f) => f.vendor === vendor)!
 
 describe('recovery dashboard activity', () => {
+  it('keeps an earlier return out of a new request balance and vendor promise', () => {
+    let env = baseline()
+    const alpha = findingFor(env, 'Alpha')
+    const state = {
+      ...confirmCase(null), recoveryStage: 'requested' as const, approvedAt: 100, requestedAmount: 800,
+      activeRequestGeneration: 2, recoveryRequestedAt: 200,
+      recoverySettlements: [{ amount: 200, method: 'refund' as const, source: 'manual' as const, reference: 'OLD-200', settledAt: 350, requestGeneration: 1 }],
+      vendorUpdates: [{ status: 'accepted' as const, note: 'New request accepted', at: 300 }],
+    }
+    env = setCaseState(env, alpha.id, state)
+    expect(ladder(env)).toMatchObject({ inRecovery: 800, recovered: 200 })
+    expect(vendorCommitments(env)).toMatchObject({ confirmed: 800, pendingReturn: 800 })
+    expect(timelineFor(alpha, state).at(-1)?.what).toBe('Outcome pending')
+  })
+
   it('does not infer a full return from a legacy recovered stage without an amount', () => {
     let env = baseline()
     const alpha = findingFor(env, 'Alpha')

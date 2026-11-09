@@ -48,13 +48,18 @@ export class ProjectStore {
     return this.db.prepare('SELECT 1 FROM projects WHERE user_id = ? AND id = ?').get(userId, projectId) !== undefined
   }
 
-  upsert(userId: string, project: Project): void {
+  revision(userId: string, projectId: string): number | null {
+    const row = this.db.prepare('SELECT revision FROM projects WHERE user_id = ? AND id = ?').get(userId, projectId) as { revision: number } | undefined
+    return row?.revision ?? null
+  }
+
+  upsert(userId: string, project: Project): number {
     const id = project.id as string
     const now = Date.now()
     this.db
       .prepare(
-        `INSERT INTO projects (user_id, id, name, source_label, mode, created_at, updated_at, payload) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-         ON CONFLICT(user_id, id) DO UPDATE SET name = excluded.name, source_label = excluded.source_label, mode = excluded.mode, updated_at = excluded.updated_at, payload = excluded.payload`
+        `INSERT INTO projects (user_id, id, name, source_label, mode, created_at, updated_at, payload, revision) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
+         ON CONFLICT(user_id, id) DO UPDATE SET name = excluded.name, source_label = excluded.source_label, mode = excluded.mode, updated_at = excluded.updated_at, payload = excluded.payload, revision = projects.revision + 1`
       )
       .run(
         userId,
@@ -64,9 +69,10 @@ export class ProjectStore {
         project.mode === 'sample' ? 'sample' : 'upload',
         // Server time: created_at is when this server first stored the audit, whatever the client claims.
         now,
-        typeof project.updatedAt === 'number' ? project.updatedAt : now,
+        now,
         this.encode(userId, id, JSON.stringify(project))
       )
+    return this.revision(userId, id)!
   }
 
   delete(userId: string, projectId: string): void {

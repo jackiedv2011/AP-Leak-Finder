@@ -198,7 +198,7 @@ function SwitchPlan({ plan, current, onDone }: { plan: PaidPlan; current: PaidPl
       </p>
       <p className="wk-dim" style={{ marginTop: 6, fontSize: 13.5 }}>
         The card on file is charged (or credited) the prorated difference for the rest of this billing period, and {money(PLAN_PRICE_USD[plan])} a month after that.
-        {plan === 'flat' ? ' No success fee applies to money recorded from now on.' : ` ${PLAN_SUCCESS_FEE.growth * 100}% applies to money recorded as returned from now on.`}
+        {plan === 'flat' ? ' No success fee applies.' : ` The proposed ${PLAN_SUCCESS_FEE.growth * 100}% success fee is not currently billed; a verified-return policy must be approved first.`}
       </p>
       {error ? (
         <div className="wk-alert" role="alert" style={{ marginTop: 12 }}>
@@ -242,7 +242,7 @@ function Summary({ plan }: { plan: PaidPlan }) {
         </div>
         <div>
           <dt>Success fee</dt>
-          <dd>{PLAN_SUCCESS_FEE[plan] > 0 ? `${PLAN_SUCCESS_FEE[plan] * 100}% of money recovered` : 'None'}</dd>
+          <dd>{PLAN_SUCCESS_FEE[plan] > 0 ? `${PLAN_SUCCESS_FEE[plan] * 100}% proposed; billing disabled` : 'None'}</dd>
         </div>
         <div className="wk-checkout-total">
           <dt>Due today</dt>
@@ -251,7 +251,7 @@ function Summary({ plan }: { plan: PaidPlan }) {
       </dl>
       <p className="wk-table-sub">
         {plan === 'growth'
-          ? `The ${PLAN_SUCCESS_FEE.growth * 100}% is billed only on money that actually comes back — never on findings, promises or unused credits. Recovering more than ${money(FLAT_BREAK_EVEN)} a month? Flat costs less.`
+          ? `The proposed ${PLAN_SUCCESS_FEE.growth * 100}% fee is not currently billed. It would require independently verified returns and an approved fee policy. If that policy is introduced, Flat may cost less above ${money(FLAT_BREAK_EVEN)} in monthly returns.`
           : 'One fixed price. Every dollar you recover stays with you.'}
       </p>
       <p className="wk-table-sub">Cancel any time from Settings. Your audits and findings stay yours either way.</p>

@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { confirmCase, markRecoveryRequested, reopenOutcome, updateRecoveryPackage, withHistory } from '@/ledger/caseState'
+import { confirmCase, markRecoveryRequested, reopenDecision, reopenOutcome, updateRecoveryPackage, withHistory, type CaseState } from '@/ledger/caseState'
+import { activeReturned, authorizedOutstanding, verifiedReturned } from './financials'
+import * as recoveryModel from './model'
 import type { APRecord, Finding } from '@/types'
 import {
   addBusinessDays,
@@ -9,6 +11,8 @@ import {
   followUpStatus,
   recordEmailSent,
   recordFollowUpSent,
+  recordHistoricalSettlement,
+  setNextFollowUp,
   setFollowUpAfterDays,
   recordVendorUpdate,
   requiresCustomerAction,
@@ -30,13 +34,101 @@ const caseFinding: Finding = {
 }
 
 describe('recovery lifecycle', () => {
+  it('archives a historical sent request before starting an unapproved new review', () => {
+    const begin = (recoveryModel as unknown as { beginNewRequestReview?: (state: CaseState, at: number) => CaseState }).beginNewRequestReview
+    expect(begin).toBeTypeOf('function')
+    if (!begin) return
+    const oldReturn = { amount: 20, method: 'refund' as const, source: 'manual' as const, reference: 'OLD-ACH', settledAt: monday }
+    const old: CaseState = {
+      ...confirmCase('Original review'), recoveryStage: 'requested', requiresRevalidation: true,
+      approvedAt: monday, requestedAmount: 100, recoveryRequestedAt: monday + 1,
+      recoveryRecipientEmail: 'vendor@example.test', recoverySubject: 'Original request',
+      recoverySentEmail: { channel: 'gmail', messageId: 'old-msg', from: 'customer@example.test', to: 'vendor@example.test', cc: [], sentAt: monday + 1 },
+      vendorUpdates: [{ status: 'acknowledged', note: 'Original reply', at: monday + 2 }],
+      recoverySettlements: [oldReturn],
+    }
+    const next = begin(old, monday + 3)
+    expect(next).toMatchObject({ activeRequestGeneration: 2, requiresRevalidation: true, decision: null, recoveryStage: null, approvedAt: null, requestedAmount: null })
+    expect(verifiedReturned(next)).toBe(20)
+    expect(activeReturned(next)).toBe(0)
+    expect(next.archivedRequests?.[0]).toMatchObject({ generation: 1, requestedAmount: 100, recoveryRecipientEmail: 'vendor@example.test', recoverySentEmail: { messageId: 'old-msg' }, vendorUpdates: [{ note: 'Original reply' }] })
+    old.vendorUpdates![0].note = 'Changed after archive'
+    expect(next.archivedRequests?.[0].vendorUpdates?.[0].note).toBe('Original reply')
+    expect(old.recoveryStage).toBe('requested')
+    expect(() => begin({ ...old, legacyRecoveredAmount: 40 }, monday + 3)).toThrow(/unverified|unresolved/i)
+    expect(() => begin({ ...old, recoveredAmount: 40, legacyRecoveredAmount: null }, monday + 3)).toThrow(/unverified|unresolved/i)
+  })
+  it('limits settlements and vendor positions to the active request while retaining old returns in the case total', () => {
+    const oldReturn = { amount: 20, method: 'refund' as const, source: 'manual' as const, reference: 'OLD-ACH', settledAt: monday }
+    const prepared: CaseState = { ...confirmCase(null), activeRequestGeneration: 2, approvedAt: monday, requestedAmount: 80, recoverySettlements: [oldReturn] }
+    const requested = startRecoveryRequest(prepared, 80, monday)
+    expect(requested.recoveredAmount).toBe(20)
+    const partial = verifyRecovery(requested, { amount: 70, method: 'refund', source: 'manual', reference: 'NEW-ACH', settledAt: monday + 1 })
+    expect(partial.recoveryStage).toBe('requested')
+    expect(partial.recoverySettlements?.at(-1)?.requestGeneration).toBe(2)
+    expect(activeReturned(partial)).toBe(70)
+    expect(verifiedReturned(partial)).toBe(90)
+    expect(authorizedOutstanding(partial)).toBe(10)
+    const accepted = recordVendorUpdate(partial, { status: 'accepted', note: 'Remaining new request accepted', at: monday + 2 }, monday + 2)
+    expect(accepted.vendorUpdates?.at(-1)?.amount).toBe(10)
+    const settled = verifyRecovery(accepted, { amount: 10, method: 'refund', source: 'manual', reference: 'NEW-ACH-2', settledAt: monday + 3 })
+    expect(settled.recoveryStage).toBe('recovered')
+    expect(verifiedReturned(settled)).toBe(100)
+  })
+
+  it('attributes a late historical return and pauses an unsupported active request', () => {
+    const old: CaseState = { ...confirmCase(null), recoveryStage: 'requested', requestedAmount: 100, requiresRevalidation: true, recoverySettlements: [{ amount: 20, method: 'refund', source: 'manual', reference: 'OLD-20', settledAt: monday }] }
+    const reviewed = recoveryModel.beginNewRequestReview(old, monday + 1)
+    const active: CaseState = { ...reviewed, decision: 'confirmed', recoveryStage: 'requested', approvedAt: monday + 2, requestedAmount: 80, requiresRevalidation: false }
+    const late = recordHistoricalSettlement(active, 1, { amount: 10, method: 'refund', source: 'manual', reference: 'OLD-LATE', settledAt: monday + 3 }, 100)
+    expect(verifiedReturned(late)).toBe(30)
+    expect(activeReturned(late)).toBe(0)
+    expect(authorizedOutstanding(late)).toBe(80)
+    expect(late.contactHold).toMatch(/earlier request/i)
+    expect(() => recordHistoricalSettlement(late, 1, { amount: 10, method: 'refund', source: 'manual', reference: 'OLD-LATE', settledAt: monday + 3 }, 100)).toThrow(/already recorded/i)
+  })
+
+  it('retains archived money when changing a new decision or correcting its outcome', () => {
+    const oldReturn = { amount: 20, method: 'refund' as const, source: 'manual' as const, reference: 'OLD-20', settledAt: monday }
+    const old: CaseState = { ...confirmCase(null), recoveryStage: 'requested', requestedAmount: 100, requiresRevalidation: true, recoverySettlements: [oldReturn] }
+    const reviewed = recoveryModel.beginNewRequestReview(old, monday + 1)
+    const decision = reopenDecision({ ...reviewed, decision: 'confirmed', recoveryStage: 'confirmed', requiresRevalidation: false })
+    expect(decision.archivedRequests).toHaveLength(1)
+    expect(verifiedReturned(decision)).toBe(20)
+    const settled: CaseState = { ...decision, decision: 'confirmed', recoveryStage: 'recovered', requestedAmount: 80, recoveredAmount: 100, recoverySettlements: [oldReturn, { amount: 80, method: 'refund', source: 'manual', reference: 'NEW-80', settledAt: monday + 2, requestGeneration: 2 }] }
+    const reopened = reopenOutcome(settled)
+    expect(reopened.archivedRequests).toHaveLength(1)
+    expect(verifiedReturned(reopened)).toBe(20)
+    expect(activeReturned(reopened)).toBe(0)
+    expect(withHistory(settled, reopened, 'Reviewer').history?.at(-1)?.amount).toBe(-80)
+  })
+
+  it('closes an unanswered new request without treating an old return as its result', () => {
+    const state: CaseState = { ...confirmCase(null), recoveryStage: 'requested', activeRequestGeneration: 2, requestedAmount: 80, recoveryRequestedAt: monday, nextFollowUpAt: monday + 10_000, recoverySettlements: [{ amount: 20, method: 'refund', source: 'manual', reference: 'OLD-ACH', settledAt: monday }] }
+    expect(recoveryNextAction(state, monday).label).toBe('Wait for vendor')
+    expect(recoveryStatusLabel(state)).toBe('Waiting on vendor')
+    expect(requiresCustomerAction(state, monday)).toBe(false)
+    expect(closeWithoutRecovery(state, 'No reply', monday + 1).recoveryStage).toBe('not_recovered')
+  })
+  it('routes a historical sent request to review instead of another follow-up', () => {
+    const stale = { ...confirmCase(null), recoveryStage: 'requested' as const, requestedAmount: 1000, recoveryRequestedAt: monday, nextFollowUpAt: monday, requiresRevalidation: true }
+    expect(recoveryNextAction(stale, monday + 1).label).toBe('Review historical request')
+    expect(requiresCustomerAction(stale, monday + 1)).toBe(true)
+    expect(recoveryStatusLabel(stale)).toBe('Historical request · review needed')
+    expect(followUpStatus(stale, monday + 1)).toBeNull()
+    expect(() => recordVendorUpdate(stale, { status: 'followed_up', note: 'Emailed again', at: monday }, monday)).toThrow(/revalidat/i)
+    expect(() => setNextFollowUp(stale, monday + 1)).toThrow(/revalidat/i)
+    expect(() => setFollowUpAfterDays(stale, 7)).toThrow(/revalidat/i)
+    expect(recordVendorUpdate(stale, { status: 'acknowledged', note: 'Vendor replied', at: monday }, monday).vendorUpdates).toHaveLength(1)
+  })
   it('ignores an old unverified amount when recording a new partial settlement', () => {
     const legacy = { ...confirmCase(null), recoveryStage: 'requested' as const, requestedAmount: 1000, recoveredAmount: 400 }
-    const next = verifyRecovery(legacy, { amount: 600, method: 'refund', source: 'bank', reference: 'ACH-verified', settledAt: monday })
+    const next = verifyRecovery(legacy, { amount: 600, method: 'refund', source: 'bank', reference: 'ACH-verified', settledAt: monday, requestGeneration: 99 })
     expect(next.recoveryStage).toBe('requested')
     expect(next.recoveredAmount).toBe(600)
     expect(next.legacyRecoveredAmount).toBe(400)
     expect(next.recoverySettlements).toHaveLength(1)
+    expect(next.recoverySettlements?.[0].requestGeneration).toBeUndefined()
     expect(() => verifyRecovery(next, { amount: 401, method: 'refund', source: 'bank', reference: 'ACH-too-much', settledAt: monday })).toThrow(/remaining requested balance/)
   })
   it('asks for a real return amount before reconciling a legacy recovered case', () => {

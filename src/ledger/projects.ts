@@ -25,6 +25,15 @@ export interface LedgerProject {
 }
 
 const PROJECT_KEY_PREFIX = 'reclaim.project.v1.'
+const pendingKey = (id: string) => storageKey(`reclaim.project.pending.v1.${id}`)
+
+function markPending(id: string): void {
+  try { window.localStorage.setItem(pendingKey(id), '1') } catch { /* local cache can be unavailable */ }
+}
+
+function clearPending(id: string): void {
+  try { window.localStorage.removeItem(pendingKey(id)) } catch { /* local cache can be unavailable */ }
+}
 
 /** Serialize a project for storage or the wire. */
 export function toStorable(project: LedgerProject): Record<string, unknown> {
@@ -127,6 +136,34 @@ export function replaceLocalProjects(projects: LedgerProject[]): void {
     setActiveProject(newest?.id ?? null)
   }
 }
+
+/** Pull without deleting work that this browser has not confirmed on the server. */
+export function mergeServerProjects(projects: LedgerProject[]): void {
+  if (typeof window === 'undefined') return
+  const local = readProjectIndex().map((summary) => readProjectPayload(summary.id)).filter((project): project is LedgerProject => project !== null)
+  const merged = new Map(projects.map((project) => [project.id, project]))
+  for (const project of local) {
+    const server = merged.get(project.id)
+    const dirty = window.localStorage.getItem(pendingKey(project.id)) === '1'
+    if (!server || dirty || project.updatedAt > server.updatedAt) merged.set(project.id, project)
+  }
+  replaceLocalProjects([...merged.values()])
+}
+
+/** A server-accepted save is the authoritative copy for this project. */
+function acceptServerProject(raw: Record<string, unknown>): void {
+  if (typeof window === 'undefined') return
+  const project = fromStorable(raw)
+  clearPending(project.id)
+  writeProjectPayload(project)
+  const summaries = readProjectIndex()
+  const index = summaries.findIndex((item) => item.id === project.id)
+  const summary = summaryFor(project)
+  writeProjectIndex(index < 0 ? [...summaries, summary] : summaries.toSpliced(index, 1, summary))
+  window.dispatchEvent(new CustomEvent('reclaim:project-synced', { detail: { id: project.id } }))
+}
+
+projectSync.onApplied(acceptServerProject)
 
 /** Projects saved in this browser before accounts existed: the bare, unscoped keys. */
 export function listLegacyProjects(): LedgerProject[] {
@@ -248,11 +285,14 @@ export function createProject(input: Omit<LedgerProject, 'id' | 'createdAt' | 'u
   writeProjectPayload(project)
   writeProjectIndex([...readProjectIndex(), summaryFor(project)])
   setActiveProject(project.id)
-  if (syncing()) projectSync.push(toStorable(project))
+  if (syncing()) {
+    markPending(project.id)
+    projectSync.push(toStorable(project))
+  }
   return project
 }
 
-export function saveProject(project: LedgerProject): LedgerProject {
+export function saveProject(project: LedgerProject, options: { sync?: boolean } = {}): LedgerProject {
   const next = { ...project, updatedAt: Date.now() }
   writeProjectPayload(next)
   const projects = readProjectIndex()
@@ -260,7 +300,10 @@ export function saveProject(project: LedgerProject): LedgerProject {
   const summary = summaryFor(next)
   writeProjectIndex(index >= 0 ? projects.toSpliced(index, 1, summary) : [...projects, summary])
   setActiveProject(next.id)
-  if (syncing()) projectSync.push(toStorable(next))
+  if (syncing()) {
+    markPending(next.id)
+    if (options.sync !== false) projectSync.push(toStorable(next))
+  }
   return next
 }
 

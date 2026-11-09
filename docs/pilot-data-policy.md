@@ -40,7 +40,7 @@ flowchart LR
   BK["Daily backups<br/>(copy of the SQLite file, kept 30 days;<br/>audits stay encrypted)"]
   KEYS["Host secret store<br/>DATA_KEY, QBO_TOKEN_KEY, API keys"]
 
-  INTUIT["Intuit QuickBooks Online<br/>(sandbox only, read-only)"]
+  INTUIT["Intuit QuickBooks Online<br/>(GET-only adapter; scope permits writes)"]
   GOOGLE["Google sign-in<br/>(name, email, account ID only)"]
   ANTH["Anthropic<br/>(one case's facts, on request)"]
   MAIL["Email provider: Resend or Gmail<br/>(verification, reset, contact form)"]
@@ -52,7 +52,7 @@ flowchart LR
   API --> ACC & SES & AUD & QBT & FP
   KEYS -.->|"keys at start-up, never stored in the DB"| API
   DB --> BK
-  API <-->|"OAuth, then read-only queries"| INTUIT
+  API <-->|"OAuth, then GET queries"| INTUIT
   API <-->|"OAuth: openid email profile"| GOOGLE
   API -->|"only when the customer clicks Draft with AI"| ANTH
   API --> MAIL

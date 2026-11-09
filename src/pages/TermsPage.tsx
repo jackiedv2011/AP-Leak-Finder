@@ -41,10 +41,10 @@ export function TermsPage() {
         <h2>4. Connecting QuickBooks Online and Gmail</h2>
         <ul>
           <li>Only connect a QuickBooks company you are authorised to share. Connecting confirms you have that authority.</li>
-          <li>The connection is read-only: Reclaim reads the records listed in the <a href="/privacy">Privacy Policy</a> and never creates, changes or deletes anything in your books.</li>
+          <li>Reclaim's current adapter only requests accounting data; it does not create, change or delete entries in your books. Intuit's accounting permission also allows writes, so review the requested scope before connecting. See the <a href="/privacy">Privacy Policy</a>.</li>
           <li>You can disconnect at any time from Settings → Connected accounts, or from your QuickBooks account. Disconnecting stops future imports; audits already imported stay until you delete them.</li>
           <li>Your use of QuickBooks remains governed by your agreement with Intuit. Reclaim is not affiliated with or endorsed by Intuit, and is not responsible for QuickBooks being available or for errors in the records it provides.</li>
-          <li>During testing the connection works only with Intuit's sandbox (test) companies.</li>
+          <li>The adapter has automated tests. A live connection to an Intuit sandbox or production company has not been verified in this release review.</li>
           <li>Only connect a Gmail account you are allowed to send from on behalf of your business. Reclaim can only send from it; it never reads your inbox.</li>
           <li><b>You are responsible for every email you send through Reclaim</b>, including its recipients, its content and any amount it asks for. Reclaim sends only after you approve the request and confirm the send, and it sends the text you approved; read it before you send it. The same applies to follow-ups: Reclaim drafts and offers them, but sends one only when you confirm it, and never on its own.</li>
           <li>Your use of Gmail remains governed by your agreement with Google, including Google's sending limits. Reclaim is not affiliated with or endorsed by Google, and is not responsible for whether a vendor receives, reads or acts on an email.</li>

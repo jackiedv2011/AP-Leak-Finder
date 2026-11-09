@@ -58,10 +58,12 @@ interface Row {
   terms: string | null
   account: string | null
   category: string
+  supplierId?: string
+  transactionType?: string
 }
 
 const YEAR = 2025
-const HEADER = 'vendor,invoice_number,invoice_date,invoice_amount,payment_date,amount_paid,terms,bank_account_last4,category,currency'
+const HEADER = 'vendor,invoice_number,invoice_date,invoice_amount,payment_date,amount_paid,terms,bank_account_last4,category,currency,supplier_id,transaction_type'
 
 function mulberry32(seed: number) {
   let a = seed >>> 0
@@ -131,7 +133,7 @@ class LedgerBuilder {
     const ordered = [...this.rows].sort((a, b) => a.paymentDate.getTime() - b.paymentDate.getTime())
     const index = new Map(ordered.map((r, i) => [r, i]))
     const lines = ordered.map((r) =>
-      [r.vendor, r.invoice ?? '', iso(r.invoiceDate), r.invoiceAmount === null ? '' : r.invoiceAmount.toFixed(2), iso(r.paymentDate), r.amount.toFixed(2), r.terms ?? '', r.account ?? '', r.category, 'USD']
+      [r.vendor, r.invoice ?? '', iso(r.invoiceDate), r.invoiceAmount === null ? '' : r.invoiceAmount.toFixed(2), iso(r.paymentDate), r.amount.toFixed(2), r.terms ?? '', r.account ?? '', r.category, 'USD', r.supplierId ?? '', r.transactionType ?? '']
         .map(csvCell)
         .join(',')
     )
@@ -230,7 +232,7 @@ function supplier(b: LedgerBuilder, s: Supplier): Row[] {
       const net = Number(s.terms.match(/net (\d+)/)?.[1] ?? 30)
       paymentDate = addDays(date, b.int(Math.max(0, net - 5), net + 3))
     }
-    const row = b.add({ vendor, invoice: `${s.prefix}${number++}`, invoiceDate: date, invoiceAmount, paymentDate, amount, terms: s.terms, account: s.account ?? null, category: s.category })
+    const row = b.add({ vendor, invoice: `${s.prefix}${number++}`, invoiceDate: date, invoiceAmount, paymentDate, amount, terms: s.terms, account: s.account ?? null, category: s.category, supplierId: s.prefix || (Array.isArray(s.vendor) ? s.vendor[0] : s.vendor) })
     if (!inYear(paymentDate)) continue
     if (plant) b.plant(plant, [row], `${vendor} ${row.invoice}`)
     rows.push(row)
@@ -291,9 +293,9 @@ function creditsAndRefunds(b: LedgerBuilder, deliveries: Row[], count: number) {
     const original = b.pick(deliveries.filter((r) => r.invoiceAmount !== null))
     const refund = money(original.invoiceAmount! * b.between(0.05, 0.3))
     if (b.chance(0.5)) {
-      b.add({ ...original, amount: -refund, paymentDate: addDays(original.paymentDate, b.int(7, 20)), terms: null })
+      b.add({ ...original, amount: -refund, transactionType: 'refund', paymentDate: addDays(original.paymentDate, b.int(7, 20)), terms: null })
     } else {
-      b.add({ ...original, invoice: `CM-${original.invoice}`, invoiceAmount: -refund, amount: -refund, paymentDate: addDays(original.paymentDate, b.int(7, 20)), terms: null })
+      b.add({ ...original, invoice: `CM-${original.invoice}`, invoiceAmount: -refund, amount: -refund, transactionType: 'vendor_credit', paymentDate: addDays(original.paymentDate, b.int(7, 20)), terms: null })
     }
   }
 }
@@ -324,7 +326,7 @@ function plantOverpayment(b: LedgerBuilder, filter: (r: Row) => boolean, refunde
   const row = b.any((r) => filter(r) && !r.terms?.match(/^\d+\//) && r.paymentDate.getMonth() < 11)
   const over = money(b.between(80, 600))
   row.amount = money(row.invoiceAmount! + over)
-  if (refunded) b.add({ ...row, amount: -over, paymentDate: addDays(row.paymentDate, b.int(10, 30)), terms: null })
+  if (refunded) b.add({ ...row, amount: -over, transactionType: 'refund', paymentDate: addDays(row.paymentDate, b.int(10, 30)), terms: null })
   else b.plant('overpayment', [row], `${row.vendor} ${row.invoice} paid ${over} over the invoice`)
 }
 

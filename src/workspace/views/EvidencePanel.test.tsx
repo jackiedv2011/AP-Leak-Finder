@@ -22,8 +22,8 @@ describe('Evidence review for a QuickBooks finding', () => {
     expect(screen.getByTestId('quickbooks-autofill-note')).toHaveTextContent('settlement still needs your confirmation')
     expect(screen.getByDisplayValue('qbo:Bill:101')).toBeInTheDocument()
     expect(screen.getByDisplayValue('qbo:BillPayment:202')).toBeInTheDocument()
-    // Four obligation fields, three per payment, and the refund and credit searches.
-    expect(screen.getAllByTestId('from-quickbooks')).toHaveLength(4 + 3 * 2 + 2)
+    // Company, supplier, obligation, payments, and refund/credit searches.
+    expect(screen.getAllByTestId('from-quickbooks')).toHaveLength(4 + 4 + 3 * 2 + 2)
     for (const box of screen.getAllByRole('checkbox', { name: /Settled or cleared/ })) expect(box).not.toBeChecked()
   })
 
@@ -56,7 +56,7 @@ describe('Evidence review in plain words', () => {
     const { container } = render(<EvidencePanel finding={finding} findings={env.result.findings} imports={env.imports} onSave={() => {}} />)
     const form = container.querySelector('form')!
     for (const term of ['evidence gate', 'minor units', 'obligation', 'eligibility', finding.relatedRecords[0].id]) expect(form.textContent!.toLowerCase()).not.toContain(term.toLowerCase())
-    expect(container.querySelector('details')!.textContent).toContain(finding.ruleId ?? finding.type)
+    expect(screen.getByText('Details', { selector: 'summary' }).parentElement!.textContent).toContain(finding.ruleId ?? finding.type)
   })
 
   it('takes the bill amount in dollars and saves it in cents', () => {
@@ -68,18 +68,18 @@ describe('Evidence review in plain words', () => {
     expect(onSave.mock.calls[0][0].obligation.amountMinor).toBe(125050)
   })
 
-  it('reaches "Ready to claim" only once every answer is in, under the unchanged gate', () => {
+  it('shows the possible request only once every answer is in', () => {
     const onSave = vi.fn<(evidence: RecoveryEvidence) => void>()
     render(<EvidencePanel finding={finding} findings={env.result.findings} imports={env.imports} onSave={onSave} />)
     for (const box of screen.getAllByRole('checkbox')) if (!(box as HTMLInputElement).checked) fireEvent.click(box)
     for (const input of screen.getAllByRole('textbox', { name: /Where you checked|How you know/ })) if (!(input as HTMLInputElement).value) fireEvent.change(input, { target: { value: 'Searched, none found' } })
     for (const input of screen.getAllByRole('textbox', { name: /Bank reference showing it cleared/ })) if (!(input as HTMLInputElement).value) fireEvent.change(input, { target: { value: 'Statement line' } })
     // Answers count once a named person saves them.
-    expect(screen.queryByText(/Ready to claim/)).toBeNull()
+    expect(screen.queryByText(/Possible request supported/)).toBeNull()
     fireEvent.change(screen.getByRole('textbox', { name: 'Person confirming these facts' }), { target: { value: 'Jagan' } })
     fireEvent.click(screen.getByRole('button', { name: 'Save evidence' }))
     expect(evaluateEligibility(finding, onSave.mock.calls[0][0], env.result.findings).eligible).toBe(true)
-    expect(screen.getAllByText(/Ready to claim/).length).toBeGreaterThan(0)
+    expect(screen.getAllByText(/Possible request supported/).length).toBeGreaterThan(0)
   })
 })
 

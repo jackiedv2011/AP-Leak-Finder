@@ -4,7 +4,7 @@ import { AlertCircle, CheckCircle2, Clock, Mail, Send, ShieldCheck, X } from 'lu
 import { useOptionalAuth } from '@/lib/auth/AuthContext'
 import { formatCurrency } from '@/lib/format'
 import { projectSync } from '@/ledger/projectSync'
-import { disconnectGmail, fetchGmailStatus, gmailConnectOutcome, gmailConnectUrl, parseCc, sendFollowUpWithGmail, sendWithGmail, type GmailSendReceipt, type GmailStatus } from '@/lib/gmailApi'
+import { disconnectGmail, fetchGmailAttempts, fetchGmailStatus, GMAIL_ATTEMPT_RECORDED, gmailConnectOutcome, gmailConnectUrl, parseCc, sendFollowUpWithGmail, sendWithGmail, type GmailAttempt, type GmailSendReceipt, type GmailStatus } from '@/lib/gmailApi'
 import { generateFollowUp } from '@/lib/followUps'
 import { followUpAfterDays, followUpStatus } from '@/recovery/model'
 import type { CaseState } from '@/ledger/caseState'
@@ -102,6 +102,8 @@ export function GmailSettings() {
 }
 
 export interface GmailSendPackage {
+  generation?: number
+  evidenceAttachment?: string
   projectId: string
   findingId: string
   vendor: string
@@ -110,6 +112,29 @@ export interface GmailSendPackage {
   body: string
   amount: number
   methodLabel: string
+}
+
+const ATTEMPT_LABEL: Record<GmailAttempt['status'], string> = {
+  sending: 'Started · outcome pending',
+  sent: 'Accepted by Gmail · delivery unconfirmed',
+  uncertain: 'Send outcome uncertain · check Gmail Sent',
+  failed: 'Failed · Gmail did not send',
+}
+
+export function GmailAttemptActivity({ projectId, findingId }: { projectId: string; findingId: string }) {
+  const [attempts, setAttempts] = useState<GmailAttempt[]>([])
+  useEffect(() => {
+    let active = true
+    const refresh = () => void fetchGmailAttempts(projectId, findingId).then((entries) => { if (active) setAttempts(entries) })
+    refresh()
+    window.addEventListener(GMAIL_ATTEMPT_RECORDED, refresh)
+    return () => { active = false; window.removeEventListener(GMAIL_ATTEMPT_RECORDED, refresh) }
+  }, [projectId, findingId])
+  if (!attempts.length) return null
+  return <details className="wk-evq-details">
+    <summary>Gmail sending attempts</summary>
+    <ul>{attempts.map((attempt) => <li key={attempt.id}>{dateTime.format(attempt.at)} · {attempt.actor} · {attempt.kind} · {ATTEMPT_LABEL[attempt.status]}</li>)}</ul>
+  </details>
 }
 
 /**
@@ -122,18 +147,16 @@ export interface GmailSendPackage {
 export function GmailSendStep({ pkg, ready, blockedReason, onSent }: { pkg: GmailSendPackage; ready: boolean; blockedReason: string | null; onSent: (receipt: GmailSendReceipt) => void }) {
   const { status, refresh } = useGmailStatus()
   const [outcome] = useState(initialOutcome)
-  const [ccLine, setCcLine] = useState('')
   const [confirming, setConfirming] = useState(false)
   const [sending, setSending] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [uncertain, setUncertain] = useState(false)
   const [checkedSent, setCheckedSent] = useState(false)
-  if (!status?.available) return null
+  if (!status) return null
+  if (!status.available) return <p className="wk-panelcard-body wk-field-hint">{status.failed ? 'Could not check Gmail connection.' : 'Gmail sending is not configured.'} Copy the approved draft to send it manually.</p>
 
-  const cc = parseCc(ccLine)
-  const ccError = cc.length > 5 ? 'Up to five addresses.' : cc.find((a) => !EMAIL.test(a)) ? `“${cc.find((a) => !EMAIL.test(a))}” isn’t an email address.` : null
   const toMissing = !EMAIL.test(pkg.to)
-  const disabledReason = blockedReason ?? (toMissing ? 'Add the vendor’s email above and approve the request with it.' : !ready ? 'Approve this version of the request above first.' : ccError)
+  const disabledReason = blockedReason ?? (toMissing ? 'Add the vendor’s email above and approve the request with it.' : !ready ? 'Approve this version of the request above first.' : null)
 
   async function send() {
     setSending(true)
@@ -144,7 +167,7 @@ export function GmailSendStep({ pkg, ready, blockedReason, onSent }: { pkg: Gmai
         setError('This audit isn’t saved to your account yet, so it can’t be sent. Check your connection and try again.')
         return
       }
-      const result = await sendWithGmail({ projectId: pkg.projectId, findingId: pkg.findingId, to: pkg.to, cc, subject: pkg.subject, body: pkg.body, amountRequested: pkg.amount, retryUncertain: uncertain && checkedSent ? true : undefined })
+      const result = await sendWithGmail({ projectId: pkg.projectId, findingId: pkg.findingId, generation: pkg.generation, to: pkg.to, cc: [], subject: pkg.subject, body: pkg.body, evidenceAttachment: pkg.evidenceAttachment, amountRequested: pkg.amount, retryUncertain: uncertain && checkedSent ? true : undefined })
       if (result.ok) {
         setConfirming(false)
         onSent(result.receipt)
@@ -155,6 +178,7 @@ export function GmailSendStep({ pkg, ready, blockedReason, onSent }: { pkg: Gmai
       if (result.code === 'gmail_reconnect' || result.code === 'gmail_not_connected') void refresh()
       setError(result.fields ? Object.values(result.fields).join(' ') : result.message)
     } finally {
+      window.dispatchEvent(new Event(GMAIL_ATTEMPT_RECORDED))
       setSending(false)
     }
   }
@@ -163,7 +187,7 @@ export function GmailSendStep({ pkg, ready, blockedReason, onSent }: { pkg: Gmai
     <div className="wk-panelcard-body wk-stack wk-subsection" data-testid="gmail-send" aria-labelledby="gmail-send-title">
       <div>
         <h3 id="gmail-send-title" className="wk-subhead">Send it from your Gmail</h3>
-        <p className="wk-field-hint">{SEND_ONLY_NOTE}</p>
+        <p className="wk-field-hint">{status.connected ? `Connected as ${status.email}. ` : 'Gmail is not connected. '}{SEND_ONLY_NOTE}</p>
       </div>
       <Outcome outcome={outcome} />
       {!status.connected ? (
@@ -180,11 +204,6 @@ export function GmailSendStep({ pkg, ready, blockedReason, onSent }: { pkg: Gmai
             <div className="wk-field">
               <label htmlFor="gmail-from">From</label>
               <input id="gmail-from" className="wk-input" value={status.email ?? ''} readOnly />
-            </div>
-            <div className="wk-field">
-              <label htmlFor="gmail-cc">Cc (optional)</label>
-              <input id="gmail-cc" className="wk-input" type="text" value={ccLine} onChange={(e) => setCcLine(e.target.value)} placeholder="controller@yourcompany.com" aria-invalid={ccError ? 'true' : undefined} />
-              {ccError ? <span className="wk-field-error" role="alert">{ccError}</span> : null}
             </div>
           </div>
           <div className="wk-actions">
@@ -206,7 +225,7 @@ export function GmailSendStep({ pkg, ready, blockedReason, onSent }: { pkg: Gmai
               <div>
                 <DialogPrimitive.Title className="wk-display wk-h2">Send this request to {pkg.to}?</DialogPrimitive.Title>
                 <DialogPrimitive.Description className="wk-dim">
-                  It goes from {status.email} to {pkg.vendor} at {pkg.to}{cc.length ? `, cc ${cc.join(', ')}` : ''}, asking for {formatCurrency(pkg.amount)} as {pkg.methodLabel.toLowerCase()}. Once Gmail accepts it, the case is marked sent.
+                  It goes from {status.email} to {pkg.vendor} at {pkg.to}, asking for {formatCurrency(pkg.amount)} as {pkg.methodLabel.toLowerCase()}. Reclaim records Gmail acceptance. Delivery remains unconfirmed.
                 </DialogPrimitive.Description>
               </div>
               <DialogPrimitive.Close className="wk-panel-close" aria-label="Close" disabled={sending}>
@@ -216,6 +235,7 @@ export function GmailSendStep({ pkg, ready, blockedReason, onSent }: { pkg: Gmai
             <div className="wk-stack" style={{ padding: '0 24px' }}>
               <p style={{ fontWeight: 500 }}>{pkg.subject}</p>
               <pre className="wk-letter" style={{ whiteSpace: 'pre-wrap', maxHeight: 260, overflow: 'auto', fontFamily: 'inherit', fontSize: 13 }}>{pkg.body}</pre>
+              {pkg.evidenceAttachment ? <details><summary>payment-evidence.txt</summary><pre style={{ whiteSpace: 'pre-wrap' }}>{pkg.evidenceAttachment}</pre></details> : <p>No attachments</p>}
               {error ? <p className="wk-field-error" role="alert">{error}</p> : null}
               {uncertain ? (
                 <label className="wk-radio">
@@ -303,7 +323,7 @@ export function GmailFollowUp({ finding, state, projectId, sender, onChangeDays,
         setError('This audit isn’t saved to your account yet, so it can’t be sent. Check your connection and try again.')
         return
       }
-      const result = await sendFollowUpWithGmail({ projectId: projectId!, findingId: finding.id, sequence: followUp!.sequence, to: draft.to.trim(), cc, subject: draft.subject, body: draft.body, retryUncertain: uncertain && checkedSent ? true : undefined })
+      const result = await sendFollowUpWithGmail({ projectId: projectId!, findingId: finding.id, generation: state.activeRequestGeneration, sequence: followUp!.sequence, to: draft.to.trim(), cc, subject: draft.subject, body: draft.body, retryUncertain: uncertain && checkedSent ? true : undefined })
       if (result.ok) {
         setOpen(false)
         onSent(result.receipt)
@@ -314,6 +334,7 @@ export function GmailFollowUp({ finding, state, projectId, sender, onChangeDays,
       if (result.code === 'gmail_reconnect' || result.code === 'gmail_not_connected') void refresh()
       setError(result.fields ? Object.values(result.fields).join(' ') : result.message)
     } finally {
+      window.dispatchEvent(new Event(GMAIL_ATTEMPT_RECORDED))
       setSending(false)
     }
   }
@@ -394,11 +415,11 @@ export function GmailFollowUp({ finding, state, projectId, sender, onChangeDays,
                   <div className="wk-fields" data-columns="2">
                     <div className="wk-field">
                       <label htmlFor="follow-up-to">To</label>
-                      <input id="follow-up-to" className="wk-input" type="email" value={draft.to} onChange={(e) => setDraft({ ...draft, to: e.target.value })} />
+                      <input id="follow-up-to" className="wk-input" type="email" value={draft.to} readOnly />
                     </div>
                     <div className="wk-field">
                       <label htmlFor="follow-up-cc">Cc (optional)</label>
-                      <input id="follow-up-cc" className="wk-input" value={draft.ccLine} onChange={(e) => setDraft({ ...draft, ccLine: e.target.value })} />
+                      <input id="follow-up-cc" className="wk-input" value={draft.ccLine} readOnly />
                     </div>
                   </div>
                   <div className="wk-field">

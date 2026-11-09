@@ -122,9 +122,14 @@ export function generateLetter(
     if (!gate.eligible || finding.classification !== 'recovery_candidate') return note(`Review evidence for ${finding.vendor}`, [finding.explanation, '', 'This signal does not establish money owed. Complete the recorded evidence checks before requesting a refund or credit.'])
     // A partial request lowers the ask; nothing raises it above the evidenced excess.
     const amount = Math.min(ask, gate.potentialAmountMinor! / 100)
-    const invoices=invoiceList(finding)
+    const invoices = finding.evidence ? `invoice ${finding.evidence.obligation.obligationId}` : invoiceList(finding)
+    const { overpaymentMinor, refundedMinor, appliedCreditMinor } = gate.amountBreakdown
+    const paymentRefs = finding.evidence?.payments.map((payment) => payment.paymentId).join(', ')
     return letter(`Request for ${resolutionNoun(method)} — duplicate payment on ${invoices}`, [
-      `Our records show we paid ${finding.vendor} more than once for ${invoices}: ${paymentList(finding)}. Each payment cleared our bank, and none has been refunded or credited back. The extra payment comes to ${formatCurrency(gate.potentialAmountMinor! / 100)}.`,
+      `Our records show we paid ${finding.vendor} more than once for ${invoices}: ${paymentList(finding)}. The extra payment comes to ${formatCurrency(overpaymentMinor / 100)}.`,
+      ...(paymentRefs ? [`Payment references: ${paymentRefs}.`] : []),
+      ...(refundedMinor ? [`We have already received ${formatCurrency(refundedMinor / 100)} in refunds.`] : []),
+      ...(appliedCreditMinor ? [`We have already applied ${formatCurrency(appliedCreditMinor / 100)} in credits.`] : []),
       `We request ${resolutionAsk(method, amount)} for the duplicate payment.`,
     ])
   }

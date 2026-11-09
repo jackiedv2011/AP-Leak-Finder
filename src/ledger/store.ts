@@ -1,6 +1,6 @@
 import type { APRecord, DetectionResult, ParseResult, Finding, ImportRowResult } from '@/types'
 import { detectFindings } from '@/lib/detection'
-import { EMPTY_CASE_STATE, normalizeCaseState, type CaseState } from '@/ledger/caseState'
+import { EMPTY_CASE_STATE, normalizeCaseState, recordEvidenceReview, type CaseState } from '@/ledger/caseState'
 import { checksum, recordIdentity, sourceSignature, normalizeReference } from '@/lib/sourceIdentity'
 import { normalizeVendor } from '@/lib/format'
 import { reviewMetadata } from '@/lib/findingMetadata'
@@ -299,8 +299,9 @@ export function recordEvidence(env: LedgerEnvironment, findingId: string, eviden
   const gate = evaluateEligibility(finding,evidence,env.result.findings)
   const classification = gate.eligible ? 'recovery_candidate' : original.type==='bank_account_change' ? 'preventive_security' : ['unclaimed_discount','missed_discount'].includes(original.type) ? 'future_savings' : 'review_needed'
   const updated: Finding = { ...finding, ...gate, classification, class: gate.eligible ? 'recoverable' : classification==='future_savings' ? 'opportunity' : 'review', requiresRevalidation:!gate.eligible }
-  const state=env.caseStates[findingId]
-  return { ...env, updatedAt:Date.now(), result:{...env.result,findings:env.result.findings.map(f=>f.id===findingId ? updated : f)}, historicalFindings:[...(env.historicalFindings??[]),original], caseStates:state ? {...env.caseStates,[findingId]:{...state,requiresRevalidation:!gate.eligible,approvedAt:state.recoveryStage==='confirmed' ? null : state.approvedAt}} : env.caseStates }
+  const at = Date.now()
+  const state = recordEvidenceReview(getCaseState(env, findingId), gate.eligible, evidence.obligation.confirmedBy || null, at)
+  return { ...env, updatedAt:at, result:{...env.result,findings:env.result.findings.map(f=>f.id===findingId ? updated : f)}, historicalFindings:[...(env.historicalFindings??[]),original], caseStates:{...env.caseStates,[findingId]:state} }
 }
 
 export function getCaseState(env: LedgerEnvironment, findingId: string): CaseState {

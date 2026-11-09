@@ -109,7 +109,7 @@ export const SITE_FAQ: [string, string][] = [
   ],
   [
     'Where does my ledger data go?',
-    'Your ledger stays on this device, in this browser. It is processed locally, is never uploaded to our servers, and can be deleted from your workspace.',
+    'CSV parsing begins in your browser. Signed-in projects sync to encrypted Reclaim server storage; connected QuickBooks records arrive through OAuth. You can delete saved projects from your account.',
   ],
   [
     'What does Reclaim need in the file?',
@@ -125,7 +125,7 @@ export const SITE_FAQ: [string, string][] = [
   ],
   [
     'Can I keep more than one review?',
-    'Yes. Each review is saved as a project in this browser. You can reopen a past review, switch between projects, or delete one from the workspace.',
+    'Yes. Each review is saved as a project. Signed-in projects sync to your account; you can reopen, switch between, or delete them from the workspace.',
   ],
   [
     'Which columns does my file need?',

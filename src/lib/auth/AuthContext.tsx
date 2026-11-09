@@ -4,7 +4,7 @@ import * as guest from '@/lib/auth/localAuthService'
 import type { AuthError, AuthOutcome, AuthUser } from '@/lib/auth/types'
 import { TERMS_VERSION } from '@/legal/terms'
 import { clearStorageScope, setStorageScope } from '@/lib/storageScope'
-import { fromStorable, replaceLocalProjects } from '@/ledger/projects'
+import { fromStorable, mergeServerProjects } from '@/ledger/projects'
 import { projectSync } from '@/ledger/projectSync'
 import { entitlementsFor, type Entitlements, type Plan } from '@/lib/plans'
 import { readProfile, type OnboardingProfile } from '../../../server/onboarding.ts'
@@ -75,13 +75,14 @@ const AuthContext = createContext<AuthContextValue | null>(null)
  */
 async function enterAccount(user: AuthUser): Promise<void> {
   setStorageScope(user.id)
+  projectSync.restore()
   try {
     const projects = await projectSync.pull()
-    replaceLocalProjects(projects.map(fromStorable))
+    mergeServerProjects(projects.map(fromStorable))
   } catch (err) {
     console.warn('Reclaim: could not load audits from the server —', err instanceof Error ? err.message : err)
   }
-  void projectSync.flush()
+  projectSync.retry()
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -252,13 +253,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (leaving && !leaving.isGuest) {
       await projectSync.flush()
       await api.logOut()
-      // The account's cache goes with the session; the server keeps the data.
-      clearStorageScope(leaving.id)
+      // Keep this account's scoped cache when a save has not reached the server.
+      // The next sign-in merges it with the server copy instead of discarding it.
+      if (!projectSync.pending && !projectSync.syncIssue) clearStorageScope(leaving.id)
     } else if (leaving?.isGuest) {
       clearStorageScope('guest')
     }
     guest.logOut()
-    projectSync.reset()
+    projectSync.reset(Boolean(leaving && !leaving.isGuest))
     setStorageScope(null)
     setEntitlements(null)
     setUser(null)

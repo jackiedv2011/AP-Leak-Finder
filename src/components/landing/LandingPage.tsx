@@ -503,35 +503,35 @@ function PortfolioProof() {
 function RecoveryProof() {
   const { sectionRef, awake } = useSectionWake<HTMLElement>(0.14)
   return <section id="recovery" className="recovery-proof recovery-case-study chapter-ivory wake-section ref-scene ref-recovery" data-awake={awake} ref={sectionRef} aria-labelledby="recovery-title">
-    <div className="commercial-heading"><span className="reclaim-eyebrow">One case, end to end</span><h2 id="recovery-title">From 2 suspicious payments to 1 <em>recovery-ready case.</em></h2><p>Reclaim keeps the comparison, decision, and editable request inside one case file—without rebuilding the evidence from scratch.</p></div>
-    <article className="ref-case-file" aria-label="Recovery-ready sample case for invoice INV-3305"><header><div><span>Recovery case</span><strong>INV-3305 · Sierra Coffee Supply</strong></div><b>{currency.format(canonicalRecords[0].amountPaid)}</b></header><div className="ref-case-facts"><div><span>Source records</span><strong>2 payments</strong></div><div><span>Timing</span><strong>15 days apart</strong></div><div><span>Evidence</span><strong>Source rows attached</strong></div><div><span>Decision</span><strong>Confirmed by you</strong></div></div><div className="ref-case-request"><span>Editable recovery draft</span><p>We are reviewing 2 payments associated with invoice INV-3305. Please confirm whether both payments were applied and advise on a refund, credit, or offset for any duplicate amount.</p><small>Vendor, invoice, amount, and payment dates remain linked to the draft.</small></div><ol className="ref-case-lifecycle" aria-label="Recovery case lifecycle"><li data-active="true">Ready to verify</li><li data-active="true">Confirmed</li><li data-active="true">Ready to prepare</li><li>Ready to contact</li><li>Awaiting response</li><li>Resolved</li></ol><footer>Illustrative sample data, not a customer recovery claim.</footer></article>
+    <div className="commercial-heading"><span className="reclaim-eyebrow">One case, end to end</span><h2 id="recovery-title">From 2 suspicious payments to 1 <em>case for review.</em></h2><p>Reclaim keeps the comparison, decision, and editable request inside one case file. A person must verify the evidence before a request is ready.</p></div>
+    <article className="ref-case-file" aria-label="Illustrative sample case for invoice INV-3305"><header><div><span>Sample case</span><strong>INV-3305 · Sierra Coffee Supply</strong></div><b>{currency.format(canonicalRecords[0].amountPaid)}</b></header><div className="ref-case-facts"><div><span>Source records</span><strong>2 payments</strong></div><div><span>Timing</span><strong>15 days apart</strong></div><div><span>Evidence</span><strong>Source rows attached</strong></div><div><span>Decision</span><strong>Requires your review</strong></div></div><div className="ref-case-request"><span>Editable request example</span><p>We are reviewing 2 payments associated with invoice INV-3305. Please confirm whether both payments were applied and advise on a refund, credit, or offset for any duplicate amount.</p><small>Vendor, invoice, amount, and payment dates remain linked to the draft.</small></div><ol className="ref-case-lifecycle" aria-label="Recovery case lifecycle"><li data-active="true">Ready to verify</li><li data-active="true">Review evidence</li><li data-active="true">Prepare request</li><li>Ready to contact</li><li>Awaiting response</li><li>Resolved</li></ol><footer>Illustrative sample data, not a customer recovery claim.</footer></article>
   </section>
 }
 
 function SecurityBoundary() {
   const { sectionRef, awake } = useSectionWake<HTMLElement>(0.2)
   return <section id="security" className="security-boundary security-editorial chapter-ivory wake-section ref-scene ref-security" data-awake={awake} ref={sectionRef} aria-labelledby="security-title">
-    <div className="security-statement"><span className="reclaim-eyebrow">A clear boundary</span><h2 id="security-title">Your ledger stays on <em>this device.</em></h2><p>Reclaim reviews the file you choose in your browser. Your accounting data is not uploaded to our servers.</p></div>
-    <ul className="ref-security-points"><li><span aria-hidden="true">✓</span><div><strong>Processed locally</strong><p>Parsing and review happen in your browser.</p></div></li><li><span aria-hidden="true">✓</span><div><strong>No silent writeback</strong><p>Your accounting system is never changed for you.</p></div></li><li><span aria-hidden="true">✓</span><div><strong>Delete on demand</strong><p>Remove a saved local project from the workspace.</p></div></li></ul>
-    <div className="ref-browser-boundary" aria-label="Browser-local ledger illustration"><header><i /><i /><i /><span>Local Reclaim workspace</span></header><div><article><span>Standing ledger</span><strong>sample_payments.csv</strong><div className="ref-browser-ledger"><div><span>Date</span><span>Vendor</span><span>Amount</span></div>{canonicalRecords.map((record) => <div key={record.rowIndex}><time dateTime={record.paymentDate.toISOString()}>{formatDate(record.paymentDate)}</time><b>{record.vendor}</b><strong>{currency.format(record.amountPaid)}</strong></div>)}</div><footer>Stored on this device</footer></article></div></div>
+    <div className="security-statement"><span className="reclaim-eyebrow">A clear boundary</span><h2 id="security-title">Your ledger is handled <em>with care.</em></h2><p>CSV parsing begins in your browser. Signed-in projects sync to Reclaim's encrypted server storage, and a connected QuickBooks account supplies records through its OAuth permission.</p></div>
+    <ul className="ref-security-points"><li><span aria-hidden="true">✓</span><div><strong>Local first review</strong><p>CSV parsing and initial checks happen in your browser.</p></div></li><li><span aria-hidden="true">✓</span><div><strong>No silent writeback</strong><p>Reclaim's current QuickBooks adapter reads records without changing them.</p></div></li><li><span aria-hidden="true">✓</span><div><strong>Delete on demand</strong><p>Delete a saved project from your account and browser workspace.</p></div></li></ul>
+    <div className="ref-browser-boundary" aria-label="Browser ledger illustration"><header><i /><i /><i /><span>Reclaim workspace</span></header><div><article><span>Sample ledger</span><strong>sample_payments.csv</strong><div className="ref-browser-ledger"><div><span>Date</span><span>Vendor</span><span>Amount</span></div>{canonicalRecords.map((record) => <div key={record.rowIndex}><time dateTime={record.paymentDate.toISOString()}>{formatDate(record.paymentDate)}</time><b>{record.vendor}</b><strong>{currency.format(record.amountPaid)}</strong></div>)}</div><footer>Signed-in projects sync securely</footer></article></div></div>
   </section>
 }
 
 function OutcomePricing() {
   const { sectionRef, awake } = useSectionWake<HTMLElement>(0.24)
   const states = [
-    ['01', 'Potential case', 'You share the details. We review at no cost.'],
-    ['02', 'Confirmed', 'You approve the case and agree the fee.'],
-    ['03', 'Outreach', 'The evidence-backed request moves forward.'],
-    ['04', 'Verified recovery', 'You receive a refund, credit, or offset.'],
+    ['01', 'Potential case', 'A check flags records for your review.'],
+    ['02', 'Evidence review', 'You verify the obligation, payments, and adjustments.'],
+    ['03', 'Request', 'You approve any supplier contact and review the draft.'],
+    ['04', 'Reconciliation', 'You record a return and verify it independently.'],
   ]
   return <section id="pricing" className="outcome-pricing pricing-payoff wake-section ref-scene ref-pricing" data-awake={awake} ref={sectionRef} aria-labelledby="pricing-title">
     <div className="ref-pricing-objects" aria-hidden="true">
       <DeferredSceneImage className="ref-pricing-object ref-pricing-object--document" anchorClassName="ref-pricing-object-anchor ref-pricing-object-anchor--document" src={pricingDocument} width={1254} height={1254} />
       <DeferredSceneImage className="ref-pricing-object ref-pricing-object--card" anchorClassName="ref-pricing-object-anchor ref-pricing-object-anchor--card" src={pricingCard} width={1536} height={1024} />
     </div>
-    <div className="pricing-promise"><span className="reclaim-eyebrow">Outcome-aligned pricing</span><h2 id="pricing-title">If the money does not come back, <em>you do not pay.</em></h2><p>A fee is agreed before outreach and becomes due only after a verified refund, credit, or offset.</p></div>
-    <ol className="ref-pricing-timeline" aria-label="How outcome-aligned pricing works">{states.map(([number, title, body], index) => <li key={number} data-last={index === states.length - 1}><span>{number}</span><i aria-hidden="true" /><strong>{title}</strong><p>{body}</p>{index === states.length - 1 && <b>$0 fee if no money returns</b>}</li>)}</ol>
+    <div className="pricing-promise"><span className="reclaim-eyebrow">Proposed pricing</span><h2 id="pricing-title">See the case clearly <em>before you act.</em></h2><p>Free review is available. Proposed paid plans include a monthly subscription; automated success-fee billing is disabled pending a verified-return policy.</p></div>
+    <ol className="ref-pricing-timeline" aria-label="How a case moves forward">{states.map(([number, title, body], index) => <li key={number} data-last={index === states.length - 1}><span>{number}</span><i aria-hidden="true" /><strong>{title}</strong><p>{body}</p>{index === states.length - 1 && <b>Returns require independent verification</b>}</li>)}</ol>
   </section>
 }
 
@@ -546,13 +546,13 @@ function QuestionsAndAnswers() {
   const questions = [
     ['Does Reclaim replace QuickBooks or Xero?', 'No. Reclaim adds a focused recovery layer after accounting. You export the ledger you already use, review possible cases, and take confirmed evidence back into your existing workflow.'],
     ['Does Reclaim decide that a payment is wrong?', 'No. Reclaim points to records worth a second look and explains why they match. A person reviews the evidence and confirms the next step.'],
-    ['Where does my ledger data go?', 'Your ledger stays on this device, in this browser. It is processed locally, is never uploaded to our servers, and can be deleted from your workspace.'],
-    ['When would I pay a recovery fee?', 'Only after a verified refund, credit, or offset. The recovery terms are agreed before outreach; a possible finding or an unanswered request does not create a fee.'],
+    ['Where does my ledger data go?', 'CSV parsing starts in your browser. Signed-in projects sync to encrypted Reclaim server storage; connected QuickBooks records also arrive through its OAuth permission. You can delete saved projects from your account.'],
+    ['When would I pay a recovery fee?', 'Automated success-fee billing is disabled. A proposed fee would require independently verified returns and approved terms; a possible finding or an unanswered request does not create a fee.'],
   ]
 
   return (
     <section id="faq" className="reclaim-faq chapter-ivory wake-section ref-scene ref-faq" data-awake={awake} ref={sectionRef} aria-labelledby="faq-title">
-      <div className="reclaim-faq-intro"><span className="reclaim-eyebrow">Questions, answered plainly</span><h2 id="faq-title">Before you open the ledger.</h2><p>Your data stays local, every finding keeps its evidence, and you remain the decision-maker.</p></div>
+      <div className="reclaim-faq-intro"><span className="reclaim-eyebrow">Questions, answered plainly</span><h2 id="faq-title">Before you open the ledger.</h2><p>Initial CSV review happens locally, signed-in work syncs securely, and you remain the decision-maker.</p></div>
       <div className="reclaim-faq-list">
         {questions.map(([question, answer], index) => {
           const open = openQuestion === index

@@ -12,11 +12,11 @@ export function Boundary() {
     <section className="strip" id="privacy" aria-label="Privacy boundary">
       <div className="strip-grid">
         <div>
-          <span className="strip-mark">Local</span>
-          <h3>Your ledger stays on this device</h3>
+          <span className="strip-mark">Local first</span>
+          <h3>CSV review starts in your browser</h3>
           <p className="site-body">
-            Parsing and review happen in your browser. The file you choose is not uploaded to our
-            servers, and a saved project can be deleted from the workspace.
+            Parsing and initial review happen in your browser. Signed-in projects sync to encrypted
+            server storage, and a saved project can be deleted from your account.
           </p>
         </div>
         <div>
@@ -38,23 +38,23 @@ export function Boundary() {
  */
 export function Closing({ action }: { action: LandingAction }) {
   const steps: [string, string, string][] = [
-    ['01', 'Potential case', 'You share the details. We review at no cost.'],
-    ['02', 'Confirmed', 'You approve the case and agree the fee.'],
-    ['03', 'Outreach', 'The evidence-backed request moves forward.'],
-    ['04', 'Verified recovery', 'You receive a refund, credit, or offset.'],
+    ['01', 'Potential case', 'A check flags records for your review.'],
+    ['02', 'Evidence review', 'You verify the obligation, payments, and adjustments.'],
+    ['03', 'Request', 'You approve any supplier contact and review the draft.'],
+    ['04', 'Reconciliation', 'You record a return and verify it independently.'],
   ]
 
   return (
     <section className="closing" id="pricing" aria-labelledby="closing-title">
       <div className="site-shell">
         <div className="closing-head">
-          <span className="site-kicker">Outcome-aligned pricing</span>
+          <span className="site-kicker">Proposed plans</span>
           <h2 className="site-heading-lg" id="closing-title">
-            If the money does not come back, you do not pay
+            Review the evidence before you act
           </h2>
           <p className="site-lead">
-            A fee is agreed before outreach and becomes due only after a verified refund, credit, or
-            offset.
+            Free review is available. Paid plans have monthly prices; automated success-fee billing
+            is disabled pending a verified-return policy.
           </p>
           <div className="site-actions">
             <a className="site-button" href={action.href}>
@@ -78,7 +78,7 @@ export function Closing({ action }: { action: LandingAction }) {
           </ol>
           <p className="pricing-note">
             <Tick matched />
-            $0 fee if no money returns
+            Customer-entered returns do not create fees
           </p>
         </div>
       </div>

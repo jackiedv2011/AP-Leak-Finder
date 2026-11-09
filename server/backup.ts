@@ -6,7 +6,8 @@ import { DatabaseSync } from 'node:sqlite'
  * A consistent copy of the SQLite file, safe to take while the server is
  * running: `VACUUM INTO` reads one snapshot of the database (WAL included)
  * and writes it to a new, compacted file. The copy is then opened and
- * integrity-checked, so a backup that exists is a backup that restores.
+ * integrity-checked. Restoring encrypted audits also requires the matching
+ * DATA_KEY; SQLite integrity alone cannot confirm that the key is retained.
  *
  *   node server/backup.ts                  # DATABASE_PATH → <its folder>/backups/
  *   node server/backup.ts /mnt/offsite     # or into a folder you name

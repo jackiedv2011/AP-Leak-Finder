@@ -120,7 +120,7 @@ describe('the workspace follows the plan', () => {
     fireEvent.click(within(nav()).getByRole('button', { name: /^Settings/ }))
     const panel = await screen.findByTestId('plan-panel')
     expect(panel).toHaveTextContent('Growth · $15 / month')
-    await waitFor(() => expect(screen.getByTestId('plan-renewal')).toHaveTextContent(/^Next bill: \w{3} \d{1,2}, \d{4}, plus any success fees\.$/))
+    await waitFor(() => expect(screen.getByTestId('plan-renewal')).toHaveTextContent(/^Next subscription bill: \w{3} \d{1,2}, \d{4}\. Automated success-fee billing is disabled\.$/))
     fireEvent.click(within(panel).getByRole('button', { name: 'Cancel plan' }))
     expect(screen.getByTestId('plan-confirm')).toHaveTextContent('You keep every paid feature until')
     fireEvent.click(within(panel).getByRole('button', { name: 'Cancel Growth' }))

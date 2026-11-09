@@ -3,7 +3,7 @@ import { CalendarClock, CircleCheck } from 'lucide-react'
 import { formatCurrency } from '@/lib/format'
 import { type CaseState, type RecoveryMethod, type RecoveryVerification, type VendorUpdate, type VendorUpdateStatus } from '@/ledger/caseState'
 import { latestVendorPosition, VENDOR_STATUS, VENDOR_STATUS_ORDER } from '@/recovery/vendorStatus'
-import { verifiedReturned } from '@/recovery/financials'
+import { activeReturned, verifiedReturned } from '@/recovery/financials'
 import type { Finding } from '@/types'
 
 const SETTLEMENT_METHOD_LABEL: Record<RecoveryMethod, string> = { refund: 'Cash refund', credit: 'Applied vendor credit', offset: 'Payment offset' }
@@ -38,13 +38,14 @@ export function RecoveryProgressPanel({ finding, state, onVendorUpdate, onFollow
   onClose: (id: string, reason: string) => void
 }) {
   const requested = state.requestedAmount ?? 0
-  const returned = verifiedReturned(state)
+  const returned = activeReturned(state)
   const remaining = Math.max(0, Math.round(requested * 100 - returned * 100) / 100)
   const position = latestVendorPosition(state)
   // Open on the most likely next step: money back once some has arrived or is on its way.
   const [tab, setTab] = useState<Tab>(returned > 0 || (position && VENDOR_STATUS[position.status].pending) ? 'money' : 'reply')
 
   const [status, setStatus] = useState<VendorUpdateStatus>('acknowledged')
+  const [promisedMethod, setPromisedMethod] = useState<RecoveryMethod>(state.requestedResolution === 'refund' ? 'refund' : 'credit')
   const [responseNote, setResponseNote] = useState('')
   const [responseAmount, setResponseAmount] = useState('')
   const [expectedDate, setExpectedDate] = useState('')
@@ -76,7 +77,7 @@ export function RecoveryProgressPanel({ finding, state, onVendorUpdate, onFollow
     }
     setVendorError('')
     try {
-      onVendorUpdate(finding.id, { status, note: responseNote.trim(), at: Date.now(), amount: parsedAmount, expectedAt: dateFromInput(expectedDate) ?? undefined })
+      onVendorUpdate(finding.id, { status, note: responseNote.trim(), at: Date.now(), amount: parsedAmount, method: status === 'promised' ? promisedMethod : status === 'credit_issued' ? 'credit' : undefined, expectedAt: dateFromInput(expectedDate) ?? undefined })
     } catch (error) {
       setVendorError(error instanceof Error ? error.message : 'That reply could not be recorded.')
       return
@@ -126,7 +127,7 @@ export function RecoveryProgressPanel({ finding, state, onVendorUpdate, onFollow
           <ol className="wk-log" aria-label="Vendor conversation">
             {[
               ...(state.vendorUpdates ?? []).map((update) => ({ at: update.at, kind: 'reply' as const, update })),
-              ...(state.recoverySettlements ?? []).map((settlement) => ({ at: settlement.settledAt, kind: 'money' as const, settlement })),
+              ...(state.recoverySettlements ?? []).filter((settlement) => (settlement.requestGeneration ?? 1) === (state.activeRequestGeneration ?? 1)).map((settlement) => ({ at: settlement.settledAt, kind: 'money' as const, settlement })),
             ]
               .sort((a, b) => a.at - b.at)
               .map((entry, index) => entry.kind === 'reply' ? (
@@ -146,14 +147,14 @@ export function RecoveryProgressPanel({ finding, state, onVendorUpdate, onFollow
           <p className="wk-field-hint">Nothing recorded yet. When the vendor replies, log it here. Reclaim never reads your inbox, so replies only show up once you add them.</p>
         )}
 
-        <div className="wk-followup">
+        {!state.requiresRevalidation ? <div className="wk-followup">
           <CalendarClock aria-hidden="true" />
           <div className="wk-field">
             <label htmlFor="follow-up-date">Next follow-up</label>
             <input id="follow-up-date" type="date" className="wk-input" value={followUpDate} onChange={(e) => setFollowUpDate(e.target.value)} />
           </div>
           <button type="button" className="wk-btn" data-variant="outline" data-size="sm" onClick={() => onFollowUp(finding.id, dateFromInput(followUpDate))}>Save date</button>
-        </div>
+        </div> : null}
       </div>
 
       <div className="wk-panelcard-body wk-stack wk-subsection">
@@ -169,9 +170,15 @@ export function RecoveryProgressPanel({ finding, state, onVendorUpdate, onFollow
               <div className="wk-field">
                 <label htmlFor="vendor-status">What happened?</label>
                 <select id="vendor-status" className="wk-input" value={status} onChange={(e) => setStatus(e.target.value as VendorUpdateStatus)}>
-                  {VENDOR_STATUS_ORDER.map((value) => <option key={value} value={value}>{VENDOR_STATUS[value].label}</option>)}
+                  {VENDOR_STATUS_ORDER.filter((value) => !state.requiresRevalidation || value !== 'followed_up').map((value) => <option key={value} value={value}>{VENDOR_STATUS[value].label}</option>)}
                 </select>
               </div>
+              {status === 'promised' ? <label className="wk-field">Promised resolution
+                <select className="wk-input" value={promisedMethod} onChange={(event) => setPromisedMethod(event.target.value as RecoveryMethod)}>
+                  <option value="refund">Refund</option>
+                  <option value="credit">Credit</option>
+                </select>
+              </label> : null}
               {statusInfo.amount !== 'none' ? (
                 <div className="wk-field">
                   <label htmlFor="vendor-amount">{statusInfo.amount === 'required' ? 'Amount accepted' : 'Amount mentioned (optional)'}</label>
@@ -288,7 +295,7 @@ export function RecoveryAccountingPanel({ finding, state, onReconcile }: { findi
       <div className="wk-panelcard-head">
         <div>
           <h2 id="books-title">In your books</h2>
-          <p>{formatCurrency(returned)} came back across {settlements.length || 1} {settlements.length === 1 ? 'settlement' : 'settlements'}{requested > returned && state.recoveryOutcomeNote ? `; the other ${formatCurrency(requested - returned)} was closed: ${state.recoveryOutcomeNote}` : ''}.</p>
+          <p>{formatCurrency(returned)} came back across {settlements.length || 1} {settlements.length === 1 ? 'settlement' : 'settlements'}{requested > activeReturned(state) && state.recoveryOutcomeNote ? `; the current request has ${formatCurrency(requested - activeReturned(state))} not returned: ${state.recoveryOutcomeNote}` : ''}.</p>
         </div>
       </div>
       <div className="wk-panelcard-body wk-stack">

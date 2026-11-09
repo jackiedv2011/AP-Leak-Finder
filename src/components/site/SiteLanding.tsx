@@ -203,9 +203,9 @@ function Pricing({ action }: { action: LandingAction }) {
       <LandingImage data-motion-reveal="data-detail-revealed" data-parallax="26" className="fresh-object pricing-paperclip pricing-motion__paperclip" src={paperclip} alt="" />
       <LandingImage data-parallax="-22" className="fresh-object pricing-tape pricing-motion__tape" src={yellowTape} alt="" /><LandingImage data-parallax="18" className="fresh-object pricing-timer pricing-motion__timer" src={officeTimer} alt="" />
       <div data-motion-reveal="data-copy-revealed" className="fresh-pricing__copy">
-        <span className="fresh-eyebrow pricing-motion__eyebrow">SIMPLE, OUTCOME-ALIGNED PRICING</span><h2 aria-label="If the money does not come back, you do not pay"><span className="pricing-motion__line"><span>If the money does not</span></span><span className="pricing-motion__line"><span>come back, you do not pay</span></span></h2>
-        <p className="pricing-motion__body">A fee is agreed before outreach and becomes due only after a verified refund, credit, or offset.</p>
-        <article data-motion-reveal="data-ticket-revealed" className="fresh-price-ticket pricing-motion__ticket"><small className="pricing-motion__ticket-label">RECOVERY REVIEW</small><div className="pricing-motion__ticket-amount"><strong>$0</strong><span>to review</span></div><p className="pricing-motion__ticket-condition">$0 fee if no money returns</p><span className="pricing-motion__ticket-action"><Action action={action} quiet /></span></article>
+        <span className="fresh-eyebrow pricing-motion__eyebrow">PROPOSED PLANS</span><h2 aria-label="Review the evidence before you act"><span className="pricing-motion__line"><span>Review the evidence</span></span><span className="pricing-motion__line"><span>before you act</span></span></h2>
+        <p className="pricing-motion__body">Free review is available. Paid plans have monthly prices; the proposed success fee is not currently billed.</p>
+        <article data-motion-reveal="data-ticket-revealed" className="fresh-price-ticket pricing-motion__ticket"><small className="pricing-motion__ticket-label">RECOVERY REVIEW</small><div className="pricing-motion__ticket-amount"><strong>$0</strong><span>for Free</span></div><p className="pricing-motion__ticket-condition">Review possible cases before outreach</p><span className="pricing-motion__ticket-action"><Action action={action} quiet /></span></article>
       </div>
     </section>
   )
@@ -227,7 +227,7 @@ function HandUnderline() {
 function RelationshipMap() {
   return (
     <section className="fresh-map" id="process" data-motion-scene>
-      <div data-motion-reveal="data-copy-revealed" className="fresh-map__copy"><span className="fresh-eyebrow map-motion__eyebrow">THE SOURCE STAYS ATTACHED</span><h2><span className="map-motion__line"><span>QuickBooks, Xero, bank exports …</span></span><span className="map-motion__line"><span>we read them all and <span className="fresh-hand-underline">keep the source.<HandUnderline /></span></span></span></h2><div className="fresh-source-strip">{['QuickBooks', 'Xero', 'CSV export', 'Bank statement', 'Manual register'].map(source => <span className="map-motion__source" key={source}>{source}</span>)}</div></div>
+      <div data-motion-reveal="data-copy-revealed" className="fresh-map__copy"><span className="fresh-eyebrow map-motion__eyebrow">THE SOURCE STAYS ATTACHED</span><h2><span className="map-motion__line"><span>CSV exports and QuickBooks …</span></span><span className="map-motion__line"><span>review records and <span className="fresh-hand-underline">keep the source.<HandUnderline /></span></span></span></h2><div className="fresh-source-strip">{['QuickBooks', 'CSV export', 'Bank statement export', 'Manual register export'].map(source => <span className="map-motion__source" key={source}>{source}</span>)}</div></div>
       <div data-motion-reveal="data-map-revealed" className="fresh-map__stage">
         <LandingImage data-parallax="-20" className="fresh-object map-sheet-left map-motion__sheet-left" src={mapLeft} alt="" /><LandingImage data-parallax="18" className="fresh-object map-sheet-right map-motion__sheet-right" src={mapRight} alt="" />
         <div data-parallax="-20" className="map-record-left map-motion__record-left"><MapRecord vendor="Sierra Coffee Supply" date="Feb 28" /></div><div data-parallax="18" className="map-record-right map-motion__record-right"><MapRecord vendor="Sierra Coffee Supply" date="Mar 15" /></div>
@@ -261,7 +261,7 @@ function Features() {
       <div data-motion-reveal="data-copy-revealed" className="fresh-features__copy"><h2><span className="feature-motion__line"><span>What makes a payment</span></span><span className="feature-motion__line"><span>worth a second look?</span></span></h2><p className="feature-motion__body">Four clear steps. No black box.</p></div>
       <div data-motion-reveal="data-grid-revealed" className="fresh-feature-grid">{processCards.map((card) => <article className="fresh-feature-card feature-motion__card" key={card.n}><small>{card.n}</small><h3>{card.title}</h3><p>{card.body}</p><CardVisual type={card.type} /></article>)}</div>
       <div className="fresh-features__action feature-motion__action"><a className="fresh-action" href="#process">See how it works <Arrow /></a></div>
-      <div className="fresh-process-notes">{['Your ledger stays on this device.', 'Nothing is uploaded.', 'Every flag keeps its evidence.', 'You decide what happens next.'].map(note => <span className="feature-motion__note" key={note}>{note}</span>)}</div>
+      <div className="fresh-process-notes">{['CSV parsing starts in your browser.', 'Signed-in projects sync securely.', 'Every flag keeps its evidence.', 'You decide what happens next.'].map(note => <span className="feature-motion__note" key={note}>{note}</span>)}</div>
     </section>
   )
 }
@@ -275,7 +275,7 @@ function DarkLetter() {
       <HandwrittenPrinciple />
       <span data-motion-reveal="data-handwriting-revealed" className="fresh-letter-handwriting__trigger" aria-hidden="true" />
       <span data-parallax="28" className="letter-sticky-copy letter-motion__sticky-copy">keep the<br />source close</span><div data-motion-reveal="data-proof-revealed" className="fresh-recovery-toast letter-motion__toast"><CheckDot /><span><strong>Evidence stays attached</strong>Review the full trail locally</span></div>
-      <div data-motion-reveal="data-meta-revealed" className="fresh-letter-meta letter-motion__meta"><p>Find it. Understand it. Reclaim it.</p><small>Your ledger stays in your browser. Nothing is uploaded or written back. No customer outcome is implied.</small></div>
+      <div data-motion-reveal="data-meta-revealed" className="fresh-letter-meta letter-motion__meta"><p>Find it. Understand it. Reclaim it.</p><small>Signed-in projects sync to encrypted server storage. The current QuickBooks adapter does not write back. No customer outcome is implied.</small></div>
     </section>
   )
 }

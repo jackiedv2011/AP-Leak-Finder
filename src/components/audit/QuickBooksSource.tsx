@@ -5,7 +5,7 @@ import type { QuickBooksFacts } from '../../../server/quickbooksFacts.ts'
 import { autoSyncLabel, relativeTime, type QuickBooksAutoSyncState } from '@/ledger/quickbooksAutoSync'
 import { QUICKBOOKS_CONNECT_URL, connectOutcome, disconnectQuickBooks, fetchQuickBooksStatus, importFromQuickBooks, type QuickBooksStatus } from '@/lib/quickbooksApi'
 
-const READ_ONLY_NOTE = 'Read-only: Reclaim reads bills, bill payments, vendors and credits. It never changes anything in QuickBooks.'
+const READ_ONLY_NOTE = 'Reclaim currently reads bills, bill payments, vendors and credits without writing back. The QuickBooks OAuth permission also permits writes.'
 const dateTime = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
 
 /**

@@ -64,8 +64,8 @@ export function Story() {
       <Block
         title="Start with the export you already run"
         scene="intake"
-        quote="The file stays in this browser."
-        cite="Nothing is uploaded, and nothing is written back to your books."
+        quote="CSV review starts in your browser."
+        cite="Signed-in projects sync to encrypted server storage. The current QuickBooks adapter does not write back."
       >
         <div className="scene-copy">
           <p className="site-body">

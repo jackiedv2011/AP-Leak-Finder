@@ -45,7 +45,11 @@ export default defineConfig(({ mode }) => {
   test: {
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
-    exclude: ['**/node_modules/**', '**/dist/**', '**/restore-backup-*/**'],
+    // The preview copy is a historical snapshot with obsolete expectations.
+    // Keep the active repository suite serial to avoid worker OOM on Windows.
+    exclude: ['**/node_modules/**', '**/dist/**', '**/restore-backup-*/**', '**/.preview-pre-v2/**', '**/experiments/**'],
+    maxWorkers: 1,
+    fileParallelism: false,
   },
   }
 })

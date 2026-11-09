@@ -1,7 +1,7 @@
 import type { APRecord, Finding, FindingClass, DetectionResult } from '@/types'
-import { normalizeVendor, normalizeAccountLast4, daysBetween, parseTerms, formatCurrency, formatDate, plural, toCents } from '@/lib/format'
-import { normalizeReference, referenceStrength } from '@/lib/sourceIdentity'
-import { reviewMetadata } from '@/lib/findingMetadata'
+import { normalizeVendor, normalizeAccountLast4, daysBetween, parseTerms, formatCurrency, formatDate, plural, toCents } from './format.ts'
+import { normalizeReference, referenceStrength } from './sourceIdentity.ts'
+import { reviewMetadata } from './findingMetadata.ts'
 
 /** The review window for same-vendor, same-amount signals. It selects rows to review; it is not a recovery threshold. */
 export const DEFAULT_REVIEW_WINDOW_DAYS = 45
@@ -60,6 +60,7 @@ const OUTLIER_MIN_MULTIPLE = 3
 const OUTLIER_MIN_PAYMENTS = 5
 
 const centsToDollars = (cents: number) => cents / 100
+const vendorIdentity = (record: APRecord) => record.stableSupplierId ? `supplier:${record.stableSupplierId.trim().toLowerCase()}` : record.quickbooks?.vendorId ? `qbo:${record.quickbooks.vendorId}` : record.canonicalVendorId ?? normalizeVendor(record.vendor)
 
 function median(values: number[]): number {
   const sorted = [...values].sort((a, b) => a - b)
@@ -73,7 +74,7 @@ type RefundPool = Map<string, number>
 function invoiceKey(r: APRecord): string {
   const raw = r.source?.raw?.invoice_number
   const reference = typeof raw === 'string' ? raw : r.invoiceNumber!
-  return `${normalizeVendor(r.vendor)}|${reference}`
+  return `${vendorIdentity(r)}|${reference}`
 }
 
 /** A placeholder such as "Debit" or "N/A" in the reference column is no reference at all. */
@@ -85,6 +86,10 @@ function buildRefundPool(records: APRecord[]): RefundPool {
   const pool: RefundPool = new Map()
   for (const r of records) {
     if (!hasReference(r) || r.amountPaid >= 0) continue
+    // A negative CSV row can be a reversal, correction, discount or credit.
+    // Its sign alone is not evidence of a supplier refund.
+    const kind = r.transactionType?.trim().toLowerCase().replace(/[ -]/g, '_')
+    if (kind !== 'refund' && kind !== 'vendor_refund') continue
     const key = invoiceKey(r)
     pool.set(key, (pool.get(key) ?? 0) + toCents(-r.amountPaid))
   }
@@ -382,7 +387,7 @@ function detectNearDuplicates(
   const findings: FindingWithImpactRows[] = []
   const recurringSeries: RecurringSeries[] = []
   const eligible = records.filter((r) => isPayment(r) && !excludeRecordIds.has(r.id))
-  const groups = groupBy(eligible, (r) => normalizeVendor(r.vendor))
+  const groups = groupBy(eligible, vendorIdentity)
   const usedAsLater = new Set<string>()
 
   for (const group of groups.values()) {
@@ -579,7 +584,7 @@ function detectBankAccountChanges(records: APRecord[]): Finding[] {
   const findings: Finding[] = []
   const groups = groupBy(
     records.filter((r) => isPayment(r) && normalizeAccountLast4(r.bankAccountLast4) !== null),
-    (r) => normalizeVendor(r.vendor)
+    vendorIdentity
   )
 
   for (const group of groups.values()) {
@@ -625,7 +630,7 @@ function detectBankAccountChanges(records: APRecord[]): Finding[] {
 // Rule 7 — Payment amount outlier (review, medium)
 function detectAmountOutliers(records: APRecord[]): Finding[] {
   const findings: Finding[] = []
-  const groups = groupBy(records.filter(isPayment), (r) => normalizeVendor(r.vendor))
+  const groups = groupBy(records.filter(isPayment), vendorIdentity)
 
   for (const group of groups.values()) {
     if (group.length < OUTLIER_MIN_PAYMENTS) continue
@@ -673,12 +678,12 @@ function detectSharedInvoiceNumbers(records: APRecord[]): Finding[] {
   const groups = groupBy(withInvoice, (r) => normalizeInvoiceNumber(r.invoiceNumber!))
 
   for (const group of groups.values()) {
-    const vendorsInGroup = groupBy(group, (r) => normalizeVendor(r.vendor))
+    const vendorsInGroup = groupBy(group, vendorIdentity)
     if (vendorsInGroup.size < 2) continue
     const distinctive = (normalizeReference(group[0].invoiceNumber).value ?? '').length >= DISTINCTIVE_REFERENCE_MIN_LENGTH
     if (!distinctive) {
       const vendorsByAmount = groupBy(group, (r) => toCents(r.amountPaid).toString())
-      const sharedAmount = [...vendorsByAmount.values()].some((rows) => new Set(rows.map((r) => normalizeVendor(r.vendor))).size > 1)
+      const sharedAmount = [...vendorsByAmount.values()].some((rows) => new Set(rows.map(vendorIdentity)).size > 1)
       if (!sharedAmount) continue
     }
 

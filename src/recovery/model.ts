@@ -1,10 +1,52 @@
-import { markRecoveryRequested, recordRecoveryOutcome, type CaseState, type RecoveryMethod, type RecoveryVerification, type SentEmail, type VendorUpdate } from '@/ledger/caseState'
-import { normalizeVendor } from '@/lib/format'
-import type { APRecord, Finding } from '@/types'
-import { latestVendorPosition, VENDOR_STATUS } from './vendorStatus'
-import { verifiedReturned } from './financials'
+import { markRecoveryRequested, recordRecoveryOutcome, type ArchivedRequest, type CaseState, type RecoveryMethod, type RecoveryVerification, type SentEmail, type VendorUpdate } from '../ledger/caseState.ts'
+import { normalizeVendor } from '../lib/format.ts'
+import type { APRecord, Finding } from '../types.ts'
+import { latestVendorPosition, VENDOR_STATUS } from './vendorStatus.ts'
+import { activeReturned, verifiedReturned } from './financials.ts'
 
 const DAY = 86_400_000
+
+/** Preserve the original request before opening a separate, unapproved review. */
+export function beginNewRequestReview(state: CaseState, at = Date.now()): CaseState {
+  if (!state.requiresRevalidation || !['requested', 'recovered', 'not_recovered'].includes(state.recoveryStage ?? '')) {
+    throw new Error('Only a historical sent request needing revalidation can start a new request review.')
+  }
+  if (!Number.isFinite(at) || at <= 0 || !Number.isFinite(state.requestedAmount) || (state.requestedAmount ?? 0) <= 0) {
+    throw new Error('The original request amount and review time must be known before archiving it.')
+  }
+  if (Math.round(Math.max(state.legacyRecoveredAmount ?? 0, state.recoveredAmount ?? 0) * 100) > Math.round(verifiedReturned(state) * 100)) {
+    throw new Error('Resolve the older unverified return amount before starting a new request.')
+  }
+  const generation = state.activeRequestGeneration ?? 1
+  const archived: ArchivedRequest = {
+    generation, archivedAt: at, returnedAmountAtArchive: activeReturned(state),
+    decision: state.decision, reason: state.reason, decidedAt: state.decidedAt,
+    recoveryStage: state.recoveryStage, requestedAmount: state.requestedAmount,
+    approvedAt: state.approvedAt, legacyApprovedAt: state.legacyApprovedAt, knownBeforeReclaim: state.knownBeforeReclaim,
+    knownBeforeNote: state.knownBeforeNote, recoveryDraft: state.recoveryDraft, recoveryEvidenceAttachment: state.recoveryEvidenceAttachment,
+    recoverySubject: state.recoverySubject, recoveryRecipientEmail: state.recoveryRecipientEmail,
+    requestedResolution: state.requestedResolution, recoveryRequestedAt: state.recoveryRequestedAt,
+    recoverySentEmail: state.recoverySentEmail ? { ...state.recoverySentEmail, cc: [...state.recoverySentEmail.cc] } : null,
+    recoveryFollowUps: state.recoveryFollowUps?.map((entry) => ({ ...entry, cc: [...entry.cc] })) ?? null,
+    followUpAfterDays: state.followUpAfterDays,
+    vendorUpdates: state.vendorUpdates?.map((entry) => ({ ...entry })) ?? [],
+    recoveryResolvedAt: state.recoveryResolvedAt, recoveryOutcomeNote: state.recoveryOutcomeNote,
+    reconciledAt: state.reconciledAt, reconciliationNote: state.reconciliationNote,
+    rootCause: state.rootCause, legacyRecoveredAmount: state.legacyRecoveredAmount,
+  }
+  return {
+    decision: null, reason: null, decidedAt: null, recoveryStage: null,
+    approvedAt: null, requestedAmount: null,
+    activeRequestGeneration: generation + 1,
+    archivedRequests: [...(state.archivedRequests ?? []), archived],
+    requiresRevalidation: true,
+    recoverySettlements: [...(state.recoverySettlements ?? (state.recoveryVerification ? [state.recoveryVerification] : []))],
+    recoveryVerification: null,
+    recoveredAmount: verifiedReturned(state),
+    legacyRecoveredAmount: state.legacyRecoveredAmount,
+    history: state.history,
+  }
+}
 
 /** Preserve the customer's local time of day while skipping Saturday and Sunday. */
 export function addBusinessDays(start: number, days: number): number {
@@ -25,6 +67,7 @@ export function setContactHold(state: CaseState, reason: string | null): CaseSta
 
 export function approveRecovery(state: CaseState, input: { at?: number; knownBeforeReclaim: boolean; knownBeforeNote?: string | null }): CaseState {
   if (state.recoveryStage !== 'confirmed') throw new Error('Only a prepared recovery case can be approved.')
+  if (state.requiresRevalidation) throw new Error('Revalidate the evidence before approving a new request.')
   if (state.contactHold) throw new Error('Remove the vendor contact hold before approval.')
   const knownBeforeNote = input.knownBeforeNote?.trim() || null
   if (input.knownBeforeReclaim && !knownBeforeNote) throw new Error('Explain how your team already knew about this issue in a disclosure note.')
@@ -32,19 +75,19 @@ export function approveRecovery(state: CaseState, input: { at?: number; knownBef
 }
 
 export function canRecordRequest(state: CaseState): boolean {
-  return state.recoveryStage === 'confirmed' && Boolean(state.approvedAt) && !state.contactHold
+  return state.recoveryStage === 'confirmed' && Boolean(state.approvedAt) && !state.contactHold && !state.requiresRevalidation
 }
 
 export function startRecoveryRequest(state: CaseState, amount: number, at = Date.now(), supportedAmount?: number): CaseState {
   if (!canRecordRequest(state)) throw new Error('Customer approval is required before recording the first request.')
   if (!Number.isFinite(amount) || amount <= 0) throw new Error('The requested amount must be greater than zero.')
   // The form checks this too; the rule lives here so no other caller can ask a vendor for more than the records support.
-  if (supportedAmount !== undefined && Math.round(amount * 100) > Math.round(supportedAmount * 100)) throw new Error('The requested amount cannot be more than the records support.')
+  if (supportedAmount !== undefined && Math.round(amount * 100) > Math.round(supportedAmount * 100) - Math.round((verifiedReturned(state) - activeReturned(state)) * 100)) throw new Error('The requested amount cannot be more than the records support after earlier returns.')
   if (Math.abs(amount * 100 - Math.round(amount * 100)) > 0.000001) throw new Error('The requested amount must be recorded in whole cents.')
   return {
     ...markRecoveryRequested(state, amount),
     recoveryRequestedAt: at,
-    recoveredAmount: null,
+    recoveredAmount: (state.activeRequestGeneration ?? 1) > 1 ? verifiedReturned(state) : null,
     nextFollowUpAt: addBusinessDays(at, 5),
   }
 }
@@ -64,7 +107,7 @@ export function recordEmailSent(state: CaseState, sent: SentEmail, amount: numbe
     recoveryRequestedAt: sent.sentAt,
     recoveryRecipientEmail: sent.to,
     recoverySentEmail: sent,
-    recoveredAmount: null,
+    recoveredAmount: (state.activeRequestGeneration ?? 1) > 1 ? verifiedReturned(state) : null,
     nextFollowUpAt: sent.sentAt + followUpAfterDays(state) * DAY,
   }
 }
@@ -100,7 +143,7 @@ export interface FollowUpStatus {
  * follow-up"). Only ever an offer: nothing here sends anything.
  */
 export function followUpStatus(state: CaseState, now = Date.now()): FollowUpStatus | null {
-  if (state.recoveryStage !== 'requested' || state.contactHold) return null
+  if (state.recoveryStage !== 'requested' || state.contactHold || state.requiresRevalidation) return null
   const last = lastOutreachAt(state)
   if (last === null) return null
   const reply = (state.vendorUpdates ?? []).filter((u) => VENDOR_STATUS[u.status].progress && u.at >= last).at(-1) ?? null
@@ -110,6 +153,7 @@ export function followUpStatus(state: CaseState, now = Date.now()): FollowUpStat
 
 /** "Follow up after N days": moves the next follow-up to N days after the last email. */
 export function setFollowUpAfterDays(state: CaseState, days: number): CaseState {
+  if (state.requiresRevalidation) throw new Error('Revalidate the historical request before scheduling another follow-up.')
   if (!Number.isInteger(days) || days < 1 || days > 90) throw new Error('Choose between 1 and 90 days.')
   const last = lastOutreachAt(state)
   return { ...state, followUpAfterDays: days, nextFollowUpAt: state.recoveryStage === 'requested' && last !== null ? last + days * DAY : state.nextFollowUpAt ?? null }
@@ -123,6 +167,7 @@ export function recordFollowUpSent(state: CaseState, sent: SentEmail): CaseState
 }
 
 export function setNextFollowUp(state: CaseState, at: number | null): CaseState {
+  if (state.requiresRevalidation) throw new Error('Revalidate the historical request before scheduling another follow-up.')
   if (state.recoveryStage !== 'requested') throw new Error('Only an active request can have a follow-up.')
   if (at !== null && (!Number.isFinite(at) || at <= 0)) throw new Error('Enter a valid follow-up date.')
   return { ...state, nextFollowUpAt: at }
@@ -133,13 +178,14 @@ const CLOCK_SLACK = 60_000
 
 export function recordVendorUpdate(state: CaseState, update: VendorUpdate, now = Date.now()): CaseState {
   if (state.recoveryStage !== 'requested') throw new Error('Send the request before recording a vendor response.')
+  if (state.requiresRevalidation && update.status === 'followed_up') throw new Error('Revalidate the historical request before recording another follow-up.')
   if (!update.note.trim()) throw new Error('Add a note describing the vendor response.')
   if (!Number.isFinite(update.at) || update.at > now + CLOCK_SLACK) throw new Error('A vendor reply cannot be dated in the future.')
   if (update.expectedAt !== undefined && (!Number.isFinite(update.expectedAt) || startOfDay(update.expectedAt) < startOfDay(update.at))) {
     throw new Error('The promised date cannot be before the reply.')
   }
   const info = VENDOR_STATUS[update.status]
-  const remainingCents = Math.max(0, Math.round((state.requestedAmount ?? 0) * 100) - Math.round(verifiedReturned(state) * 100))
+  const remainingCents = Math.max(0, Math.round((state.requestedAmount ?? 0) * 100) - Math.round(activeReturned(state) * 100))
   if (info.amount === 'none' && update.amount !== undefined) throw new Error('This kind of reply does not carry an amount.')
   if (info.amount === 'required' && update.amount === undefined) throw new Error('Enter the amount the vendor accepted.')
   if (update.amount !== undefined && (!Number.isFinite(update.amount) || update.amount < 0 || update.amount > (state.requestedAmount ?? Infinity))) {
@@ -164,9 +210,16 @@ function startOfDay(time: number): number {
 export function verifyRecovery(state: CaseState, proof: RecoveryVerification): CaseState {
   if (state.recoveryStage !== 'requested') throw new Error('A request must be open before recording returned value.')
   const requested = state.requestedAmount ?? 0
-  const alreadyReturned = verifiedReturned(state)
+  const alreadyReturned = activeReturned(state)
+  const caseReturned = verifiedReturned(state)
   const remainingCents = Math.round(requested * 100) - Math.round(alreadyReturned * 100)
-  const normalized = { ...proof, reference: proof.reference.trim(), appliedToBill: proof.appliedToBill?.trim() }
+  const generation = state.activeRequestGeneration ?? 1
+  const normalized: RecoveryVerification = {
+    amount: proof.amount, method: proof.method, source: proof.source,
+    reference: proof.reference.trim(), settledAt: proof.settledAt,
+    appliedToBill: proof.appliedToBill?.trim(),
+    ...(generation > 1 ? { requestGeneration: generation } : {}),
+  }
   const prior = state.recoverySettlements ?? (state.recoveryVerification ? [state.recoveryVerification] : [])
   if (prior.some((entry) => entry.method === normalized.method && entry.reference.toLowerCase() === normalized.reference.toLowerCase() && entry.appliedToBill === normalized.appliedToBill)) {
     throw new Error('This settlement reference was already recorded.')
@@ -179,8 +232,8 @@ export function verifyRecovery(state: CaseState, proof: RecoveryVerification): C
   if ((proof.method === 'credit' || proof.method === 'offset') && !proof.appliedToBill?.trim()) {
     throw new Error('Enter the bill where this credit was actually applied.')
   }
-  const returned = Math.round(alreadyReturned * 100 + proof.amount * 100) / 100
-  const fullyReturned = Math.round(returned * 100) === Math.round(requested * 100)
+  const returned = Math.round(caseReturned * 100 + proof.amount * 100) / 100
+  const fullyReturned = Math.round(alreadyReturned * 100 + proof.amount * 100) === Math.round(requested * 100)
   return {
     ...state,
     recoveryStage: fullyReturned ? 'recovered' : 'requested',
@@ -195,10 +248,30 @@ export function verifyRecovery(state: CaseState, proof: RecoveryVerification): C
   }
 }
 
+/** Attribute a late return to its original, archived request. */
+export function recordHistoricalSettlement(state: CaseState, generation: number, proof: RecoveryVerification, supportedAmount?: number): CaseState {
+  const archived = state.archivedRequests?.find((request) => request.generation === generation)
+  if (!archived) throw new Error('Select an archived request for this return.')
+  if (!Number.isFinite(proof.amount) || proof.amount <= 0 || Math.abs(proof.amount * 100 - Math.round(proof.amount * 100)) > 0.000001) throw new Error('Enter a positive settled amount in whole cents.')
+  if (!proof.reference.trim() || !Number.isFinite(proof.settledAt) || proof.settledAt <= 0) throw new Error('A settlement reference and date are required.')
+  if ((proof.method === 'credit' || proof.method === 'offset') && !proof.appliedToBill?.trim()) throw new Error('Enter the bill where this credit was actually applied.')
+  const prior = state.recoverySettlements ?? (state.recoveryVerification ? [state.recoveryVerification] : [])
+  const normalized: RecoveryVerification = { amount: proof.amount, method: proof.method, source: proof.source, reference: proof.reference.trim(), settledAt: proof.settledAt, appliedToBill: proof.appliedToBill?.trim(), requestGeneration: generation }
+  if (prior.some((entry) => entry.method === normalized.method && entry.reference.toLowerCase() === normalized.reference.toLowerCase() && (entry.appliedToBill ?? '') === (normalized.appliedToBill ?? ''))) throw new Error('This settlement reference was already recorded.')
+  const oldReturned = prior.filter((entry) => (entry.requestGeneration ?? 1) === generation).reduce((sum, entry) => sum + entry.amount, 0)
+  if (Math.round((oldReturned + proof.amount) * 100) > Math.round((archived.requestedAmount ?? 0) * 100)) throw new Error('The return exceeds the remaining amount of the earlier request.')
+  const total = Math.round((verifiedReturned(state) + proof.amount) * 100) / 100
+  const next: CaseState = { ...state, recoverySettlements: [...prior, normalized], recoveredAmount: total }
+  if (supportedAmount !== undefined && ['confirmed', 'requested'].includes(state.recoveryStage ?? '') && Math.round(((state.requestedAmount ?? 0) - activeReturned(state)) * 100) > Math.round((supportedAmount - total) * 100)) {
+    return { ...next, approvedAt: state.recoveryStage === 'confirmed' ? null : state.approvedAt, contactHold: 'Earlier request received a return; review the supported balance before further contact.', nextFollowUpAt: null }
+  }
+  return next
+}
+
 export function closeWithoutRecovery(state: CaseState, reason: string, at = Date.now()): CaseState {
   if (state.recoveryStage !== 'requested') throw new Error('A request must be open before closing without recovery.')
   if (!reason.trim()) throw new Error('Explain why the recovery was closed.')
-  if (verifiedReturned(state) > 0) {
+  if (activeReturned(state) > 0) {
     return { ...state, recoveryStage: 'recovered', recoveryOutcomeNote: reason.trim(), recoveryResolvedAt: at, nextFollowUpAt: null }
   }
   return { ...recordRecoveryOutcome(state, 'not_recovered', null, reason.trim()), recoveryResolvedAt: at, nextFollowUpAt: null }
@@ -206,8 +279,9 @@ export function closeWithoutRecovery(state: CaseState, reason: string, at = Date
 
 /** Resume pursuing an unpaid remainder while keeping its recorded settlements intact. */
 export function reopenRemainingBalance(state: CaseState, at = Date.now()): CaseState {
+  if (state.requiresRevalidation) throw new Error('Preserve the historical request before starting a new supplier review.')
   const requestedCents = Math.round((state.requestedAmount ?? 0) * 100)
-  const returnedCents = Math.round(verifiedReturned(state) * 100)
+  const returnedCents = Math.round(activeReturned(state) * 100)
   if (state.recoveryStage !== 'recovered' || returnedCents <= 0 || returnedCents >= requestedCents) {
     throw new Error('Only a closed case with a partially returned remaining balance can be reopened this way.')
   }
@@ -225,7 +299,7 @@ export function reopenRemainingBalance(state: CaseState, at = Date.now()): CaseS
 
 export function reconcileRecovery(state: CaseState, input: { note: string; rootCause: string; at?: number }): CaseState {
   if (state.recoveryStage !== 'recovered') throw new Error('Record settled value before reconciliation.')
-  if (verifiedReturned(state) <= 0) throw new Error('A recorded return with verified proof is required before reconciliation.')
+  if (activeReturned(state) <= 0) throw new Error('A recorded return with verified proof is required before reconciliation.')
   if (!input.note.trim()) throw new Error('Describe the accounting entry or reconciliation.')
   return { ...state, reconciledAt: input.at ?? Date.now(), reconciliationNote: input.note.trim(), rootCause: input.rootCause.trim() || null }
 }
@@ -253,6 +327,7 @@ export function recommendRecoveryMethod(finding: Finding, records: APRecord[], a
 export interface RecoveryAction { label: string; detail: string; dueAt?: number | null }
 
 export function recoveryNextAction(state: CaseState, now = Date.now(), internal = false): RecoveryAction {
+  if (state.requiresRevalidation && ['requested', 'recovered', 'not_recovered'].includes(state.recoveryStage ?? '')) return { label: 'Review historical request', detail: 'The earlier request stays in case history. Supplier contact is paused until a new request can be reviewed and approved.' }
   if (internal && (state.recoveryStage === 'not_recovered' || state.recoveryStage === 'recovered')) return { label: 'Review closed', detail: 'The investigation outcome is recorded in case history.' }
   if (state.recoveryStage === 'confirmed') {
     if (internal) return { label: 'File internal note', detail: 'Review the investigation note and record it for your team.' }
@@ -262,7 +337,7 @@ export function recoveryNextAction(state: CaseState, now = Date.now(), internal 
   }
   if (state.recoveryStage === 'requested') {
     if (internal) return { label: 'Record investigation outcome', detail: 'Finish the internal review and record the result.' }
-    if (verifiedReturned(state) > 0) return { label: 'Pursue remaining balance', detail: 'Record the next settled return, follow up with the vendor, or close the outstanding balance.', dueAt: state.nextFollowUpAt }
+    if (activeReturned(state) > 0) return { label: 'Pursue remaining balance', detail: 'Record the next settled return, follow up with the vendor, or close the outstanding balance.', dueAt: state.nextFollowUpAt }
     const last = latestVendorPosition(state)
     if (last?.status === 'credit_issued') return { label: 'Verify credit application', detail: 'A credit memo is pending until it offsets a valid bill.' }
     if (last?.status === 'already_refunded') return { label: 'Verify refund settlement', detail: 'The vendor says a refund was sent. Match it to an actual bank or accounting record before counting recovery.' }
@@ -273,7 +348,7 @@ export function recoveryNextAction(state: CaseState, now = Date.now(), internal 
     return { label: 'Wait for vendor', detail: 'Track a reply or follow up on the scheduled date.', dueAt: state.nextFollowUpAt }
   }
   if (state.recoveryStage === 'recovered') {
-    if (verifiedReturned(state) <= 0) return { label: 'Record missing return', detail: 'This older case has no verified return. Reopen it and record the settlement before reconciliation.' }
+    if (activeReturned(state) <= 0) return { label: 'Record missing return', detail: 'This older case has no verified return. Reopen it and record the settlement before reconciliation.' }
     if (!state.reconciledAt) return { label: 'Record it in your books', detail: 'Note where the money shows up in your accounting, and what caused the mistake, so the case can close.' }
     return { label: 'Case complete', detail: 'The money is back and recorded in your books. Nothing left to do.' }
   }
@@ -283,10 +358,11 @@ export function recoveryNextAction(state: CaseState, now = Date.now(), internal 
 export function requiresCustomerAction(state: CaseState, now = Date.now(), internal = false): boolean {
   if (internal && (state.recoveryStage === 'not_recovered' || state.recoveryStage === 'recovered')) return false
   if (state.recoveryStage === 'confirmed') return true
-  if (state.recoveryStage === 'recovered') return verifiedReturned(state) <= 0 || !state.reconciledAt
+  if (state.recoveryStage === 'recovered') return activeReturned(state) <= 0 || !state.reconciledAt
   if (state.recoveryStage !== 'requested') return false
   if (internal) return true
-  if (verifiedReturned(state) > 0) return true
+  if (state.requiresRevalidation) return true
+  if (activeReturned(state) > 0) return true
   const last = latestVendorPosition(state)
   return Boolean(last && (VENDOR_STATUS[last.status].needsAction || (last.status === 'accepted' && !last.expectedAt))) || Boolean(state.nextFollowUpAt && state.nextFollowUpAt <= now)
 }
@@ -297,11 +373,12 @@ export function recoveryStatusLabel(state: CaseState, internal = false): string 
   if (internal && (state.recoveryStage === 'not_recovered' || state.recoveryStage === 'recovered')) return 'Review closed'
   if (state.recoveryStage === 'confirmed') return state.contactHold ? 'Contact on hold' : state.approvedAt ? 'Ready to send' : 'Awaiting approval'
   if (state.recoveryStage === 'requested') {
-    if (verifiedReturned(state) > 0) return 'Partially returned'
+    if (state.requiresRevalidation) return 'Historical request · review needed'
+    if (activeReturned(state) > 0) return 'Partially returned'
     const status = latestVendorPosition(state)?.status
     if (status && VENDOR_STATUS[status].caseStatus) return VENDOR_STATUS[status].caseStatus!
     return 'Waiting on vendor'
   }
-  if (state.recoveryStage === 'recovered') return verifiedReturned(state) <= 0 ? 'Return amount missing' : state.reconciledAt ? 'Reconciled' : 'Returned, reconcile'
+  if (state.recoveryStage === 'recovered') return activeReturned(state) <= 0 ? 'Return amount missing' : state.reconciledAt ? 'Reconciled' : 'Returned, reconcile'
   return 'Closed, no money back'
 }

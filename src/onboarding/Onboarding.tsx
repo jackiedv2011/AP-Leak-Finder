@@ -38,7 +38,7 @@ const SOURCES: ReadonlyArray<{ id: OnboardingProfile['tools'][number]; name: str
 const AUTONOMY: ReadonlyArray<{ id: NonNullable<OnboardingProfile['autonomy']>; title: string; body: string; tag?: string }> = [
   { id: 'show', title: 'Show me what you find', body: 'Flags possible recoveries with the proof. You take it from there.' },
   { id: 'draft', title: 'Draft it for me', body: 'Prepares the request for each finding you confirm. You send it.' },
-  { id: 'follow_up', title: 'Follow up on what I approve', body: 'Sends and chases what you approve, within your limits.', tag: 'Needs email connected' },
+  { id: 'follow_up', title: 'Help me follow up', body: 'Prepares follow-up reminders. Your team decides when to contact the supplier.' },
 ]
 
 const STEP_COUNT = 4

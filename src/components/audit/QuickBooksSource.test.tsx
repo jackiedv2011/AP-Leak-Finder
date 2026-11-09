@@ -23,12 +23,12 @@ describe('QuickBooks in the import panel', () => {
     expect(container).toBeEmptyDOMElement()
   })
 
-  it('offers to connect, through the server, and says it is read-only', async () => {
+  it('offers to connect, through the server, and explains the write-capable OAuth permission', async () => {
     stubServer({ available: true, environment: 'sandbox', connected: false })
     render(<QuickBooksImport onFile={() => {}} />)
     const link = await screen.findByRole('link', { name: 'Connect QuickBooks' })
     expect(link).toHaveAttribute('href', '/api/integrations/quickbooks/connect')
-    expect(screen.getByTestId('quickbooks-source')).toHaveTextContent('never changes anything in QuickBooks')
+    expect(screen.getByTestId('quickbooks-source')).toHaveTextContent('OAuth permission also permits writes')
     expect(screen.getByTestId('quickbooks-source')).toHaveTextContent('Sandbox')
   })
 
@@ -37,7 +37,7 @@ describe('QuickBooks in the import panel', () => {
     render(<QuickBooksImport onFile={() => {}} />)
     await screen.findByRole('link', { name: 'Connect QuickBooks' })
     expect(screen.queryByTestId('quickbooks-environment')).toBeNull()
-    expect(screen.getByTestId('quickbooks-source')).toHaveTextContent('never changes anything in QuickBooks')
+    expect(screen.getByTestId('quickbooks-source')).toHaveTextContent('without writing back')
   })
 
   it('imports the connected company as a CSV file for the normal review', async () => {

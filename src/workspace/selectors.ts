@@ -8,7 +8,7 @@
  * strength label rather than a fake confidence percentage (§12), and a
  * priority that ranks money by how gettable it is rather than by size (§13).
  */
-import { authorizedOutstanding, eligiblePotential, validSettlements, verifiedReturned } from '@/recovery/financials'
+import { activeReturned, authorizedOutstanding, eligiblePotential, validSettlements, verifiedReturned } from '@/recovery/financials'
 import { getCaseState, type LedgerEnvironment } from '@/ledger/store'
 import type { CaseState } from '@/ledger/caseState'
 import { evidenceStrength, keyUncertainty } from '@/audit/ruleChecklist'
@@ -361,7 +361,7 @@ export function vendorCommitments(env: LedgerEnvironment): VendorCommitments {
     const update = latestVendorPosition(state)
     if (!update || !VENDOR_STATUS[update.status].agreed) continue
     const remaining = authorizedOutstanding(state)
-    const returnedSinceUpdate = validSettlements(state).filter((entry) => entry.settledAt >= update.at).reduce((sum, entry) => sum + entry.amount, 0)
+    const returnedSinceUpdate = validSettlements(state).filter((entry) => (entry.requestGeneration ?? 1) === (state.activeRequestGeneration ?? 1) && entry.settledAt >= update.at).reduce((sum, entry) => sum + entry.amount, 0)
     // Only "accepted the claim" states that the whole request was accepted.
     // A partial acceptance, promise, or issued credit without a stated amount
     // cannot safely be valued at the full remaining balance.
@@ -516,15 +516,15 @@ export function timelineFor(finding: Finding, state: CaseState, discoveredAt: nu
       what:
         state.recoveryStage === 'not_recovered'
           ? 'Closed without recovery'
-          : state.recoveryStage === 'recovered' && verifiedReturned(state) <= 0
+          : state.recoveryStage === 'recovered' && activeReturned(state) <= 0
             ? 'Return amount missing — correct this case before reconciliation'
             : state.recoveryStage === 'recovered'
-              ? `Money received — ${formatCurrency(verifiedReturned(state))} recorded by you`
-            : verifiedReturned(state) > 0
-              ? `Partial return — ${formatCurrency(verifiedReturned(state))} recorded by you`
+              ? `Money received — ${formatCurrency(activeReturned(state))} recorded by you`
+            : activeReturned(state) > 0
+              ? `Partial return — ${formatCurrency(activeReturned(state))} recorded by you`
               : 'Outcome pending',
       detail: state.recoveryOutcomeNote ?? undefined,
-      done: state.recoveryStage === 'recovered' || state.recoveryStage === 'not_recovered' || verifiedReturned(state) > 0,
+      done: state.recoveryStage === 'recovered' || state.recoveryStage === 'not_recovered' || activeReturned(state) > 0,
     },
   ]
   return steps

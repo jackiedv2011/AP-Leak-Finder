@@ -11,9 +11,10 @@ export function authorizedProject(id: string, input: { vendor: string; invoice: 
   const cents = Math.round(input.amount * 100)
   const records = [5, 12].map((day, i) => ({
     id: `${id}-r${i}`, vendor: input.vendor, invoiceNumber: input.invoice, invoiceDate: '2025-01-01', paymentDate: `2025-01-${String(day).padStart(2, '0')}`,
-    invoiceAmount: input.amount, amountPaid: input.amount, terms: null, currency: 'USD', importStatus: 'active',
+    invoiceAmount: input.amount, amountPaid: input.amount, terms: null, currency: 'USD', company: 'Test company', importStatus: 'active',
   }))
   const evidence = {
+    entity: { ...stamp, entityId: 'Test company' }, supplier: { ...stamp, supplierId: 'TEST-VENDOR-1' },
     payments: records.map((r) => ({ ...stamp, recordId: r.id, paymentId: r.id, amountMinor: cents, currency: 'USD', settled: true, obligationId: findingId })),
     obligation: { ...stamp, obligationId: findingId, amountMinor: cents, currency: 'USD' },
     checks: Object.fromEntries(EVIDENCE_CHECKS.map(([key]) => [key, { ...stamp, confirmed: true }])),
@@ -25,7 +26,7 @@ export function authorizedProject(id: string, input: { vendor: string; invoice: 
   }
   const project = {
     id, name: id, sourceLabel: `${id}.csv`, mode: 'upload', createdAt: 1, updatedAt: 2,
-    environment: { records, imports: [], result: { findings: [finding] }, caseStates: { [findingId]: { approvedAt: 100, requestedAmount: input.requested, requestedResolution: 'refund', recoveryStage: 'confirmed' } } },
+    environment: { records, imports: [], result: { findings: [finding] }, caseStates: { [findingId]: { decision: 'confirmed', approvedAt: 100, requestedAmount: input.requested, requestedResolution: 'refund', recoveryStage: 'confirmed' } } },
   }
   return { project, findingId }
 }

@@ -3,7 +3,7 @@ import type { DatabaseSync } from 'node:sqlite'
 import type { AuthService } from './auth.ts'
 import type { UserRow } from './db.ts'
 import { HttpError, json, RateLimiter, type Request, type Response } from './http.ts'
-import { entitlementsFor, planOf, PLAN_PRICE_USD, successFee, type Plan } from './plans.ts'
+import { entitlementsFor, planOf, PLAN_PRICE_USD, type Plan } from './plans.ts'
 import { StripeError, subscriptionIdOf, verifyWebhook, type StripeApi, type StripeSubscription } from './stripe.ts'
 
 export type { StripeApi } from './stripe.ts'
@@ -28,15 +28,9 @@ export type { StripeApi } from './stripe.ts'
  * server: it sees a `pm_…` id and stores only Stripe's customer and
  * subscription ids.
  *
- * Growth's success fee: every settlement the recovery workflow records
- * (settled cash, or a credit applied to a named bill — the same test as
- * src/recovery/financials.ts validSettlements) gets one row in
- * `recovery_fees` the first time the server sees it, with the plan the
- * account was on at that moment. Only rows recorded on Growth carry a fee,
- * and each becomes one Stripe invoice item that rides on the next
- * subscription invoice. Findings, vendor promises and unapplied credits are
- * never settlements, so they never reach this table. A settlement that is
- * later removed is voided, and refunded as a credit item if it was billed.
+ * Browser-entered settlement rows are retained for audit, but they are not
+ * independent proof of a return. Success-fee invoicing is disabled until a
+ * separately approved, matched fee event is implemented.
  */
 
 export const PRICE_LOOKUP_KEYS: Record<PaidPlan, string> = { growth: 'reclaim_growth_monthly', flat: 'reclaim_flat_monthly' }
@@ -44,6 +38,7 @@ export type PaidPlan = Exclude<Plan, 'free'>
 
 /** Statuses in which the plan's features stay on. past_due is Stripe's retry window. */
 const PAID_STATUSES = new Set(['active', 'trialing', 'past_due'])
+const SUCCESS_FEES_ENABLED = false
 
 type AccountRow = {
   user_id: string
@@ -94,7 +89,7 @@ export interface BillingStatus {
 export interface Billing {
   /** Handles /api/billing/*; null for every other path. */
   route(req: Request): Promise<Response | null>
-  /** Record settlements seen in a saved project; bills Growth fees in the background. */
+  /** Record customer-asserted settlements for audit; automatic success fees remain disabled. */
   recordRecoveries(userId: string, project: Record<string, unknown>, options?: { imported?: boolean }): void
   /** Resolves once background fee billing has finished (tests). */
   idle(): Promise<void>
@@ -154,6 +149,11 @@ export function createBilling({ db, auth, stripe, webhookSecret, requireUser }: 
       PRIMARY KEY (user_id, project_id, finding_id, settlement_key)
     );
   `)
+
+  // Earlier versions treated browser-entered settlements as fee events. Keep
+  // their history, but quarantine every unbilled fee before any webhook or
+  // account-close path can create a Stripe invoice item from it.
+  db.exec("UPDATE recovery_fees SET billable = 0, fee_cents = 0, reason = 'customer_assertion_unmatched' WHERE stripe_invoice_item_id IS NULL AND billable = 1")
 
   const limiter = new RateLimiter(20, 60 * 60 * 1000)
   let background: Promise<void> = Promise.resolve()
@@ -255,16 +255,19 @@ export function createBilling({ db, auth, stripe, webhookSecret, requireUser }: 
         const amountCents = Math.round(s.amount * 100)
         const usd = currencyOf(finding) === 'USD'
         // The plan at the moment the server first sees the money, not later.
-        const reason = options.imported ? 'imported' : plan !== 'growth' ? `plan_${plan}` : !usd ? 'not_usd' : null
-        const fee = reason ? 0 : Math.round(successFee('growth', amountCents / 100) * 100)
-        insert.run(userId, projectId, findingId, key, amountCents, fee, s.method, s.reference.trim().slice(0, 200), s.settledAt, now, plan, reason ? 0 : 1, reason)
+        // A project is still browser-authored. Even a bank/accounting reference in
+        // that JSON is a customer assertion, not an independently matched return.
+        // Keep the record for review, but never create an invoiceable fee from it.
+        const reason = options.imported ? 'imported_customer_assertion' : !usd ? 'not_usd' : 'customer_assertion_unmatched'
+        insert.run(userId, projectId, findingId, key, amountCents, 0, s.method, s.reference.trim().slice(0, 200), s.settledAt, now, plan, 0, reason)
       }
     }
     // A settlement no longer in the case (reopened, reversed, corrected) stops being billable.
     const live = db.prepare('SELECT * FROM recovery_fees WHERE user_id = ? AND project_id = ? AND voided_at IS NULL').all(userId, projectId) as FeeRow[]
     const voidRow = db.prepare('UPDATE recovery_fees SET voided_at = ? WHERE user_id = ? AND project_id = ? AND finding_id = ? AND settlement_key = ?')
     for (const row of live) if (!seen.has(`${row.finding_id}|${row.settlement_key}`)) voidRow.run(now, userId, projectId, row.finding_id, row.settlement_key)
-    queueBilling(userId)
+    // Success-fee billing remains disabled until attribution, independent match,
+    // reversal handling and customer approval have an authoritative workflow.
   }
 
   function queueBilling(userId: string, options: { finalInvoice?: boolean } = {}): void {
@@ -276,6 +279,10 @@ export function createBilling({ db, auth, stripe, webhookSecret, requireUser }: 
   }
 
   async function billFees(userId: string, { finalInvoice = false }: { finalInvoice?: boolean } = {}): Promise<void> {
+    // No success-fee invoice can be generated until a separate, independently
+    // matched and approved fee event exists. Existing billed items require
+    // operator review; this migration never changes external Stripe records.
+    if (!SUCCESS_FEES_ENABLED) return
     const api = stripe
     const row = account(userId)
     if (!api || !row) return

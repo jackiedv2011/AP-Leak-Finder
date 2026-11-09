@@ -17,6 +17,7 @@ function makeRecord(overrides: Partial<APRecord> & { vendor: string; amountPaid:
     terms: overrides.terms ?? null,
     bankAccountLast4: overrides.bankAccountLast4 ?? null,
     category: overrides.category ?? null,
+    transactionType: overrides.transactionType ?? null,
     rowIndex,
   }
 }
@@ -407,9 +408,11 @@ describe('regressions — false positives found in the messy-ledger audit', () =
       makeRecord({ vendor: 'Pine', invoiceNumber: 'INV-8', amountPaid: 760, paymentDate: d(2025, 6, 15) }),
     ]
     expect(detectFindings(paidTwice).findings[0].dollarImpact).toBe(760)
-    const partlyRefunded = [...paidTwice, makeRecord({ vendor: 'Pine', invoiceNumber: 'INV-8', amountPaid: -200, paymentDate: d(2025, 6, 25) })]
+    const unknownNegative = [...paidTwice, makeRecord({ vendor: 'Pine', invoiceNumber: 'INV-8', amountPaid: -200, paymentDate: d(2025, 6, 25) })]
+    expect(detectFindings(unknownNegative).findings[0].dollarImpact).toBe(760)
+    const partlyRefunded = [...paidTwice, makeRecord({ vendor: 'Pine', invoiceNumber: 'INV-8', amountPaid: -200, transactionType: 'refund', paymentDate: d(2025, 6, 25) })]
     expect(detectFindings(partlyRefunded).findings[0].dollarImpact).toBe(560)
-    const fullyRefunded = [...paidTwice, makeRecord({ vendor: 'Pine', invoiceNumber: 'INV-8', amountPaid: -760, paymentDate: d(2025, 6, 25) })]
+    const fullyRefunded = [...paidTwice, makeRecord({ vendor: 'Pine', invoiceNumber: 'INV-8', amountPaid: -760, transactionType: 'refund', paymentDate: d(2025, 6, 25) })]
     expect(detectFindings(fullyRefunded).findings).toHaveLength(0)
   })
 

@@ -6,6 +6,7 @@
 export interface GmailStatus {
   /** False for guests, when the server is unreachable, or when it has no Gmail key. */
   available: boolean
+  failed?: boolean
   connected?: boolean
   /** The connected Gmail address. */
   email?: string | null
@@ -22,12 +23,14 @@ export interface GmailSendReceipt {
 }
 
 export interface GmailSendRequest {
+  generation?: number
   projectId: string
   findingId: string
   to: string
   cc: string[]
   subject: string
   body: string
+  evidenceAttachment?: string
   amountRequested: number
   /** Only after the customer checked their Sent folder following an unconfirmed send. */
   retryUncertain?: boolean
@@ -55,10 +58,31 @@ export async function fetchGmailStatus(): Promise<GmailStatus> {
     const { status, body } = await call('/api/integrations/gmail')
     if (status === 200 && body) return body as unknown as GmailStatus
   } catch {
-    // server unreachable — treat as not available
+    // Treat transport failures as distinct from a disabled provider.
   }
-  return { available: false }
+  return { available: false, failed: true }
 }
+
+export interface GmailAttempt {
+  id: number
+  kind: 'request' | 'follow-up'
+  actor: string
+  status: 'sending' | 'sent' | 'uncertain' | 'failed'
+  at: number
+  resolvedAt: number | null
+}
+
+export async function fetchGmailAttempts(projectId: string, findingId: string): Promise<GmailAttempt[]> {
+  const params = new URLSearchParams({ projectId, findingId })
+  try {
+    const { status, body } = await call(`/api/integrations/gmail/attempts?${params}`)
+    return status === 200 && Array.isArray(body?.attempts) ? body.attempts as GmailAttempt[] : []
+  } catch {
+    return []
+  }
+}
+
+export const GMAIL_ATTEMPT_RECORDED = 'reclaim:gmail-attempt-recorded'
 
 export async function disconnectGmail(): Promise<boolean> {
   try {

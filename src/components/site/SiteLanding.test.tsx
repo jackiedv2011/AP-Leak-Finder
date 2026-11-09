@@ -36,16 +36,16 @@ describe('SiteLanding', () => {
   it('keeps the privacy, pricing, and sample-data claims the product can support', () => {
     render(<SiteLanding />)
 
-    expect(screen.getByText('Your ledger stays on this device.')).toBeInTheDocument()
-    expect(screen.getByText('Nothing is uploaded.')).toBeInTheDocument()
+    expect(screen.getByText('CSV parsing starts in your browser.')).toBeInTheDocument()
+    expect(screen.getByText('Signed-in projects sync securely.')).toBeInTheDocument()
     expect(screen.getByText('Every flag keeps its evidence.')).toBeInTheDocument()
     expect(
       screen.getByRole('heading', {
         level: 2,
-        name: 'If the money does not come back, you do not pay',
+        name: 'Review the evidence before you act',
       })
     ).toBeInTheDocument()
-    expect(screen.getByText('$0 fee if no money returns')).toBeInTheDocument()
+    expect(screen.getByText('Review possible cases before outreach')).toBeInTheDocument()
     // The landing page must not invent customer outcomes.
     expect(screen.getByText(/no customer outcome is implied/i)).toBeInTheDocument()
     expect(screen.queryByText(/recovery complete/i)).not.toBeInTheDocument()

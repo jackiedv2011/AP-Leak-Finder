@@ -1,5 +1,5 @@
 /**
- * QuickBooks Online, read-only. Sandbox by default; production only when the
+ * QuickBooks Online, GET-only adapter. Sandbox by default; production only when the
  * server is configured for it (QBO_ENVIRONMENT=production, which also needs
  * NODE_ENV=production and its startup checks — see config.ts).
  *

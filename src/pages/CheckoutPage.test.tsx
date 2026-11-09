@@ -19,13 +19,13 @@ afterEach(() => {
 })
 
 describe('checkout', () => {
-  it('summarises Growth honestly: $15 due today, 10% only on money recovered, test mode stated', async () => {
+  it('summarises Growth honestly: $15 due today, proposed fee disabled, test mode stated', async () => {
     mountAt('?plan=growth')
     expect(await screen.findByRole('heading', { name: 'Start Reclaim Growth' })).toBeInTheDocument()
     const summary = screen.getByRole('complementary', { name: 'Order summary' })
     expect(summary).toHaveTextContent('Due today$15.00')
-    expect(summary).toHaveTextContent('10% of money recovered')
-    expect(summary).toHaveTextContent('never on findings, promises or unused credits')
+    expect(summary).toHaveTextContent('10% proposed; billing disabled')
+    expect(summary).toHaveTextContent('independently verified returns and an approved fee policy')
     expect(screen.getByTestId('checkout-test-mode')).toHaveTextContent('No real card is charged')
   })
 

@@ -3,7 +3,7 @@ import { formatCurrency, plural } from '@/lib/format'
 import type { RecoveryStage } from '@/ledger/caseState'
 import type { LedgerEnvironment } from '@/ledger/store'
 import { recoveryNextAction, recoveryStatusLabel, requiresCustomerAction } from '@/recovery/model'
-import { verifiedReturned } from '@/recovery/financials'
+import { activeReturned, verifiedReturned } from '@/recovery/financials'
 import { ladder, recoveries, vendorCommitments, type Opportunity } from '../selectors'
 import { useHeadlineMoney } from '../preferences'
 import { CountUp } from './CountUp'
@@ -21,7 +21,7 @@ const short = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' 
 function caseValue(o: Opportunity): { amount: number; label: string } {
   const { state, finding } = o
   if (state.recoveryStage === 'recovered') return { amount: verifiedReturned(state), label: verifiedReturned(state) > 0 ? 'returned' : 'amount missing' }
-  if (state.recoveryStage === 'requested') return { amount: Math.max(0, (state.requestedAmount ?? 0) - verifiedReturned(state)), label: state.requestedAmount == null ? 'amount missing' : 'outstanding' }
+  if (state.recoveryStage === 'requested') return { amount: Math.max(0, (state.requestedAmount ?? 0) - activeReturned(state)), label: state.requestedAmount == null ? 'amount missing' : 'outstanding' }
   if (state.recoveryStage === 'not_recovered') return { amount: state.requestedAmount ?? 0, label: state.requestedAmount == null ? 'amount missing' : 'unreturned' }
   return { amount: finding.dollarImpact, label: 'to request' }
 }

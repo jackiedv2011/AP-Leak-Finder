@@ -125,20 +125,20 @@ describe('Free plan: re-importing a QuickBooks company is a sync, not a repeat u
   let server: LiveServer
   afterEach(async () => server?.close())
 
-  it('the server accepts the synced audit, and would refuse the same company as a second audit', async () => {
+  it('the server accepts a versioned sync without a case and refuses the same company as a second audit', async () => {
     server = await startLiveServer()
     const email = 'free-qbo@example.test'
     const pw = 'correct-horse-battery'
     expect((await server.api('/api/auth/signup', { method: 'POST', json: { firstName: 'Free', lastName: 'Test', email, company: 'Free Co', password: pw, confirmPassword: pw, acceptedTerms: true, termsVersion: '2026-01' } })).status).toBe(201)
     const [mail] = await server.inbox(email)
     expect((await server.api('/api/auth/verify-email', { method: 'POST', json: { token: server.tokenFrom(mail.link) } })).status).toBe(200)
-    const put = (id: string, env: LedgerEnvironment) => server.api(`/api/projects/${id}`, { method: 'PUT', json: { id, name: 'Sandbox Co', sourceLabel: 'quickbooks-sandbox-co.csv', mode: 'upload', createdAt: T0, updatedAt: Date.now(), environment: JSON.parse(serializeEnvironment(env)) } })
+    const put = (id: string, env: LedgerEnvironment, revision?: number) => server.api(`/api/projects/${id}`, { method: 'PUT', headers: revision === undefined ? undefined : { 'If-Match': String(revision) }, json: { id, name: 'Sandbox Co', sourceLabel: 'quickbooks-sandbox-co.csv', mode: 'upload', createdAt: T0, updatedAt: Date.now(), environment: JSON.parse(serializeEnvironment(env)) } })
 
     const { env } = first()
     expect((await put('qbo-audit', env)).status).toBe(200)
     const next = sync(env, ledger([payment('201', '2026-08-20', 1250), payment('202', '2026-08-23', 1200), payment('203', '2026-08-25', 400), payment('204', '2026-09-10', 75, '103')]), T0 + DAY)
     expect(next.summary).toMatchObject({ added: 1, changed: 1 })
-    expect((await put('qbo-audit', next.env)).status).toBe(200)
+    expect((await put('qbo-audit', next.env, 1)).status).toBe(200)
 
     // Why the app routes a re-import into the company's existing audit: as a new audit it is a repeat.
     const again = await put('qbo-audit-2', sync(null, ledger([payment('201', '2026-08-20', 1250), payment('202', '2026-08-23', 1200), payment('203', '2026-08-25', 400)]), T0 + DAY).env)

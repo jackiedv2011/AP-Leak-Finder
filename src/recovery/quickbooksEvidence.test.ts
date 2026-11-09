@@ -44,6 +44,8 @@ function attest(evidence: RecoveryEvidence): RecoveryEvidence {
   const stamp = { confirmedBy: 'Jagan', confirmedAt: Date.UTC(2026, 9, 17) }
   return {
     ...evidence,
+    entity: { ...evidence.entity!, ...stamp },
+    supplier: { ...evidence.supplier!, ...stamp },
     payments: evidence.payments.map((p) => ({ ...p, ...stamp, settled: true })),
     obligation: { ...evidence.obligation, ...stamp },
     checks: Object.fromEntries(EVIDENCE_CHECKS.map(([key]) => [key, evidence.checks[key] ? { ...evidence.checks[key], ...stamp } : { reference: 'Checked by hand', confirmed: true, ...stamp }])),
@@ -95,7 +97,7 @@ describe('QuickBooks import → recovery evidence', () => {
     const after = evaluateEligibility(finding, attest(evidence))
     expect(after.eligible).toBe(true)
     expect(after.potentialAmountMinor).toBe(125000)
-    expect(after.deduplicationGroup).toBe('acme supply|USD|qbo:bill:101')
+    expect(after.deduplicationGroup).toBe('sandbox co|56|USD|qbo:bill:101')
   })
 
   it('lists a vendor credit applied in one of the payments, and leaves the credit check for the reviewer', () => {

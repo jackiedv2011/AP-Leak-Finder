@@ -41,6 +41,7 @@ import {
   loadProject,
   migrateLegacyLedger,
   saveProject,
+  toStorable,
   type LedgerProject,
   type LedgerProjectSummary,
 } from '@/ledger/projects'
@@ -61,9 +62,10 @@ import {
   type RecoveryVerification,
   type VendorUpdate,
 } from '@/ledger/caseState'
-import { approveRecovery, closeWithoutRecovery, recordVendorUpdate, reconcileRecovery, recordEmailSent, recordFollowUpSent, reopenRemainingBalance, setFollowUpAfterDays, setContactHold, setNextFollowUp, startRecoveryRequest, verifyRecovery } from '@/recovery/model'
+import { approveRecovery, beginNewRequestReview, closeWithoutRecovery, recordHistoricalSettlement, recordVendorUpdate, reconcileRecovery, recordEmailSent, recordFollowUpSent, reopenRemainingBalance, setFollowUpAfterDays, setContactHold, setNextFollowUp, startRecoveryRequest, verifyRecovery } from '@/recovery/model'
+import { activeReturned, verifiedReturned } from '@/recovery/financials'
 import type { GmailSendReceipt } from '@/lib/gmailApi'
-import { assertRecoveryEligible, type RecoveryEvidence } from '@/recovery/eligibility'
+import { assertRecoveryEligible, evaluateEligibility, type RecoveryEvidence } from '@/recovery/eligibility'
 import { useEntitlements, useOptionalAuth } from '@/lib/auth/AuthContext'
 import { Locked } from '@/components/plan/Locked'
 import { UpgradeDialog } from '@/components/plan/UpgradeDialog'
@@ -72,7 +74,7 @@ import { projectSync } from '@/ledger/projectSync'
 import type { SenderProfile } from '@/lib/senderProfile'
 import type { RequestPackage } from '@/workspace/views/RecoveryPanels'
 import { overviewSummary, findCaseView } from '@/ledger/views'
-import { getSampleLedger } from '@/data/sampleLedger'
+import { getRecoverySampleEvidence, getRecoverySampleLedger, getSampleLedger } from '@/data/sampleLedger'
 import type { ImportInput, QuickBooksImportContext } from '@/components/audit/ImportPanel'
 import { describeQuickBooksSync, lastQuickBooksPull, mergeQuickBooksSync, planQuickBooksSync } from '@/ledger/quickbooksSync'
 import { QuickBooksSyncStatus } from '@/components/audit/QuickBooksSource'
@@ -104,7 +106,7 @@ export function AuditApp() {
   const account = auth?.user && !auth.user.isGuest ? auth.user : null
   // Someone who arrived with a deliberate entry (`?entry=upload`, `?entry=sample`, `?sample=1`)
   // came to do that first. Kept for the whole visit, since running it clears the entry from the route.
-  const [arrivedForAudit] = useState(() => route.entry !== null || new URLSearchParams(window.location.search).get('sample') === '1')
+  const [arrivedForAudit] = useState(() => route.entry !== null || ['1', 'recovery'].includes(new URLSearchParams(window.location.search).get('sample') ?? ''))
   // First run: the account (or guest tab) has not been through onboarding. For an arrival
   // like the above, onboarding waits for their next visit rather than standing in the way.
   const onboardingOpen =
@@ -133,6 +135,7 @@ export function AuditApp() {
   const [importNotice, setImportNotice] = useState<string | null>(null)
   const [sampleSession, setSampleSession] = useState(false)
   const [legacy, setLegacy] = useState<LegacySummary | null>(() => legacyProjectsPresent())
+  const [syncState, setSyncState] = useState(() => ({ pending: projectSync.pending, issue: projectSync.syncIssue }))
 
   const environmentRef = useRef(environment)
   const projectRef = useRef(project)
@@ -144,6 +147,36 @@ export function AuditApp() {
   const caseOriginRef = useRef<{ mode: RouteMode; y: number }>({ mode: route.mode, y: 0 })
 
   const refreshProjects = useCallback(() => setProjects(listProjects()), [])
+
+  useEffect(() => {
+    const refreshSyncState = () => setSyncState({ pending: projectSync.pending, issue: projectSync.syncIssue })
+    const stop = projectSync.onPending(refreshSyncState)
+    const synced = (event: Event) => {
+      const id = (event as CustomEvent<{ id: string }>).detail.id
+      if (id !== projectRef.current?.id) return
+      const saved = loadProject(id)
+      if (!saved) return
+      projectRef.current = saved
+      environmentRef.current = saved.environment
+      setProject(saved)
+      setEnvironment(saved.environment)
+      refreshProjects()
+      refreshSyncState()
+    }
+    window.addEventListener('reclaim:project-synced', synced)
+    return () => { stop(); window.removeEventListener('reclaim:project-synced', synced) }
+  }, [refreshProjects])
+
+  const downloadLocalCopy = () => {
+    const current = projectRef.current
+    if (!current) return
+    const url = URL.createObjectURL(new Blob([JSON.stringify(toStorable(current), null, 2)], { type: 'application/json' }))
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `${current.id}-unsynced.json`
+    link.click()
+    URL.revokeObjectURL(url)
+  }
 
   const openImport = useCallback(
     (intent: ImportIntent) => {
@@ -226,6 +259,8 @@ export function AuditApp() {
           if (!current || options.replaceEnvironment) void projectSync.flush().then(() => auth?.refreshEntitlements())
           navigate({ projectId: saved.id, mode: 'dashboard', caseId: null, draft: false, entry: null }, { replace: true })
         } else {
+          projectRef.current = null
+          setProject(null)
           navigate({ projectId: null, mode: 'dashboard', caseId: null, draft: false, entry: null }, { replace: true })
         }
         environmentRef.current = next
@@ -261,6 +296,10 @@ export function AuditApp() {
   // string at all) so returning to /audit picks up exactly where it left off.
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
+    if (params.get('sample') === 'recovery') {
+      void runImport({ sourceLabel: 'Sample recovery exercise', mode: 'sample', parsed: getRecoverySampleLedger() }, { replaceEnvironment: true, persist: false })
+      return
+    }
     if (!environmentRef.current) {
       if (params.get('sample') === '1') void runImport(sampleImportInput(), { replaceEnvironment: true, persist: false })
       return
@@ -337,7 +376,7 @@ export function AuditApp() {
   }, [route.caseId, route.mode])
 
   const persistCaseState = useCallback(
-    (findingId: string, update: (current: ReturnType<typeof getCaseState>) => ReturnType<typeof getCaseState>) => {
+    (findingId: string, update: (current: ReturnType<typeof getCaseState>) => ReturnType<typeof getCaseState>, command?: { type: string; input: unknown }) => {
       const env = environmentRef.current
       if (!env) return
       const current = getCaseState(env, findingId)
@@ -345,14 +384,15 @@ export function AuditApp() {
       const next = setCaseState(env, findingId, withHistory(current, update(current), actor, internal))
       const currentProject = projectRef.current
       if (currentProject) {
-        const saved = saveProject({ ...currentProject, environment: next })
+        const saved = saveProject({ ...currentProject, environment: next }, { sync: !account || !command })
         projectRef.current = saved
         setProject(saved)
         refreshProjects()
+        if (account && command) projectSync.command(saved.id, findingId, command.type, command.input)
       }
       setEnvironment(next)
     },
-    [refreshProjects, actor]
+    [refreshProjects, actor, account]
   )
 
   const handleOpenCase = useCallback(
@@ -368,14 +408,19 @@ export function AuditApp() {
 
   const handleDecide = useCallback(
     (findingId: string, value: DecisionValue, reason: string | null, dismissalTag: DismissalTag | null = null) => {
-      persistCaseState(findingId, (current) =>
-        current.decision === value
+      persistCaseState(findingId, (current) => {
+        const decided = current.decision === value
           ? updateCaseReason(current, reason)
           : value === 'confirmed'
             ? confirmCase(reason)
             : value === 'needs_info'
               ? markNeedsInfo(reason)
               : markExpected(reason, dismissalTag)
+        return (current.activeRequestGeneration ?? 1) > 1
+          ? { ...decided, activeRequestGeneration: current.activeRequestGeneration, archivedRequests: current.archivedRequests, recoverySettlements: current.recoverySettlements, recoveredAmount: verifiedReturned(current), legacyRecoveredAmount: current.legacyRecoveredAmount, requiresRevalidation: current.requiresRevalidation, history: current.history }
+          : decided
+      },
+        { type: 'decision', input: { decision: value, reason } }
       )
     },
     [persistCaseState]
@@ -389,11 +434,30 @@ export function AuditApp() {
     if (!finding || finding.class !== 'recoverable') return false
     try {
       assertRecoveryEligible(finding, findings, requestedAmount)
+      const current = environmentRef.current ? getCaseState(environmentRef.current, findingId) : null
+      if (current) {
+        const previousReturn = verifiedReturned(current) - activeReturned(current)
+        const potentialMinor = evaluateEligibility(finding, finding.evidence, findings).potentialAmountMinor ?? 0
+        if (Math.round(requestedAmount * 100) > potentialMinor - Math.round(previousReturn * 100)) return true
+      }
       return false
     } catch {
       return true
     }
   }, [])
+
+  const handleBeginNewRequestReview = useCallback((findingId: string) => {
+    persistCaseState(findingId, (current) => beginNewRequestReview(current), { type: 'begin_new_request_review', input: { acknowledged: true } })
+  }, [persistCaseState])
+
+  const handleHistoricalSettlement = useCallback((findingId: string, generation: number, proof: RecoveryVerification) => {
+    persistCaseState(findingId, (current) => {
+      const finding = environmentRef.current?.result.findings.find((row) => row.id === findingId)
+      const findings = environmentRef.current?.result.findings ?? []
+      const potentialMinor = finding ? evaluateEligibility(finding, finding.evidence, findings).potentialAmountMinor : null
+      return recordHistoricalSettlement(current, generation, proof, potentialMinor == null ? 0 : potentialMinor / 100)
+    }, { type: 'historical_settlement', input: { ...proof, generation } })
+  }, [persistCaseState])
 
   const handleSaveEvidence = useCallback((findingId: string, evidence: RecoveryEvidence) => {
     const env = environmentRef.current
@@ -401,13 +465,14 @@ export function AuditApp() {
     const next = recordEvidence(env, findingId, evidence)
     const currentProject = projectRef.current
     if (currentProject) {
-      const saved = saveProject({ ...currentProject, environment: next })
+      const saved = saveProject({ ...currentProject, environment: next }, { sync: !account })
       projectRef.current = saved
       setProject(saved)
       refreshProjects()
+      if (account) projectSync.command(saved.id, findingId, 'evidence', evidence)
     }
     setEnvironment(next)
-  }, [refreshProjects])
+  }, [refreshProjects, account])
 
   const handleMarkRequested = useCallback(
     (findingId: string, pkg: RequestPackage) => {
@@ -415,16 +480,17 @@ export function AuditApp() {
       persistCaseState(findingId, (current) => {
         const finding = environmentRef.current?.result.findings.find((row) => row.id === findingId)
         if (finding?.class !== 'recoverable') return markRecoveryRequested(updateRecoveryPackage(current, { subject: pkg.subject, body: pkg.body, requestedResolution: pkg.method }), finding ? Math.min(pkg.requestedAmount, finding.dollarImpact) : pkg.requestedAmount)
-        if (current.recoverySubject !== pkg.subject || current.recoveryDraft !== pkg.body || current.requestedAmount !== pkg.requestedAmount || current.requestedResolution !== pkg.method || (current.recoveryRecipientEmail ?? '') !== pkg.recipientEmail) return current
-        return startRecoveryRequest(current, pkg.requestedAmount, Date.now(), finding?.dollarImpact)
-      })
+        if (current.recoverySubject !== pkg.subject || current.recoveryDraft !== pkg.body || current.requestedAmount !== pkg.requestedAmount || current.requestedResolution !== pkg.method || (current.recoveryRecipientEmail ?? '') !== pkg.recipientEmail || (current.recoveryEvidenceAttachment ?? null) !== (pkg.evidenceAttachment ?? null) || !pkg.recipientConfirmed) return current
+        const requested = startRecoveryRequest(current, pkg.requestedAmount, Date.now(), finding?.dollarImpact)
+        return sampleSession ? { ...requested, recoverySimulated: true } : requested
+      }, { type: 'request', input: pkg })
     },
-    [persistCaseState, recoveryBlocked]
+    [persistCaseState, recoveryBlocked, sampleSession]
   )
 
   const handleApproveRecovery = useCallback((findingId: string, pkg: RequestPackage, knownBeforeReclaim: boolean, knownBeforeNote: string | null) => {
     if (recoveryBlocked(findingId, pkg.requestedAmount)) return
-    persistCaseState(findingId, (current) => approveRecovery(updateRecoveryPackage(current, { subject: pkg.subject, body: pkg.body, recipientEmail: pkg.recipientEmail, requestedResolution: pkg.method, requestedAmount: pkg.requestedAmount }), { knownBeforeReclaim, knownBeforeNote }))
+    persistCaseState(findingId, (current) => approveRecovery(updateRecoveryPackage(current, { ...pkg, requestedResolution: pkg.method }), { knownBeforeReclaim, knownBeforeNote }), { type: 'approve', input: { package: pkg, knownBeforeReclaim, knownBeforeNote } })
   }, [persistCaseState, recoveryBlocked])
 
   // For a team where the approver is also the sender: one step, one save, and
@@ -432,9 +498,9 @@ export function AuditApp() {
   const handleApproveAndSend = useCallback((findingId: string, pkg: RequestPackage, knownBeforeReclaim: boolean, knownBeforeNote: string | null) => {
     if (recoveryBlocked(findingId, pkg.requestedAmount)) return
     persistCaseState(findingId, (current) => {
-      const approved = approveRecovery(updateRecoveryPackage(current, { subject: pkg.subject, body: pkg.body, recipientEmail: pkg.recipientEmail, requestedResolution: pkg.method, requestedAmount: pkg.requestedAmount }), { knownBeforeReclaim, knownBeforeNote })
+      const approved = approveRecovery(updateRecoveryPackage(current, { ...pkg, requestedResolution: pkg.method }), { knownBeforeReclaim, knownBeforeNote })
       return startRecoveryRequest(approved, pkg.requestedAmount)
-    })
+    }, { type: 'approve_and_request', input: { package: pkg, knownBeforeReclaim, knownBeforeNote } })
   }, [persistCaseState, recoveryBlocked])
 
   // Gmail accepted the message: the request went out, so it is recorded even
@@ -442,41 +508,41 @@ export function AuditApp() {
   const handleEmailSent = useCallback((findingId: string, pkg: RequestPackage, receipt: GmailSendReceipt) => {
     persistCaseState(findingId, (current) => current.recoveryStage === 'confirmed'
       ? recordEmailSent(current, { channel: 'gmail', messageId: receipt.messageId, from: receipt.from, to: receipt.to, cc: receipt.cc, sentAt: receipt.sentAt }, pkg.requestedAmount)
-      : current)
+      : current, { type: 'email_sent', input: { messageId: receipt.messageId } })
   }, [persistCaseState])
 
   const handleFollowUpSent = useCallback((findingId: string, receipt: GmailSendReceipt) => {
     persistCaseState(findingId, (current) => current.recoveryStage === 'requested'
       ? recordFollowUpSent(current, { channel: 'gmail', messageId: receipt.messageId, from: receipt.from, to: receipt.to, cc: receipt.cc, sentAt: receipt.sentAt })
-      : current)
+      : current, { type: 'followup_sent', input: { messageId: receipt.messageId } })
   }, [persistCaseState])
 
   const handleFollowUpDays = useCallback((findingId: string, days: number) => {
-    persistCaseState(findingId, (current) => setFollowUpAfterDays(current, days))
+    persistCaseState(findingId, (current) => setFollowUpAfterDays(current, days), { type: 'followup_days', input: { days } })
   }, [persistCaseState])
 
   const handleContactHold = useCallback((findingId: string, reason: string | null) => {
-    persistCaseState(findingId, (current) => setContactHold(current, reason))
+    persistCaseState(findingId, (current) => setContactHold(current, reason), { type: 'contact_hold', input: { reason } })
   }, [persistCaseState])
 
   const handleVendorUpdate = useCallback((findingId: string, update: VendorUpdate) => {
-    persistCaseState(findingId, (current) => recordVendorUpdate(current, update))
+    persistCaseState(findingId, (current) => recordVendorUpdate(current, update), { type: 'vendor_update', input: update })
   }, [persistCaseState])
 
   const handleFollowUp = useCallback((findingId: string, at: number | null) => {
-    persistCaseState(findingId, (current) => setNextFollowUp(current, at))
+    persistCaseState(findingId, (current) => setNextFollowUp(current, at), { type: 'followup', input: { at } })
   }, [persistCaseState])
 
   const handleVerifyRecovery = useCallback((findingId: string, proof: RecoveryVerification) => {
-    persistCaseState(findingId, (current) => verifyRecovery(current, proof))
+    persistCaseState(findingId, (current) => verifyRecovery(current, proof), { type: 'settlement', input: proof })
   }, [persistCaseState])
 
   const handleCloseRecovery = useCallback((findingId: string, reason: string) => {
-    persistCaseState(findingId, (current) => closeWithoutRecovery(current, reason))
+    persistCaseState(findingId, (current) => closeWithoutRecovery(current, reason), { type: 'close', input: { reason } })
   }, [persistCaseState])
 
   const handleReconcileRecovery = useCallback((findingId: string, note: string, rootCause: string) => {
-    persistCaseState(findingId, (current) => reconcileRecovery(current, { note, rootCause }))
+    persistCaseState(findingId, (current) => reconcileRecovery(current, { note, rootCause }), { type: 'reconcile', input: { note, rootCause } })
   }, [persistCaseState])
 
   const handleRecordOutcome = useCallback(
@@ -486,7 +552,7 @@ export function AuditApp() {
       const claim = finding ? isClaim(finding) : false
       persistCaseState(findingId, (current) =>
         claim ? recordRecoveryOutcome(current, outcome, amount, note, method) : recordRecoveryOutcome(current, 'not_recovered', null, note, null)
-      )
+      , { type: 'close', input: { reason: note ?? 'Internal review closed' } })
     },
     [persistCaseState]
   )
@@ -497,13 +563,13 @@ export function AuditApp() {
         current.recoveryStage === 'recovered' || current.recoveryStage === 'not_recovered'
           ? reopenOutcome(current)
           : reopenDecision(current)
-      )
+      , { type: 'reopen', input: {} })
     },
     [persistCaseState]
   )
 
   const handleReopenBalance = useCallback((findingId: string) => {
-    persistCaseState(findingId, (current) => reopenRemainingBalance(current))
+    persistCaseState(findingId, (current) => reopenRemainingBalance(current), { type: 'reopen_balance', input: {} })
   }, [persistCaseState])
 
   /**
@@ -552,7 +618,7 @@ export function AuditApp() {
   const handleImport = useCallback(
     (input: ImportInput) => {
       const target = input.quickbooks ? quickBooksTarget(input.quickbooks.companyName) : null
-      const replaceEnvironment = !target && (importIntent === 'new' || route.entry === 'upload')
+      const replaceEnvironment = !target && (sampleSession || importIntent === 'new' || route.entry === 'upload')
       // Free: each ledger is audited once. A repeat — the same file, a renamed
       // copy, or a trimmed piece of it — is flagged here, before anything runs.
       // Re-importing a QuickBooks company into its own audit is a sync, never a repeat.
@@ -566,7 +632,7 @@ export function AuditApp() {
       setEntryError(null)
       return runImport({ sourceLabel: input.sourceLabel, mode: input.mode, parsed: input.parsed, ...(input.quickbooks ? { quickbooks: input.quickbooks } : {}) }, { replaceEnvironment, ...(target ? { targetProjectId: target.id } : {}) })
     },
-    [importIntent, route.entry, runImport, entitlements.limits.blocksRepeatUploads, quickBooksTarget]
+    [importIntent, route.entry, runImport, entitlements.limits.blocksRepeatUploads, quickBooksTarget, sampleSession]
   )
 
   const handleOpenProject = useCallback(
@@ -768,6 +834,13 @@ export function AuditApp() {
         }
       >
         {route.mode === 'dashboard' && !activeFinding ? <QuickBooksSyncStatus state={quickBooksAutoSync.state} onSyncNow={quickBooksAutoSync.syncNow} /> : null}
+        {account && (syncState.issue || syncState.pending > 0) ? (
+          <div className="wk-alert" role="status" data-testid="sync-notice" style={{ marginBottom: 20 }}>
+            <p>{syncState.issue?.message ?? 'Saving this project to your account…'}</p>
+            {syncState.issue?.status === null ? <button type="button" className="wk-linklike" onClick={() => projectSync.retry()}>Retry save</button> : null}
+            {syncState.issue ? <button type="button" className="wk-linklike" onClick={downloadLocalCopy}>Download local copy</button> : null}
+          </div>
+        ) : null}
         {importNotice ? (
           <div className="wk-callout" data-tone="done" role="status" data-testid="import-notice" style={{ marginBottom: 20 }}>
             <CheckCircle2 aria-hidden="true" />
@@ -785,7 +858,7 @@ export function AuditApp() {
           <div className="wk-alert" role="status" data-testid="storage-notice" style={{ marginBottom: 20 }}>
             <p>
               {account
-                ? 'This audit is too large to keep in this browser’s storage. It is saved to your account and will load from there next time.'
+                ? syncState.pending ? 'This audit is too large for browser storage and is still saving to your account. Keep this tab open until the save finishes.' : 'This audit is too large to keep in this browser’s storage. It is saved to your account and will load from there next time.'
                 : 'This audit is too large to keep in this browser’s storage. It works in this tab, but it will be gone when the tab closes — create an account to keep it.'}
             </p>
           </div>
@@ -807,7 +880,10 @@ export function AuditApp() {
             <CaseDetail
               finding={activeFinding}
               findings={environment.result.findings}
-              projectId={project?.id}
+              projectId={sampleSession ? undefined : project?.id}
+              sample={sampleSession}
+              owner={actor}
+              sampleEvidence={sampleSession ? getRecoverySampleEvidence(activeCase.finding) : undefined}
               onSaveEvidence={handleSaveEvidence}
               state={activeCase.state}
               records={environment.records}
@@ -819,6 +895,8 @@ export function AuditApp() {
               onRecordOutcome={handleRecordOutcome}
               onReopen={handleReopen}
               onReopenBalance={handleReopenBalance}
+              onBeginNewRequestReview={handleBeginNewRequestReview}
+              onHistoricalSettlement={handleHistoricalSettlement}
               onApproveRecovery={handleApproveRecovery}
               onApproveAndSend={handleApproveAndSend}
               onEmailSent={handleEmailSent}

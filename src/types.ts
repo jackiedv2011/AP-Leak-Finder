@@ -24,6 +24,10 @@ export interface ImportRowResult {
 export interface APRecord {
   source?: SourceProvenance
   canonicalVendorId?: string
+  /** Fuzzy alias suggestion only; never used as the supplier's verified identity. */
+  suggestedVendorAlias?: string
+  /** Stable supplier key from the source system, when the export provides one. */
+  stableSupplierId?: string | null
   currency?: string | null
   externalTransactionId?: string | null
   sourceAccount?: string | null

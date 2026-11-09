@@ -14,7 +14,7 @@ const findings = detectFindings(parseCsv(csv).records.map((r, i) => ({ ...r, id:
 function eligibleDuplicate(): Finding {
   const finding=findings.find(f=>f.type==='exact_duplicate' && f.vendor==='Sierra Coffee Supply')!
   const stamp={reference:'Accounting payment and obligation records',confirmedBy:'Dana',confirmedAt:100}
-  const evidence={payments:finding.relatedRecords.map(r=>({...stamp,recordId:r.id,paymentId:`trace-${r.id}`,amountMinor:Math.round(r.amountPaid*100),currency:'USD',settled:true,obligationId:'INV-1001'})),obligation:{...stamp,obligationId:'INV-1001',amountMinor:Math.round(finding.relatedRecords[0].amountPaid*100),currency:'USD'},checks:Object.fromEntries(EVIDENCE_CHECKS.map(([key])=>[key,{...stamp,confirmed:true}])),notes:'',contradictions:[]}
+  const evidence={entity:{...stamp,entityId:'Test company'},supplier:{...stamp,supplierId:'SUPPLIER-1'},payments:finding.relatedRecords.map(r=>({...stamp,recordId:r.id,paymentId:`trace-${r.id}`,amountMinor:Math.round(r.amountPaid*100),currency:'USD',settled:true,obligationId:'INV-1001'})),obligation:{...stamp,obligationId:'INV-1001',amountMinor:Math.round(finding.relatedRecords[0].amountPaid*100),currency:'USD'},checks:Object.fromEntries(EVIDENCE_CHECKS.map(([key])=>[key,{...stamp,confirmed:true}])),notes:'',contradictions:[]}
   const candidate={...finding,evidence,classification:'recovery_candidate' as const,class:'recoverable' as const,currency:'USD'}
   expect(evaluateEligibility(candidate).eligible).toBe(true)
   return candidate

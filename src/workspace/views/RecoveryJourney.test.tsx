@@ -29,6 +29,16 @@ it('holds a legacy recovered case without an amount outside accounting closeout'
   expect(screen.queryByRole('button', { name: 'Mark reconciled' })).not.toBeInTheDocument()
 })
 
+it('hides follow-up actions on a historical request while keeping replies and returns available', () => {
+  const state = { ...startRecoveryRequest(approveRecovery(confirmCase(null), { knownBeforeReclaim: false }), 1000), requiresRevalidation: true }
+  render(<RecoveryProgressPanel finding={finding} state={state} onVendorUpdate={vi.fn()} onFollowUp={vi.fn()} onVerify={vi.fn()} onClose={vi.fn()} />)
+  expect(screen.queryByLabelText('Next follow-up')).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Save date' })).not.toBeInTheDocument()
+  expect(screen.queryByRole('option', { name: /followed up/i })).not.toBeInTheDocument()
+  expect(screen.getByRole('tab', { name: 'Log a reply' })).toBeInTheDocument()
+  expect(screen.getByRole('tab', { name: 'Record money back' })).toBeInTheDocument()
+})
+
 it('keeps an issued credit pending and requires application proof before recording recovery', () => {
   let state = startRecoveryRequest(approveRecovery(confirmCase(null), { knownBeforeReclaim: false }), 1000)
   state = recordVendorUpdate(state, { status: 'credit_issued', note: 'CM-14 issued', at: Date.now() })
